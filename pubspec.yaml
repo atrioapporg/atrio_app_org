@@ -30,6 +30,8 @@ dependencies:
   connectivity_plus: ^6.0.0
   just_audio_background: ^0.0.1-beta.17
   just_audio: ^0.10.6
+  google_fonts: ^9.0.0
+  csv: ^8.0.0
 
 dev_dependencies:
   flutter_test:

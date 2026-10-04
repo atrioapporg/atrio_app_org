@@ -1,0 +1,87 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Requerido para obtener datos de internet, navegar y cargar Google Maps -->
+    <uses-permission
+        android:name="android.permission.INTERNET"/>
+    <!-- obtener la ubicación real del usuario -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.location.network"
+        android:required="false"/>
+    <!-- Declaración unificada de esquemas para WhatsApp, Correo, Navegador, Llamadas, Mapas y Procesamiento de Texto -->
+    <queries>
+        <!-- Navegador web (y WhatsApp) -->
+        <intent>
+            <action
+                android:name="android.intent.action.VIEW"/>
+            <data
+                android:scheme="https"/>
+        </intent>
+        <!-- Correo electrónico -->
+        <intent>
+            <action
+                android:name="android.intent.action.SENDTO"/>
+            <data
+                android:scheme="mailto"/>
+        </intent>
+        <!-- Llamadas telefónicas -->
+        <intent>
+            <action
+                android:name="android.intent.action.DIAL"/>
+            <data
+                android:scheme="tel"/>
+        </intent>
+        <!-- Mapas y geolocalización -->
+        <intent>
+            <action
+                android:name="android.intent.action.VIEW"/>
+            <data
+                android:scheme="geo"/>
+        </intent>
+        <!-- Requerido por el motor de Flutter para procesar texto (io.flutter.plugin.text.ProcessTextPlugin) -->
+        <intent>
+            <action
+                android:name="android.intent.action.PROCESS_TEXT"/>
+            <data
+                android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+    <application
+        android:label="ATRIO"
+        android:name="${applicationName}"
+        android:icon="@mipmap/launcher_icon">
+        <!-- Clave de API de Google Maps -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCwoPsfxubfarcNOomfPDeun9Lu-zj21Ec"/>
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
+    </application>
+</manifest>

@@ -1,0 +1,15 @@
+{
+  "id": 105,
+  "nombre": "María Gómez",
+  "email": "mariaa.gomezz@comunidad.com",
+  "telefono": "+1 809 555 1234",
+  "iglesia_actual": "Comunidad de Esperanza",
+  "fecha_registro": "2023-11-15T08:30:00Z",
+  "avatar_iniciales": "M",
+  "es_miembro_verificado": true,
+  "estadisticas": {
+    "solicitudes_activas": 2,
+    "donaciones_mes": 1,
+    "notas_biblia": 12
+  }
+}

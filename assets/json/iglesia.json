@@ -1,0 +1,39 @@
+{
+  "id": 1,
+  "nombre": "Parroquia San Juan Eudes",
+  "denominacion": "Iglesia católica",
+  "calificacion": 4.7,
+  "total_resenas": 65,
+  "distancia": "A 1.8 km",
+  "es_verificada": true,
+  "direccion": "Enma Balaguer esq. Juan 318, Los Girasoles Segundo",
+  "plus_code": "G296+PX Los Girasoles",
+  "telefono": "(809) 236-1587",
+  "sitio_web": "https://es.wikipedia.org/wiki/Cristianismo",
+  "proximo_culto": {
+    "titulo": "Misa Comunitaria",
+    "dia_hora": "Sábado · 5:00 p. m.",
+    "estado": "Cerrado · Abre a las 5 p.m. del sáb"
+  },
+  "horarios": [
+    {
+      "dia": "Sábado",
+      "detalle": "5:00 p. m. · Misa de Vísperas",
+      "tipo": "misa"
+    },
+    {
+      "dia": "Domingo",
+      "detalle": "9:00 a. m. y 6:00 p. m. · Misa dominical",
+      "tipo": "misa"
+    },
+    {
+      "dia": "Miércoles",
+      "detalle": "6:30 p. m. · Hora Santa y Oración",
+      "tipo": "oracion"
+    }
+  ],
+  "aviso_actual": {
+    "titulo": "Preparación de Confirmación",
+    "descripcion": "Inscripciones abiertas para jóvenes los sábados a las 4:00 p. m."
+  }
+}

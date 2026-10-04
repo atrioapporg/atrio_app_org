@@ -1,0 +1,22 @@
+{
+  "perfil_donante": {
+    "nombre": "Lenin Linares Guerrero",
+    "correo": "Lenin.Nebadon@gmail.com"
+  },
+  "configuracion_pago": {
+    "moneda_simbolo": "RD$",
+    "montos_sugeridos": [500, 1000, 2500],
+    "frecuencias": ["Una sola vez", "Mensual"],
+    "metodo_pago_defecto": {
+      "marca": "Visa",
+      "ultimos_cuatro": "1234"
+    }
+  },
+  "propositos_disponibles": [
+    "Diezmo",
+    "Ofrenda",
+    "Campaña especial",
+    "Ayuda comunitaria",
+    "Otro aporte"
+  ]
+}

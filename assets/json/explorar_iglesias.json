@@ -1,0 +1,49 @@
+{
+  "iglesias_sugeridas": [
+    {
+      "id": "ig-001",
+      "nombre": "Iglesia de la Gracia",
+      "denominacion": "Cristiana Evangélica",
+      "distancia_km": 3.5,
+      "rating": 4.9,
+      "total_resenas": 124,
+      "color_hex": "0xFF0055A5"
+    },
+    {
+      "id": "ig-002",
+      "nombre": "Primera Iglesia Bautista",
+      "denominacion": "Bautista",
+      "distancia_km": 1.2,
+      "rating": 4.7,
+      "total_resenas": 89,
+      "color_hex": "0xFF4A7C59"
+    },
+    {
+      "id": "ig-003",
+      "nombre": "Centro Cristiano Renacer",
+      "denominacion": "Pentecostal",
+      "distancia_km": 5.2,
+      "rating": 4.5,
+      "total_resenas": 210,
+      "color_hex": "0xFF2E6DA4"
+    },
+    {
+      "id": "ig-004",
+      "nombre": "Comunidad de Esperanza",
+      "denominacion": "Cristiana Evangélica",
+      "distancia_km": 8.5,
+      "rating": 4.8,
+      "total_resenas": 340,
+      "color_hex": "0xFFE5A023"
+    },
+    {
+      "id": "ig-005",
+      "nombre": "Templo Bíblico Central",
+      "denominacion": "Bautista",
+      "distancia_km": 2.8,
+      "rating": 4.2,
+      "total_resenas": 45,
+      "color_hex": "0xFF2B7A78"
+    }
+  ]
+}

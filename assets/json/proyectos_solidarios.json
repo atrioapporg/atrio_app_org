@@ -1,0 +1,48 @@
+{
+  "lema": "Juntos podemos transformar vidas",
+  "proyecto_destacado": {
+    "id": "proj-01",
+    "titulo": "Un techo para servir",
+    "subtitulo": "Renovemos el salón comunitario",
+    "imagen_asset": "assets/images/proyecto_destacado.jpg",
+    "monto_recaudado": 640000,
+    "meta_monto": 1000000,
+    "dias_restantes": 22,
+    "es_destacado": true
+  },
+  "otras_campanas": [
+    {
+      "id": "proj-02",
+      "titulo": "Alimentos para 100 familias",
+      "categoria": "Ayuda social",
+      "icono_nombre": "favorite",
+      "color_fondo_hex": "0xFFE8F2EA",
+      "color_barra_hex": "0xFF6C8C6E",
+      "progreso": 0.45,
+      "monto_recaudado": 225000,
+      "meta_monto": 500000
+    },
+    {
+      "id": "proj-03",
+      "titulo": "Operativo médico comunitario",
+      "categoria": "Salud",
+      "icono_nombre": "medical",
+      "color_fondo_hex": "0xFFE5F0FA",
+      "color_barra_hex": "0xFF2E6DA4",
+      "progreso": 0.78,
+      "monto_recaudado": 390000,
+      "meta_monto": 500000
+    },
+    {
+      "id": "proj-04",
+      "titulo": "Útiles escolares para niños",
+      "categoria": "Educación",
+      "icono_nombre": "school",
+      "color_fondo_hex": "0xFFFFF4E5",
+      "color_barra_hex": "0xFFE5A023",
+      "progreso": 0.30,
+      "monto_recaudado": 90000,
+      "meta_monto": 300000
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "tradiciones": [
+    {
+      "id": "trad_catolica",
+      "titulo": "Católica",
+      "subtitulo": "Iglesia Católica Romana",
+      "icono_nombre": "church",
+      "color_hex": "0xFF0055A5",
+      "iglesias": [
+        {
+          "id": "ig_cat_01",
+          "nombre": "Parroquia Santa Teresa de Jesús",
+          "denominacion": "Católica",
+          "direccion": "Av. Máximo Gómez esq. C. Peña Batlle, Santo Domingo",
+          "plus_code": "87978JC7+M4",
+          "telefono": "+1 809-555-0101",
+          "calificacion": 4.7,
+          "total_resenas": 79,
+          "es_verificada": true
+        },
+        {
+          "id": "ig_cat_02",
+          "nombre": "Catedral Primada de América",
+          "denominacion": "Católica",
+          "direccion": "Calle Arzobispo Meriño, Ciudad Colonial, Santo Domingo",
+          "plus_code": "87976JC2+X9",
+          "telefono": "+1 809-682-3848",
+          "calificacion": 4.9,
+          "total_resenas": 540,
+          "es_verificada": true
+        }
+      ]
+    },
+    {
+      "id": "trad_evangelica",
+      "titulo": "Evangélica",
+      "subtitulo": "Iglesias evangélicas y protestantes",
+      "icono_nombre": "church",
+      "color_hex": "0xFF2E7D32",
+      "iglesias": [
+        {
+          "id": "ig_eva_01",
+          "nombre": "Comunidad de Esperanza",
+          "denominacion": "Evangélica",
+          "direccion": "Av. 27 de Febrero #230, Santo Domingo",
+          "plus_code": "87977J96+P2",
+          "telefono": "+1 809-555-0103",
+          "calificacion": 4.8,
+          "total_resenas": 124,
+          "es_verificada": true
+        },
+        {
+          "id": "ig_eva_02",
+          "nombre": "Centro Cristiano Renacer",
+          "denominacion": "Evangélica",
+          "direccion": "Av. San Martín #45, Santo Domingo",
+          "plus_code": "87978JB4+R8",
+          "telefono": "+1 809-555-0104",
+          "calificacion": 4.6,
+          "total_resenas": 95,
+          "es_verificada": true
+        }
+      ]
+    },
+    {
+      "id": "trad_pentecostal",
+      "titulo": "Pentecostal",
+      "subtitulo": "Asambleas de Dios, Iglesia de Dios y similares",
+      "icono_nombre": "church",
+      "color_hex": "0xFFD32F2F",
+      "iglesias": []
+    },
+    {
+      "id": "trad_bautista",
+      "titulo": "Bautista",
+      "subtitulo": "Iglesias bautistas",
+      "icono_nombre": "church",
+      "color_hex": "0xFF1565C0",
+      "iglesias": []
+    },
+    {
+      "id": "trad_adventista",
+      "titulo": "Adventista",
+      "subtitulo": "Iglesia Adventista del Séptimo Día",
+      "icono_nombre": "church",
+      "color_hex": "0xFF00695C",
+      "iglesias": []
+    },
+    {
+      "id": "trad_no_denominacional",
+      "titulo": "No denominacional",
+      "subtitulo": "Iglesias independientes y centros cristianos",
+      "icono_nombre": "groups",
+      "color_hex": "0xFF5D4037",
+      "iglesias": [
+        {
+          "id": "ig_nd_01",
+          "nombre": "Iglesia de la Gracia",
+          "denominacion": "No denominacional",
+          "direccion": "Av. Independencia #512, Santo Domingo",
+          "plus_code": "87976J88+A3",
+          "telefono": "+1 809-555-0106",
+          "calificacion": 4.9,
+          "total_resenas": 210,
+          "es_verificada": true
+        }
+      ]
+    },
+    {
+      "id": "trad_otra",
+      "titulo": "Otra",
+      "subtitulo": "Otras tradiciones cristianas",
+      "icono_nombre": "more_horiz",
+      "color_hex": "0xFF616161",
+      "iglesias": []
+    },
+    {
+      "id": "trad_despues",
+      "titulo": "Prefiero indicarlo después",
+      "subtitulo": "",
+      "icono_nombre": "schedule",
+      "color_hex": "0xFF455A64",
+      "iglesias": []
+    }
+  ]
+}

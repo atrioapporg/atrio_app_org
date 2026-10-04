@@ -387,7 +387,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                               onPressed: () {
                                 OdooPagoDialog.mostrarConfirmacionPago(
                                   context: context,
-                                  concepto: '\(concepto (\)comunidad)',
+                                  concepto: '$concepto ($comunidad)',
                                   monto: monto,
                                   metodoPago: metodoPago,
                                   onConfirmado: () {

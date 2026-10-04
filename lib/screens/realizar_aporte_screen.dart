@@ -14,10 +14,10 @@ class RealizarAporteScreen extends StatefulWidget {
   const RealizarAporteScreen({super.key});
 
   @override
-  State createState() => _RealizarAporteScreenState();
+  State<RealizarAporteScreen> createState() => _RealizarAporteScreenState();
 }
 
-class _RealizarAporteScreenState extends State {
+class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
   final List _tiposDonacion = [
     'Diezmo',
     'Ofrenda',
@@ -42,7 +42,7 @@ class _RealizarAporteScreenState extends State {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of(context, listen: false);
+      final provider = Provider.of<AporteProvider>(context, listen: false);
       if (provider.configuracion == null && !provider.isLoading) {
         provider.cargarConfiguracion();
       }
@@ -68,7 +68,7 @@ class _RealizarAporteScreenState extends State {
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
-    final aporteProvider = Provider.of(context);
+    final aporteProvider = Provider.of<AporteProvider>(context);
     final configData = aporteProvider.configuracion;
 
     return Scaffold(
@@ -293,7 +293,8 @@ class _RealizarAporteScreenState extends State {
               children: List.generate(
                 config.configPago.montosSugeridos.length,
                 (index) => _buildAmountCard(
-                  label: '\({config.configPago.monedaSimbolo}\){formatCurrency.format(config.configPago.montosSugeridos[index])}',
+                  label:
+                      '${config.configPago.monedaSimbolo}${formatCurrency.format(config.configPago.montosSugeridos[index])}',
                   isSelected: _selectedAmountIndex == index,
                   screenWidth: screenWidth,
                   usableHeight: usableHeight,
@@ -779,7 +780,7 @@ class _RealizarAporteScreenState extends State {
                       ),
                       SizedBox(height: usableHeight * 0.020),
                       Text(
-                        '\(banco ·\)cuenta',
+                        '$banco · $cuenta',
                         style: TextStyle(
                           color: blancoFondo,
                           fontSize: screenWidth * 0.030,

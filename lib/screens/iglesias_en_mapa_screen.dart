@@ -194,10 +194,10 @@ class _IglesiasEnMapaScreenState extends State {
     final double lat = latLng.latitude;
     final double lng = latLng.longitude;
     final Uri uriNativa = Uri.parse(
-      'geo:\(lat,\)lng?q=\(lat,\)lng(${Uri.encodeComponent(nombre)})',
+      'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(nombre)})',
     );
     final Uri uriWeb = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=\(lat,\)lng',
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     );
     try {
       if (await canLaunchUrl(uriNativa)) {

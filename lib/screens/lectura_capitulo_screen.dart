@@ -1,11 +1,13 @@
+// ignore_for_file: unused_field
 import 'dart:io';
 
 import 'package:atrio/data/atrio_database_helper.dart';
-import 'package:atrio/data/database_helper.dart'; // IMPORTANTE: Importamos el Helper que trae los tiempos del audio
+import 'package:atrio/data/database_helper.dart';
 import 'package:atrio/providers/biblia_provider.dart';
 import 'package:atrio/servicios/bible_service.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -18,7 +20,6 @@ class LecturaCapituloScreen extends StatefulWidget {
   State<LecturaCapituloScreen> createState() => _LecturaCapituloScreenState();
 }
 
-// Agregamos WidgetsBindingObserver para controlar la app en segundo plano
 class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     with WidgetsBindingObserver {
   final BibleService _bibleService = BibleService();
@@ -44,6 +45,41 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
   late int _totalCapitulos;
   String _subtitulo = '';
   List<Map<String, dynamic>> _versiculos = [];
+  int? _versoAutoPlay;
+  int? _versoFinAutoPlay;
+  bool _debeAutoPlay = false;
+  final ScrollController _scrollController = ScrollController();
+
+  // Lista de fuentes optimizadas para lectura
+  static const List<String> _fuentesDisponibles = [
+    'Inter',
+    'Roboto',
+    'Open Sans',
+    'Noto Sans',
+    'Source Sans 3',
+    'IBM Plex Sans',
+    'Merriweather',
+  ];
+
+  TextStyle _getFontStyle(TextStyle baseStyle, String fontName) {
+    switch (fontName) {
+      case 'Roboto':
+        return GoogleFonts.roboto(textStyle: baseStyle);
+      case 'Open Sans':
+        return GoogleFonts.openSans(textStyle: baseStyle);
+      case 'Noto Sans':
+        return GoogleFonts.notoSans(textStyle: baseStyle);
+      case 'Source Sans 3':
+        return GoogleFonts.sourceSans3(textStyle: baseStyle);
+      case 'IBM Plex Sans':
+        return GoogleFonts.ibmPlexSans(textStyle: baseStyle);
+      case 'Merriweather':
+        return GoogleFonts.merriweather(textStyle: baseStyle);
+      case 'Inter':
+      default:
+        return GoogleFonts.inter(textStyle: baseStyle);
+    }
+  }
 
   @override
   void initState() {
@@ -54,12 +90,12 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scrollController.dispose();
     _youtubeController?.pause();
     _youtubeController?.dispose();
     super.dispose();
   }
 
-  // Pausa el audio si el usuario minimiza la app
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
@@ -81,15 +117,18 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
       _libroId = args['id'] ?? 1;
       _libroNombre = args['nombre'] ?? 'Génesis';
       _capituloActual = args['capitulo'] ?? 1;
-      _totalCapitulos = args['totalCapitulos'] ?? 50;
+      _totalCapitulos = args['totalCapitulos'] ?? args['capitulos'] ?? 50;
       _subtitulo = args['subtitulo'] ?? 'La creación';
-      //
+      _versoAutoPlay = args['verso'] as int?;
+      _versoFinAutoPlay = args['versoFin'] as int? ?? _versoAutoPlay;
+      _debeAutoPlay = args['autoPlay'] == true;
+
       AtrioDatabaseHelper.instance.guardarUltimaLectura(
         libro: _libroNombre,
         capitulo: _capituloActual,
         totalCapitulos: _totalCapitulos,
       );
-      //
+
       _cargarCapitulo();
       _isInit = false;
     }
@@ -158,6 +197,52 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
           _isLoading = false;
         });
         _verificarSiEsFavorito();
+
+        if (_versoAutoPlay != null) {
+          final int versoTarget = _versoAutoPlay!;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final screenWidth = MediaQuery.sizeOf(context).width;
+            final screenHeight = MediaQuery.sizeOf(context).height;
+            final safeAreaTop = MediaQuery.of(context).padding.top;
+            final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+            final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+            final Color colorHeader = provider.modoLectura == ModoLectura.noche
+                ? const Color(0xFF162231)
+                : const Color(0xFF072B4F);
+            final Color colorAcento = provider.modoLectura == ModoLectura.noche
+                ? const Color(0xFFF59E0B)
+                : (provider.modoLectura == ModoLectura.suave
+                      ? const Color(0xFF0F4C81)
+                      : const Color(0xFFC28518));
+
+            final indexVerso = _versiculos.indexWhere(
+              (v) => v['verse'] == versoTarget,
+            );
+            if (indexVerso > 0 && _scrollController.hasClients) {
+              final double posicionAprox = (indexVerso * 90.0).clamp(
+                0.0,
+                _scrollController.position.maxScrollExtent,
+              );
+              _scrollController.animateTo(
+                posicionAprox,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+              );
+            }
+
+            if (_debeAutoPlay) {
+              _debeAutoPlay = false;
+              _abrirReproductorYouTube(
+                screenWidth,
+                usableHeight,
+                colorHeader,
+                colorAcento,
+              );
+            }
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -181,6 +266,273 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     }
   }
 
+  void _cambiarModoLectura(BibliaProvider provider) {
+    switch (provider.modoLectura) {
+      case ModoLectura.calido:
+        provider.actualizarModoLectura(ModoLectura.suave);
+        _mostrarMensaje('Modo Claro Suave');
+        break;
+      case ModoLectura.suave:
+        provider.actualizarModoLectura(ModoLectura.noche);
+        _mostrarMensaje('Modo Lectura Nocturna');
+        break;
+      case ModoLectura.noche:
+        provider.actualizarModoLectura(ModoLectura.calido);
+        _mostrarMensaje('Modo Papiro Cálido');
+        break;
+    }
+  }
+
+  void _mostrarMensaje(String texto) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          texto,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          textAlign: TextAlign.center,
+        ),
+        duration: const Duration(milliseconds: 900),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        width: 220,
+      ),
+    );
+  }
+
+  // =========================================================
+  // MODAL DE AJUSTES DE LECTURA (SINCRONIZADO CON PROVIDER)
+  // =========================================================
+  void _mostrarOpcionesDeLectura(
+    double screenWidth,
+    double usableHeight,
+    Color azulFondo,
+    Color amarilloOro,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFFFAF7F0),
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
+        ),
+      ),
+      builder: (ctx) {
+        return Consumer<BibliaProvider>(
+          builder: (context, provider, child) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: screenWidth * 0.06,
+                right: screenWidth * 0.06,
+                top: usableHeight * 0.025,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Ajustes de lectura',
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: azulFondo,
+                          size: screenWidth * 0.06,
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: usableHeight * 0.02),
+                  Text(
+                    'Tamaño de letra',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: usableHeight * 0.01),
+                  Row(
+                    children: [
+                      Text(
+                        'A',
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: provider.fontScale,
+                          min: 0.8,
+                          max: 2.0,
+                          divisions: 12,
+                          activeColor: amarilloOro,
+                          inactiveColor: Colors.grey.shade300,
+                          onChanged: (val) {
+                            provider.actualizarAjustesVisuales(
+                              val,
+                              provider.selectedFont,
+                            );
+                          },
+                        ),
+                      ),
+                      Text(
+                        'A',
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.07,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: usableHeight * 0.02),
+                  Text(
+                    'Tipo de fuente',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: usableHeight * 0.015),
+                  Wrap(
+                    spacing: screenWidth * 0.02,
+                    runSpacing: usableHeight * 0.01,
+                    children: _fuentesDisponibles.map((font) {
+                      final isSelected = provider.selectedFont == font;
+                      return ChoiceChip(
+                        label: Text(
+                          font,
+                          style: TextStyle(
+                            color: isSelected
+                                ? azulFondo
+                                : Colors.grey.shade700,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            fontSize: screenWidth * 0.035,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: amarilloOro.withValues(alpha: 0.3),
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.03,
+                          ),
+                          side: BorderSide(
+                            color: isSelected
+                                ? amarilloOro
+                                : Colors.grey.shade300,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          if (selected) {
+                            provider.actualizarAjustesVisuales(
+                              provider.fontScale,
+                              font,
+                            );
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(height: usableHeight * 0.02),
+                  Text(
+                    'Modo de lectura',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: usableHeight * 0.015),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          avatar: const Icon(
+                            Icons.wb_incandescent_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Papiro'),
+                          selected: provider.modoLectura == ModoLectura.calido,
+                          selectedColor: const Color(0xFFC28518)
+                              .withValues(alpha: 0.25),
+                          backgroundColor: Colors.white,
+                          onSelected: (selected) {
+                            if (selected) {
+                              provider.actualizarModoLectura(
+                                ModoLectura.calido,
+                              );
+                              Navigator.pop(ctx);
+                              _mostrarMensaje('Modo Papiro Cálido');
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          avatar: const Icon(Icons.wb_sunny_rounded, size: 18),
+                          label: const Text('Claro'),
+                          selected: provider.modoLectura == ModoLectura.suave,
+                          selectedColor: const Color(0xFF0F4C81)
+                              .withValues(alpha: 0.2),
+                          backgroundColor: Colors.white,
+                          onSelected: (selected) {
+                            if (selected) {
+                              provider.actualizarModoLectura(ModoLectura.suave);
+                              Navigator.pop(ctx);
+                              _mostrarMensaje('Modo Claro Suave');
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          avatar: const Icon(Icons.nightlight_round, size: 18),
+                          label: const Text('Noche'),
+                          selected: provider.modoLectura == ModoLectura.noche,
+                          selectedColor: const Color(0xFFF59E0B)
+                              .withValues(alpha: 0.25),
+                          backgroundColor: Colors.white,
+                          onSelected: (selected) {
+                            if (selected) {
+                              provider.actualizarModoLectura(ModoLectura.noche);
+                              Navigator.pop(ctx);
+                              _mostrarMensaje('Modo Lectura Nocturna');
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: usableHeight * 0.04),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // =========================================================
   // LOGICA DEL REPRODUCTOR OPTIMIZADA CON SQLITE
   // =========================================================
@@ -190,14 +542,12 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     Color azulFondo,
     Color amarilloOro,
   ) async {
-    // 1. VERIFICACIÓN DE INTERNET REAL
     final tieneInternet = await _hasRealInternet();
-
     if (!tieneInternet) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: const Color(0xFFC0392B), // Rojo de alerta
+          backgroundColor: const Color(0xFFC0392B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -225,16 +575,14 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
           duration: const Duration(seconds: 3),
         ),
       );
-      return; // Detenemos la ejecución aquí si no hay internet
+      return;
     }
 
-    // 2. Consulta a la Base de Datos para traer tiempos exactos
     final dataCapitulo = await DatabaseHelper.instance.getCapitulo(
       _libroNombre,
       _capituloActual,
     );
 
-    // Verificamos si existe el libro/capítulo en la BD
     if (dataCapitulo == null ||
         dataCapitulo['video_id'] == null ||
         dataCapitulo['video_id'].toString().isEmpty) {
@@ -271,7 +619,6 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
       return;
     }
 
-    // 3. Extraer valores exactos y limpios de la base de datos
     final String videoId = dataCapitulo['video_id'] as String;
     final int startSeconds = dataCapitulo['start_seconds'] as int;
     final int endSeconds = dataCapitulo['end_seconds'] as int;
@@ -306,11 +653,9 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
       builder: (ctx) {
         listenerCapitulo = () {
           if (_youtubeController == null || capituloTerminado) return;
-
           final int posicionActual =
               _youtubeController!.value.position.inSeconds;
 
-          // Verifica finalización exacta desde SQLite
           if (posicionActual >= endSeconds && endSeconds > startSeconds) {
             capituloTerminado = true;
             _youtubeController?.pause();
@@ -353,7 +698,7 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                         ),
                         SizedBox(width: screenWidth * 0.025),
                         Text(
-                          '$_libroNombre $_capituloActual (Audio)',
+                          '$_libroNombre $_capituloActual (Audio Dramatizado)',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.042,
@@ -700,35 +1045,86 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
       },
     );
   }
-  //
-  //--------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    // Escucha directa del estado global en BibliaProvider
+    final provider = Provider.of<BibliaProvider>(context);
+    final fontScale = provider.fontScale;
+    final selectedFont = provider.selectedFont;
+
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
-    const Color azulFondo = Color(0xFF072B4F);
-    const Color amarilloOro = Color(0xFFE5A023);
-    const Color grisBorde = Color(0xFFE5E5E5);
+
+    // Configuración cromática según el modo de lectura (pensado para no fatigar ojos cansados)
+    final Color colorTarjeta;
+    final Color colorTextoPrincipal;
+    final Color colorTextoSecundario;
+    final Color colorAcento;
+    final Color colorBorde;
+    final Color colorHeader;
+    final Color colorHeaderTexto;
+    final Color colorBottomNav;
+
+    switch (provider.modoLectura) {
+      case ModoLectura.calido:
+        colorTarjeta = const Color(0xFFF9F5EC); // Tono papiro/crema cálido
+        colorTextoPrincipal = const Color(0xFF26211C); // Carbón cálido suave
+        colorTextoSecundario = const Color(0xFF5D5347);
+        colorAcento = const Color(0xFFC28518);
+        colorBorde = const Color(0xFFE9E0CF);
+        colorHeader = const Color(0xFF072B4F);
+        colorHeaderTexto = Colors.white;
+        colorBottomNav = const Color(0xFFFAF7F0);
+        break;
+      case ModoLectura.suave:
+        colorTarjeta = const Color(0xFFF4F6F9);
+        colorTextoPrincipal = const Color(0xFF1E293B);
+        colorTextoSecundario = const Color(0xFF64748B);
+        colorAcento = const Color(0xFF0F4C81);
+        colorBorde = const Color(0xFFE2E8F0);
+        colorHeader = const Color(0xFF072B4F);
+        colorHeaderTexto = Colors.white;
+        colorBottomNav = const Color(0xFFFAF7F0);
+        break;
+      case ModoLectura.noche:
+        colorTarjeta = const Color(
+          0xFF0E1721,
+        ); // Fondo noche profundo para descanso visual
+        colorTextoPrincipal = const Color(
+          0xFFE2E8F0,
+        ); // Texto suavemente contrastado
+        colorTextoSecundario = const Color(0xFF94A3B8);
+        colorAcento = const Color(0xFFF59E0B);
+        colorBorde = const Color(0xFF27384E);
+        colorHeader = const Color(0xFF162231);
+        colorHeaderTexto = const Color(0xFFE2E8F0);
+        colorBottomNav = const Color(0xFF162231);
+        break;
+    }
+
+    final bool esNoche = provider.modoLectura == ModoLectura.noche;
 
     return Scaffold(
-      backgroundColor: azulFondo,
+      backgroundColor: colorHeader,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _abrirReproductorYouTube(
           screenWidth,
           usableHeight,
-          azulFondo,
-          amarilloOro,
+          colorHeader,
+          colorAcento,
         ),
-        backgroundColor: azulFondo,
+        backgroundColor: esNoche
+            ? const Color(0xFF1E293B)
+            : const Color(0xFF072B4F),
         shape: const CircleBorder(),
         elevation: 4,
-        child: const Icon(
+        child: Icon(
           Icons.play_arrow_rounded,
-          color: Colors.white,
+          color: esNoche ? colorAcento : Colors.white,
           size: 35,
         ),
       ),
@@ -736,9 +1132,12 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
       bottomNavigationBar: _buildBottomNavigationBar(
         screenWidth,
         usableHeight,
-        azulFondo,
-        amarilloOro,
-        grisBorde,
+        colorHeader,
+        colorAcento,
+        colorBorde,
+        colorBottomNav,
+        colorTextoPrincipal,
+        esNoche,
       ),
       body: SafeArea(
         bottom: false,
@@ -751,69 +1150,116 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                 width: screenWidth,
                 padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.05,
-                  vertical: usableHeight * 0.015,
+                  vertical: usableHeight * 0.01,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        color: Colors.white,
-                        size: screenWidth * 0.085,
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(
-                            '$_libroNombre $_capituloActual',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: screenWidth * 0.065,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: usableHeight * 0.005),
-                          Text(
-                            _subtitulo,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: screenWidth * 0.045,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Fila superior: Botón de regreso a la izquierda y gestión de tema/lectura a la derecha
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
+                          tooltip: 'Regresar',
+                          onPressed: () => Navigator.pop(context),
                           icon: Icon(
-                            _isBookmarkActive
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
-                            color: _isBookmarkActive
-                                ? amarilloOro
-                                : Colors.white,
-                            size: screenWidth * 0.07,
+                            Icons.chevron_left_rounded,
+                            color: colorHeaderTexto,
+                            size: screenWidth * 0.085,
                           ),
-                          onPressed: _toggleFavorito,
                         ),
-                        SizedBox(width: screenWidth * 0.03),
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(
-                            Icons.more_vert_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.07,
+                        // Iconos de gestión de tema y configuración
+                        Row(
+                          children: [
+                            // Botón alternar modo de lectura (Papiro / Claro / Noche)
+                            IconButton(
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Cambiar tono de lectura',
+                              icon: Icon(
+                                provider.modoLectura == ModoLectura.noche
+                                    ? Icons.nightlight_round
+                                    : provider.modoLectura == ModoLectura.calido
+                                    ? Icons.wb_incandescent_outlined
+                                    : Icons.wb_sunny_rounded,
+                                color: colorAcento,
+                                size: screenWidth * 0.065,
+                              ),
+                              onPressed: () => _cambiarModoLectura(provider),
+                            ),
+                            SizedBox(width: screenWidth * 0.03),
+                            IconButton(
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              tooltip: 'Opciones de lectura',
+                              icon: Icon(
+                                Icons.text_format_rounded,
+                                color: colorHeaderTexto,
+                                size: screenWidth * 0.07,
+                              ),
+                              onPressed: () => _mostrarOpcionesDeLectura(
+                                screenWidth,
+                                usableHeight,
+                                colorHeader,
+                                colorAcento,
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.03),
+                            IconButton(
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              tooltip: _isBookmarkActive
+                                  ? 'Quitar de favoritos'
+                                  : 'Añadir a favoritos',
+                              icon: Icon(
+                                _isBookmarkActive
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                color: _isBookmarkActive
+                                    ? colorAcento
+                                    : colorHeaderTexto,
+                                size: screenWidth * 0.07,
+                              ),
+                              onPressed: _toggleFavorito,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: usableHeight * 0.008),
+                    // Línea inferior: Nombre del libro y número de capítulo
+                    Column(
+                      children: [
+                        Text(
+                          '$_libroNombre $_capituloActual',
+                          style: _getFontStyle(
+                            TextStyle(
+                              color: colorHeaderTexto,
+                              fontSize: screenWidth * 0.065,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
+                            selectedFont,
                           ),
-                          onPressed: () {},
+                          textAlign: TextAlign.center,
                         ),
+                        if (_subtitulo.isNotEmpty) ...[
+                          SizedBox(height: usableHeight * 0.004),
+                          Text(
+                            _subtitulo,
+                            style: _getFontStyle(
+                              TextStyle(
+                                color: esNoche
+                                    ? colorTextoSecundario
+                                    : colorHeaderTexto.withValues(alpha: 0.75),
+                                fontSize: screenWidth * 0.042,
+                              ),
+                              selectedFont,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -823,9 +1269,9 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
               Expanded(
                 child: Container(
                   width: screenWidth,
-                  decoration: const BoxDecoration(
-                    color: Color.fromARGB(255, 243, 241, 237),
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: colorTarjeta,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(32),
                       topRight: Radius.circular(32),
                     ),
@@ -836,8 +1282,10 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                       topRight: Radius.circular(32),
                     ),
                     child: _isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(color: azulFondo),
+                        ? Center(
+                            child: CircularProgressIndicator(
+                              color: colorAcento,
+                            ),
                           )
                         : _errorMessage != null
                         ? Center(
@@ -850,8 +1298,8 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                               textAlign: TextAlign.center,
                             ),
                           )
-                        //-------------------------
                         : ListView.separated(
+                            controller: _scrollController,
                             physics: const BouncingScrollPhysics(),
                             padding: EdgeInsets.fromLTRB(
                               screenWidth * 0.06,
@@ -870,24 +1318,67 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                                     RegExp(r'<[^>]*>'),
                                     '',
                                   );
+                              final baseFontSize =
+                                  (screenWidth * 0.052) * fontScale;
+                              final numberFontSize =
+                                  (screenWidth * 0.048) * fontScale;
+
                               return RichText(
                                 text: TextSpan(
                                   children: [
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () => _abrirReproductorYouTube(
+                                          screenWidth,
+                                          usableHeight,
+                                          colorHeader,
+                                          colorAcento,
+                                        ),
+                                        child: Container(
+                                          margin: EdgeInsets.only(
+                                            right: screenWidth * 0.015,
+                                            bottom: 2.0,
+                                          ),
+                                          padding: EdgeInsets.all(
+                                            screenWidth * 0.012,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorAcento.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.play_arrow_rounded,
+                                            size: numberFontSize * 0.88,
+                                            color: colorAcento,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                     TextSpan(
                                       text: '$numVerso) ',
-                                      style: TextStyle(
-                                        color: azulFondo,
-                                        fontSize: screenWidth * 0.048,
-                                        fontWeight: FontWeight.bold,
+                                      style: _getFontStyle(
+                                        TextStyle(
+                                          color: colorAcento,
+                                          fontSize: numberFontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        selectedFont,
                                       ),
                                     ),
                                     TextSpan(
                                       text: textoLimpio,
-                                      style: TextStyle(
-                                        color: const Color(0xFF222222),
-                                        fontSize: screenWidth * 0.065,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.45,
+                                      style: _getFontStyle(
+                                        TextStyle(
+                                          color: colorTextoPrincipal,
+                                          fontSize: baseFontSize,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.45,
+                                        ),
+                                        selectedFont,
                                       ),
                                     ),
                                   ],
@@ -911,11 +1402,19 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     Color azulFondo,
     Color amarilloOro,
     Color grisBorde,
+    Color colorBottomNav,
+    Color colorTextoPrincipal,
+    bool esNoche,
   ) {
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    final Color colorBoton = esNoche ? colorTextoPrincipal : azulFondo;
+    final Color colorDeshabilitado = esNoche
+        ? Colors.grey.shade600
+        : Colors.grey.shade400;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFAF7F0),
+        color: colorBottomNav,
         border: Border(top: BorderSide(color: grisBorde, width: 1)),
       ),
       padding: EdgeInsets.only(
@@ -930,7 +1429,7 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
           _buildBottomNavButton(
             icon: Icons.chevron_left_rounded,
             label: 'Anterior',
-            color: _capituloActual > 1 ? azulFondo : Colors.grey.shade400,
+            color: _capituloActual > 1 ? colorBoton : colorDeshabilitado,
             screenWidth: screenWidth,
             onTap: _capituloActual > 1
                 ? () => _cambiarCapitulo(_capituloActual - 1)
@@ -939,7 +1438,7 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
           _buildBottomNavButton(
             icon: Icons.edit_note_rounded,
             label: 'Nota',
-            color: azulFondo,
+            color: colorBoton,
             screenWidth: screenWidth,
             onTap: () => _mostrarModalCrearNota(
               context,
@@ -952,7 +1451,7 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
           _buildBottomNavButton(
             icon: Icons.share_outlined,
             label: 'Compartir',
-            color: azulFondo,
+            color: colorBoton,
             screenWidth: screenWidth,
             onTap: () => _mostrarModalCompartir(
               context,
@@ -966,8 +1465,8 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
             icon: Icons.chevron_right_rounded,
             label: 'Siguiente',
             color: _capituloActual < _totalCapitulos
-                ? azulFondo
-                : Colors.grey.shade400,
+                ? colorBoton
+                : colorDeshabilitado,
             isIconRight: true,
             screenWidth: screenWidth,
             onTap: _capituloActual < _totalCapitulos

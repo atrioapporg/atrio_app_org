@@ -1,9 +1,24 @@
 import 'package:atrio/servicios/bible_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-//
+enum ModoLectura {
+  calido,
+  suave,
+  noche,
+}
+
 class BibliaProvider with ChangeNotifier {
   final BibleService _bibleService = BibleService();
+
+  // Modos y ajustes visuales de lectura
+  ModoLectura _modoLectura = ModoLectura.calido;
+  double _fontScale = 1.0;
+  String _selectedFont = 'Inter';
+
+  ModoLectura get modoLectura => _modoLectura;
+  double get fontScale => _fontScale;
+  String get selectedFont => _selectedFont;
 
   // Versiones disponibles en Bolls Life
   final Map<String, String> _versionesDisponibles = {
@@ -104,7 +119,46 @@ class BibliaProvider with ChangeNotifier {
   };
 
   BibliaProvider() {
+    _cargarAjustesLectura();
     cargarVersiculoDelDia();
+  }
+
+  void actualizarModoLectura(ModoLectura modo) {
+    _modoLectura = modo;
+    _guardarAjustesLectura();
+    notifyListeners();
+  }
+
+  void actualizarAjustesVisuales(double fontScale, String font) {
+    _fontScale = fontScale;
+    _selectedFont = font;
+    _guardarAjustesLectura();
+    notifyListeners();
+  }
+
+  Future<void> _cargarAjustesLectura() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _fontScale = prefs.getDouble('lectura_font_scale') ?? 1.0;
+      _selectedFont = prefs.getString('lectura_selected_font') ?? 'Inter';
+      final modoStr = prefs.getString('lectura_modo_lectura');
+      if (modoStr != null) {
+        _modoLectura = ModoLectura.values.firstWhere(
+          (m) => m.name == modoStr,
+          orElse: () => ModoLectura.calido,
+        );
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _guardarAjustesLectura() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('lectura_font_scale', _fontScale);
+      await prefs.setString('lectura_selected_font', _selectedFont);
+      await prefs.setString('lectura_modo_lectura', _modoLectura.name);
+    } catch (_) {}
   }
 
   Future<void> cambiarVersion(String nuevaVersion) async {

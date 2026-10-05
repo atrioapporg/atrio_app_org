@@ -173,7 +173,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                   child: Container(
                     padding: EdgeInsets.all(screenWidth * 0.02),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.45),
+                      color: Colors.black.withValues(alpha: 0.45),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(

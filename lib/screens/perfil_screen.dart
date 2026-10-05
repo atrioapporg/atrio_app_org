@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 
 // Importación de las pantallas para obtener sus static const routeName
 import '../data/atrio_database_helper.dart';
+import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import 'biblia_screen.dart';
 import 'donaciones_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'seguimiento_solicitud_screen.dart';
-import 'seleccionar_iglesia_screen.dart';
+import 'tradicion_cristiana_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   static const routeName = 'perfil_screen';
@@ -36,7 +37,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   // Carga los datos directamente desde atrio.db
   Future<void> _cargarDatosUsuario() async {
-    setState(() => _isLoading = true);
     final data = await AtrioDatabaseHelper.instance.getUsuario();
     if (mounted) {
       setState(() {
@@ -63,13 +63,31 @@ class _PerfilScreenState extends State<PerfilScreen> {
       );
     }
 
-    // Extracción segura de los datos de SQLite
+    // Escuchamos el estado reactivo de IglesiaProvider
+    final iglesiaProvider = Provider.of<IglesiaProvider>(context);
+
+    // Extracción segura de los datos de SQLite o del Provider de Iglesia
     final String nombre = _usuarioData?['nombre'] ?? 'Usuario';
     final String inicial = nombre.trim().isNotEmpty
         ? nombre.trim()[0].toUpperCase()
         : 'U';
-    final String iglesia =
-        _usuarioData?['iglesia_nombre'] ?? 'Sin iglesia seleccionada';
+
+    final String? nombreProvider =
+        (iglesiaProvider.tieneIglesiaGuardada &&
+            iglesiaProvider.iglesiaActual != null)
+        ? iglesiaProvider.iglesiaActual!.nombre.trim()
+        : null;
+
+    final String? nombreSqlite = (_usuarioData?['iglesia_nombre'] as String?)
+        ?.trim();
+
+    final String iglesia = (nombreProvider != null && nombreProvider.isNotEmpty)
+        ? nombreProvider
+        : ((nombreSqlite != null &&
+                  nombreSqlite.isNotEmpty &&
+                  nombreSqlite != 'Sin iglesia seleccionada')
+              ? nombreSqlite
+              : 'Sin iglesia seleccionada');
 
     return Container(
       color: blancoFondo,
@@ -130,12 +148,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           context,
                           screenWidth,
                           usableHeight,
+                          iglesiaActual: iglesia,
                         ),
                       ),
                       const _MenuItemData(
                         icon: Icons.church_outlined,
                         label: 'Cambiar de iglesia',
-                        route: SeleccionarIglesiaScreen.routeName,
+                        route: TradicionCristianaScreen.routeName,
                       ),
                       const _MenuItemData(
                         icon: Icons.notifications_none_rounded,
@@ -188,8 +207,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
   void _mostrarDialogoEditarDatos(
     BuildContext context,
     double screenWidth,
-    double usableHeight,
-  ) {
+    double usableHeight, {
+    String? iglesiaActual,
+  }) {
     final formKey = GlobalKey<FormState>();
     final nombreCtrl = TextEditingController(
       text: _usuarioData?['nombre'] ?? '',
@@ -198,9 +218,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final telefonoCtrl = TextEditingController(
       text: _usuarioData?['celular'] ?? '',
     );
-    final iglesiaCtrl = TextEditingController(
-      text: _usuarioData?['iglesia_nombre'] ?? '',
-    );
+    final String defaultIglesia =
+        (iglesiaActual != null &&
+            iglesiaActual.isNotEmpty &&
+            iglesiaActual != 'Sin iglesia seleccionada')
+        ? iglesiaActual
+        : (_usuarioData?['iglesia_nombre'] ?? '');
+
+    final iglesiaCtrl = TextEditingController(text: defaultIglesia);
 
     showDialog(
       context: context,
@@ -320,6 +345,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(dialogCtx);
+                  final String nuevaIglesia = iglesiaCtrl.text.trim();
+
                   // Guardamos en SQLite
                   await AtrioDatabaseHelper.instance.guardarUsuario({
                     if (_usuarioData != null && _usuarioData!['id'] != null)
@@ -327,20 +356,24 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     'nombre': nombreCtrl.text.trim(),
                     'email': emailCtrl.text.trim(),
                     'celular': telefonoCtrl.text.trim(),
-                    'iglesia_nombre': iglesiaCtrl.text.trim(),
+                    'iglesia_nombre': nuevaIglesia,
                     if (_usuarioData != null &&
                         _usuarioData!['fe_religiosa'] != null)
                       'fe_religiosa': _usuarioData!['fe_religiosa'],
                   });
 
-                  if (!mounted) return;
-                  Navigator.pop(dialogCtx);
+                  if (nuevaIglesia.isNotEmpty) {
+                    await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+                      nuevaIglesia,
+                    );
+                  }
+
+                  navigator.pop();
 
                   // Refrescamos la UI
                   await _cargarDatosUsuario();
 
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       backgroundColor: azulFondo,
                       content: Text(

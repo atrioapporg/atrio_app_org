@@ -1,7 +1,7 @@
 name: atrio
 description: "Vive tu Fe en comunidad"
-publish_to: 'none'
-version: 0.1.0+1
+publish_to: "none"
+version: 0.1.0+2
 
 environment:
   sdk: ^3.13.0
@@ -19,8 +19,8 @@ dependencies:
   provider: ^6.1.2
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.2
-  google_sign_in: ^5.4.0  
-  flutter_facebook_auth: ^7.2.0  
+  google_sign_in: ^5.4.0
+  flutter_facebook_auth: ^7.2.0
   http: ^1.6.0
   flutter_launcher_icons: ^0.14.4
   youtube_player_flutter: ^9.1.1
@@ -39,7 +39,7 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   build_runner: ^2.12.0
-  flutter_native_splash: ^2.0.5 
+  flutter_native_splash: ^2.0.5
   flutter_gen_runner: ^5.3.2
 
 flutter:
@@ -47,18 +47,17 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/icons/
+    - assets/icon/
     - assets/data/
     - assets/audio/
     - assets/json/
-    - assets/database/ 
+    - assets/database/
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/icons/icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
-
 
 flutter_native_splash:
   # This package generates native code to customize Flutter's default white native splash screen
@@ -84,22 +83,22 @@ flutter_native_splash:
   # configured specifically in the android_12 section below, at the very end.
 
   #======================================================================
-  
+
   # uncomment this if you want to disable this package for specific platform:
   # android: false
   # ios: false
   # web: false
-  
+
   #======================================================================
 
   #! FOR ALL PLATFORM, except Android 12+:
 
   # general color for all platform (except android 12+):
   # see there only 2 lines in all parameters that marked as [required], so others
-  # remain optional. NOTE that if you specify the [required] color, then you cant 
+  # remain optional. NOTE that if you specify the [required] color, then you cant
   # use the [required] background_image in the next section. the reverse is true.
   # select one, they cant work together.
-  color: "#42a5f5"  ##====================================[REQUIRED]==========
+  color: "#42a5f5" ##====================================[REQUIRED]==========
   #color_dark: "#042a49"
   # platform-specific color. will override general color if active:
   #color_android: "#42a5f5"
@@ -110,7 +109,7 @@ flutter_native_splash:
   #color_dark_web: "#042a49"
 
   # general background_image for all platform (except android 12+)
-  # if you specify this [required] background_image, then you should comment the 
+  # if you specify this [required] background_image, then you should comment the
   # [required] color in previous section. select one, they cant work together.
   #background_image:      "assets/background.png" #========[REQUIRED]============
   #background_image_dark: "assets/dark-background.png"
@@ -125,7 +124,7 @@ flutter_native_splash:
   # general image for all platform (except android 12+):
   # allows you to specify an image used in the splash screen. It must be a
   # png file and should be sized for 4x pixel density.
-  image:                assets/images/splash-screen.png
+  image: assets/images/splash-screen.png
   #image_dark:          assets/splash-invert.png
   # platform-specific image. will override general image if active:
   #image_android:       assets/splash-android.png
@@ -133,17 +132,17 @@ flutter_native_splash:
   #image_ios:           assets/splash-ios.png
   #image_dark_ios:      assets/splash-invert-ios.png
   #image_web:           assets/splash-web.gif
-  #image_dark_web:      assets/splash-invert-web.gif  
+  #image_dark_web:      assets/splash-invert-web.gif
 
   # image alignment (default center if not specified, or speccified something else):
-  android_gravity: fill       # bottom, center, center_horizontal, center_vertical, 
+  android_gravity: fill # bottom, center, center_horizontal, center_vertical,
   # clip_horizontal, clip_vertical, end, fill, fill_horizontal, fill_vertical, left, right, start, top. could also be a combination like `android_gravity: fill|clip_vertical`
   # This will fill the width while maintaining the image's vertical aspect ratio.
   # visit https://developer.android.com/reference/android/view/Gravity
-  ios_content_mode: scaleAspectFill      # scaleToFill, scaleAspectFit, scaleAspectFill, 
+  ios_content_mode: scaleAspectFill # scaleToFill, scaleAspectFit, scaleAspectFill,
   # center, top, bottom, left, right, topLeft, topRight, bottomLeft, or bottomRight.
   # visit https://developer.apple.com/documentation/uikit/uiview/contentmode
-  web_image_mode: cover        # center, contain, stretch, cover
+  web_image_mode: cover # center, contain, stretch, cover
 
   # general branding for all platform (except android 12+):
   # allows you to specify an image used as branding in the splash screen. should be png.
@@ -158,7 +157,7 @@ flutter_native_splash:
   #branding_dark_web:     assets/dart_dark-web.gif
 
   # branding position:
-  # you can use bottom, bottomRight, and bottomLeft. The default values is 
+  # you can use bottom, bottomRight, and bottomLeft. The default values is
   # bottom if not specified or specified something else.
   #branding_mode: bottom                # default bottom
   #branding_bottom_padding: 24          # default 0
@@ -175,14 +174,14 @@ flutter_native_splash:
   # merge/remove certain styles and drawables.
   #android_min_sdk: 24  # default 16
 
-  # hide notif bar on android. ios already hides it by default. 
+  # hide notif bar on android. ios already hides it by default.
   # Has no effect in web since web has no notification bar.
-  fullscreen: true                # default false
+  fullscreen: true # default false
   # if you dont want to hide notif bar, for android just set this to false,
   # but for ios, add this to your flutter main():
-  # WidgetsFlutterBinding.ensureInitialized(); 
+  # WidgetsFlutterBinding.ensureInitialized();
   # SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top], );
-    
+
   #! extra note for IOS:
   # If you have changed the name(s) of your info.plist file(s), you can specify the filename(s)
   # with the info_plist_files parameter.  Remove only the # characters in the three lines below,
@@ -195,7 +194,7 @@ flutter_native_splash:
 
   # what we did above won't affect Android 12 and newer at all. they have different
   # handling concept. visit https://developer.android.com/guide/topics/ui/splash-screen
-  
+
   #! ANDROID 12+ configuration:
   android_12:
     # background color
@@ -203,13 +202,13 @@ flutter_native_splash:
     # color_dark: "#042a49"
 
     # center-logo
-    # If this parameter is not specified, the app's launcher icon will be used instead. 
-    # Please note that the splash screen will be clipped to a circle on the center of the screen. 
-    # with background: 960×960 px (fit within circle 640px in diameter)    
+    # If this parameter is not specified, the app's launcher icon will be used instead.
+    # Please note that the splash screen will be clipped to a circle on the center of the screen.
+    # with background: 960×960 px (fit within circle 640px in diameter)
     # without background: 1152×1152 px (fit within circle 768px in diameter)
-    # ensure that the most important design elements of your image are placed within a circular area 
-    image: assets/images/logo.png    
-    # image_dark: assets/images/logo/logo-splash2.png  
+    # ensure that the most important design elements of your image are placed within a circular area
+    image: assets/images/logo.png
+    # image_dark: assets/images/logo/logo-splash2.png
 
     # center-logo background color
     icon_background_color: "#111111"
@@ -217,5 +216,5 @@ flutter_native_splash:
 
     # branding:
     # The branding image dimensions must be 800x320 px.
-    #branding:      assets/dart.png      
+    #branding:      assets/dart.png
     #branding_dark: assets/dart_dark.png

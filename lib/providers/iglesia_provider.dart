@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // <--- Importante
 
+import '../data/atrio_database_helper.dart';
 import '../modelos/iglesia_model.dart';
 
 //
@@ -35,6 +36,14 @@ class IglesiaProvider extends ChangeNotifier {
       // Actualizamos la variable en memoria y notificamos a la pantalla
       final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
       _iglesiaActual = IglesiaModel.fromJson(jsonMap);
+
+      // Sincronizamos con SQLite (tabla usuario -> columna iglesia_nombre)
+      final String? nombre =
+          _iglesiaActual?.nombre ?? (jsonMap['nombre'] as String?);
+      if (nombre != null && nombre.trim().isNotEmpty) {
+        await AtrioDatabaseHelper.instance.guardarIglesiaNombre(nombre.trim());
+      }
+
       //
       notifyListeners();
     } catch (e) {
@@ -62,6 +71,13 @@ class IglesiaProvider extends ChangeNotifier {
         final Map<String, dynamic> jsonMap =
             jsonDecode(jsonGuardado) as Map<String, dynamic>;
         _iglesiaActual = IglesiaModel.fromJson(jsonMap);
+
+        // Auto-sincronizar con SQLite si ya había una iglesia guardada
+        if (_iglesiaActual != null &&
+            _iglesiaActual!.nombre.trim().isNotEmpty) {
+          AtrioDatabaseHelper.instance
+              .guardarIglesiaNombre(_iglesiaActual!.nombre.trim());
+        }
       } else {
         _tieneIglesiaGuardada = false; // <--- AGREGA ESTA LÍNEA
         final String jsonString = await rootBundle.loadString(

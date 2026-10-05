@@ -199,6 +199,26 @@ class AtrioDatabaseHelper {
     }
   }
 
+  /// Guarda o actualiza el nombre de la iglesia del usuario en la tabla 'usuario'
+  Future<int> guardarIglesiaNombre(String iglesiaNombre) async {
+    final db = await instance.database;
+    final usuario = await getUsuario();
+    if (usuario != null) {
+      return await db.update(
+        tableUsuario,
+        {'iglesia_nombre': iglesiaNombre},
+        where: 'id = ?',
+        whereArgs: [usuario['id']],
+      );
+    } else {
+      return await db.insert(tableUsuario, {
+        'nombre': 'Usuario',
+        'iglesia_nombre': iglesiaNombre,
+        'creado_en': DateTime.now().toIso8601String(),
+      });
+    }
+  }
+
   // ============================================================
   // MÉTODOS CRUD: CONFIG_ATRIO
   // ============================================================

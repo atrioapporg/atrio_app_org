@@ -649,7 +649,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
       child: Container(
         height: usableHeight * 0.065,
         decoration: BoxDecoration(
-          color: isSelected ? azulFondo.withOpacity(0.05) : Colors.white,
+          color: isSelected ? azulFondo.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
             color: isSelected ? amarilloOro : grisBorde,
@@ -710,12 +710,12 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
               color: azulFondo,
               borderRadius: BorderRadius.circular(screenWidth * 0.035),
               border: Border.all(
-                color: amarilloOro.withOpacity(0.5),
+                color: amarilloOro.withValues(alpha: 0.5),
                 width: 3.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withValues(alpha: 0.25),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -726,7 +726,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                 Container(
                   padding: EdgeInsets.all(screenWidth * 0.018),
                   decoration: BoxDecoration(
-                    color: amarilloOro.withOpacity(0.2),
+                    color: amarilloOro.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -881,7 +881,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                         'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: azulFondo.withOpacity(0.8),
+                          color: azulFondo.withValues(alpha: 0.8),
                           fontSize: screenWidth * 0.032,
                           fontWeight: FontWeight.w500,
                         ),
@@ -937,7 +937,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                             Container(
                               padding: EdgeInsets.all(screenWidth * 0.018),
                               decoration: BoxDecoration(
-                                color: amarilloOro.withOpacity(0.2),
+                                color: amarilloOro.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -1002,7 +1002,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
         border: Border.all(color: grisBorde),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1015,7 +1015,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
             width: screenWidth * 0.30,
             height: screenWidth * 0.20,
             decoration: BoxDecoration(
-              color: colorLogo.withOpacity(0.12),
+              color: colorLogo.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(screenWidth * 0.025),
             ),
             child: Center(

@@ -17,7 +17,7 @@ class _InicioSesionScreenState extends State {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isPasswordVisible = false;
-  bool _isLoginTab = true;
+  final bool _isLoginTab = true;
 
   @override
   void dispose() {

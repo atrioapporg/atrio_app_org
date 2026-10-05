@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -452,7 +453,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   // vinculación (ej. OdooClient.create('atrio.church', {...})) y usar el ID
   // que devuelva el backend en vez de _generarIdLocal().
   // ---------------------------------------------------------------------
-  void _registrarIglesia(Map<String, dynamic> datos) {
+  Future<void> _registrarIglesia(Map<String, dynamic> datos) async {
     final Map<String, dynamic> datosParaGuardar = {
       "id": _generarIdLocal(),
       "nombre": datos['nombre'],
@@ -490,8 +491,14 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
 
     final String jsonString = jsonEncode(datosParaGuardar);
     final provider = Provider.of<IglesiaProvider>(context, listen: false);
-    provider.guardarIglesiaLocal(jsonString);
+    await provider.guardarIglesiaLocal(jsonString);
 
+    final String nombreIglesia = datos['nombre']?.toString().trim() ?? '';
+    if (nombreIglesia.isNotEmpty) {
+      await AtrioDatabaseHelper.instance.guardarIglesiaNombre(nombreIglesia);
+    }
+
+    if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(
       context,
       'inicio_atrio_screen',

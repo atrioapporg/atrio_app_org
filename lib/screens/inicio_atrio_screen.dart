@@ -151,7 +151,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
-    const Color azulFondo = Color(0xFF072B4F);
+    const Color azulFondo = Color(0xFF072B4F); //
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFEFEFEF);
@@ -263,7 +263,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     height: usableHeight * 0.08,
                     child: Center(
                       child: Image.asset(
-                        'assets/images/logo_encabezado_sinfondo.png',
+                        'assets/images/logo_encabezado.png',
                         height: usableHeight * 0.060,
                         fit: BoxFit.contain,
                       ),
@@ -340,7 +340,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                         vertical: usableHeight * 0.008,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(
                           screenWidth * 0.025,
                         ),

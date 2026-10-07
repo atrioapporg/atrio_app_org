@@ -66,54 +66,6 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                   children: [
                     SizedBox(height: usableHeight * 0.01),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: screenWidth * 0.075,
-                              height: usableHeight * 0.04,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: amarilloOro,
-                                  width: screenWidth * 0.004,
-                                ),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(screenWidth * 0.035),
-                                  topRight: Radius.circular(
-                                    screenWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.add,
-                                  color: amarilloOro,
-                                  size: screenWidth * 0.045,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: screenWidth * 0.02),
-                            Text(
-                              'A T R I O',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: screenWidth * 0.028,
-                                letterSpacing: screenWidth * 0.008,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Icon(
-                          Icons.diamond_outlined,
-                          color: Colors.white70,
-                          size: screenWidth * 0.06,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: usableHeight * 0.015),
-                    Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),

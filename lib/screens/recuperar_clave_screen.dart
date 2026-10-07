@@ -63,47 +63,6 @@ class _RecuperarClaveScreenState extends State<RecuperarClaveScreen> {
                             size: screenWidth * 0.065,
                           ),
                         ),
-
-                        // Logo Central e Identificador atrio
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: screenWidth * 0.075,
-                              height: usableHeight * 0.04,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: amarilloOro,
-                                  width: screenWidth * 0.004,
-                                ),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(screenWidth * 0.035),
-                                  topRight: Radius.circular(
-                                    screenWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.add,
-                                  color: amarilloOro,
-                                  size: screenWidth * 0.045,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: usableHeight * 0.004),
-                            Text(
-                              'A T R I O',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: screenWidth * 0.026,
-                                letterSpacing: screenWidth * 0.008,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-
                         // Selector de Idioma
                         Container(
                           padding: EdgeInsets.symmetric(

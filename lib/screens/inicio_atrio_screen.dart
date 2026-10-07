@@ -1,14 +1,19 @@
+import 'dart:async';
+
 import 'package:atrio/screens/emisoras_cristianas_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../data/atrio_database_helper.dart';
+import '../modelos/anuncio_model.dart';
 import '../providers/iglesia_provider.dart';
+import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
 import '../widgets/modal_versiculo_imagen.dart';
 import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
+import 'notificaciones_screen.dart';
 import 'perfil_screen.dart';
 
 class InicioAtrioScreen extends StatefulWidget {
@@ -25,6 +30,39 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   String? _iglesiaLocal;
   bool _isInit = true;
 
+  // 3 avisos ficticios temporales (preparados para Odoo 19) con rotación automática
+  int _avisoActivoIndex = 0;
+  Timer? _avisosTimer;
+  late final PageController _avisosPageController;
+
+  final List<Map<String, String>> _avisosFicticios = [
+    {
+      'titulo': 'Nuevo aviso',
+      'mensaje': 'Cambio de horario · Miércoles, 7:00 p. m.',
+      'categoria': 'Servicios',
+      'tag': '1/3',
+    },
+    {
+      'titulo': 'Inscripciones abiertas',
+      'mensaje': 'Retiro Anual 2026 · Cupos limitados',
+      'categoria': 'Eventos',
+      'tag': '2/3',
+    },
+    {
+      'titulo': 'Acción solidaria',
+      'mensaje': 'Campaña "Manos que Bendicen" · Donaciones',
+      'categoria': 'Comunidad',
+      'tag': '3/3',
+    },
+  ];
+
+  // Servicio y estado de Anuncios Interdenominacionales (conciertos y eventos globales Odoo 19)
+  final AnuncioService _anuncioService = AnuncioService();
+  List<AnuncioModel> _anuncios = [];
+  int _anuncioActivoIndex = 0;
+  Timer? _anunciosTimer;
+  late final PageController _anunciosPageController;
+
   // Bandera estática para asegurar que el modal del versículo
   // aparezca una sola vez por cada inicio de sesión / apertura de la app.
   static bool _versiculoMostradoEnSesion = false;
@@ -32,6 +70,10 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   @override
   void initState() {
     super.initState();
+    _avisosPageController = PageController();
+    _anunciosPageController = PageController();
+    _iniciarTimerAvisos();
+    _cargarAnuncios();
     _cargarDatosPerfil();
 
     // Muestra el modal del versículo automáticamente al terminar de renderizar la pantalla inicial
@@ -41,6 +83,60 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         ModalVersiculoImagen.mostrar(context);
       }
     });
+  }
+
+  Future<void> _cargarAnuncios() async {
+    try {
+      final lista = await _anuncioService.obtenerAnuncios();
+      if (mounted) {
+        setState(() {
+          _anuncios = lista;
+        });
+        _iniciarTimerAnuncios();
+      }
+    } catch (e) {
+      debugPrint('Error al cargar anuncios: $e');
+    }
+  }
+
+  void _iniciarTimerAvisos() {
+    _avisosTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      if (_avisosPageController.hasClients) {
+        final siguienteIndex =
+            (_avisoActivoIndex + 1) % _avisosFicticios.length;
+        _avisosPageController.animateToPage(
+          siguienteIndex,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _iniciarTimerAnuncios() {
+    _anunciosTimer?.cancel();
+    if (_anuncios.length <= 1) return;
+    _anunciosTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      if (_anunciosPageController.hasClients) {
+        final siguienteIndex = (_anuncioActivoIndex + 1) % _anuncios.length;
+        _anunciosPageController.animateToPage(
+          siguienteIndex,
+          duration: const Duration(milliseconds: 450),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _avisosTimer?.cancel();
+    _anunciosTimer?.cancel();
+    _avisosPageController.dispose();
+    _anunciosPageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -270,40 +366,48 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     ),
                   ),
                   // Fin Encabezado Superior--------------------
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        Icons.notifications_none_rounded,
-                        color: Colors.white,
-                        size: screenWidth * 0.075,
-                      ),
-                      Positioned(
-                        top: -2,
-                        right: -2,
-                        child: Container(
-                          padding: EdgeInsets.all(screenWidth * 0.008),
-                          decoration: BoxDecoration(
-                            color: amarilloOro,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: BoxConstraints(
-                            minWidth: screenWidth * 0.04,
-                            minHeight: screenWidth * 0.04,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '3',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        NotificacionesScreen.routeName,
+                      );
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: screenWidth * 0.095,
+                        ),
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            padding: EdgeInsets.all(screenWidth * 0.008),
+                            decoration: BoxDecoration(
+                              color: amarilloOro,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: screenWidth * 0.04,
+                              minHeight: screenWidth * 0.04,
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '3',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -428,6 +532,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       usableHeight: usableHeight,
                       azulFondo: azulFondo,
                     ),
+                    /*
                     SizedBox(height: usableHeight * 0.02),
                     Text(
                       'Para ti',
@@ -437,6 +542,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    */
                     SizedBox(height: usableHeight * 0.012),
                     _buildActionGrid(
                       screenWidth,
@@ -445,21 +551,12 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       grisBorde,
                     ),
                     SizedBox(height: usableHeight * 0.02),
-                    _buildAnnouncementCard(
+                    _buildAnnouncementsSection(
                       screenWidth,
                       usableHeight,
                       azulFondo,
                       amarilloOro,
                       grisBorde,
-                    ),
-                    SizedBox(height: usableHeight * 0.015),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildDot(true, amarilloOro, screenWidth),
-                        _buildDot(false, amarilloOro, screenWidth),
-                        _buildDot(false, amarilloOro, screenWidth),
-                      ],
                     ),
                     SizedBox(height: usableHeight * 0.02),
                   ],
@@ -477,51 +574,106 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     required double usableHeight,
     required Color azulFondo,
   }) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: usableHeight * 0.012,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F1F5),
-        borderRadius: BorderRadius.circular(screenWidth * 0.035),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.notifications_active_outlined,
-            color: azulFondo,
-            size: screenWidth * 0.065,
-          ),
-          SizedBox(width: screenWidth * 0.03),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Nuevo aviso',
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontSize: screenWidth * 0.034,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Cambio de horario · Miércoles, 7:00 p. m.',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: screenWidth * 0.03,
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, NotificacionesScreen.routeName);
+      },
+      child: Container(
+        height: usableHeight * 0.092,
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.040,
+          vertical: usableHeight * 0.010,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F1F5),
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          border: Border.all(color: azulFondo.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.022),
+              decoration: BoxDecoration(
+                color: azulFondo.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.notifications_active_outlined,
+                color: azulFondo,
+                size: screenWidth * 0.065,
+              ),
             ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: azulFondo,
-            size: screenWidth * 0.05,
-          ),
-        ],
+            SizedBox(width: screenWidth * 0.03),
+            Expanded(
+              child: PageView.builder(
+                controller: _avisosPageController,
+                itemCount: _avisosFicticios.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _avisoActivoIndex = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  final aviso = _avisosFicticios[index];
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            aviso['titulo'] ?? 'Aviso',
+                            style: TextStyle(
+                              color: azulFondo,
+                              fontSize: screenWidth * 0.042,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE5A023)
+                                  .withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              aviso['tag'] ?? '',
+                              style: TextStyle(
+                                color: const Color(0xFF9E6500),
+                                fontSize: screenWidth * 0.028,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: usableHeight * 0.003),
+                      Text(
+                        aviso['mensaje'] ?? '',
+                        style: TextStyle(
+                          color: Colors.grey.shade900,
+                          fontSize: screenWidth * 0.036,
+                          height: 1.25,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: azulFondo,
+              size: screenWidth * 0.065,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -576,7 +728,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         'route': 'libros_screen',
       },
       {
-        'title': 'Videos\nEN VIVO',
+        'title': 'Videos',
         'icon': Icons.video_camera_front,
         'color': const Color(0xFF4A7C59),
         'route': 'videos_transmisiones_screen',
@@ -636,87 +788,553 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     );
   }
 
-  Widget _buildAnnouncementCard(
+  Widget _buildAnnouncementsSection(
     double screenWidth,
     double usableHeight,
     Color azulFondo,
     Color amarilloOro,
     Color grisBorde,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF7FC),
-        borderRadius: BorderRadius.circular(screenWidth * 0.035),
-        border: Border.all(color: grisBorde),
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.03),
-      child: Row(
-        children: [
-          Container(
-            width: screenWidth * 0.22,
-            height: usableHeight * 0.09,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(screenWidth * 0.025),
+    if (_anuncios.isEmpty) {
+      return Container(
+        height: usableHeight * 0.14,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF7FC),
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          border: Border.all(color: grisBorde),
+        ),
+        padding: EdgeInsets.all(screenWidth * 0.035),
+        child: Row(
+          children: [
+            Container(
+              width: screenWidth * 0.22,
+              height: usableHeight * 0.10,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+              ),
+              child: Icon(
+                Icons.music_note_rounded,
+                color: azulFondo,
+                size: screenWidth * 0.08,
+              ),
             ),
-            child: Icon(
-              Icons.people_alt_rounded,
-              color: azulFondo,
-              size: screenWidth * 0.09,
+            SizedBox(width: screenWidth * 0.035),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ANUNCIOS & CONCIERTOS',
+                    style: TextStyle(
+                      color: const Color(0xFF0055A5),
+                      fontSize: screenWidth * 0.028,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(height: usableHeight * 0.003),
+                  Text(
+                    'Cargando novedades...',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: usableHeight * 0.145,
+          child: PageView.builder(
+            controller: _anunciosPageController,
+            itemCount: _anuncios.length,
+            onPageChanged: (index) {
+              setState(() {
+                _anuncioActivoIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final anuncio = _anuncios[index];
+              return _buildAnnouncementCardItem(
+                anuncio: anuncio,
+                screenWidth: screenWidth,
+                usableHeight: usableHeight,
+                azulFondo: azulFondo,
+                amarilloOro: amarilloOro,
+                grisBorde: grisBorde,
+                onTap: () => _showAnuncioDetailModal(context, anuncio),
+              );
+            },
+          ),
+        ),
+        SizedBox(height: usableHeight * 0.012),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _anuncios.length,
+            (index) => _buildDot(
+              _anuncioActivoIndex == index,
+              amarilloOro,
+              screenWidth,
             ),
           ),
-          SizedBox(width: screenWidth * 0.03),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ANUNCIO',
-                  style: TextStyle(
-                    color: const Color(0xFF0055A5),
-                    fontSize: screenWidth * 0.026,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnnouncementCardItem({
+    required AnuncioModel anuncio,
+    required double screenWidth,
+    required double usableHeight,
+    required Color azulFondo,
+    required Color amarilloOro,
+    required Color grisBorde,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.005),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF7FC),
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          border: Border.all(color: grisBorde),
+        ),
+        padding: EdgeInsets.all(screenWidth * 0.030),
+        child: Row(
+          children: [
+            // Afiche / Imagen con fallback
+            Container(
+              width: screenWidth * 0.22,
+              height: usableHeight * 0.115,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 4,
+                    offset: const Offset(1, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                child: Image.network(
+                  anuncio.imagenUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Color(int.parse(anuncio.fallbackBgColor)),
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.music_note_rounded,
+                          color: Color(int.parse(anuncio.fallbackTextColor)),
+                          size: screenWidth * 0.065,
+                        ),
+                        Text(
+                          anuncio.etiqueta,
+                          style: TextStyle(
+                            color: Color(int.parse(anuncio.fallbackTextColor)),
+                            fontSize: screenWidth * 0.020,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                Text(
-                  'Retiro de familias',
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontSize: screenWidth * 0.038,
-                    fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.032),
+
+            // Contenido con tipografía accesible para público de 30-70 años
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0055A5)
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          anuncio.etiqueta,
+                          style: TextStyle(
+                            color: const Color(0xFF0055A5),
+                            fontSize: screenWidth * 0.026,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.02),
+                      Expanded(
+                        child: Text(
+                          anuncio.categoria,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: screenWidth * 0.026,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  'Inscripciones abiertas',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: screenWidth * 0.03,
+                  SizedBox(height: usableHeight * 0.003),
+                  Text(
+                    anuncio.artista,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.040,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                SizedBox(height: usableHeight * 0.004),
-                Row(
-                  children: [
-                    Text(
-                      'Más información',
-                      style: TextStyle(
+                  Text(
+                    anuncio.subtitulo,
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: screenWidth * 0.033,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: usableHeight * 0.003),
+                  Row(
+                    children: [
+                      Text(
+                        anuncio.textoAccion,
+                        style: TextStyle(
+                          color: amarilloOro,
+                          fontSize: screenWidth * 0.032,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
                         color: amarilloOro,
-                        fontSize: screenWidth * 0.03,
+                        size: screenWidth * 0.045,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAnuncioDetailModal(BuildContext context, AnuncioModel anuncio) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(screenWidth * 0.06),
+              topRight: Radius.circular(screenWidth * 0.06),
+            ),
+          ),
+          padding: EdgeInsets.only(
+            left: screenWidth * 0.06,
+            right: screenWidth * 0.06,
+            top: usableHeight * 0.018,
+            bottom:
+                MediaQuery.of(modalContext).padding.bottom +
+                usableHeight * 0.02,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Barra de arrastre
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+
+              // Afiche amplio del evento
+              ClipRRect(
+                borderRadius: BorderRadius.circular(screenWidth * 0.035),
+                child: Container(
+                  width: double.infinity,
+                  height: usableHeight * 0.19,
+                  decoration: BoxDecoration(
+                    color: azulFondo,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Image.network(
+                    anuncio.imagenUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Color(int.parse(anuncio.fallbackBgColor)),
+                      child: Center(
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          color: Colors.white70,
+                          size: screenWidth * 0.15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.015),
+
+              // Etiquetas
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.03,
+                      vertical: usableHeight * 0.005,
+                    ),
+                    decoration: BoxDecoration(
+                      color: amarilloOro.withValues(alpha: 0.20),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                    ),
+                    child: Text(
+                      anuncio.etiqueta,
+                      style: TextStyle(
+                        color: const Color(0xFF9E6500),
+                        fontSize: screenWidth * 0.030,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.03,
+                      vertical: usableHeight * 0.005,
+                    ),
+                    decoration: BoxDecoration(
+                      color: azulFondo.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                    ),
+                    child: Text(
+                      anuncio.categoria,
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.030,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: amarilloOro,
-                      size: screenWidth * 0.04,
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+              SizedBox(height: usableHeight * 0.012),
+
+              // Artista / Presentador
+              Text(
+                anuncio.artista,
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.048,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: usableHeight * 0.004),
+
+              // Título de la gira
+              Text(
+                anuncio.titulo,
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: screenWidth * 0.040,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.012),
+
+              // Fecha y Lugar con alta legibilidad
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_month_rounded,
+                    size: screenWidth * 0.045,
+                    color: Colors.grey.shade700,
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                  Expanded(
+                    child: Text(
+                      anuncio.fecha,
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        fontSize: screenWidth * 0.036,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: usableHeight * 0.006),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: screenWidth * 0.045,
+                    color: Colors.grey.shade700,
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                  Expanded(
+                    child: Text(
+                      anuncio.lugar,
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        fontSize: screenWidth * 0.036,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: usableHeight * 0.015),
+
+              // Descripción con accesibilidad visual garantizada
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  border: Border.all(color: const Color(0xFFE5E5E5)),
+                ),
+                child: Text(
+                  anuncio.descripcion,
+                  style: TextStyle(
+                    color: Colors.grey.shade900,
+                    fontSize: screenWidth * 0.040,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+
+              // Botones de acción
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: amarilloOro,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: EdgeInsets.symmetric(
+                          vertical: usableHeight * 0.016,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.025,
+                          ),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(modalContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Información sobre "${anuncio.artista}" enviada.',
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                            backgroundColor: azulFondo,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.confirmation_number_rounded),
+                      label: Text(
+                        anuncio.textoAccion,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.040,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: azulFondo,
+                      side: BorderSide(color: azulFondo, width: 1.5),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.045,
+                        vertical: usableHeight * 0.016,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.025,
+                        ),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(modalContext),
+                    child: Text(
+                      'Cerrar',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.038,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

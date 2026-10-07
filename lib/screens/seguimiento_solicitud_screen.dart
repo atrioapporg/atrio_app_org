@@ -57,82 +57,14 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
           height: usableHeight,
           child: Column(
             children: [
-              // 2. Encabezado Superior (Logo + Campana + Título con Botón Volver)
+              // 2. Encabezado Superior (Título con Botón Volver)
               Container(
                 width: screenWidth,
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: usableHeight * 0.01),
-                    // Fila superior: Logo y Campana
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: screenWidth * 0.075,
-                              height: usableHeight * 0.04,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: amarilloOro,
-                                  width: screenWidth * 0.004,
-                                ),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(screenWidth * 0.035),
-                                  topRight: Radius.circular(
-                                    screenWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.add,
-                                  color: amarilloOro,
-                                  size: screenWidth * 0.045,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: screenWidth * 0.02),
-                            Text(
-                              'A T R I O',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: screenWidth * 0.028,
-                                letterSpacing: screenWidth * 0.008,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Campana con punto de alerta
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Icon(
-                              Icons.notifications_none_rounded,
-                              color: Colors.white,
-                              size: screenWidth * 0.075,
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: Container(
-                                width: screenWidth * 0.025,
-                                height: screenWidth * 0.025,
-                                decoration: const BoxDecoration(
-                                  color: amarilloOro,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
                     SizedBox(height: usableHeight * 0.015),
-
                     // Título con botón de retroceso (Back <-)
                     Row(
                       children: [

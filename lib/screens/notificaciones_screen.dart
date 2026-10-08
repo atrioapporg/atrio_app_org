@@ -334,13 +334,20 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Icon(
-                            Icons.chevron_left_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.09,
+                          child: Container(
+                            padding: EdgeInsets.all(screenWidth * 0.02),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.chevron_left_rounded,
+                              color: Colors.white,
+                              size: screenWidth * 0.07,
+                            ),
                           ),
                         ),
-                        SizedBox(width: screenWidth * 0.015),
+                        SizedBox(width: screenWidth * 0.03),
                         Expanded(
                           child: Text(
                             'Notificaciones',

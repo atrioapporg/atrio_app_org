@@ -33,7 +33,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   static const Color _grisBorde = Color(0xFFE5E5E5);
 
   bool _estaBuscando = false;
-  bool _isInit = true;
+  bool _isInit = true; // Para inicializar los datos una sola vez
   bool _permisoUbicacionConcedido = false;
 
   GoogleMapController? _mapController;
@@ -257,7 +257,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
+    //Para inicializar los datos una sola vez
     if (!_isInit) return;
     _isInit = false;
 
@@ -273,9 +273,9 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     _verificarYPedirPermisosUbicacion();
   }
 
-  /// Determina qué lista de sugerencias usar según los argumentos de ruta.
-  /// FIX #2: eliminada la línea muerta `rawTitulo.contains('iglesia');` que
-  /// no asignaba a nada ni afectaba ninguna condición.
+  // Determina qué lista de sugerencias usar según los argumentos de ruta.
+  // FIX #2: eliminada la línea muerta `rawTitulo.contains('iglesia');` que
+  // no asignaba a nada ni afectaba ninguna condición.
   List<String> _detectarSugerenciasPorTradicion(Map<String, dynamic> args) {
     final String rawId = (args['tradicionId'] ?? '').toString().toLowerCase();
     final String rawTitulo = (args['tradicionTitulo'] ?? '')
@@ -555,29 +555,28 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
 
   Widget _buildEncabezado(double screenWidth, double usableHeight) {
     return Container(
-      height: usableHeight * 0.21,
+      height: usableHeight * 0.15,
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
       child: Column(
         children: [
-          // Nuevo Logo Horizontal Atrio
-          Image.asset(
-            'assets/images/logo_encabezado_sinfondo.png',
-            height: usableHeight * 0.060,
-            fit: BoxFit.contain,
-          ),
-          // FIN Nuevo Logo Horizontal Atrio
-
           Row(
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: Colors.white,
-                  size: screenWidth * 0.085,
+                child: Container(
+                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    color: Colors.white,
+                    size: screenWidth * 0.07,
+                  ),
                 ),
               ),
-              SizedBox(width: screenWidth * 0.01),
+              SizedBox(width: screenWidth * 0.03),
               Text(
                 'Selecciona tu iglesia',
                 style: TextStyle(

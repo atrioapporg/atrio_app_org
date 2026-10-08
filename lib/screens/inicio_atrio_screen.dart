@@ -356,7 +356,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 children: [
                   // Encabezado Superior (Logo Horizontal Atrio)
                   SizedBox(
-                    height: usableHeight * 0.08,
+                    height: usableHeight * 0.06,
                     child: Center(
                       child: Image.asset(
                         'assets/images/logo_encabezado.png',
@@ -417,10 +417,11 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 '${_obtenerSaludo()}, $_nombreUsuario',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: screenWidth * 0.060,
+                  fontSize: screenWidth * 0.055,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              /*
               // Selector interactivo con el nombre de la iglesia:
               // Prioriza el provider y usa como fallback el dato de atrio.db
               Consumer<IglesiaProvider>(
@@ -483,8 +484,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 },
               ),
               SizedBox(height: usableHeight * 0.012),
+              */
 
-              SizedBox(height: usableHeight * 0.015),
+              SizedBox(height: usableHeight * 0.005),
             ],
           ),
         ),
@@ -506,8 +508,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.030,
-                  vertical: usableHeight * 0.02,
+                  horizontal: screenWidth * 0.0210,
+                  vertical: usableHeight * 0.012,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,7 +528,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                         );
                       },
                     ),
-                    SizedBox(height: usableHeight * 0.018),
+                    SizedBox(height: usableHeight * 0.015),
                     _buildNoticeBar(
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,

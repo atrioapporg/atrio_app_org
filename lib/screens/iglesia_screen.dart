@@ -117,50 +117,190 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: blancoFondo,
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          borderRadius: BorderRadius.circular(screenWidth * 0.045),
+        ),
+        titlePadding: EdgeInsets.fromLTRB(
+          screenWidth * 0.06,
+          usableHeight * 0.025,
+          screenWidth * 0.06,
+          usableHeight * 0.01,
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
+        actionsPadding: EdgeInsets.fromLTRB(
+          screenWidth * 0.06,
+          usableHeight * 0.015,
+          screenWidth * 0.06,
+          usableHeight * 0.02,
         ),
         title: Row(
           children: [
-            Icon(
-              Icons.share_outlined,
-              color: azulFondo,
-              size: screenWidth * 0.075,
-            ),
-            SizedBox(width: screenWidth * 0.02),
-            Text(
-              'Compartir ubicación',
-              style: TextStyle(
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.025),
+              decoration: BoxDecoration(
+                color: azulFondo.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.share_rounded,
                 color: azulFondo,
-                fontSize: screenWidth * 0.042,
-                fontWeight: FontWeight.bold,
+                size: screenWidth * 0.06,
               ),
             ),
-          ],
-        ),
-        content: Text(
-          'El Plus Code se ha copiado al portapapeles. ¿Deseas enviarlo ahora por WhatsApp o Correo electrónico?',
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: screenWidth * 0.045,
-          ),
-        ),
-        actions: [
-          Center(
-            child: TextButton.icon(
-              onPressed: () => Navigator.pop(dialogCtx),
-              icon: Icon(Icons.copy_rounded, color: azulFondo),
-              label: Text(
-                'Copiado',
+            SizedBox(width: screenWidth * 0.03),
+            Expanded(
+              child: Text(
+                'Compartir ubicación',
                 style: TextStyle(
                   color: azulFondo,
-                  fontSize: screenWidth * 0.045,
+                  fontSize: screenWidth * 0.046,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: usableHeight * 0.008),
+            Text(
+              'El Plus Code ha sido copiado al portapapeles. ¿Deseas compartirlo directamente?',
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: screenWidth * 0.035,
+                height: 1.35,
+              ),
+            ),
+            SizedBox(height: usableHeight * 0.015),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.03,
+                vertical: usableHeight * 0.01,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                border: Border.all(color: grisBorde),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.pin_drop_rounded,
+                    color: amarilloOro,
+                    size: screenWidth * 0.045,
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                  Expanded(
+                    child: Text(
+                      plusCode,
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.034,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green.shade600,
+                    size: screenWidth * 0.045,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: usableHeight * 0.02),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        vertical: usableHeight * 0.012,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.028,
+                        ),
+                      ),
+                    ),
+                    icon: FaIcon(
+                      FontAwesomeIcons.whatsapp,
+                      size: screenWidth * 0.048,
+                    ),
+                    label: Text(
+                      'WhatsApp',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.035,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(dialogCtx);
+                      final Uri whatsappUri = Uri.parse(
+                        'https://wa.me/?text=${Uri.encodeComponent(mensaje)}',
+                      );
+                      if (await canLaunchUrl(whatsappUri)) {
+                        await launchUrl(
+                          whatsappUri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.025),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: azulFondo,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        vertical: usableHeight * 0.012,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.028,
+                        ),
+                      ),
+                    ),
+                    icon: Icon(Icons.email_outlined, size: screenWidth * 0.048),
+                    label: Text(
+                      'Correo',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.035,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(dialogCtx);
+                      final Uri emailUri = Uri(
+                        scheme: 'mailto',
+                        queryParameters: {
+                          'subject': 'Plus Code de ${iglesia.nombre}',
+                          'body':
+                              '$mensaje\n\nPuedes buscar este código directamente en Google Maps.',
+                        },
+                      );
+                      if (await canLaunchUrl(emailUri)) {
+                        await launchUrl(emailUri);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
           Center(
             child: TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
@@ -168,67 +308,10 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                 'Cerrar',
                 style: TextStyle(
                   color: Colors.grey.shade600,
-                  fontSize: screenWidth * 0.055,
-                  fontWeight: FontWeight.bold,
+                  fontSize: screenWidth * 0.038,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-          ),
-          SizedBox(height: usableHeight * 0.025),
-          Center(
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF25D366),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                ),
-              ),
-              icon: FaIcon(
-                FontAwesomeIcons.whatsapp,
-                size: screenWidth * 0.065,
-              ),
-              label: const Text('WhatsApp'),
-              onPressed: () async {
-                Navigator.pop(dialogCtx);
-                final Uri whatsappUri = Uri.parse(
-                  'https://wa.me/?text=${Uri.encodeComponent(mensaje)}',
-                );
-                if (await canLaunchUrl(whatsappUri)) {
-                  await launchUrl(
-                    whatsappUri,
-                    mode: LaunchMode.externalApplication,
-                  );
-                }
-              },
-            ),
-          ),
-          SizedBox(height: usableHeight * 0.015),
-          Center(
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: azulFondo,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                ),
-              ),
-              icon: Icon(Icons.email_outlined, size: screenWidth * 0.065),
-              label: const Text('Correo'),
-              onPressed: () async {
-                Navigator.pop(dialogCtx);
-                final Uri emailUri = Uri(
-                  scheme: 'mailto',
-                  queryParameters: {
-                    'subject': 'Plus Code de ${iglesia.nombre}',
-                    'body':
-                        '$mensaje\n\nPuedes buscar este código directamente en Google Maps.',
-                  },
-                );
-                if (await canLaunchUrl(emailUri)) {
-                  await launchUrl(emailUri);
-                }
-              },
             ),
           ),
         ],
@@ -415,29 +498,90 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TradicionCristianaScreen
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () => Navigator.pushNamed(
+                    // Botón elegante y moderno para Cambiar de iglesia
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pushNamed(
                           context,
                           'tradicion_cristiana_screen',
                         ),
-                        icon: Icon(
-                          Icons.swap_horiz_rounded,
-                          color: const Color.fromARGB(255, 243, 74, 36),
-                          size: screenWidth * 0.085,
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.035,
                         ),
-                        label: Text(
-                          'Cambiar de iglesia',
-                          style: TextStyle(
-                            color: azulFondo,
-                            fontWeight: FontWeight.bold,
-                            fontSize: screenWidth * 0.055,
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04,
+                            vertical: usableHeight * 0.014,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.035,
+                            ),
+                            border: Border.all(
+                              color: azulFondo.withValues(alpha: 0.12),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: azulFondo.withValues(alpha: 0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(screenWidth * 0.024),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF4ED),
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.025,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.swap_horiz_rounded,
+                                  color: const Color(0xFFE65100),
+                                  size: screenWidth * 0.058,
+                                ),
+                              ),
+                              SizedBox(width: screenWidth * 0.035),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Cambiar de iglesia',
+                                      style: TextStyle(
+                                        color: azulFondo,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: screenWidth * 0.038,
+                                      ),
+                                    ),
+                                    SizedBox(height: usableHeight * 0.002),
+                                    Text(
+                                      'Explora y selecciona otra comunidad',
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: screenWidth * 0.029,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.black38,
+                                size: screenWidth * 0.055,
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                    //
+                    SizedBox(height: usableHeight * 0.02),
                     // Acciones rápidas (Cómo llegar conectado a _abrirNavegacion)
                     Row(
                       children: [
@@ -480,8 +624,22 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                         ),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.025),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.028,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.live_tv_rounded,
+                              color: amarilloOro,
+                              size: screenWidth * 0.065,
+                            ),
+                          ),
+                          SizedBox(width: screenWidth * 0.035),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +648,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                   iglesia.proximoCulto.titulo,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: screenWidth * 0.042,
+                                    fontSize: screenWidth * 0.04,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -498,14 +656,15 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                 Text(
                                   iglesia.proximoCulto.diaHora,
                                   style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: screenWidth * 0.032,
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: screenWidth * 0.031,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          ElevatedButton(
+                          SizedBox(width: screenWidth * 0.02),
+                          ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: amarilloOro,
                               foregroundColor: azulFondo,
@@ -516,7 +675,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                 ),
                               ),
                               padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.045,
+                                horizontal: screenWidth * 0.035,
                                 vertical: usableHeight * 0.009,
                               ),
                             ),
@@ -524,10 +683,14 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                               context,
                               'videos_transmisiones_screen',
                             ),
-                            child: Text(
+                            icon: Icon(
+                              Icons.play_arrow_rounded,
+                              size: screenWidth * 0.045,
+                            ),
+                            label: Text(
                               'Ver ahora',
                               style: TextStyle(
-                                fontSize: screenWidth * 0.033,
+                                fontSize: screenWidth * 0.032,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -601,22 +764,43 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: screenWidth * 0.04,
-                        vertical: usableHeight * 0.014,
+                        vertical: usableHeight * 0.015,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F1F5),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(
                           screenWidth * 0.035,
                         ),
+                        border: Border.all(
+                          color: const Color(0xFF0F4C81)
+                              .withValues(alpha: 0.15),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.notifications_active_outlined,
-                            color: azulFondo,
-                            size: screenWidth * 0.065,
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.022),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F1F5),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.025,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.campaign_rounded,
+                              color: azulFondo,
+                              size: screenWidth * 0.058,
+                            ),
                           ),
-                          SizedBox(width: screenWidth * 0.03),
+                          SizedBox(width: screenWidth * 0.035),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,16 +809,17 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                   iglesia.avisoActual.titulo,
                                   style: TextStyle(
                                     color: azulFondo,
-                                    fontSize: screenWidth * 0.034,
+                                    fontSize: screenWidth * 0.036,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: usableHeight * 0.003),
+                                SizedBox(height: usableHeight * 0.004),
                                 Text(
                                   iglesia.avisoActual.descripcion,
                                   style: TextStyle(
                                     color: Colors.black87,
-                                    fontSize: screenWidth * 0.03,
+                                    fontSize: screenWidth * 0.032,
+                                    height: 1.35,
                                   ),
                                 ),
                               ],
@@ -643,32 +828,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                         ],
                       ),
                     ),
-                    SizedBox(height: usableHeight * 0.025),
-
-                    // Cambiar de iglesia
-                    // TradicionCristianaScreen
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () => Navigator.pushNamed(
-                          context,
-                          'tradicion_cristiana_screen',
-                        ),
-                        icon: Icon(
-                          Icons.swap_horiz_rounded,
-                          color: const Color.fromARGB(255, 243, 74, 36),
-                          size: screenWidth * 0.085,
-                        ),
-                        label: Text(
-                          'Cambiar de iglesia',
-                          style: TextStyle(
-                            color: azulFondo,
-                            fontWeight: FontWeight.bold,
-                            fontSize: screenWidth * 0.055,
-                          ),
-                        ),
-                      ),
-                    ),
-                    //
+                    SizedBox(height: usableHeight * 0.03),
                   ],
                 ),
               ),
@@ -686,29 +846,51 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     VoidCallback onTap,
   ) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-            border: Border.all(color: grisBorde),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: azulFondo, size: screenWidth * 0.06),
-              SizedBox(height: screenWidth * 0.01),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: azulFondo,
-                  fontSize: screenWidth * 0.028,
-                  fontWeight: FontWeight.w600,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.035),
+              border: Border.all(color: grisBorde),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.022),
+                  decoration: BoxDecoration(
+                    color: azulFondo.withValues(alpha: 0.06),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: azulFondo,
+                    size: screenWidth * 0.058,
+                  ),
+                ),
+                SizedBox(height: screenWidth * 0.015),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: azulFondo,
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -743,7 +925,15 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.035),
         border: Border.all(color: grisBorde),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: List.generate(rows.length, (index) {
           final row = rows[index];

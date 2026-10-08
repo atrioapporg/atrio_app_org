@@ -60,7 +60,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.018),
+                        padding: EdgeInsets.all(screenWidth * 0.02),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.12),
                           shape: BoxShape.circle,

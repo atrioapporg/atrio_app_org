@@ -1158,15 +1158,19 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          tooltip: 'Regresar',
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(
-                            Icons.chevron_left_rounded,
-                            color: colorHeaderTexto,
-                            size: screenWidth * 0.085,
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: EdgeInsets.all(screenWidth * 0.02),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.chevron_left_rounded,
+                              color: colorHeaderTexto,
+                              size: screenWidth * 0.07,
+                            ),
                           ),
                         ),
                         // Iconos de gestión de tema y configuración

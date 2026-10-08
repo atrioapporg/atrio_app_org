@@ -130,17 +130,24 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Icon(
-                            Icons.chevron_left_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.085,
+                          child: Container(
+                            padding: EdgeInsets.all(screenWidth * 0.02),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.chevron_left_rounded,
+                              color: Colors.white,
+                              size: screenWidth * 0.07,
+                            ),
                           ),
                         ),
                         Expanded(
                           child: Center(
                             child: Padding(
                               padding: EdgeInsets.only(
-                                right: screenWidth * 0.085,
+                                right: screenWidth * 0.11, // Compensar el ancho del botón circular
                               ),
                               child: Text(
                                 'Realizar un aporte',

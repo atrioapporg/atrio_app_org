@@ -44,7 +44,7 @@ class HeroBannerCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: screenWidth,
-        height: usableHeight * (heightFactor ?? 0.22),
+        height: usableHeight * (heightFactor ?? 0.21),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(screenWidth * 0.045),

@@ -18,6 +18,12 @@ class _InicioSesionScreenState extends State {
 
   bool _isPasswordVisible = false;
   final bool _isLoginTab = true;
+  // ignore: prefer_final_fields
+  bool _isLoading = false;
+
+  void _iniciarSesionGoogle() {
+    Navigator.pushNamed(context, 'tradicion_cristiana_screen');
+  }
 
   @override
   void dispose() {
@@ -396,21 +402,15 @@ class _InicioSesionScreenState extends State {
                             ],
                           ),
                           SizedBox(height: usableHeight * 0.015),
-                          // Botones de Acceso Social
+                          // Botones Sociales
                           _buildSocialButton(
                             title: 'Continuar con Google',
-                            icon: Icons.g_mobiledata_rounded,
-                            iconColor: Colors.red,
+                            imageAsset: 'assets/images/google_logo.png',
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
                             grisBorde: grisBorde,
                             azulFondo: azulFondo,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                'tradicion_cristiana_screen',
-                              );
-                            },
+                            onTap: _isLoading ? () {} : _iniciarSesionGoogle,
                           ),
                           SizedBox(height: usableHeight * 0.01),
                           _buildSocialButton(
@@ -550,8 +550,9 @@ class _InicioSesionScreenState extends State {
   // Componente Botón Social Relativo
   Widget _buildSocialButton({
     required String title,
-    required IconData icon,
-    required Color iconColor,
+    IconData? icon,
+    Color? iconColor,
+    String? imageAsset,
     required double screenWidth,
     required double usableHeight,
     required Color grisBorde,
@@ -570,7 +571,24 @@ class _InicioSesionScreenState extends State {
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: Row(
           children: [
-            Icon(icon, color: iconColor, size: screenWidth * 0.065),
+            if (imageAsset != null)
+              Image.asset(
+                imageAsset,
+                width: screenWidth * 0.065,
+                height: screenWidth * 0.065,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.g_mobiledata_rounded,
+                  color: Colors.red,
+                  size: screenWidth * 0.065,
+                ),
+              )
+            else if (icon != null)
+              Icon(
+                icon,
+                color: iconColor ?? azulFondo,
+                size: screenWidth * 0.065,
+              ),
             Expanded(
               child: Center(
                 child: Text(

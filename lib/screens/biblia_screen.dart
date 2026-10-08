@@ -232,7 +232,7 @@ class _BibliaScreenState extends State {
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.015),
+                            padding: EdgeInsets.all(screenWidth * 0.02),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
@@ -240,7 +240,7 @@ class _BibliaScreenState extends State {
                             child: Icon(
                               Icons.chevron_left_rounded,
                               color: Colors.white,
-                              size: screenWidth * 0.075,
+                              size: screenWidth * 0.07,
                             ),
                           ),
                         ),

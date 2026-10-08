@@ -966,10 +966,17 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
             children: <Widget>[
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: Colors.white,
-                  size: screenWidth * 0.085,
+                child: Container(
+                  padding: EdgeInsets.all(screenWidth * 0.02),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    color: Colors.white,
+                    size: screenWidth * 0.07,
+                  ),
                 ),
               ),
               Text(

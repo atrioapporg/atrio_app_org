@@ -35,6 +35,8 @@ class BibliaProvider with ChangeNotifier {
 
   // Estado para la búsqueda
   bool _isSearching = false;
+  bool _busquedaRealizada = false;
+  String _ultimaConsulta = '';
   List<Map<String, dynamic>> _resultadosBusqueda = [];
   String? _searchErrorMessage;
 
@@ -46,6 +48,8 @@ class BibliaProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isSearching => _isSearching;
+  bool get busquedaRealizada => _busquedaRealizada;
+  String get ultimaConsulta => _ultimaConsulta;
   List<Map<String, dynamic>> get resultadosBusqueda => _resultadosBusqueda;
   String? get searchErrorMessage => _searchErrorMessage;
 
@@ -235,19 +239,22 @@ class BibliaProvider with ChangeNotifier {
   //
 
   Future<void> ejecutarBusqueda(String query) async {
-    if (query.trim().isEmpty) {
+    final queryLimpia = query.trim();
+    if (queryLimpia.isEmpty) {
       limpiarBusqueda();
       return;
     }
 
     _isSearching = true;
+    _busquedaRealizada = true;
+    _ultimaConsulta = queryLimpia;
     _searchErrorMessage = null;
     notifyListeners();
 
     try {
-      _resultadosBusqueda = await _bibleService.buscar(_versionActual, query);
+      _resultadosBusqueda = await _bibleService.buscar(_versionActual, queryLimpia);
     } catch (e) {
-      _searchErrorMessage = 'No se pudo completar la búsqueda';
+      _searchErrorMessage = 'No se pudo completar la búsqueda. Verifica tu conexión a internet.';
     } finally {
       _isSearching = false;
       notifyListeners();
@@ -258,6 +265,8 @@ class BibliaProvider with ChangeNotifier {
     _resultadosBusqueda = [];
     _searchErrorMessage = null;
     _isSearching = false;
+    _busquedaRealizada = false;
+    _ultimaConsulta = '';
     notifyListeners();
   }
 

@@ -168,7 +168,7 @@ class _BibliaScreenState extends State {
     final String referencia = versiculo.referencia.trim().isNotEmpty
         ? versiculo.referencia.trim()
         : 'Filipenses 4:13';
-    final String mensaje = '(texto\n--)referencia--';
+    final String mensaje = '"$texto"\n— $referencia';
     final String textoCodificado = Uri.encodeComponent(mensaje);
     final Uri uri = Uri.parse('whatsapp://send?text=$textoCodificado');
     final Uri uriWeb = Uri.parse(
@@ -326,10 +326,15 @@ class _BibliaScreenState extends State {
                       ),
                       child: TextField(
                         controller: _searchController,
-                        onSubmitted: (value) =>
-                            bibliaProvider.ejecutarBusqueda(value),
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (value) {
+                          FocusScope.of(context).unfocus();
+                          bibliaProvider.ejecutarBusqueda(value);
+                        },
                         onChanged: (val) {
-                          setState(() {}); // Actualiza visibilidad de la 'X'
+                          setState(
+                            () {},
+                          ); // Actualiza visibilidad de la 'X' y botón buscar
                         },
                         style: TextStyle(
                           color: azulFondo,
@@ -341,28 +346,76 @@ class _BibliaScreenState extends State {
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.034,
                           ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: azulFondo,
-                            size: screenWidth * 0.052,
+                          prefixIcon: IconButton(
+                            icon: Icon(
+                              Icons.search_rounded,
+                              color: azulFondo,
+                              size: screenWidth * 0.055,
+                            ),
+                            tooltip: 'Buscar',
+                            onPressed: () {
+                              FocusScope.of(context).unfocus();
+                              bibliaProvider.ejecutarBusqueda(
+                                _searchController.text,
+                              );
+                            },
                           ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_searchController.text.isNotEmpty)
+                                IconButton(
                                   icon: Icon(
                                     Icons.cancel_rounded,
                                     color: Colors.grey.shade400,
                                     size: screenWidth * 0.048,
                                   ),
+                                  tooltip: 'Borrar texto',
                                   onPressed: () {
                                     _searchController.clear();
                                     bibliaProvider.limpiarBusqueda();
                                     setState(() {});
                                   },
-                                )
-                              : null,
+                                ),
+                              if (_searchController.text.trim().isNotEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    right: screenWidth * 0.02,
+                                  ),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      FocusScope.of(context).unfocus();
+                                      bibliaProvider.ejecutarBusqueda(
+                                        _searchController.text,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.025,
+                                        vertical: usableHeight * 0.007,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE5A023),
+                                        borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.02,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Buscar',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: screenWidth * 0.03,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: usableHeight * 0.014,
+                            vertical: usableHeight * 0.012,
                           ),
                         ),
                       ),
@@ -391,12 +444,26 @@ class _BibliaScreenState extends State {
                       topRight: Radius.circular(screenWidth * 0.08),
                     ),
                     child: bibliaProvider.isSearching
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: amarilloOro,
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: amarilloOro,
+                                ),
+                                SizedBox(height: usableHeight * 0.02),
+                                Text(
+                                  'Buscando en ${bibliaProvider.nombreVersionActual}...',
+                                  style: TextStyle(
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.036,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           )
-                        : _searchController.text.trim().isNotEmpty
+                        : bibliaProvider.busquedaRealizada
                         ? _buildResultadosBusqueda(
                             bibliaProvider,
                             screenWidth,
@@ -658,74 +725,230 @@ class _BibliaScreenState extends State {
   ) {
     if (provider.searchErrorMessage != null) {
       return Center(
-        child: Text(
-          provider.searchErrorMessage!,
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
-    }
-    if (provider.resultadosBusqueda.isEmpty) {
-      return Center(
-        child: Text(
-          'No se encontraron versículos para tu búsqueda.',
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: screenWidth * 0.04,
-          ),
-        ),
-      );
-    }
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.05,
-        vertical: usableHeight * 0.02,
-      ),
-      itemCount: provider.resultadosBusqueda.length,
-      separatorBuilder: (context, index) =>
-          SizedBox(height: usableHeight * 0.012),
-      itemBuilder: (context, index) {
-        final item = provider.resultadosBusqueda[index];
-        final String nombreLibro = provider.obtenerNombreLibro(
-          item['book'] as int,
-        );
-        final String referencia =
-            '$nombreLibro ${item['chapter']}:${item['verse']}';
-        final String texto = (item['text'] as String).replaceAll(
-          RegExp(r'<[^>]*>'),
-          '',
-        );
-        return Container(
-          padding: EdgeInsets.all(screenWidth * 0.035),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-            border: Border.all(color: grisBorde),
-          ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                referencia,
-                style: TextStyle(
-                  color: const Color(0xFFE5A023),
-                  fontWeight: FontWeight.bold,
-                  fontSize: screenWidth * 0.04,
-                ),
+              Icon(
+                Icons.wifi_off_rounded,
+                size: screenWidth * 0.14,
+                color: Colors.grey.shade400,
               ),
-              SizedBox(height: usableHeight * 0.004),
+              SizedBox(height: usableHeight * 0.015),
               Text(
-                texto,
+                provider.searchErrorMessage!,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: azulFondo,
-                  fontSize: screenWidth * 0.042,
-                  height: 1.25,
+                  fontSize: screenWidth * 0.038,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE5A023),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.05,
+                    vertical: usableHeight * 0.012,
+                  ),
+                ),
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Reintentar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () {
+                  if (_searchController.text.trim().isNotEmpty) {
+                    provider.ejecutarBusqueda(_searchController.text);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (provider.resultadosBusqueda.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off_rounded,
+                size: screenWidth * 0.14,
+                color: Colors.grey.shade400,
+              ),
+              SizedBox(height: usableHeight * 0.015),
+              Text(
+                'No se encontraron versículos para:\n"${provider.ultimaConsulta}"',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.038,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.01),
+              Text(
+                'Prueba usando palabras clave más generales o revisa la ortografía.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: screenWidth * 0.032,
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Cabecera resumen de resultados
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: usableHeight * 0.012,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: grisBorde.withValues(alpha: 0.5)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${provider.resultadosBusqueda.length} versículos encontrados',
+                  style: TextStyle(
+                    color: azulFondo,
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.034,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  _searchController.clear();
+                  provider.limpiarBusqueda();
+                  setState(() {});
+                },
+                child: Text(
+                  'Cerrar búsqueda',
+                  style: TextStyle(
+                    color: const Color(0xFFE5A023),
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.032,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Lista interactiva de versículos encontrados
+        Expanded(
+          child: ListView.separated(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.05,
+              vertical: usableHeight * 0.015,
+            ),
+            itemCount: provider.resultadosBusqueda.length,
+            separatorBuilder: (context, index) =>
+                SizedBox(height: usableHeight * 0.012),
+            itemBuilder: (context, index) {
+              final item = provider.resultadosBusqueda[index];
+              final String nombreLibro = provider.obtenerNombreLibro(
+                item['book'] as int,
+              );
+              final int capitulo = item['chapter'] as int;
+              final int versiculo = item['verse'] as int;
+              final String referencia = '$nombreLibro $capitulo:$versiculo';
+              final String texto = (item['text'] as String).replaceAll(
+                RegExp(r'<[^>]*>'),
+                '',
+              );
+
+              return Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  onTap: () async {
+                    FocusScope.of(context).unfocus();
+                    await Navigator.pushNamed(
+                      context,
+                      'lectura_capitulo_screen',
+                      arguments: {
+                        'nombre': nombreLibro,
+                        'capitulo': capitulo,
+                        'subtitulo': 'Capítulo $capitulo',
+                      },
+                    );
+                    _cargarUltimaLectura();
+                    _cargarConteoLocal();
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(screenWidth * 0.035),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      border: Border.all(color: grisBorde),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                referencia,
+                                style: TextStyle(
+                                  color: const Color(0xFFE5A023),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: screenWidth * 0.038,
+                                ),
+                              ),
+                              SizedBox(height: usableHeight * 0.005),
+                              Text(
+                                texto,
+                                style: TextStyle(
+                                  color: azulFondo,
+                                  fontSize: screenWidth * 0.037,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.02),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.grey.shade400,
+                          size: screenWidth * 0.05,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

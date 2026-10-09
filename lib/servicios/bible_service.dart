@@ -42,16 +42,32 @@ class BibleService {
     String query, {
     int pagina = 1,
   }) async {
-    final uri = Uri.parse(
-      '$_baseUrl/v2/find/$version?search=${Uri.encodeComponent(query)}&limit=30&page=$pagina',
-    );
-    final response = await http.get(uri);
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return List<Map<String, dynamic>>.from(data['results'] ?? []);
-    } else {
-      throw Exception('Error en búsqueda');
+    final uri = Uri.parse(
+      '$_baseUrl/v2/find/$version?search=${Uri.encodeComponent(cleanQuery)}&limit=30&page=$pagina',
+    );
+
+    try {
+      final response = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          return List<Map<String, dynamic>>.from(data['results'] ?? []);
+        } else if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
+        return [];
+      } else {
+        throw Exception('Error en respuesta del servidor: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[BIBLE_SERVICE] Error al buscar "$cleanQuery": $e');
+      rethrow;
     }
   }
 

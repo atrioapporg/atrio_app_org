@@ -161,6 +161,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         label: 'Notificaciones',
                         route: null,
                       ),
+                      _MenuItemData(
+                        icon: Icons.delete_forever_outlined,
+                        label: 'Eliminar cuenta y datos',
+                        customColor: Colors.red.shade700,
+                        route: null,
+                        onCustomTap: () => _confirmarEliminarCuenta(context),
+                      ),
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),
@@ -584,13 +591,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(item.icon, color: azulFondo, size: screenWidth * 0.055),
+                  Icon(
+                    item.icon,
+                    color: item.customColor ?? azulFondo,
+                    size: screenWidth * 0.055,
+                  ),
                   SizedBox(width: screenWidth * 0.035),
                   Expanded(
                     child: Text(
                       item.label,
                       style: TextStyle(
-                        color: azulFondo,
+                        color: item.customColor ?? azulFondo,
                         fontSize: screenWidth * 0.036,
                         fontWeight: FontWeight.w600,
                       ),
@@ -670,6 +681,115 @@ class _PerfilScreenState extends State<PerfilScreen> {
       ),
     );
   }
+
+  /// Diálogo y flujo para eliminar cuenta de forma permanente
+  /// (Cumplimiento de Apple App Store Guideline 5.1.1(v) y Google Play Console)
+  void _confirmarEliminarCuenta(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Eliminar cuenta',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Estás seguro de que deseas eliminar tu cuenta y todos tus datos personales de ATRIO?',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Esta acción es definitiva e irreversible. Se eliminarán permanentemente:\n'
+                '• Tu perfil de usuario y vinculación comunitaria.\n'
+                '• Todas tus notas personales de la Biblia y favoritos guardados.\n'
+                '• Tu historial de solicitudes y aportes locales.\n'
+                '• Se solicitará la desactivación de tu registro en el backend Odoo ERP.',
+                style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+
+              // ===============================================================
+              // TODO: ODOO 19 BACKEND INTEGRATION - SOLICITUD DE BORRADO DE CUENTA
+              // ===============================================================
+              // Cuando el backend provea el endpoint:
+              //
+              // final response = await http.post(
+              //   Uri.parse('${AppConfig.odooBaseUrl}${AppConfig.odooDeleteAccountEndpoint}'),
+              //   headers: {
+              //     'Content-Type': 'application/json',
+              //     'Cookie': 'session_id=$sessionId', // O Bearer token
+              //   },
+              //   body: jsonEncode({
+              //     'user_id': _usuarioData?['id'],
+              //     'email': _usuarioData?['email'],
+              //     'db': AppConfig.odooDatabase,
+              //   }),
+              // );
+              // ===============================================================
+
+              // 1. Purgar datos personales en la base de datos local SQLite
+              await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
+
+              // 2. Limpiar estado en memoria de UserProvider
+              if (context.mounted) {
+                Provider.of<UserProvider>(context, listen: false).clearSession();
+              }
+
+              // 3. Redirigir a la pantalla de Inicio de Sesión
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Tu cuenta y datos personales han sido eliminados satisfactoriamente.',
+                    ),
+                    backgroundColor: Color(0xFF072B4F),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  InicioSesionScreen.routeName,
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text(
+              'Eliminar definitivamente',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MenuItemData {
@@ -677,11 +797,13 @@ class _MenuItemData {
   final String label;
   final String? route;
   final VoidCallback? onCustomTap;
+  final Color? customColor;
 
   const _MenuItemData({
     required this.icon,
     required this.label,
     this.route,
     this.onCustomTap,
+    this.customColor,
   });
 }

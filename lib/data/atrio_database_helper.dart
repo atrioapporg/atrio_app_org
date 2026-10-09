@@ -219,6 +219,17 @@ class AtrioDatabaseHelper {
     }
   }
 
+  /// Elimina los registros del usuario y sus datos personales asociados de SQLite
+  /// (Cumplimiento de directrices de eliminación de cuenta de Apple y Google).
+  Future<void> eliminarUsuarioYDatos() async {
+    final db = await instance.database;
+    debugPrint('[ATRIO_DB] Eliminando todos los datos del usuario localmente...');
+    await db.delete(tableUsuario);
+    await db.delete(tableNotas);
+    await db.delete(tableFavoritos);
+    debugPrint('[ATRIO_DB] Datos personales y tablas de usuario purgadas.');
+  }
+
   // ============================================================
   // MÉTODOS CRUD: CONFIG_ATRIO
   // ============================================================

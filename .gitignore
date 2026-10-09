@@ -58,3 +58,8 @@ android/local.properties
 .antigravity/
 *.rar
 *.zip
+
+# Variables de entorno y credenciales (Seguridad Odoo / OAuth)
+.env
+.env.*
+!.env.example

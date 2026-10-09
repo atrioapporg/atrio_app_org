@@ -39,6 +39,8 @@ import 'package:atrio/screens/biblia_screen.dart';
 import 'package:atrio/screens/eventos_screen.dart';
 import 'package:atrio/screens/iglesias_en_mapa_screen.dart';
 import 'package:atrio/screens/notificaciones_screen.dart';
+import 'package:atrio/screens/ayuda_soporte_screen.dart';
+import 'package:atrio/screens/terminos_privacidad_screen.dart';
 
 // Screens - Donaciones / Aportes
 import 'package:atrio/screens/donaciones_screen.dart';
@@ -170,6 +172,8 @@ class MyApp extends StatelessWidget {
     EventosScreen.routeName: (_) => const EventosScreen(),
     IglesiasEnMapaScreen.routeName: (_) => const IglesiasEnMapaScreen(),
     NotificacionesScreen.routeName: (_) => const NotificacionesScreen(),
+    AyudaSoporteScreen.routeName: (_) => const AyudaSoporteScreen(),
+    TerminosPrivacidadScreen.routeName: (_) => const TerminosPrivacidadScreen(),
 
     // ---------- Donaciones y Aportes ----------
     DonacionesScreen.routeName: (_) => const DonacionesScreen(),

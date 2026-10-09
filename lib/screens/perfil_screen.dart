@@ -5,10 +5,13 @@ import 'package:provider/provider.dart';
 import '../data/atrio_database_helper.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
+import 'ayuda_soporte_screen.dart';
 import 'biblia_screen.dart';
 import 'donaciones_screen.dart';
 import 'inicio_sesion_screen.dart';
+import 'notificaciones_screen.dart';
 import 'seguimiento_solicitud_screen.dart';
+import 'terminos_privacidad_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
@@ -159,7 +162,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       const _MenuItemData(
                         icon: Icons.notifications_none_rounded,
                         label: 'Notificaciones',
-                        route: null,
+                        route: NotificacionesScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.delete_forever_outlined,
@@ -180,12 +183,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       _MenuItemData(
                         icon: Icons.help_outline_rounded,
                         label: 'Ayuda y soporte',
-                        route: null,
+                        route: AyudaSoporteScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.privacy_tip_outlined,
                         label: 'Términos y privacidad',
-                        route: null,
+                        route: TerminosPrivacidadScreen.routeName,
                       ),
                     ],
                   ),
@@ -691,7 +694,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 28),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.red.shade700,
+              size: 28,
+            ),
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
@@ -717,7 +724,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 '• Todas tus notas personales de la Biblia y favoritos guardados.\n'
                 '• Tu historial de solicitudes y aportes locales.\n'
                 '• Se solicitará la desactivación de tu registro en el backend Odoo ERP.',
-                style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.4),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
               ),
             ],
           ),
@@ -759,7 +770,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
               // 2. Limpiar estado en memoria de UserProvider
               if (context.mounted) {
-                Provider.of<UserProvider>(context, listen: false).clearSession();
+                Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                ).clearSession();
               }
 
               // 3. Redirigir a la pantalla de Inicio de Sesión

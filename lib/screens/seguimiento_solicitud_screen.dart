@@ -20,7 +20,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE5E5E5);
 
-    // Listado de solicitudes con su estado según 15_seguimiento_solicitudes.png
+    // Listado de 5 solicitudes de relleno (mock) según los tipos de solicitud disponibles
     final List<Map<String, dynamic>> solicitudes = [
       {
         'title': 'Orientación pastoral',
@@ -29,6 +29,8 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
         'dateInfo': 'Martes · 4:00 p. m.',
         'icon': Icons.church_outlined,
         'iconColor': const Color(0xFF0055A5),
+        'referencia': 'REQ-2026-0041',
+        'detalle': 'Cita de acompañamiento espiritual y orientación pastoral presencial con el pastor titular.',
       },
       {
         'title': 'Petición de oración',
@@ -37,6 +39,8 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
         'dateInfo': null,
         'icon': Icons.pan_tool_alt_outlined,
         'iconColor': const Color(0xFF7A8B43),
+        'referencia': 'REQ-2026-0038',
+        'detalle': 'Petición de intercesión por pronta recuperación de salud y bienestar familiar en el culto de oración.',
       },
       {
         'title': 'Ayuda comunitaria',
@@ -45,6 +49,28 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
         'dateInfo': null,
         'icon': Icons.groups_outlined,
         'iconColor': azulFondo,
+        'referencia': 'REQ-2026-0035',
+        'detalle': 'Solicitud de canasta de alimentos básicos y apoyo solidario para una familia en situación de necesidad.',
+      },
+      {
+        'title': 'Consejería familiar',
+        'status': 'Confirmada',
+        'statusColor': const Color(0xFF2E7D32),
+        'dateInfo': 'Jueves · 5:30 p. m.',
+        'icon': Icons.family_restroom_rounded,
+        'iconColor': azulFondo,
+        'referencia': 'REQ-2026-0029',
+        'detalle': 'Sesión de consejería familiar y diálogo guiado por el equipo ministerial de la iglesia.',
+      },
+      {
+        'title': 'Visita a enfermos',
+        'status': 'En proceso',
+        'statusColor': const Color(0xFF0055A5),
+        'dateInfo': 'Viernes · 10:00 a. m.',
+        'icon': Icons.favorite_border_rounded,
+        'iconColor': const Color(0xFF7A8B43),
+        'referencia': 'REQ-2026-0022',
+        'detalle': 'Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.',
       },
     ];
 
@@ -83,13 +109,15 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        SizedBox(width: screenWidth * 0.03),
+                        // Fin botón de retroceso (Back <-)
+                        SizedBox(width: screenWidth * 0.035),
                         Text(
                           'Mis solicitudes',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: screenWidth * 0.068,
+                            fontSize: screenWidth * 0.065,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ],
@@ -118,7 +146,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: screenWidth * 0.05,
-                        vertical: usableHeight * 0.025,
+                        vertical: usableHeight * 0.022,
                       ),
                       child: Column(
                         children: [
@@ -128,7 +156,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                               physics: const BouncingScrollPhysics(),
                               itemCount: solicitudes.length,
                               separatorBuilder: (context, index) =>
-                                  SizedBox(height: usableHeight * 0.015),
+                                  SizedBox(height: usableHeight * 0.014),
                               itemBuilder: (context, index) {
                                 final item = solicitudes[index];
                                 return _buildRequestCard(
@@ -142,11 +170,24 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                                   usableHeight: usableHeight,
                                   azulFondo: azulFondo,
                                   grisBorde: grisBorde,
-                                  onTap: () {},
+                                  onTap: () {
+                                    _mostrarDetalleSolicitud(
+                                      context: context,
+                                      item: item,
+                                      screenWidth: screenWidth,
+                                      usableHeight: usableHeight,
+                                      azulFondo: azulFondo,
+                                      blancoFondo: blancoFondo,
+                                      grisBorde: grisBorde,
+                                      amarilloOro: amarilloOro,
+                                    );
+                                  },
                                 );
                               },
                             ),
                           ),
+
+                          SizedBox(height: usableHeight * 0.015),
 
                           // Botón Inferior "Nueva solicitud"
                           SizedBox(
@@ -159,7 +200,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
-                                    screenWidth * 0.03,
+                                    screenWidth * 0.035,
                                   ),
                                 ),
                               ),
@@ -172,13 +213,13 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                               child: Text(
                                 'Nueva solicitud',
                                 style: TextStyle(
-                                  fontSize: screenWidth * 0.055,
+                                  fontSize: screenWidth * 0.048,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                           ),
-                          SizedBox(height: usableHeight * 0.01),
+                          SizedBox(height: usableHeight * 0.008),
                         ],
                       ),
                     ),
@@ -192,7 +233,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
     );
   }
 
-  // Componente: Tarjeta de Solicitud Individual
+  // Componente: Tarjeta de Solicitud Individual (Fiel a Foto 2)
   Widget _buildRequestCard({
     required String title,
     required String status,
@@ -211,17 +252,24 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.045,
-          vertical: usableHeight * 0.018,
+          vertical: usableHeight * 0.016,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(screenWidth * 0.035),
           border: Border.all(color: grisBorde),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             // Icono del tipo de solicitud
-            Icon(icon, color: iconColor, size: screenWidth * 0.095),
+            Icon(icon, color: iconColor, size: screenWidth * 0.090),
             SizedBox(width: screenWidth * 0.04),
 
             // Textos de información (Título, Estado, Fecha)
@@ -234,7 +282,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: azulFondo,
-                      fontSize: screenWidth * 0.060,
+                      fontSize: screenWidth * 0.045,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -243,8 +291,8 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                     status,
                     style: TextStyle(
                       color: statusColor,
-                      fontSize: screenWidth * 0.038,
-                      fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (dateInfo != null) ...[
@@ -253,7 +301,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                       dateInfo,
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: screenWidth * 0.03,
+                        fontSize: screenWidth * 0.030,
                       ),
                     ),
                   ],
@@ -264,12 +312,214 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
             // Flecha indicadora derecha
             Icon(
               Icons.chevron_right_rounded,
-              color: azulFondo,
+              color: Colors.grey.shade400,
               size: screenWidth * 0.06,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // Modal con el detalle completo de la solicitud (preparado para Odoo 19)
+  void _mostrarDetalleSolicitud({
+    required BuildContext context,
+    required Map<String, dynamic> item,
+    required double screenWidth,
+    required double usableHeight,
+    required Color azulFondo,
+    required Color blancoFondo,
+    required Color grisBorde,
+    required Color amarilloOro,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final safeBottom = MediaQuery.of(ctx).padding.bottom;
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            screenWidth * 0.06,
+            usableHeight * 0.02,
+            screenWidth * 0.06,
+            usableHeight * 0.03 + safeBottom,
+          ),
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(screenWidth * 0.08),
+              topRight: Radius.circular(screenWidth * 0.08),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Barra indicadora de arrastre
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+
+              // Encabezado del modal: Icono + Título + Referencia
+              Row(
+                children: [
+                  Container(
+                    width: screenWidth * 0.13,
+                    height: screenWidth * 0.13,
+                    decoration: BoxDecoration(
+                      color: (item['iconColor'] as Color).withValues(
+                        alpha: 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
+                    child: Icon(
+                      item['icon'] as IconData,
+                      color: item['iconColor'] as Color,
+                      size: screenWidth * 0.075,
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.035),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['title'] as String,
+                          style: TextStyle(
+                            color: azulFondo,
+                            fontSize: screenWidth * 0.048,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: usableHeight * 0.003),
+                        Text(
+                          'ID Odoo: ${item['referencia'] ?? 'REQ-2026-0001'}',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: screenWidth * 0.030,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.03,
+                      vertical: usableHeight * 0.006,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (item['statusColor'] as Color).withValues(
+                        alpha: 0.15,
+                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    child: Text(
+                      item['status'] as String,
+                      style: TextStyle(
+                        color: item['statusColor'] as Color,
+                        fontSize: screenWidth * 0.032,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: usableHeight * 0.025),
+
+              // Contenedor de Detalles
+              Container(
+                width: screenWidth,
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  border: Border.all(color: grisBorde),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (item['dateInfo'] != null) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: screenWidth * 0.042,
+                            color: azulFondo,
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Text(
+                            item['dateInfo'] as String,
+                            style: TextStyle(
+                              color: azulFondo,
+                              fontSize: screenWidth * 0.036,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Divider(height: usableHeight * 0.025, color: grisBorde),
+                    ],
+                    Text(
+                      'Detalle de la solicitud:',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: screenWidth * 0.032,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: usableHeight * 0.006),
+                    Text(
+                      item['detalle'] as String? ?? 'Solicitud registrada y asignada al equipo ministerial.',
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.035,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: usableHeight * 0.025),
+
+              // Botón de cerrar
+              SizedBox(
+                width: screenWidth,
+                height: usableHeight * 0.055,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azulFondo,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'Entendido',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

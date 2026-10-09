@@ -26,7 +26,6 @@ class InicioAtrioScreen extends StatefulWidget {
 
 class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   int _currentNavIndex = 0;
-  String _nombreUsuario = 'Usuario';
   String? _iglesiaLocal;
   bool _isInit = true;
 
@@ -165,16 +164,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
           .getUsuario();
 
       if (usuarioMap != null && mounted) {
-        final String nombreCompleto =
-            (usuarioMap['nombre'] as String?)?.trim() ?? 'Usuario';
-        final String primerNombre = nombreCompleto.isNotEmpty
-            ? nombreCompleto.split(' ').first
-            : 'Usuario';
-
         final String? iglesia = usuarioMap['iglesia_nombre'] as String?;
 
         setState(() {
-          _nombreUsuario = primerNombre;
           _iglesiaLocal = (iglesia != null && iglesia.trim().isNotEmpty)
               ? iglesia.trim()
               : null;
@@ -182,17 +174,6 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       }
     } catch (e) {
       debugPrint('Error al cargar datos del usuario desde atrio.db: $e');
-    }
-  }
-
-  String _obtenerSaludo() {
-    final int hora = DateTime.now().hour;
-    if (hora >= 5 && hora < 12) {
-      return 'Buen día';
-    } else if (hora >= 12 && hora < 19) {
-      return 'Buenas tardes';
-    } else {
-      return 'Buenas noches';
     }
   }
 
@@ -411,80 +392,32 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                   ),
                 ],
               ),
-              //SizedBox(height: usableHeight * 0.012),
-              // Saludo dinámico con el primer nombre real desde SQLite
-              Text(
-                '${_obtenerSaludo()}, $_nombreUsuario',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: screenWidth * 0.055,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              /*
-              // Selector interactivo con el nombre de la iglesia:
-              // Prioriza el provider y usa como fallback el dato de atrio.db
+              SizedBox(height: usableHeight * 0.012),
+              // Nombre de la iglesia a la cual pertenece el usuario actual
               Consumer<IglesiaProvider>(
                 builder: (context, provider, child) {
                   final String nombreIglesia =
-                      provider.iglesiaActual?.nombre ??
-                      _iglesiaLocal ??
-                      'Sin iglesia seleccionada';
-                  return GestureDetector(
-                    onTap: () async {
-                      await Navigator.pushNamed(
-                        context,
-                        'seleccionar_iglesia_screen',
-                      );
-                      // Refrescamos por si cambió de iglesia
-                      _cargarDatosPerfil();
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.03,
-                        vertical: usableHeight * 0.008,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.025,
-                        ),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.church_outlined,
-                            color: amarilloOro,
-                            size: screenWidth * 0.045,
-                          ),
-                          SizedBox(width: screenWidth * 0.02),
-                          Flexible(
-                            child: Text(
-                              nombreIglesia,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: screenWidth * 0.034,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.01),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white70,
-                            size: screenWidth * 0.045,
-                          ),
-                        ],
-                      ),
+                      (provider.tieneIglesiaGuardada &&
+                          provider.iglesiaActual != null &&
+                          provider.iglesiaActual!.nombre.trim().isNotEmpty)
+                      ? provider.iglesiaActual!.nombre.trim()
+                      : ((_iglesiaLocal != null &&
+                                _iglesiaLocal!.trim().isNotEmpty &&
+                                _iglesiaLocal != 'Sin iglesia seleccionada')
+                            ? _iglesiaLocal!.trim()
+                            : 'Sin iglesia seleccionada');
+                  return Text(
+                    nombreIglesia,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: screenWidth * 0.055,
+                      fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   );
                 },
               ),
-              SizedBox(height: usableHeight * 0.012),
-              */
 
               SizedBox(height: usableHeight * 0.005),
             ],

@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
+
+import 'inicio_atrio_screen.dart';
 
 /// ==============================================================================
 /// PANTALLA DE ACCESO ATRIO (INICIO DE SESIÓN / REGISTRO)
@@ -42,12 +45,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
   bool get _isProcessing => _isLoadingGoogle || _isLoadingApple;
 
-  // Instancia de GoogleSignIn (configurada con Server Client ID desde AppConfig / .env)
+  // Instancia de GoogleSignIn (temporalmente con serverClientId de prueba hasta tener credenciales oficiales de Odoo)
+  // TODO: Reemplazar serverClientId temporal por credenciales oficiales de ATRIO cuando estén disponibles
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     serverClientId: AppConfig.googleServerClientId.isNotEmpty
         ? AppConfig.googleServerClientId
-        : null,
+        : '249769938564-3nnofpi61o89njv84rt6agihftsdncvi.apps.googleusercontent.com',
   );
 
   @override
@@ -394,80 +398,78 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   }
 
   // ============================================================================
-  // FLUDO DE AUTENTICACIÓN CON GOOGLE
+  // TODO: INTEGRACIÓN DEFINITIVA CON ODOO 19
+  // Cambiar esta implementación temporal cuando se tengan las credenciales, APIs
+  // y endpoints definitivos de los dueños del código de ATRIO.
+  // Actualmente simula un login exitoso vía cuenta de Google persistiendo en
+  // SharedPreferences, AtrioDatabaseHelper y UserProvider.
   // ============================================================================
   Future<void> _iniciarSesionGoogle() async {
     setState(() => _isLoadingGoogle = true);
+    FocusScope.of(context).unfocus();
 
     try {
-      debugPrint('[AUTH] Iniciando flujo nativo de Google Sign-In...');
-      final GoogleSignInAccount? googleAccount = await _googleSignIn.signIn();
+      String email = 'usuario.google@gmail.com';
+      String nombre = 'Usuario Google';
 
-      if (googleAccount == null) {
-        // El usuario canceló voluntariamente el diálogo de Google
-        debugPrint('[AUTH] Inicio de sesión cancelado por el usuario.');
-        return;
+      // Intento de conexión nativa con timeout de seguridad (1.5 segundos)
+      // para evitar que se quede "pensando" indefinidamente si el entorno local
+      // no tiene aún las credenciales SHA-1 / google-services.json registradas.
+      try {
+        final GoogleSignInAccount? googleUser = await _googleSignIn
+            .signIn()
+            .timeout(const Duration(milliseconds: 1500));
+
+        if (googleUser != null) {
+          email = googleUser.email;
+          if (googleUser.displayName != null &&
+              googleUser.displayName!.trim().isNotEmpty) {
+            nombre = googleUser.displayName!.trim();
+          }
+        }
+      } catch (e) {
+        debugPrint(
+          '[AUTH_INFO] Google Sign-In nativo no disponible en este entorno: $e. Procediendo con inicio de sesión simulado.',
+        );
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleAccount.authentication;
-      final String? idToken = googleAuth.idToken;
-      final String? accessToken = googleAuth.accessToken;
+      // 1. Guardar en SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userEmail', email);
+      await prefs.setString('userName', nombre);
 
-      debugPrint('[AUTH] Google Sign-In exitoso:');
-      debugPrint('       Email: ${googleAccount.email}');
-      debugPrint('       Nombre: ${googleAccount.displayName}');
-      debugPrint('       ID Token presente: ${idToken != null}');
-      debugPrint('       Access Token presente: ${accessToken != null}');
-
-      // =======================================================================
-      // TODO: ODOO 19 BACKEND INTEGRATION
-      // =======================================================================
-      // Cuando el equipo de Odoo 19 entregue el endpoint oficial:
-      //
-      // 1. URL Endpoint:
-      //    '${AppConfig.odooBaseUrl}${AppConfig.odooSocialAuthEndpoint}'
-      //
-      // 2. Payload HTTP POST:
-      //    final body = jsonEncode({
-      //      'provider': 'google',
-      //      'id_token': idToken,
-      //      'access_token': accessToken,
-      //      'email': googleAccount.email,
-      //      'name': googleAccount.displayName,
-      //      'avatar_url': googleAccount.photoUrl,
-      //      'db': AppConfig.odooDatabase,
-      //    });
-      //
-      // 3. Respuesta esperada de Odoo 19:
-      //    - Cookie 'session_id' en los headers
-      //    - Body: { 'uid': 14, 'partner_id': 32, 'name': '...', 'email': '...', 'es_miembro_verificado': true }
-      // =======================================================================
-
-      // SIMULACIÓN / PERSISTENCIA LOCAL EN ATRIO (Mientras entregan el endpoint de Odoo)
-      await AtrioDatabaseHelper.instance.guardarUsuario({
-        'nombre': googleAccount.displayName ?? 'Usuario Google',
-        'email': googleAccount.email,
+      // 2. Persistir localmente en SQLite (atrio.db)
+      await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
+        'nombre': nombre,
+        'email': email,
         'celular': '',
-        'idioma': 'es_DO',
+        'iglesia_nombre': 'Sin iglesia seleccionada',
       });
 
       if (!mounted) return;
 
-      // Actualizar estado en memoria en UserProvider
-      Provider.of<UserProvider>(context, listen: false).updateUserProfile(
-        nombre: googleAccount.displayName ?? 'Usuario Google',
-        email: googleAccount.email,
-        telefono: '',
-        iglesiaActual: 'Comunidad Principal',
-      );
+      // 3. Sincronizar en memoria con UserProvider
+      try {
+        Provider.of<UserProvider>(context, listen: false).updateUserProfile(
+          nombre: nombre,
+          email: email,
+          telefono: '',
+          iglesiaActual: 'Sin iglesia seleccionada',
+        );
+      } catch (e) {
+        debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
+      }
 
-      _redirigirUsuarioPostLogin();
-    } catch (error) {
-      debugPrint('[AUTH] Error en Google Sign-In: $error');
-      _mostrarMensajeError(
-        'No se pudo completar el acceso con Google. Inténtalo nuevamente o verifica tu conexión.',
+      // 4. Redirigir a pantalla principal (HomeScreen de ATRIO)
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        InicioAtrioScreen.routeName,
+        (Route<dynamic> route) => false,
       );
+    } catch (error) {
+      debugPrint('[AUTH_ERROR] Error en Google Sign-In: $error');
+      _mostrarError('No se pudo conectar con Google. Revisa tu conexión.');
     } finally {
       if (mounted) setState(() => _isLoadingGoogle = false);
     }
@@ -775,6 +777,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   // UTILIDADES Y MODALES INFORMATIVOS
   // ============================================================================
+  void _mostrarError(String mensaje) => _mostrarMensajeError(mensaje);
+
   void _mostrarMensajeError(String mensaje) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

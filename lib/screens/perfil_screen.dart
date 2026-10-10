@@ -572,60 +572,64 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.035),
         border: Border.all(color: grisBorde),
       ),
-      child: Column(
-        children: List.generate(items.length, (index) {
-          final item = items[index];
-          final isLast = index == items.length - 1;
-          return InkWell(
-            onTap: () {
-              if (item.onCustomTap != null) {
-                item.onCustomTap!();
-              } else if (item.route != null) {
-                Navigator.pushNamed(context, item.route!);
-              }
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: usableHeight * 0.016,
-              ),
-              decoration: BoxDecoration(
-                border: isLast
-                    ? null
-                    : const Border(bottom: BorderSide(color: grisBorde)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    item.icon,
-                    color: item.customColor ?? azulFondo,
-                    size: screenWidth * 0.055,
-                  ),
-                  SizedBox(width: screenWidth * 0.035),
-                  Expanded(
-                    child: Text(
-                      item.label,
-                      style: TextStyle(
-                        color: item.customColor ?? azulFondo,
-                        fontSize: screenWidth * 0.036,
-                        fontWeight: FontWeight.w600,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: List.generate(items.length, (index) {
+            final item = items[index];
+            final isLast = index == items.length - 1;
+            return InkWell(
+              onTap: () {
+                if (item.onCustomTap != null) {
+                  item.onCustomTap!();
+                } else if (item.route != null) {
+                  Navigator.pushNamed(context, item.route!);
+                }
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04,
+                  vertical: usableHeight * 0.016,
+                ),
+                decoration: BoxDecoration(
+                  border: isLast
+                      ? null
+                      : const Border(bottom: BorderSide(color: grisBorde)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      item.icon,
+                      color: item.customColor ?? azulFondo,
+                      size: screenWidth * 0.055,
+                    ),
+                    SizedBox(width: screenWidth * 0.035),
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: TextStyle(
+                          color: item.customColor ?? azulFondo,
+                          fontSize: screenWidth * 0.036,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.grey.shade400,
-                    size: screenWidth * 0.05,
-                  ),
-                ],
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.grey.shade400,
+                      size: screenWidth * 0.05,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }

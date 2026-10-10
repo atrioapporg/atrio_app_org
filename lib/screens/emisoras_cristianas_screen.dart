@@ -12,9 +12,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../servicios/connectivity_service.dart';
 
+class CambiarTabAtrioNotification extends Notification {
+  final int nuevoIndice;
+  const CambiarTabAtrioNotification(this.nuevoIndice);
+}
+
 class EmisorasCristianasScreen extends StatefulWidget {
   static const String routeName = 'emisoras_cristianas_screen';
-  const EmisorasCristianasScreen({super.key});
+  final bool isActive;
+  const EmisorasCristianasScreen({super.key, this.isActive = true});
 
   @override
   State<EmisorasCristianasScreen> createState() =>
@@ -81,6 +87,17 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
   static const String _sheetUrl =
       'https://docs.google.com/spreadsheets/d/12VyJ9cWJrpqWq1J3uot4I1h9g57pcHhcMYgv4G07pEE/export?format=csv&gid=1021727370';
 
+  // URLs verificadas y corregidas para emisoras que tenían enlaces rotos
+  static const Map<String, String> _correccionesUrlsEmisoras = <String, String>{
+    '259': 'https://livestreamcdn.net:2000/stream/RadioVisionCristianaRadio/',
+    '262': 'https://stream2.305stream.com:8040/;',
+    '263': 'https://stream.radiojar.com/ynxaw7n8x74tv',
+    '273': 'https://streaming.live365.com/a71179',
+    '281': 'https://ewtn-ice.streamguys1.com/english-aac',
+    '277': 'https://maestro.emfcdn.com/stream_for/air1/tunein/mp3',
+    '282': 'https://shoutcast.christianrock.net/stream/5/',
+  };
+
   // Memoria caché estática para cargar UNA SOLA VEZ durante la vida de la app
   static List<Map<String, dynamic>>? _cacheEmisoras;
   static List<String>? _cachePaisesDisponibles;
@@ -96,6 +113,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
   bool _mostrandoBuscador = false;
   String _filtroBusqueda = '';
   String _paisSeleccionado = 'TODOS';
+  String _idiomaSeleccionado = 'TODOS'; // 'TODOS', 'es', 'en'
   List<String> _paisesDisponibles = <String>['TODOS'];
 
   bool _isLoading = true;
@@ -183,6 +201,24 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
       );
     } catch (e) {
       debugPrint('[RADIO_ERROR] Excepción listeners audio: $e');
+    }
+  }
+
+  @override
+  void didUpdateWidget(EmisorasCristianasScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive && !widget.isActive) {
+      _detenerReproduccion();
+    }
+  }
+
+  void _manejarRetroceso() {
+    _detenerReproduccion();
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      // Si estamos en la pestaña Radio de la pantalla principal, volver a la pestaña de Inicio (Tab 0)
+      const CambiarTabAtrioNotification(0).dispatch(context);
     }
   }
 
@@ -276,10 +312,13 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
   }
 
   void _detenerReproduccion() {
-    setState(() {
-      _emisoraActual = null;
-      _isReproduciendo = false;
-    });
+    if (mounted) {
+      setState(() {
+        _emisoraActual = null;
+        _isReproduciendo = false;
+        _isBuffering = false;
+      });
+    }
     _audioPlayer.stop();
   }
 
@@ -352,23 +391,75 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
         } else {
           final List<List<dynamic>> filas = csv.decode(csvString);
 
-          if (filas.length > 1) {
-            final List<String> headers = filas.first
-                .map((e) => e.toString().trim().toLowerCase())
-                .toList();
-            debugPrint('[RADIO_LOG] Cabeceras reales detectadas: $headers');
+          if (filas.isNotEmpty) {
+            // Buscamos si existe una fila de cabeceras en cualquier posición
+            int headerRowIndex = -1;
+            List<String> headers = <String>[];
 
-            for (int i = 1; filas.length > i; i++) {
+            for (int r = 0; filas.length > r; r++) {
+              final List<String> candidateHeaders = filas[r]
+                  .map((e) => e.toString().trim().toLowerCase())
+                  .toList();
+              if (candidateHeaders.contains('emisora_nombre') ||
+                  candidateHeaders.contains('emisora_id') ||
+                  candidateHeaders.contains('name') ||
+                  candidateHeaders.contains('streamurl')) {
+                headerRowIndex = r;
+                headers = candidateHeaders;
+                break;
+              }
+            }
+
+            debugPrint(
+              '[RADIO_LOG] Header detectado en fila $headerRowIndex: $headers',
+            );
+
+            final Set<String> clavesProcesadas = <String>{};
+
+            for (int i = 0; filas.length > i; i++) {
+              if (i == headerRowIndex) continue;
               try {
                 final List<dynamic> row = filas[i];
+                if (row.isEmpty) continue;
+
                 final Map<String, dynamic> rowData = <String, dynamic>{};
-                for (int j = 0; headers.length > j; j++) {
-                  rowData[headers[j]] = (row.length > j) ? row[j] : '';
+                if (headers.isNotEmpty) {
+                  for (int j = 0; headers.length > j; j++) {
+                    rowData[headers[j]] = (row.length > j) ? row[j] : '';
+                  }
+                } else {
+                  // Mapeo posicional estándar
+                  rowData['emisora_id'] = row.isNotEmpty ? row[0] : '';
+                  rowData['pais_codigo'] = row.length > 1 ? row[1] : '';
+                  rowData['pais'] = row.length > 2 ? row[2] : '';
+                  rowData['es_favorita'] = row.length > 3 ? row[3] : '';
+                  rowData['emisora_nombre'] = row.length > 4 ? row[4] : '';
+                  rowData['emisora_poster'] = row.length > 5 ? row[5] : '';
+                  rowData['emisora_url'] = row.length > 6 ? row[6] : '';
+                  rowData['idioma'] = row.length > 7 ? row[7] : '';
+                }
+
+                final String idRaw =
+                    (rowData['emisora_id'] ?? rowData['id'] ?? i.toString())
+                        .toString()
+                        .trim();
+                final String nombreRaw =
+                    (rowData['emisora_nombre'] ??
+                            rowData['name'] ??
+                            rowData['nombre'] ??
+                            '')
+                        .toString()
+                        .trim();
+
+                // Evitar fila de cabeceras si no fue detectada previamente
+                if (idRaw.toLowerCase() == 'emisora_id' ||
+                    nombreRaw.toLowerCase() == 'emisora_nombre') {
+                  continue;
                 }
 
                 bool isActive = true;
                 String activeKey = '';
-                for (final String key in headers) {
+                for (final String key in rowData.keys) {
                   if (key == 'isactive' ||
                       key == 'is_active' ||
                       key == 'activo' ||
@@ -405,6 +496,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                         .toString()
                         .trim();
 
+                // Extraer de etiquetas <audio src="..."> si vienen formateadas
                 if (rawUrl.contains('src="')) {
                   final int inicio = rawUrl.indexOf('src="') + 5;
                   final int fin = rawUrl.indexOf('"', inicio);
@@ -419,15 +511,21 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                   }
                 }
 
-                final String nombre =
-                    (rowData['emisora_nombre'] ??
-                            rowData['name'] ??
-                            rowData['nombre'] ??
-                            '')
-                        .toString()
-                        .trim();
+                // Aplicar corrección de URLs si la emisora está en el listado reparado
+                if (_correccionesUrlsEmisoras.containsKey(idRaw)) {
+                  rawUrl = _correccionesUrlsEmisoras[idRaw]!;
+                }
 
-                if (nombre.isEmpty && rawUrl.isEmpty) continue;
+                if (nombreRaw.isEmpty && rawUrl.isEmpty) continue;
+
+                // Evitar emisoras duplicadas en el sheet
+                final String claveUnica = idRaw.isNotEmpty
+                    ? idRaw
+                    : '$nombreRaw|$rawUrl';
+                if (clavesProcesadas.contains(claveUnica)) {
+                  continue;
+                }
+                clavesProcesadas.add(claveUnica);
 
                 final String rawPais =
                     (rowData['pais_codigo'] ??
@@ -446,11 +544,6 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                         .toString()
                         .trim();
 
-                final String id =
-                    (rowData['emisora_id'] ?? rowData['id'] ?? i.toString())
-                        .toString()
-                        .trim();
-
                 final String paisCodigo = rawPais.isEmpty ? 'OTROS' : rawPais;
                 final String paisNombre =
                     (rowData['pais'] ??
@@ -464,9 +557,22 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                     ? paisNombre
                     : _obtenerNombrePais(paisCodigo);
 
+                // Normalizar idioma: 'es' (Español), 'en' (Inglés)
+                String idioma = (rowData['idioma'] ?? rowData['language'] ?? '')
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+                if (idioma.isEmpty) {
+                  idioma = (paisCodigo == 'US') ? 'en' : 'es';
+                } else if (idioma.startsWith('es') || idioma.contains('espa')) {
+                  idioma = 'es';
+                } else if (idioma.startsWith('en') || idioma.contains('ingl')) {
+                  idioma = 'en';
+                }
+
                 resultado.add({
-                  'id': id.isNotEmpty ? id : i.toString(),
-                  'name': nombre,
+                  'id': idRaw.isNotEmpty ? idRaw : i.toString(),
+                  'name': nombreRaw,
                   'frequency': (rowData['frequency'] ?? 'Online')
                       .toString()
                       .trim(),
@@ -478,6 +584,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                   'pais_nombre': nombrePaisReal,
                   'streamUrl': rawUrl,
                   'logo': logo,
+                  'idioma': idioma,
                   'denomination':
                       (rowData['denomination'] ??
                               rowData['denominacion'] ??
@@ -611,6 +718,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
           'pais_nombre': nombrePaisReal,
           'streamUrl': rawUrl,
           'logo': poster,
+          'idioma': (e['idioma'] ?? 'es').toString().trim().toLowerCase(),
           'denomination':
               (e['denomination'] ?? e['denominacion'] ?? 'Cristiana')
                   .toString()
@@ -675,7 +783,18 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
         }
       }
 
-      // 2. BUSCADOR DE TEXTO
+      // 2. FILTRO DE IDIOMA
+      if (_idiomaSeleccionado != 'TODOS') {
+        final String idiomaEmisora = (emisora['idioma'] ?? 'es')
+            .toString()
+            .trim()
+            .toLowerCase();
+        if (idiomaEmisora != _idiomaSeleccionado.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // 3. BUSCADOR DE TEXTO
       if (query.isEmpty) {
         return true;
       }
@@ -826,6 +945,113 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     );
   }
 
+  Widget _buildSelectorIdioma(double screenWidth, double usableHeight) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        screenWidth * 0.05,
+        usableHeight * 0.012,
+        screenWidth * 0.05,
+        0,
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: _buildChipIdioma(
+              id: 'TODOS',
+              label: 'Todos',
+              icono: Icons.language_rounded,
+              screenWidth: screenWidth,
+              usableHeight: usableHeight,
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.025),
+          Expanded(
+            child: _buildChipIdioma(
+              id: 'es',
+              label: 'Español',
+              icono: Icons.translate_rounded,
+              screenWidth: screenWidth,
+              usableHeight: usableHeight,
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.025),
+          Expanded(
+            child: _buildChipIdioma(
+              id: 'en',
+              label: 'Inglés',
+              icono: Icons.public_rounded,
+              screenWidth: screenWidth,
+              usableHeight: usableHeight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChipIdioma({
+    required String id,
+    required String label,
+    required IconData icono,
+    required double screenWidth,
+    required double usableHeight,
+  }) {
+    final bool seleccionado = _idiomaSeleccionado == id;
+    return GestureDetector(
+      onTap: () {
+        if (_idiomaSeleccionado != id) {
+          setState(() {
+            _idiomaSeleccionado = id;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          vertical: usableHeight * 0.009,
+          horizontal: screenWidth * 0.02,
+        ),
+        decoration: BoxDecoration(
+          color: seleccionado ? azulFondo : Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          border: Border.all(
+            color: seleccionado ? azulFondo : grisBorde,
+            width: seleccionado ? 1.5 : 1.0,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: seleccionado ? 0.08 : 0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              icono,
+              color: seleccionado ? amarilloOro : Colors.grey.shade600,
+              size: screenWidth * 0.042,
+            ),
+            SizedBox(width: screenWidth * 0.015),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: seleccionado ? Colors.white : azulFondo,
+                  fontSize: screenWidth * 0.033,
+                  fontWeight: seleccionado ? FontWeight.bold : FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBannerFavoritos(
     double screenWidth,
     double usableHeight,
@@ -965,7 +1191,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: _manejarRetroceso,
                 child: Container(
                   padding: EdgeInsets.all(screenWidth * 0.02),
                   decoration: BoxDecoration(
@@ -1115,6 +1341,31 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                         ),
                       ),
                     ),
+                  Positioned(
+                    top: screenWidth * 0.015,
+                    left: screenWidth * 0.015,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.018,
+                        vertical: screenWidth * 0.005,
+                      ),
+                      decoration: BoxDecoration(
+                        color: azulFondo.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.015,
+                        ),
+                      ),
+                      child: Text(
+                        (emisora['idioma'] ?? 'es').toString().toUpperCase(),
+                        style: TextStyle(
+                          color: amarilloOro,
+                          fontWeight: FontWeight.w800,
+                          fontSize: screenWidth * 0.024,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
                   Positioned(
                     top: screenWidth * 0.01,
                     right: screenWidth * 0.01,
@@ -1431,64 +1682,73 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     final List<Map<String, dynamic>> emisorasFiltradas = _filtrarEmisoras();
     final Map<String, dynamic>? actual = _emisoraActual;
 
-    return Scaffold(
-      backgroundColor: azulFondo,
-      body: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          width: screenWidth,
-          height: screenHeight - safeAreaTop,
-          child: Column(
-            children: <Widget>[
-              _buildHeader(screenWidth, usableHeight),
-              // CONTENEDOR BLANCO CON LISTADO
-              Expanded(
-                child: Container(
-                  width: screenWidth,
-                  decoration: BoxDecoration(
-                    color: blancoFondo,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(screenWidth * 0.08),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) return;
+        _manejarRetroceso();
+      },
+      child: Scaffold(
+        backgroundColor: azulFondo,
+        body: SafeArea(
+          bottom: false,
+          child: SizedBox(
+            width: screenWidth,
+            height: screenHeight - safeAreaTop,
+            child: Column(
+              children: <Widget>[
+                _buildHeader(screenWidth, usableHeight),
+                // CONTENEDOR BLANCO CON LISTADO
+                Expanded(
+                  child: Container(
+                    width: screenWidth,
+                    decoration: BoxDecoration(
+                      color: blancoFondo,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(screenWidth * 0.08),
+                      ),
                     ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(screenWidth * 0.08),
-                    ),
-                    child: Column(
-                      children: <Widget>[
-                        // FILTRO POR PAÍS Y BOTÓN DE FAVORITOS
-                        _buildCustomDropdown(screenWidth, usableHeight),
-                        SizedBox(height: usableHeight * 0.015),
-                        // BANNER INDICADOR DE FAVORITOS
-                        if (_mostrarSoloFavoritos)
-                          _buildBannerFavoritos(
-                            screenWidth,
-                            usableHeight,
-                            emisorasFiltradas.length,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(screenWidth * 0.08),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          // FILTRO POR PAÍS Y BOTÓN DE FAVORITOS
+                          _buildCustomDropdown(screenWidth, usableHeight),
+                          // FILTRO POR IDIOMA (TODOS, ESPAÑOL, INGLÉS)
+                          _buildSelectorIdioma(screenWidth, usableHeight),
+                          SizedBox(height: usableHeight * 0.015),
+                          // BANNER INDICADOR DE FAVORITOS
+                          if (_mostrarSoloFavoritos)
+                            _buildBannerFavoritos(
+                              screenWidth,
+                              usableHeight,
+                              emisorasFiltradas.length,
+                            ),
+                          // CUADRÍCULA DE EMISORAS
+                          Expanded(
+                            child: _buildGrid(
+                              emisorasFiltradas,
+                              screenWidth,
+                              usableHeight,
+                            ),
                           ),
-                        // CUADRÍCULA DE EMISORAS
-                        Expanded(
-                          child: _buildGrid(
-                            emisorasFiltradas,
-                            screenWidth,
-                            usableHeight,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              // MINIRREPRODUCTOR
-              if (actual != null)
-                _buildMiniPlayer(
-                  actual,
-                  screenWidth,
-                  usableHeight,
-                  safeAreaBottom,
-                ),
-            ],
+                // MINIRREPRODUCTOR
+                if (actual != null)
+                  _buildMiniPlayer(
+                    actual,
+                    screenWidth,
+                    usableHeight,
+                    safeAreaBottom,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

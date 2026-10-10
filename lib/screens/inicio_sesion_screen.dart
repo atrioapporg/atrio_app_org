@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -34,6 +35,7 @@ class InicioSesionScreen extends StatefulWidget {
 class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // Paleta oficial ATRIO
   static const Color azulFondo = Color(0xFF072B4F);
+  static const Color amarilloOro = Color(0xFFE5A023);
   static const Color blancoFondo = Color(0xFFFAF7F0);
   static const Color grisBorde = Color(0xFFE0E0E0);
   static const Color textoGris = Color(0xFF757575);
@@ -217,7 +219,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                             'Acceso Rápido y Seguro',
                             style: TextStyle(
                               color: azulFondo,
-                              fontSize: screenWidth * 0.055,
+                              fontSize: screenWidth * 0.065,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
@@ -225,10 +227,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                           SizedBox(height: usableHeight * 0.008),
 
                           Text(
-                            'Ingresa o regístrate en un solo toque sin contraseñas que olvidar.',
+                            'Ingresa en un solo toque',
                             style: TextStyle(
                               color: textoGris,
-                              fontSize: screenWidth * 0.035,
+                              fontSize: screenWidth * 0.045,
                               height: 1.35,
                             ),
                             textAlign: TextAlign.center,
@@ -255,11 +257,11 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                           // BOTÓN 2: CONTINUAR CON APPLE (Obligatorio iOS)
                           // ===================================================
                           _buildSocialButton(
-                            title: 'Continuar con Apple',
+                            title: '   Continuar con Apple',
                             customIcon: FaIcon(
                               FontAwesomeIcons.apple,
                               color: Colors.white,
-                              size: screenWidth * 0.055,
+                              size: screenWidth * 0.085,
                             ),
                             backgroundColor: Colors.black,
                             textColor: Colors.white,
@@ -267,7 +269,20 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                             isLoading: _isLoadingApple,
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
-                            onTap: _isProcessing ? null : _iniciarSesionApple,
+                            onTap: _isProcessing
+                                ? null
+                                : () {
+                                    if (defaultTargetPlatform ==
+                                        TargetPlatform.android) {
+                                      _mostrarAvisoAndroidApple(
+                                        context,
+                                        screenWidth,
+                                        usableHeight,
+                                      );
+                                      return;
+                                    }
+                                    _iniciarSesionApple();
+                                  },
                           ),
                           SizedBox(height: usableHeight * 0.030),
 
@@ -287,7 +302,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               'Explorar como invitado',
                               style: TextStyle(
                                 color: azulLink,
-                                fontSize: screenWidth * 0.036,
+                                fontSize: screenWidth * 0.050,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -323,7 +338,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                                   'Términos de uso',
                                   style: TextStyle(
                                     color: azulFondo,
-                                    fontSize: screenWidth * 0.030,
+                                    fontSize: screenWidth * 0.040,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
@@ -336,7 +351,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                                   '•',
                                   style: TextStyle(
                                     color: textoGris,
-                                    fontSize: screenWidth * 0.03,
+                                    fontSize: screenWidth * 0.035,
                                   ),
                                 ),
                               ),
@@ -346,42 +361,32 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                                   'Privacidad',
                                   style: TextStyle(
                                     color: azulFondo,
-                                    fontSize: screenWidth * 0.030,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.02,
-                                ),
-                                child: Text(
-                                  '•',
-                                  style: TextStyle(
-                                    color: textoGris,
-                                    fontSize: screenWidth * 0.03,
-                                  ),
-                                ),
-                              ),
-                              // Enlace directo a solicitud de eliminación de datos
-                              // (Cumplimiento de políticas de Google Play y Apple)
-                              GestureDetector(
-                                onTap: () => _mostrarSolicitudEliminacionDatos(
-                                  context,
-                                  screenWidth,
-                                  usableHeight,
-                                ),
-                                child: Text(
-                                  'Eliminar mis datos',
-                                  style: TextStyle(
-                                    color: Colors.red.shade700,
-                                    fontSize: screenWidth * 0.030,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: screenWidth * 0.040,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
                               ),
                             ],
+                          ),
+                          SizedBox(height: usableHeight * 0.012),
+
+                          // Enlace directo a solicitud de eliminación de datos
+                          // (Cumplimiento de políticas de Google Play y Apple)
+                          GestureDetector(
+                            onTap: () => _mostrarSolicitudEliminacionDatos(
+                              context,
+                              screenWidth,
+                              usableHeight,
+                            ),
+                            child: Text(
+                              'Eliminar mis datos',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontSize: screenWidth * 0.040,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                           ),
                           SizedBox(height: usableHeight * 0.02),
                         ],
@@ -479,6 +484,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // FLUJO DE AUTENTICACIÓN CON APPLE
   // ============================================================================
   Future<void> _iniciarSesionApple() async {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return;
+    }
     setState(() => _isLoadingApple = true);
 
     try {
@@ -775,6 +783,137 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   }
 
   // ============================================================================
+  // AVISO SISTEMA OPERATIVO (APPLE EN ANDROID)
+  // ============================================================================
+  void _mostrarAvisoAndroidApple(
+    BuildContext context,
+    double screenWidth,
+    double usableHeight,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: blancoFondo,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.02),
+              decoration: BoxDecoration(
+                color: amarilloOro.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.phone_android_rounded,
+                color: azulFondo,
+                size: screenWidth * 0.065,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.025),
+            Expanded(
+              child: Text(
+                'Opción no disponible',
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Has seleccionado "Continuar con Apple", la cual es una opción diseñada exclusivamente para dispositivos Apple (iOS).',
+              style: TextStyle(
+                color: Colors.grey.shade800,
+                fontSize: screenWidth * 0.036,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: usableHeight * 0.015),
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.03),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                border: Border.all(color: grisBorde),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline_rounded,
+                    color: const Color(0xFF2E7D32),
+                    size: screenWidth * 0.055,
+                  ),
+                  SizedBox(width: screenWidth * 0.02),
+                  Expanded(
+                    child: Text(
+                      'En tu dispositivo Android, por favor utiliza "Continuar con Google" para ingresar de forma rápida y segura.',
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.033,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              'Entendido',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+                fontSize: screenWidth * 0.036,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              _iniciarSesionGoogle();
+            },
+            icon: Image.asset(
+              'assets/images/google_logo.png',
+              width: screenWidth * 0.045,
+              height: screenWidth * 0.045,
+            ),
+            label: Text(
+              'Usar Google',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: screenWidth * 0.036,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: azulFondo,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.04,
+                vertical: usableHeight * 0.012,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================================
   // UTILIDADES Y MODALES INFORMATIVOS
   // ============================================================================
   void _mostrarError(String mensaje) => _mostrarMensajeError(mensaje);
@@ -854,7 +993,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   }) {
     return SizedBox(
       width: double.infinity,
-      height: usableHeight * 0.056,
+      height: usableHeight * 0.060,
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
@@ -881,8 +1020,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   if (imageAsset != null)
                     Image.asset(
                       imageAsset,
-                      width: screenWidth * 0.055,
-                      height: screenWidth * 0.055,
+                      width: screenWidth * 0.140,
+                      height: screenWidth * 0.140,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => Icon(
                         Icons.account_circle,
@@ -899,7 +1038,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                     title,
                     style: TextStyle(
                       color: textColor,
-                      fontSize: screenWidth * 0.040,
+                      fontSize: screenWidth * 0.055,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.2,
                     ),

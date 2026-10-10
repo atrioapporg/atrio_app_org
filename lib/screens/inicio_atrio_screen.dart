@@ -231,7 +231,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       ),
       const IglesiaScreen(),
       const ExplorarScreen(),
-      const EmisorasCristianasScreen(),
+      EmisorasCristianasScreen(
+        isActive: _currentNavIndex == 3,
+      ),
       const PerfilScreen(),
     ];
 
@@ -295,7 +297,21 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
           bottom: false,
           child: SizedBox(
             width: screenWidth,
-            child: vistasPrincipales[_currentNavIndex],
+            child: NotificationListener<CambiarTabAtrioNotification>(
+              onNotification: (notification) {
+                setState(() {
+                  _currentNavIndex = notification.nuevoIndice;
+                });
+                if (notification.nuevoIndice == 0) {
+                  _cargarDatosPerfil();
+                }
+                return true;
+              },
+              child: IndexedStack(
+                index: _currentNavIndex,
+                children: vistasPrincipales,
+              ),
+            ),
           ),
         ),
       ),

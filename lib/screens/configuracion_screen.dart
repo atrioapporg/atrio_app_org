@@ -489,7 +489,6 @@ class ConfiguracionScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.035),
         border: Border.all(color: grisBorde),
         boxShadow: [
@@ -500,8 +499,10 @@ class ConfiguracionScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
+      child: Material(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        clipBehavior: Clip.antiAlias,
         child: Column(children: children),
       ),
     );

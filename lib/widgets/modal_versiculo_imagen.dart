@@ -55,156 +55,198 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final safeAreaTop = MediaQuery.of(context).padding.top;
-    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final screenHeight = media.size.height;
+    final safeAreaTop = media.padding.top;
+    final safeAreaBottom = media.padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    // Proporción exacta de la imagen de fondo (688 x 1504)
+    const imageAspectRatio = 688.0 / 1504.0;
+
+    // Tamaño máximo dentro de la pantalla para mantener la proporción sin recortar la imagen
+    final maxCardWidth = screenWidth * 0.94;
+    final maxCardHeight = usableHeight * 0.96;
+
+    double cardHeight = maxCardHeight;
+    double cardWidth = cardHeight * imageAspectRatio;
+
+    if (cardWidth > maxCardWidth) {
+      cardWidth = maxCardWidth;
+      cardHeight = cardWidth / imageAspectRatio;
+    }
 
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.03,
-        vertical: usableHeight * 0.02,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(screenWidth * 0.05),
-        child: Container(
-          width: screenWidth * 0.98,
-          height: usableHeight * 0.94,
-          color: Colors.transparent,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 1. IMAGEN DE FONDO
-              Image.asset(widget.rutaImagenBlanca, fit: BoxFit.cover),
+      insetPadding: EdgeInsets.zero,
+      child: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(cardWidth * 0.05),
+          child: SizedBox(
+            width: cardWidth,
+            height: cardHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // 1. IMAGEN DE FONDO
+                Image.asset(widget.rutaImagenBlanca, fit: BoxFit.fill),
 
-              // 2. ÁREA DE LAS PÁGINAS BLANCAS (Texto del versículo)
-              Positioned(
-                top: usableHeight * 0.18,
-                bottom: usableHeight * 0.23,
-                left: screenWidth * 0.12,
-                right: screenWidth * 0.12,
-                child: FutureBuilder<VersiculoDia>(
-                  future: _versiculoFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF072B4F),
-                        ),
-                      );
-                    }
+                // 2. ÁREA DE LAS PÁGINAS BLANCAS (Perfectamente centrada en el libro abierto)
+                Positioned(
+                  top: cardHeight * 0.235,
+                  bottom: cardHeight * 0.355,
+                  left: cardWidth * 0.13,
+                  right: cardWidth * 0.13,
+                  child: FutureBuilder<VersiculoDia>(
+                    future: _versiculoFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF072B4F),
+                          ),
+                        );
+                      }
 
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'No se pudo cargar el versículo.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: screenWidth * 0.045,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            SizedBox(height: usableHeight * 0.01),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.refresh_rounded,
-                                color: Color(0xFF072B4F),
-                                size: 32,
-                              ),
-                              onPressed: _cargarVersiculo,
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    final versiculo = snapshot.data!;
-                    final String referenciaLimpia = versiculo.referencia
-                        .trim()
-                        .toUpperCase();
-
-                    return Scrollbar(
-                      thumbVisibility: true,
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.02,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '«${versiculo.texto}»',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: screenWidth * 0.055,
-                                fontWeight: FontWeight.w700,
-                                height: 1.3,
-                              ),
-                            ),
-                            if (referenciaLimpia.isNotEmpty) ...[
-                              SizedBox(height: usableHeight * 0.02),
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Text(
-                                referenciaLimpia,
+                                'No se pudo cargar el versículo.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: const Color.fromARGB(255, 11, 17, 131),
-                                  fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.1,
+                                  color: Colors.black54,
+                                  fontSize: (cardWidth * 0.050).clamp(
+                                    12.0,
+                                    18.0,
+                                  ),
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              SizedBox(height: usableHeight * 0.01),
+                              SizedBox(height: cardHeight * 0.01),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: Color(0xFF072B4F),
+                                  size: 32,
+                                ),
+                                onPressed: _cargarVersiculo,
+                              ),
                             ],
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                          ),
+                        );
+                      }
 
-              // 3. BOTÓN DE CERRAR DIRECTO (Esquina superior derecha)
-              Positioned(
-                top: usableHeight * 0.02,
-                right: screenWidth * 0.03,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: EdgeInsets.all(screenWidth * 0.02),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                      final versiculo = snapshot.data!;
+                      final String referenciaLimpia = versiculo.referencia
+                          .trim()
+                          .toUpperCase();
+
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Scrollbar(
+                            thumbVisibility: false,
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: cardWidth * 0.03,
+                                      vertical: cardHeight * 0.015,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          '«${versiculo.texto}»',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: (cardWidth * 0.052).clamp(
+                                              14.0,
+                                              22.0,
+                                            ),
+                                            fontWeight: FontWeight.w700,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                        if (referenciaLimpia.isNotEmpty) ...[
+                                          SizedBox(height: cardHeight * 0.015),
+                                          Text(
+                                            referenciaLimpia,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: const Color.fromARGB(
+                                                255,
+                                                11,
+                                                17,
+                                                131,
+                                              ),
+                                              fontSize: (cardWidth * 0.042)
+                                                  .clamp(12.0, 18.0),
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 1.1,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+
+                // 3. BOTÓN DE CERRAR DIRECTO (Esquina superior derecha)
+                Positioned(
+                  top: cardHeight * 0.02,
+                  right: cardWidth * 0.03,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: EdgeInsets.all(cardWidth * 0.02),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 1,
                         ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                      size: screenWidth * 0.055,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: cardWidth * 0.055,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

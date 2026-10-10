@@ -297,7 +297,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
             'VERSÍCULO DEL DÍA',
             style: TextStyle(
               color: dorado,
-              fontSize: screenWidth * 0.026,
+              fontSize: screenWidth * 0.045,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
@@ -332,7 +332,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
             'PALABRA DEL DÍA',
             style: TextStyle(
               color: azulClaro,
-              fontSize: screenWidth * 0.026,
+              fontSize: screenWidth * 0.045,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),

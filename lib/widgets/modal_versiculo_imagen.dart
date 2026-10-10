@@ -1,24 +1,31 @@
+import 'package:flutter/material.dart';
 import 'package:atrio/modelos/versiculo_dia.dart';
 import 'package:atrio/servicios/versiculo_service.dart';
-import 'package:flutter/material.dart';
 
 class ModalVersiculoImagen extends StatefulWidget {
   final String rutaImagenBlanca;
+  final VersiculoDia? versiculo;
 
   const ModalVersiculoImagen({
     super.key,
     this.rutaImagenBlanca = 'assets/images/jesus_libro_blanco.png',
+    this.versiculo,
   });
 
+  /// Muestra el modal del versículo del día sin tiempo de autocierre.
   static void mostrar(
     BuildContext context, {
     String rutaImagenBlanca = 'assets/images/jesus_libro_blanco.png',
+    VersiculoDia? versiculo,
   }) {
     showDialog(
       context: context,
       barrierColor: Colors.black87,
-      builder: (ctx) =>
-          ModalVersiculoImagen(rutaImagenBlanca: rutaImagenBlanca),
+      barrierDismissible: true,
+      builder: (ctx) => ModalVersiculoImagen(
+        rutaImagenBlanca: rutaImagenBlanca,
+        versiculo: versiculo,
+      ),
     );
   }
 
@@ -33,7 +40,11 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
   @override
   void initState() {
     super.initState();
-    _cargarVersiculo();
+    if (widget.versiculo != null) {
+      _versiculoFuture = Future.value(widget.versiculo!);
+    } else {
+      _cargarVersiculo();
+    }
   }
 
   void _cargarVersiculo() {
@@ -69,9 +80,8 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
               // 1. IMAGEN DE FONDO
               Image.asset(widget.rutaImagenBlanca, fit: BoxFit.cover),
 
-              // 2. ÁREA DE LAS PÁGINAS BLANCAS (Comenzando desde arriba)
+              // 2. ÁREA DE LAS PÁGINAS BLANCAS (Texto del versículo)
               Positioned(
-                // Subimos el 'top' para que el texto comience exactamente en la parte superior del libro
                 top: usableHeight * 0.18,
                 bottom: usableHeight * 0.23,
                 left: screenWidth * 0.12,
@@ -101,6 +111,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
+                            SizedBox(height: usableHeight * 0.01),
                             IconButton(
                               icon: const Icon(
                                 Icons.refresh_rounded,
@@ -119,7 +130,6 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                         .trim()
                         .toUpperCase();
 
-                    // 3. CONTENEDOR CON ALINEACIÓN SUPERIOR (Elimina espacios vacíos arriba)
                     return Scrollbar(
                       thumbVisibility: true,
                       child: SingleChildScrollView(
@@ -128,8 +138,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                           horizontal: screenWidth * 0.02,
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment
-                              .start, // Alineado desde la parte superior
+                          mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
@@ -164,7 +173,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                 ),
               ),
 
-              // 4. BOTÓN DE CERRAR
+              // 3. BOTÓN DE CERRAR DIRECTO (Esquina superior derecha)
               Positioned(
                 top: usableHeight * 0.02,
                 right: screenWidth * 0.03,
@@ -173,13 +182,24 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                   child: Container(
                     padding: EdgeInsets.all(screenWidth * 0.02),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
+                      color: Colors.black.withValues(alpha: 0.55),
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       Icons.close_rounded,
                       color: Colors.white,
-                      size: screenWidth * 0.06,
+                      size: screenWidth * 0.055,
                     ),
                   ),
                 ),

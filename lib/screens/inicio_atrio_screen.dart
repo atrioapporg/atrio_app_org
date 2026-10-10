@@ -10,7 +10,6 @@ import '../modelos/anuncio_model.dart';
 import '../providers/iglesia_provider.dart';
 import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
-import '../widgets/modal_versiculo_imagen.dart';
 import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
@@ -62,10 +61,6 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   Timer? _anunciosTimer;
   late final PageController _anunciosPageController;
 
-  // Bandera estática para asegurar que el modal del versículo
-  // aparezca una sola vez por cada inicio de sesión / apertura de la app.
-  static bool _versiculoMostradoEnSesion = false;
-
   @override
   void initState() {
     super.initState();
@@ -74,14 +69,6 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     _iniciarTimerAvisos();
     _cargarAnuncios();
     _cargarDatosPerfil();
-
-    // Muestra el modal del versículo automáticamente al terminar de renderizar la pantalla inicial
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_versiculoMostradoEnSesion && mounted) {
-        _versiculoMostradoEnSesion = true;
-        ModalVersiculoImagen.mostrar(context);
-      }
-    });
   }
 
   Future<void> _cargarAnuncios() async {
@@ -447,20 +434,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HeroBannerCard(
-                      title: 'Culto en vivo',
-                      subtitle: 'Domingo · 10:00 a. m.',
-                      buttonText: 'Ver ahora',
-                      heightFactor: 0.18,
-                      backgroundImage: 'assets/images/biblia3.jpg',
-                      watermarkIcon: Icons.add,
-                      onButtonPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          'videos_transmisiones_screen',
-                        );
-                      },
-                    ),
+                    const HeroBannerCard(heightFactor: 0.195),
                     SizedBox(height: usableHeight * 0.015),
                     _buildNoticeBar(
                       screenWidth: screenWidth,

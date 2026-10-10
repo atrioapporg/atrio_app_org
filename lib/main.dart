@@ -22,6 +22,7 @@ import 'package:atrio/providers/proyecto_solidario_provider.dart';
 import 'package:atrio/providers/explorar_provider.dart';
 import 'package:atrio/providers/biblia_provider.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
+import 'package:atrio/providers/ajustes_provider.dart';
 
 // Screens - Autenticación / Onboarding
 import 'package:atrio/screens/intro_encuentra_screen.dart';
@@ -41,6 +42,7 @@ import 'package:atrio/screens/iglesias_en_mapa_screen.dart';
 import 'package:atrio/screens/notificaciones_screen.dart';
 import 'package:atrio/screens/ayuda_soporte_screen.dart';
 import 'package:atrio/screens/terminos_privacidad_screen.dart';
+import 'package:atrio/screens/configuracion_screen.dart';
 
 // Screens - Donaciones / Aportes
 import 'package:atrio/screens/donaciones_screen.dart';
@@ -132,6 +134,7 @@ class AppState extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BibliaProvider()),
         ChangeNotifierProvider(create: (_) => TradicionCristianaProvider()),
         ChangeNotifierProvider(create: (_) => ExplorarProvider()),
+        ChangeNotifierProvider(create: (_) => AjustesProvider()),
       ],
       child: MyApp(initialRoute: initialRoute),
     );
@@ -174,6 +177,7 @@ class MyApp extends StatelessWidget {
     NotificacionesScreen.routeName: (_) => const NotificacionesScreen(),
     AyudaSoporteScreen.routeName: (_) => const AyudaSoporteScreen(),
     TerminosPrivacidadScreen.routeName: (_) => const TerminosPrivacidadScreen(),
+    ConfiguracionScreen.routeName: (_) => const ConfiguracionScreen(),
 
     // ---------- Donaciones y Aportes ----------
     DonacionesScreen.routeName: (_) => const DonacionesScreen(),

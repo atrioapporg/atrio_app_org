@@ -1,17 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import '../modelos/ajustes_model.dart';
 
 class AtrioDatabaseHelper {
   static const _databaseName = "atrio.db";
-  // Subimos a versión 2 para migrar las nuevas tablas de notas y favoritos
-  static const _databaseVersion = 2;
+  // Subimos a versión 3 para la tabla de ajustes generales e idioma
+  static const _databaseVersion = 3;
 
   // Nombres de las tablas
   static const tableUsuario = 'usuario';
   static const tableConfig = 'config_atrio';
   static const tableNotas = 'notas_biblia';
   static const tableFavoritos = 'favoritos_biblia';
+  static const tableAjustes = 'ajustes_atrio';
 
   // Singleton
   AtrioDatabaseHelper._init();
@@ -108,6 +110,29 @@ class AtrioDatabaseHelper {
       )
     ''');
 
+    // 6. Tabla: ajustes_atrio (Configuración general e idioma)
+    await db.execute('''
+      CREATE TABLE $tableAjustes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        idioma_codigo TEXT DEFAULT 'es',
+        pais_region TEXT DEFAULT 'DO',
+        tema_modo TEXT DEFAULT 'sistema',
+        notif_versiculo_dia INTEGER DEFAULT 1,
+        notif_palabra_dia INTEGER DEFAULT 1,
+        notif_cultos_en_vivo INTEGER DEFAULT 1,
+        notif_anuncios_eventos INTEGER DEFAULT 1,
+        hora_notif_devocional TEXT DEFAULT '07:00',
+        biblia_version_predeterminada TEXT DEFAULT 'RVR1960',
+        tamano_fuente_lectura REAL DEFAULT 1.0,
+        mantener_pantalla_activa INTEGER DEFAULT 1,
+        reproduccion_automatica_radio INTEGER DEFAULT 0,
+        calidad_audio_streaming TEXT DEFAULT 'alta',
+        solo_descargar_con_wifi INTEGER DEFAULT 1,
+        tiempo_cierre_modal_versiculo INTEGER DEFAULT 4,
+        actualizado_en TEXT
+      )
+    ''');
+
     // Configuración inicial por defecto
     await db.insert(tableConfig, {
       'tema_oscuro': 0,
@@ -116,6 +141,9 @@ class AtrioDatabaseHelper {
       'url_privacidad': 'https://atrioapp.com/privacidad',
       'actualizado_en': DateTime.now().toIso8601String(),
     });
+
+    // Inserción de ajustes generales por defecto
+    await db.insert(tableAjustes, AjustesModel.predeterminado().toMap());
 
     debugPrint('[ATRIO_DB] Todas las tablas creadas con éxito.');
   }
@@ -156,6 +184,43 @@ class AtrioDatabaseHelper {
         '[ATRIO_DB] Migración a v2 completada (tablas notas y favoritos creadas).',
       );
     }
+
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableAjustes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          idioma_codigo TEXT DEFAULT 'es',
+          pais_region TEXT DEFAULT 'DO',
+          tema_modo TEXT DEFAULT 'sistema',
+          notif_versiculo_dia INTEGER DEFAULT 1,
+          notif_palabra_dia INTEGER DEFAULT 1,
+          notif_cultos_en_vivo INTEGER DEFAULT 1,
+          notif_anuncios_eventos INTEGER DEFAULT 1,
+          hora_notif_devocional TEXT DEFAULT '07:00',
+          biblia_version_predeterminada TEXT DEFAULT 'RVR1960',
+          tamano_fuente_lectura REAL DEFAULT 1.0,
+          mantener_pantalla_activa INTEGER DEFAULT 1,
+          reproduccion_automatica_radio INTEGER DEFAULT 0,
+          calidad_audio_streaming TEXT DEFAULT 'alta',
+          solo_descargar_con_wifi INTEGER DEFAULT 1,
+          tiempo_cierre_modal_versiculo INTEGER DEFAULT 4,
+          actualizado_en TEXT
+        )
+      ''');
+
+      final existing = await db.query(tableAjustes, limit: 1);
+      if (existing.isEmpty) {
+        await db.insert(tableAjustes, AjustesModel.predeterminado().toMap());
+      }
+      debugPrint('[ATRIO_DB] Migración a v3 completada (tabla $tableAjustes creada).');
+    }
+
+    // Asegurar columna tiempo_cierre_modal_versiculo en caso de base de datos existente
+    try {
+      await db.execute(
+        'ALTER TABLE $tableAjustes ADD COLUMN tiempo_cierre_modal_versiculo INTEGER DEFAULT 4',
+      );
+    } catch (_) {}
   }
 
   // ============================================================
@@ -408,5 +473,49 @@ class AtrioDatabaseHelper {
     // Valor inicial por defecto si nunca ha leído nada
     return {'libro': 'Génesis', 'capitulo': 1, 'totalCapitulos': 50};
   }
-  //
+
+  // ============================================================
+  // MÉTODOS CRUD: AJUSTES_ATRIO (Configuración Global e Idioma)
+  // ============================================================
+  /// Obtiene los ajustes de la aplicación (o inserta los predeterminados si no existen)
+  Future<AjustesModel> getAjustes() async {
+    final db = await instance.database;
+    final result = await db.query(tableAjustes, limit: 1);
+    if (result.isNotEmpty) {
+      return AjustesModel.fromMap(result.first);
+    }
+    final defaultAjustes = AjustesModel.predeterminado();
+    await db.insert(
+      tableAjustes,
+      defaultAjustes.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return defaultAjustes;
+  }
+
+  /// Guarda o actualiza los ajustes completos
+  Future<int> guardarAjustes(AjustesModel ajustes) async {
+    final db = await instance.database;
+    final map = ajustes.toMap();
+    map['actualizado_en'] = DateTime.now().toIso8601String();
+    return await db.insert(
+      tableAjustes,
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Actualiza un campo específico de los ajustes (idioma, tema, switch, etc.)
+  Future<int> actualizarAjusteCampo(String columna, dynamic valor) async {
+    final db = await instance.database;
+    return await db.update(
+      tableAjustes,
+      {
+        columna: valor is bool ? (valor ? 1 : 0) : valor,
+        'actualizado_en': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+  }
 }

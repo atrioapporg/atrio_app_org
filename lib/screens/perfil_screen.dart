@@ -13,6 +13,7 @@ import 'notificaciones_screen.dart';
 import 'seguimiento_solicitud_screen.dart';
 import 'terminos_privacidad_screen.dart';
 import 'tradicion_cristiana_screen.dart';
+import 'configuracion_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   static const routeName = 'perfil_screen';
@@ -163,6 +164,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         icon: Icons.notifications_none_rounded,
                         label: 'Notificaciones',
                         route: NotificacionesScreen.routeName,
+                      ),
+                      const _MenuItemData(
+                        icon: Icons.settings_outlined,
+                        label: 'Ajustes de la app',
+                        route: ConfiguracionScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.delete_forever_outlined,

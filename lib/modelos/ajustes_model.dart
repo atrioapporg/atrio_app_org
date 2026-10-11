@@ -27,7 +27,10 @@ class AjustesModel {
   // 6. Ventana emergente inicial (Versículo del día)
   final int tiempoCierreModalVersiculoSegundos; // 3 a 10 seg (por defecto 4)
 
-  // 7. Auditoría
+  // 7. Transición del Banner Principal (HeroBannerCard)
+  final int tiempoTransicionBannerSegundos; // 3 a 10 seg (por defecto 5)
+
+  // 8. Auditoría
   final String? actualizadoEn;
 
   const AjustesModel({
@@ -47,6 +50,7 @@ class AjustesModel {
     this.calidadAudioStreaming = 'alta',
     this.soloDescargarConWifi = true,
     this.tiempoCierreModalVersiculoSegundos = 4,
+    this.tiempoTransicionBannerSegundos = 5,
     this.actualizadoEn,
   });
 
@@ -80,6 +84,8 @@ class AjustesModel {
           (map['solo_descargar_con_wifi'] as int? ?? 1) == 1,
       tiempoCierreModalVersiculoSegundos:
           map['tiempo_cierre_modal_versiculo'] as int? ?? 4,
+      tiempoTransicionBannerSegundos:
+          map['tiempo_transicion_banner'] as int? ?? 5,
       actualizadoEn: map['actualizado_en'] as String?,
     );
   }
@@ -103,6 +109,7 @@ class AjustesModel {
       'calidad_audio_streaming': calidadAudioStreaming,
       'solo_descargar_con_wifi': soloDescargarConWifi ? 1 : 0,
       'tiempo_cierre_modal_versiculo': tiempoCierreModalVersiculoSegundos,
+      'tiempo_transicion_banner': tiempoTransicionBannerSegundos,
       'actualizado_en': actualizadoEn ?? DateTime.now().toIso8601String(),
     };
   }
@@ -125,6 +132,7 @@ class AjustesModel {
     String? calidadAudioStreaming,
     bool? soloDescargarConWifi,
     int? tiempoCierreModalVersiculoSegundos,
+    int? tiempoTransicionBannerSegundos,
     String? actualizadoEn,
   }) {
     return AjustesModel(
@@ -154,6 +162,9 @@ class AjustesModel {
       tiempoCierreModalVersiculoSegundos:
           tiempoCierreModalVersiculoSegundos ??
               this.tiempoCierreModalVersiculoSegundos,
+      tiempoTransicionBannerSegundos:
+          tiempoTransicionBannerSegundos ??
+              this.tiempoTransicionBannerSegundos,
       actualizadoEn: actualizadoEn ?? this.actualizadoEn,
     );
   }

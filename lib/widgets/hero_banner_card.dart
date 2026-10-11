@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:atrio/modelos/hero_banner_mocks.dart';
 import 'package:atrio/modelos/palabra_dia_model.dart';
 import 'package:atrio/modelos/versiculo_dia.dart';
 import 'package:atrio/modelos/video_model.dart';
+import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/servicios/versiculo_service.dart';
 import 'package:atrio/widgets/modal_versiculo_imagen.dart';
 
@@ -50,6 +52,7 @@ class HeroBannerCard extends StatefulWidget {
   final List<VideoModel>? cultosEnVivo;
   final List<PalabraDelDiaModel>? palabrasDelDia;
   final VersiculoDia? versiculoDelDia;
+  final int? duracionTransicionSegundos;
 
   const HeroBannerCard({
     super.key,
@@ -67,6 +70,7 @@ class HeroBannerCard extends StatefulWidget {
     this.cultosEnVivo,
     this.palabrasDelDia,
     this.versiculoDelDia,
+    this.duracionTransicionSegundos,
   });
 
   @override
@@ -74,7 +78,6 @@ class HeroBannerCard extends StatefulWidget {
 }
 
 class _HeroBannerCardState extends State<HeroBannerCard> {
-  late final PageController _pageController;
   Timer? _timer;
   int _currentIndex = 0;
 
@@ -85,7 +88,6 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
 
     if (_esModoDinamico) {
       _cargarVersiculo();
@@ -93,7 +95,36 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_esModoDinamico) {
+      _iniciarAutoPlay();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant HeroBannerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duracionTransicionSegundos !=
+        widget.duracionTransicionSegundos) {
+      _iniciarAutoPlay();
+    }
+  }
+
   bool get _esModoDinamico => widget.title == null;
+
+  int _obtenerIntervaloSegundos() {
+    if (widget.duracionTransicionSegundos != null) {
+      return widget.duracionTransicionSegundos!.clamp(3, 10);
+    }
+    try {
+      final prov = Provider.of<AjustesProvider>(context, listen: false);
+      return prov.tiempoTransicionBannerSegundos.clamp(3, 10);
+    } catch (_) {
+      return 5;
+    }
+  }
 
   Future<void> _cargarVersiculo() async {
     if (widget.versiculoDelDia != null) {
@@ -121,27 +152,40 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
 
   void _iniciarAutoPlay() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 6), (_) {
-      if (!mounted || !_pageController.hasClients) return;
+    final int segundos = _obtenerIntervaloSegundos();
+    _timer = Timer.periodic(Duration(seconds: segundos), (_) {
+      if (!mounted) return;
       final total = _construirDiapositivas(
         MediaQuery.sizeOf(context).width,
         MediaQuery.sizeOf(context).height,
       ).length;
       if (total <= 1) return;
 
-      final nextIndex = (_currentIndex + 1) % total;
-      _pageController.animateToPage(
-        nextIndex,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      setState(() {
+        _currentIndex = (_currentIndex + 1) % total;
+      });
     });
+  }
+
+  void _siguienteDiapositiva(int total) {
+    if (total <= 1) return;
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % total;
+    });
+    _iniciarAutoPlay();
+  }
+
+  void _anteriorDiapositiva(int total) {
+    if (total <= 1) return;
+    setState(() {
+      _currentIndex = (_currentIndex - 1 + total) % total;
+    });
+    _iniciarAutoPlay();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -586,29 +630,57 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
       ),
       child: Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: slides.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              final slide = slides[index];
-              return _buildCardBase(
-                screenWidth: screenWidth,
-                usableHeight: usableHeight,
-                title: slide.title,
-                subtitle: slide.subtitle,
-                buttonText: slide.buttonText,
-                onTap: slide.onTap,
-                onButtonPressed: slide.onTap,
-                backgroundImage: slide.backgroundImage,
-                watermarkIcon: slide.watermarkIcon,
-                topLeading: slide.topLeading,
-              );
-            },
+          ClipRRect(
+            borderRadius: BorderRadius.circular(screenWidth * 0.045),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null) {
+                  if (details.primaryVelocity! < -100) {
+                    _siguienteDiapositiva(slides.length);
+                  } else if (details.primaryVelocity! > 100) {
+                    _anteriorDiapositiva(slides.length);
+                  }
+                }
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 1000),
+                switchInCurve: Curves.easeInOut,
+                switchOutCurve: Curves.easeInOut,
+                layoutBuilder: (currentChild, previousChildren) {
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[...previousChildren, ?currentChild],
+                  );
+                },
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: slides.isEmpty
+                    ? const SizedBox.shrink()
+                    : KeyedSubtree(
+                        key: ValueKey<int>(_currentIndex % slides.length),
+                        child: _buildCardBase(
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
+                          title: slides[_currentIndex % slides.length].title,
+                          subtitle:
+                              slides[_currentIndex % slides.length].subtitle,
+                          buttonText:
+                              slides[_currentIndex % slides.length].buttonText,
+                          onTap: slides[_currentIndex % slides.length].onTap,
+                          onButtonPressed:
+                              slides[_currentIndex % slides.length].onTap,
+                          backgroundImage: slides[_currentIndex % slides.length]
+                              .backgroundImage,
+                          watermarkIcon: slides[_currentIndex % slides.length]
+                              .watermarkIcon,
+                          topLeading:
+                              slides[_currentIndex % slides.length].topLeading,
+                        ),
+                      ),
+              ),
+            ),
           ),
 
           // Indicador de Paginación (Dots) moderno y flotante
@@ -619,7 +691,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: List.generate(slides.length, (i) {
-                  final bool isActive = i == _currentIndex;
+                  final bool isActive = i == (_currentIndex % slides.length);
                   final slideTipo = slides[i].tipo;
 
                   Color dotColor = Colors.white60;
@@ -631,16 +703,26 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
                               : const Color(0xFF64B5F6));
                   }
 
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 280),
-                    margin: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.008,
-                    ),
-                    width: isActive ? screenWidth * 0.045 : screenWidth * 0.016,
-                    height: screenWidth * 0.016,
-                    decoration: BoxDecoration(
-                      color: dotColor,
-                      borderRadius: BorderRadius.circular(screenWidth * 0.01),
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _currentIndex = i;
+                      });
+                      _iniciarAutoPlay();
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 280),
+                      margin: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.008,
+                      ),
+                      width: isActive
+                          ? screenWidth * 0.045
+                          : screenWidth * 0.016,
+                      height: screenWidth * 0.016,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        borderRadius: BorderRadius.circular(screenWidth * 0.01),
+                      ),
                     ),
                   );
                 }),

@@ -42,6 +42,8 @@ class AjustesProvider extends ChangeNotifier {
       _ajustes.reproduccionAutomaticaRadio;
   String get calidadAudioStreaming => _ajustes.calidadAudioStreaming;
   bool get soloDescargarConWifi => _ajustes.soloDescargarConWifi;
+  int get tiempoTransicionBannerSegundos =>
+      _ajustes.tiempoTransicionBannerSegundos;
 
   AjustesProvider() {
     cargarAjustes();
@@ -173,6 +175,16 @@ class AjustesProvider extends ChangeNotifier {
 
     await AtrioDatabaseHelper.instance
         .actualizarAjusteCampo('solo_descargar_con_wifi', activo);
+  }
+
+  /// Ajusta el tiempo de transición (desvanecimiento) del banner principal (3 a 10 segundos)
+  Future<void> cambiarTiempoTransicionBanner(int segundos) async {
+    final segValidos = segundos.clamp(3, 10);
+    _ajustes = _ajustes.copyWith(tiempoTransicionBannerSegundos: segValidos);
+    notifyListeners();
+
+    await AtrioDatabaseHelper.instance
+        .actualizarAjusteCampo('tiempo_transicion_banner', segValidos);
   }
 
   /// Restaura todas las configuraciones a sus valores predeterminados de fábrica

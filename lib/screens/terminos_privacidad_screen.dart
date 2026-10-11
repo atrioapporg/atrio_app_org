@@ -442,7 +442,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             ),
             _buildParrafo(
               'Última actualización: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}\n\n'
-              'Bienvenido a ATRIO ("Vive tu Fe en comunidad"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual. Esta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.',
+              'Bienvenido a ATRIO ("Vive tu Fe en comunidad"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual.\n\n Esta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.',
               screenWidth,
               colorTextoPrincipal,
               fontScale,
@@ -456,9 +456,9 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
               selectedFont,
             ),
             _buildParrafo(
-              '• Datos de la cuenta: Al iniciar sesión o registrarte (correo electrónico, Google Sign-In o Apple ID), almacenamos de manera segura tu nombre y dirección de correo electrónico.\n'
-              '• Datos comunitarios y de perfil: Número telefónico, tradición cristiana e iglesia o comunidad a la que estás vinculado voluntariamente para adaptar tu experiencia eclesiástica.\n'
-              '• Almacenamiento Local en el Dispositivo: Tus notas de la Biblia, pasajes favoritos, configuraciones personales e historial de navegación se guardan localmente en SQLite. No compartimos tus reflexiones privadas con terceros.\n'
+              '• Datos de la cuenta: Al iniciar sesión o registrarte (correo electrónico, Google Sign-In o Apple ID), almacenamos de manera segura tu nombre y dirección de correo electrónico.\n\n'
+              '• Datos comunitarios y de perfil: Número telefónico, tradición cristiana e iglesia o comunidad a la que estás vinculado voluntariamente para adaptar tu experiencia eclesiástica.\n\n'
+              '• Almacenamiento Local en el Dispositivo: Tus notas de la Biblia, pasajes favoritos, configuraciones personales e historial de navegación se guardan localmente en SQLite. No compartimos tus reflexiones privadas con terceros.\n\n'
               '• Solicitudes y Donaciones: Registramos el estado de tus peticiones de oración, solicitudes pastorales y constancias de donaciones o aportes a proyectos solidarios para darte visibilidad y trazabilidad directa.',
               screenWidth,
               colorTextoPrincipal,
@@ -473,10 +473,10 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
               selectedFont,
             ),
             _buildParrafo(
-              'Nuestra plataforma se integra con tecnologías de confianza para ofrecer una funcionalidad completa:\n'
-              '• Google Play Services, Google Sign-In y Sign in with Apple (Autenticación y seguridad).\n'
-              '• Google Maps Platform (Para la localización geográfica precisa de templos, parroquias y eventos comunitarios en el mapa interactivo).\n'
-              '• Pasarelas de Pago Seguras (Para la recepción confiable y encriptada de ofrendas, diezmos y aportes a causas solidarias).\n'
+              'Nuestra plataforma se integra con tecnologías de confianza para ofrecer una funcionalidad completa:\n\n'
+              '• Google Play Services, Google Sign-In y Sign in with Apple (Autenticación y seguridad).\n\n'
+              '• Google Maps Platform (Para la localización geográfica precisa de templos, parroquias y eventos comunitarios en el mapa interactivo).\n\n'
+              '• Pasarelas de Pago Seguras (Para la recepción confiable y encriptada de ofrendas, diezmos y aportes a causas solidarias).\n\n'
               '• YouTube y Reproductores de Transmisiones (Para servicios religiosos, eventos en vivo y programas radiales).',
               screenWidth,
               colorTextoPrincipal,
@@ -492,7 +492,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             ),
             _buildParrafo(
               'Conservamos los datos de tu cuenta mientras esté activa. De acuerdo con las directrices de Apple App Store (5.1.1 v) y Google Play Console, tienes el derecho incondicional de solicitar la eliminación total y definitiva de tu cuenta y datos personales.\n\n'
-              'Puedes realizar esta acción en cualquier momento desde la opción "Eliminar cuenta y datos" en la pantalla de Perfil, o enviando un correo a soporte@atrioapp.com con el asunto "Eliminación de Cuenta". Todos los registros locales en SQLite y vinculaciones en el backend serán purgados.',
+              'Puedes realizar esta acción en cualquier momento desde la opción "Eliminar cuenta y datos" en la pantalla de Perfil, o enviando un correo a soporte@atrioapp.com con el asunto "Eliminación de Cuenta".\n\n Todos los registros locales en SQLite y vinculaciones en el backend serán purgados.',
               screenWidth,
               colorTextoPrincipal,
               fontScale,
@@ -506,9 +506,9 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
               selectedFont,
             ),
             _buildParrafo(
-              'ATRIO solo solicita permisos estrictamente requeridos para su funcionamiento:\n'
-              '• Ubicación (GPS): Únicamente utilizada cuando accedes al mapa para mostrarte iglesias y eventos en tu cercanía inmediata.\n'
-              '• Acceso a Internet y Red: Para sincronizar solicitudes, consultar transmisiones en directo y validar aportes.\n'
+              'ATRIO solo solicita permisos estrictamente requeridos para su funcionamiento:\n\n'
+              '• Ubicación (GPS): Únicamente utilizada cuando accedes al mapa para mostrarte iglesias y eventos en tu cercanía inmediata.\n\n'
+              '• Acceso a Internet y Red: Para sincronizar solicitudes, consultar transmisiones en directo y validar aportes.\n\n'
               '• Notificaciones: Para recordatorios de servicios litúrgicos, eventos comunitarios y respuestas a solicitudes.',
               screenWidth,
               colorTextoPrincipal,

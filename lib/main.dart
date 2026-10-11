@@ -46,6 +46,7 @@ import 'package:atrio/screens/configuracion_screen.dart';
 
 // Screens - Donaciones / Aportes
 import 'package:atrio/screens/donaciones_screen.dart';
+import 'package:atrio/screens/mis_donaciones_screen.dart';
 import 'package:atrio/screens/confirmar_donacion_screen.dart';
 import 'package:atrio/screens/realizar_aporte_screen.dart';
 import 'package:atrio/screens/aportar_a_proyecto_screen.dart';
@@ -181,6 +182,7 @@ class MyApp extends StatelessWidget {
 
     // ---------- Donaciones y Aportes ----------
     DonacionesScreen.routeName: (_) => const DonacionesScreen(),
+    MisDonacionesScreen.routeName: (_) => const MisDonacionesScreen(),
     ConfirmarDonacionScreen.routeName: (_) => const ConfirmarDonacionScreen(),
     RealizarAporteScreen.routeName: (_) => const RealizarAporteScreen(),
     AportarAProyectoScreen.routeName: (_) => const AportarAProyectoScreen(),

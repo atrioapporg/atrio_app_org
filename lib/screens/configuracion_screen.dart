@@ -146,6 +146,152 @@ class ConfiguracionScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: EdgeInsets.all(screenWidth * 0.035),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.all(
+                                        screenWidth * 0.02,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: amarilloOro.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.auto_awesome_motion_rounded,
+                                        color: const Color(0xFFC78408),
+                                        size: screenWidth * 0.045,
+                                      ),
+                                    ),
+                                    SizedBox(width: screenWidth * 0.025),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Transición de Novedades',
+                                          style: TextStyle(
+                                            color: azulFondo,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: screenWidth * 0.037,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Banner principal (HeroBannerCard)',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: screenWidth * 0.028,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.028,
+                                    vertical: usableHeight * 0.005,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: azulFondo,
+                                    borderRadius: BorderRadius.circular(
+                                      screenWidth * 0.025,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${provider.tiempoTransicionBannerSegundos} seg',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: screenWidth * 0.033,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: usableHeight * 0.012),
+                            Text(
+                              'Efecto de desvanecimiento suave entre versículo, palabra y cultos.',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: screenWidth * 0.030,
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.004),
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: amarilloOro,
+                                inactiveTrackColor: Colors.grey.shade300,
+                                thumbColor: azulFondo,
+                                overlayColor: amarilloOro.withValues(
+                                  alpha: 0.2,
+                                ),
+                                valueIndicatorColor: azulFondo,
+                                valueIndicatorTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              child: Slider(
+                                value: provider
+                                    .tiempoTransicionBannerSegundos
+                                    .toDouble(),
+                                min: 3.0,
+                                max: 10.0,
+                                divisions: 7,
+                                label:
+                                    '${provider.tiempoTransicionBannerSegundos}s',
+                                onChanged: (val) {
+                                  provider.cambiarTiempoTransicionBanner(
+                                    val.round(),
+                                  );
+                                },
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '3 seg',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: screenWidth * 0.027,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '5 seg (Predeterminado)',
+                                  style: TextStyle(
+                                    color: amarilloOro,
+                                    fontSize: screenWidth * 0.027,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '10 seg',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: screenWidth * 0.027,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),

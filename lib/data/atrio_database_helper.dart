@@ -129,6 +129,7 @@ class AtrioDatabaseHelper {
         calidad_audio_streaming TEXT DEFAULT 'alta',
         solo_descargar_con_wifi INTEGER DEFAULT 1,
         tiempo_cierre_modal_versiculo INTEGER DEFAULT 4,
+        tiempo_transicion_banner INTEGER DEFAULT 5,
         actualizado_en TEXT
       )
     ''');
@@ -219,6 +220,13 @@ class AtrioDatabaseHelper {
     try {
       await db.execute(
         'ALTER TABLE $tableAjustes ADD COLUMN tiempo_cierre_modal_versiculo INTEGER DEFAULT 4',
+      );
+    } catch (_) {}
+
+    // Asegurar columna tiempo_transicion_banner en caso de base de datos existente
+    try {
+      await db.execute(
+        'ALTER TABLE $tableAjustes ADD COLUMN tiempo_transicion_banner INTEGER DEFAULT 5',
       );
     } catch (_) {}
   }

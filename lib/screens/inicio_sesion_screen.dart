@@ -12,6 +12,7 @@ import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 
 import 'inicio_atrio_screen.dart';
+import 'tradicion_cristiana_screen.dart';
 
 /// ==============================================================================
 /// PANTALLA DE ACCESO ATRIO (INICIO DE SESIÓN / REGISTRO)
@@ -444,12 +445,23 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       await prefs.setString('userEmail', email);
       await prefs.setString('userName', nombre);
 
+      // Verificamos si ya existe una iglesia previa configurada en SQLite
+      final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
+      final String iglesiaExistente =
+          (usuarioExistente != null &&
+              usuarioExistente['iglesia_nombre'] != null &&
+              usuarioExistente['iglesia_nombre'].toString().trim().isNotEmpty &&
+              usuarioExistente['iglesia_nombre'].toString().trim() !=
+                  'Sin iglesia seleccionada')
+          ? usuarioExistente['iglesia_nombre'].toString().trim()
+          : 'Sin iglesia seleccionada';
+
       // 2. Persistir localmente en SQLite (atrio.db)
       await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
         'nombre': nombre,
         'email': email,
         'celular': '',
-        'iglesia_nombre': 'Sin iglesia seleccionada',
+        'iglesia_nombre': iglesiaExistente,
       });
 
       if (!mounted) return;
@@ -460,18 +472,14 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           nombre: nombre,
           email: email,
           telefono: '',
-          iglesiaActual: 'Sin iglesia seleccionada',
+          iglesiaActual: iglesiaExistente,
         );
       } catch (e) {
         debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
       }
 
-      // 4. Redirigir a pantalla principal (HomeScreen de ATRIO)
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        InicioAtrioScreen.routeName,
-        (Route<dynamic> route) => false,
-      );
+      // 4. Redirigir según el estado del usuario (hacia selección de tradición e iglesia si es primer registro)
+      await _redirigirUsuarioPostLogin();
     } catch (error) {
       debugPrint('[AUTH_ERROR] Error en Google Sign-In: $error');
       _mostrarError('No se pudo conectar con Google. Revisa tu conexión.');
@@ -554,24 +562,48 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? email
           : 'apple_user_${credential.userIdentifier?.substring(0, 6)}@privaterelay.appleid.com';
 
-      // Persistencia local temporal
-      await AtrioDatabaseHelper.instance.guardarUsuario({
+      // 1. Guardar en SharedPreferences
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userEmail', emailFinal);
+      await prefs.setString('userName', nombreFinal);
+
+      // Verificamos si ya existe una iglesia previa configurada en SQLite
+      final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
+      final String iglesiaExistente =
+          (usuarioExistente != null &&
+              usuarioExistente['iglesia_nombre'] != null &&
+              usuarioExistente['iglesia_nombre'].toString().trim().isNotEmpty &&
+              usuarioExistente['iglesia_nombre'].toString().trim() !=
+                  'Sin iglesia seleccionada')
+          ? usuarioExistente['iglesia_nombre'].toString().trim()
+          : 'Sin iglesia seleccionada';
+
+      // 2. Persistir localmente en SQLite (atrio.db)
+      await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
         'nombre': nombreFinal,
         'email': emailFinal,
         'celular': '',
         'idioma': 'es_DO',
+        'iglesia_nombre': iglesiaExistente,
       });
 
       if (!mounted) return;
 
-      Provider.of<UserProvider>(context, listen: false).updateUserProfile(
-        nombre: nombreFinal,
-        email: emailFinal,
-        telefono: '',
-        iglesiaActual: 'Comunidad Principal',
-      );
+      // 3. Sincronizar en memoria con UserProvider
+      try {
+        Provider.of<UserProvider>(context, listen: false).updateUserProfile(
+          nombre: nombreFinal,
+          email: emailFinal,
+          telefono: '',
+          iglesiaActual: iglesiaExistente,
+        );
+      } catch (e) {
+        debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
+      }
 
-      _redirigirUsuarioPostLogin();
+      // 4. Redirigir según el estado del usuario (hacia selección de tradición e iglesia si es primer registro)
+      await _redirigirUsuarioPostLogin();
     } catch (error) {
       debugPrint('[AUTH] Error en Sign in with Apple: $error');
       // Si el error no es de cancelación por el usuario, mostrar alerta informativa
@@ -591,24 +623,36 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   Future<void> _redirigirUsuarioPostLogin() async {
     final iglesiaProvider = context.read<IglesiaProvider>();
-    final bool tieneIglesia = await iglesiaProvider.verificarIglesiaGuardada();
+    final bool tieneIglesiaLocal = await iglesiaProvider
+        .verificarIglesiaGuardada();
+
+    // Verificamos si en la base de datos local el usuario ya tiene una iglesia válida configurada
+    final usuario = await AtrioDatabaseHelper.instance.getUsuario();
+    final bool tieneIglesiaDb =
+        usuario != null &&
+        usuario['iglesia_nombre'] != null &&
+        usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
+        usuario['iglesia_nombre'].toString().trim() !=
+            'Sin iglesia seleccionada';
+
+    final bool usuarioTieneIglesia = tieneIglesiaLocal && tieneIglesiaDb;
 
     if (!mounted) return;
 
-    if (tieneIglesia) {
+    if (usuarioTieneIglesia) {
       Navigator.pushNamedAndRemoveUntil(
         context,
-        'inicio_atrio_screen',
+        InicioAtrioScreen.routeName,
         (route) => false,
       );
     } else {
-      Navigator.pushNamed(context, 'tradicion_cristiana_screen');
+      Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
     }
   }
 
   // Continuar como invitado sin autenticarse de inmediato
   void _continuarComoInvitado(BuildContext context) {
-    Navigator.pushNamed(context, 'tradicion_cristiana_screen');
+    Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
   }
 
   // ============================================================================

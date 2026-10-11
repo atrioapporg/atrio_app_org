@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../data/atrio_database_helper.dart';
 import '../modelos/anuncio_model.dart';
+import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
@@ -14,6 +15,7 @@ import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
 import 'perfil_screen.dart';
+import 'tradicion_cristiana_screen.dart';
 
 class InicioAtrioScreen extends StatefulWidget {
   static const routeName = 'inicio_atrio_screen';
@@ -32,6 +34,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   int _avisoActivoIndex = 0;
   Timer? _avisosTimer;
   late final PageController _avisosPageController;
+  int? _ultimoIntervaloAvisos;
 
   final List<Map<String, String>> _avisosFicticios = [
     {
@@ -66,7 +69,6 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     super.initState();
     _avisosPageController = PageController();
     _anunciosPageController = PageController();
-    _iniciarTimerAvisos();
     _cargarAnuncios();
     _cargarDatosPerfil();
   }
@@ -78,32 +80,44 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         setState(() {
           _anuncios = lista;
         });
-        _iniciarTimerAnuncios();
+        _iniciarTimerAnuncios(_ultimoIntervaloAvisos);
       }
     } catch (e) {
       debugPrint('Error al cargar anuncios: $e');
     }
   }
 
-  void _iniciarTimerAvisos() {
-    _avisosTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+  int _obtenerIntervaloAvisos() {
+    try {
+      final prov = Provider.of<AjustesProvider>(context, listen: false);
+      return prov.tiempoTransicionBannerSegundos.clamp(3, 10);
+    } catch (_) {
+      return 5;
+    }
+  }
+
+  void _iniciarTimerAvisos([int? segundos]) {
+    _avisosTimer?.cancel();
+    final int intervalo = (segundos ?? _obtenerIntervaloAvisos()).clamp(3, 10);
+    _avisosTimer = Timer.periodic(Duration(seconds: intervalo), (_) {
       if (!mounted) return;
       if (_avisosPageController.hasClients) {
         final siguienteIndex =
             (_avisoActivoIndex + 1) % _avisosFicticios.length;
         _avisosPageController.animateToPage(
           siguienteIndex,
-          duration: const Duration(milliseconds: 380),
+          duration: const Duration(milliseconds: 900),
           curve: Curves.easeInOut,
         );
       }
     });
   }
 
-  void _iniciarTimerAnuncios() {
+  void _iniciarTimerAnuncios([int? segundos]) {
     _anunciosTimer?.cancel();
     if (_anuncios.length <= 1) return;
-    _anunciosTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    final int intervalo = (segundos ?? _obtenerIntervaloAvisos()).clamp(3, 10);
+    _anunciosTimer = Timer.periodic(Duration(seconds: intervalo), (_) {
       if (!mounted) return;
       if (_anunciosPageController.hasClients) {
         final siguienteIndex = (_anuncioActivoIndex + 1) % _anuncios.length;
@@ -139,6 +153,17 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       });
       _isInit = false;
     }
+
+    // Sincronizar intervalo de rotación de avisos y anuncios con la configuración global
+    try {
+      final nuevoIntervalo = Provider.of<AjustesProvider>(context)
+          .tiempoTransicionBannerSegundos;
+      if (_ultimoIntervaloAvisos != nuevoIntervalo) {
+        _ultimoIntervaloAvisos = nuevoIntervalo;
+        _iniciarTimerAvisos(nuevoIntervalo);
+        _iniciarTimerAnuncios(nuevoIntervalo);
+      }
+    } catch (_) {}
   }
 
   // =========================================================================
@@ -231,9 +256,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       ),
       const IglesiaScreen(),
       const ExplorarScreen(),
-      EmisorasCristianasScreen(
-        isActive: _currentNavIndex == 3,
-      ),
+      EmisorasCristianasScreen(isActive: _currentNavIndex == 3),
       const PerfilScreen(),
     ];
 
@@ -395,8 +418,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: usableHeight * 0.012),
-              // Nombre de la iglesia a la cual pertenece el usuario actual
+              SizedBox(height: usableHeight * 0.010),
+              // Botón interactivo: Nombre de la iglesia y cambio rápido de comunidad
               Consumer<IglesiaProvider>(
                 builder: (context, provider, child) {
                   final String nombreIglesia =
@@ -409,20 +432,118 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                 _iglesiaLocal != 'Sin iglesia seleccionada')
                             ? _iglesiaLocal!.trim()
                             : 'Sin iglesia seleccionada');
-                  return Text(
-                    nombreIglesia,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: screenWidth * 0.055,
-                      fontWeight: FontWeight.bold,
+
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        await Navigator.pushNamed(
+                          context,
+                          TradicionCristianaScreen.routeName,
+                        );
+                        if (mounted) {
+                          Provider.of<IglesiaProvider>(
+                            context,
+                            listen: false,
+                          ).cargarIglesiaSeleccionada();
+                          _cargarDatosPerfil();
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(screenWidth * 0.035),
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.0060,
+                          vertical: usableHeight * 0.010,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.035,
+                          ),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(screenWidth * 0.022),
+                              decoration: BoxDecoration(
+                                color: amarilloOro.withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.035,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.church_rounded,
+                                color: amarilloOro,
+                                size: screenWidth * 0.055,
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.030),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Mi Iglesia',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: screenWidth * 0.027,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: screenWidth * 0.015),
+                                      Text(
+                                        '· Toca para cambiar',
+                                        style: TextStyle(
+                                          color: amarilloOro,
+                                          fontSize: screenWidth * 0.026,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: usableHeight * 0.002),
+                                  Text(
+                                    nombreIglesia,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: screenWidth * 0.046,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.020),
+                            Container(
+                              padding: EdgeInsets.all(screenWidth * 0.016),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.046,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   );
                 },
               ),
 
-              SizedBox(height: usableHeight * 0.005),
+              SizedBox(height: usableHeight * 0.008),
             ],
           ),
         ),
@@ -450,7 +571,13 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const HeroBannerCard(heightFactor: 0.195),
+                    Consumer<AjustesProvider>(
+                      builder: (context, ajustesProv, _) => HeroBannerCard(
+                        heightFactor: 0.195,
+                        duracionTransicionSegundos:
+                            ajustesProv.tiempoTransicionBannerSegundos,
+                      ),
+                    ),
                     SizedBox(height: usableHeight * 0.015),
                     _buildNoticeBar(
                       screenWidth: screenWidth,
@@ -537,6 +664,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                   setState(() {
                     _avisoActivoIndex = index;
                   });
+                  _iniciarTimerAvisos(_ultimoIntervaloAvisos);
                 },
                 itemBuilder: (context, index) {
                   final aviso = _avisosFicticios[index];
@@ -722,18 +850,21 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   ) {
     if (_anuncios.isEmpty) {
       return Container(
-        height: usableHeight * 0.14,
+        height: usableHeight * 0.160,
         decoration: BoxDecoration(
           color: const Color(0xFFEFF7FC),
           borderRadius: BorderRadius.circular(screenWidth * 0.035),
           border: Border.all(color: grisBorde),
         ),
-        padding: EdgeInsets.all(screenWidth * 0.035),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.035,
+          vertical: usableHeight * 0.008,
+        ),
         child: Row(
           children: [
             Container(
               width: screenWidth * 0.22,
-              height: usableHeight * 0.10,
+              height: usableHeight * 0.120,
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(screenWidth * 0.025),
@@ -749,6 +880,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'ANUNCIOS & CONCIERTOS',
@@ -779,7 +911,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     return Column(
       children: [
         SizedBox(
-          height: usableHeight * 0.145,
+          height: usableHeight * 0.160,
           child: PageView.builder(
             controller: _anunciosPageController,
             itemCount: _anuncios.length,
@@ -787,6 +919,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               setState(() {
                 _anuncioActivoIndex = index;
               });
+              _iniciarTimerAnuncios(_ultimoIntervaloAvisos);
             },
             itemBuilder: (context, index) {
               final anuncio = _anuncios[index];
@@ -836,13 +969,16 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
           borderRadius: BorderRadius.circular(screenWidth * 0.035),
           border: Border.all(color: grisBorde),
         ),
-        padding: EdgeInsets.all(screenWidth * 0.030),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.030,
+          vertical: usableHeight * 0.008,
+        ),
         child: Row(
           children: [
             // Afiche / Imagen con fallback
             Container(
               width: screenWidth * 0.22,
-              height: usableHeight * 0.115,
+              height: usableHeight * 0.125,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(screenWidth * 0.025),
                 boxShadow: [
@@ -892,6 +1028,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [

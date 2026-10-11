@@ -1,4 +1,5 @@
 import 'package:atrio/screens/realizar_aporte_screen.dart';
+import 'package:atrio/screens/mis_donaciones_screen.dart';
 import 'package:flutter/material.dart';
 
 class DonacionesScreen extends StatelessWidget {
@@ -240,7 +241,12 @@ class DonacionesScreen extends StatelessWidget {
                             azulFondo: azulFondo,
                             celesteCard: celesteCard,
                             grisBorde: grisBorde,
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                MisDonacionesScreen.routeName,
+                              );
+                            },
                           ),
                           SizedBox(height: usableHeight * 0.02),
                         ],

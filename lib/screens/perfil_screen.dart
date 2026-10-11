@@ -8,6 +8,7 @@ import '../providers/user_provider.dart';
 import 'ayuda_soporte_screen.dart';
 import 'biblia_screen.dart';
 import 'donaciones_screen.dart';
+import 'mis_donaciones_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'notificaciones_screen.dart';
 import 'seguimiento_solicitud_screen.dart';
@@ -128,7 +129,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       _MenuItemData(
                         icon: Icons.favorite_border_rounded,
                         label: 'Mis donaciones',
-                        route: DonacionesScreen.routeName,
+                        route: MisDonacionesScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.menu_book_outlined,
@@ -322,9 +323,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       icon: Icons.church_outlined,
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,
-                      validator: (val) => (val == null || val.trim().isEmpty)
-                          ? 'Ingresa una comunidad'
-                          : null,
+                      readOnly: true,
+                      helperText:
+                          'Para cambiarla usa la opción "Cambiar de iglesia"',
                     ),
                   ],
                 ),
@@ -426,21 +427,39 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required double usableHeight,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    bool readOnly = false,
+    String? helperText,
   }) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly,
       keyboardType: keyboardType,
       validator: validator,
-      style: TextStyle(color: azulFondo, fontSize: screenWidth * 0.04),
+      style: TextStyle(
+        color: readOnly ? Colors.grey.shade700 : azulFondo,
+        fontSize: screenWidth * 0.04,
+      ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
           color: Colors.grey.shade600,
           fontSize: screenWidth * 0.035,
         ),
+        helperText: helperText,
+        helperStyle: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: screenWidth * 0.028,
+        ),
         prefixIcon: Icon(icon, color: azulFondo, size: screenWidth * 0.05),
+        suffixIcon: readOnly
+            ? Icon(
+                Icons.lock_outline_rounded,
+                color: Colors.grey.shade500,
+                size: screenWidth * 0.045,
+              )
+            : null,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: readOnly ? const Color(0xFFF3F5F7) : Colors.white,
         contentPadding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.03,
           vertical: usableHeight * 0.018,
@@ -451,7 +470,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(screenWidth * 0.025),
-          borderSide: const BorderSide(color: azulFondo, width: 1.5),
+          borderSide: BorderSide(
+            color: readOnly ? grisBorde : azulFondo,
+            width: readOnly ? 1.0 : 1.5,
+          ),
         ),
       ),
     );
@@ -533,8 +555,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ),
           ),
           IconButton(
-            onPressed: () =>
-                _mostrarDialogoEditarDatos(context, screenWidth, usableHeight),
+            onPressed: () => _mostrarDialogoEditarDatos(
+              context,
+              screenWidth,
+              usableHeight,
+              iglesiaActual: iglesia,
+            ),
             icon: Icon(
               Icons.edit_outlined,
               color: Colors.white,

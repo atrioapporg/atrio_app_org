@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/atrio_database_helper.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
 
 class NuevaSolicitudScreen extends StatefulWidget {
@@ -7,15 +8,36 @@ class NuevaSolicitudScreen extends StatefulWidget {
   const NuevaSolicitudScreen({super.key});
 
   @override
-  State createState() => _NuevaSolicitudScreenState();
+  State<NuevaSolicitudScreen> createState() => _NuevaSolicitudScreenState();
 }
 
-class _NuevaSolicitudScreenState extends State {
+class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _asuntoController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
   String? _selectedTipoSolicitud;
   bool _isPrivate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarTelefonoUsuario();
+  }
+
+  Future<void> _cargarTelefonoUsuario() async {
+    try {
+      final user = await AtrioDatabaseHelper.instance.getUsuario();
+      if (user != null && mounted) {
+        final cel = (user['celular'] as String?)?.trim();
+        if (cel != null && cel.isNotEmpty && _telefonoController.text.isEmpty) {
+          setState(() {
+            _telefonoController.text = cel;
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   void didChangeDependencies() {
@@ -147,105 +169,112 @@ class _NuevaSolicitudScreenState extends State {
                         horizontal: screenWidth * 0.055,
                         vertical: usableHeight * 0.025,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 1. Selector Tipo de Solicitud
-                          _buildFieldLabel(
-                            'Tipo de solicitud',
-                            screenWidth,
-                            azulFondo,
-                          ),
-                          SizedBox(height: usableHeight * 0.008),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                'tipos_solicitud_screen',
-                              );
-                            },
-                            child: Container(
-                              height: usableHeight * 0.058,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.04,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(
-                                  screenWidth * 0.03,
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1. Selector Tipo de Solicitud
+                            _buildFieldLabel(
+                              'Tipo de solicitud',
+                              screenWidth,
+                              azulFondo,
+                            ),
+                            SizedBox(height: usableHeight * 0.008),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  'tipos_solicitud_screen',
+                                );
+                              },
+                              child: Container(
+                                height: usableHeight * 0.058,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.04,
                                 ),
-                                border: Border.all(color: grisBorde),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _selectedTipoSolicitud ??
-                                        'Selecciona una opción',
-                                    style: TextStyle(
-                                      color: _selectedTipoSolicitud != null
-                                          ? azulFondo
-                                          : Colors.grey.shade500,
-                                      fontSize: screenWidth * 0.036,
-                                      fontWeight: _selectedTipoSolicitud != null
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.03,
+                                  ),
+                                  border: Border.all(color: grisBorde),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _selectedTipoSolicitud ??
+                                          'Selecciona una opción',
+                                      style: TextStyle(
+                                        color: _selectedTipoSolicitud != null
+                                            ? azulFondo
+                                            : Colors.grey.shade500,
+                                        fontSize: screenWidth * 0.036,
+                                        fontWeight:
+                                            _selectedTipoSolicitud != null
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                      ),
                                     ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Colors.grey.shade500,
-                                    size: screenWidth * 0.055,
-                                  ),
-                                ],
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Colors.grey.shade500,
+                                      size: screenWidth * 0.055,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
+                            SizedBox(height: usableHeight * 0.02),
 
-                          // 2. Campo Asunto
-                          _buildFieldLabel('Asunto', screenWidth, azulFondo),
-                          SizedBox(height: usableHeight * 0.008),
-                          _buildInputField(
-                            controller: _asuntoController,
-                            hintText: 'Escribe un asunto breve',
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            grisBorde: grisBorde,
-                            azulFondo: azulFondo,
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
+                            // 2. Campo Asunto (Obligatorio)
+                            _buildFieldLabel(
+                              'Asunto',
+                              screenWidth,
+                              azulFondo,
+                              isRequired: true,
+                            ),
+                            SizedBox(height: usableHeight * 0.008),
+                            _buildInputField(
+                              controller: _asuntoController,
+                              hintText: 'Escribe un asunto breve',
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              grisBorde: grisBorde,
+                              azulFondo: azulFondo,
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) {
+                                  return 'El asunto es obligatorio';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: usableHeight * 0.02),
 
-                          // 3. Campo Descripción
-                          _buildFieldLabel(
-                            'Describe cómo podemos ayudarte',
-                            screenWidth,
-                            azulFondo,
-                          ),
-                          SizedBox(height: usableHeight * 0.008),
-                          Container(
-                            height: usableHeight * 0.13,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                screenWidth * 0.03,
-                              ),
-                              border: Border.all(color: grisBorde),
+                            // 3. Campo Descripción (Obligatorio)
+                            _buildFieldLabel(
+                              'Describe cómo podemos ayudarte',
+                              screenWidth,
+                              azulFondo,
+                              isRequired: true,
                             ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04,
-                              vertical: usableHeight * 0.012,
-                            ),
-                            child: TextField(
+                            SizedBox(height: usableHeight * 0.008),
+                            TextFormField(
                               controller: _descripcionController,
-                              maxLines: null,
-                              expands: true,
-                              textAlignVertical: TextAlignVertical.top,
+                              minLines: 4,
+                              maxLines: 6,
                               style: TextStyle(
                                 color: azulFondo,
                                 fontSize: screenWidth * 0.036,
                               ),
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) {
+                                  return 'La descripción es obligatoria';
+                                }
+                                return null;
+                              },
                               decoration: InputDecoration(
                                 hintText:
                                     'Cuéntanos los detalles de tu solicitud',
@@ -253,109 +282,186 @@ class _NuevaSolicitudScreenState extends State {
                                   color: Colors.grey.shade400,
                                   fontSize: screenWidth * 0.035,
                                 ),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
-
-                          // 4. Campo Teléfono
-                          _buildFieldLabel('Teléfono', screenWidth, azulFondo),
-                          SizedBox(height: usableHeight * 0.008),
-                          _buildInputField(
-                            controller: _telefonoController,
-                            hintText: '(55) 1234 5678',
-                            keyboardType: TextInputType.phone,
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            grisBorde: grisBorde,
-                            azulFondo: azulFondo,
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // 5. Switch Solicitud Privada
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Solicitud privada',
-                                      style: TextStyle(
-                                        color: azulFondo,
-                                        fontSize: screenWidth * 0.042,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: usableHeight * 0.003),
-                                    Text(
-                                      'Solo el equipo pastoral podrá verla',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: screenWidth * 0.033,
-                                      ),
-                                    ),
-                                  ],
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.04,
+                                  vertical: usableHeight * 0.015,
                                 ),
-                              ),
-                              Switch(
-                                value: _isPrivate,
-                                activeThumbColor: Colors.white,
-                                activeTrackColor: amarilloOro,
-                                inactiveThumbColor: Colors.white,
-                                inactiveTrackColor: Colors.grey.shade300,
-                                onChanged: (val) =>
-                                    setState(() => _isPrivate = val),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.03),
-
-                          // 6. Botón Enviar Solicitud
-                          SizedBox(
-                            width: double.infinity,
-                            height: usableHeight * 0.058,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: amarilloOro,
-                                foregroundColor: azulFondo,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
+                                enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(
                                     screenWidth * 0.03,
                                   ),
+                                  borderSide: BorderSide(color: grisBorde),
                                 ),
-                              ),
-                              onPressed: () {
-                                ModalConfirmacionSolicitud.mostrar(
-                                  context: context,
-                                  tipoSolicitud:
-                                      _selectedTipoSolicitud ?? 'General',
-                                  asunto: _asuntoController.text.trim().isEmpty
-                                      ? 'Sin asunto'
-                                      : _asuntoController.text.trim(),
-                                  isPrivate: _isPrivate,
-                                  onConfirmado: () {
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
-                              child: Text(
-                                'Enviar solicitud',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.bold,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.03,
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: azulFondo,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.03,
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: Colors.red.shade700,
+                                    width: 1.2,
+                                  ),
+                                ),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.03,
+                                  ),
+                                  borderSide: BorderSide(
+                                    color: Colors.red.shade700,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                errorStyle: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: screenWidth * 0.030,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
-                        ],
+                            SizedBox(height: usableHeight * 0.02),
+
+                            // 4. Campo Teléfono (Obligatorio)
+                            _buildFieldLabel(
+                              'Teléfono',
+                              screenWidth,
+                              azulFondo,
+                              isRequired: true,
+                            ),
+                            SizedBox(height: usableHeight * 0.008),
+                            _buildInputField(
+                              controller: _telefonoController,
+                              hintText: '(55) 1234 5678',
+                              keyboardType: TextInputType.phone,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              grisBorde: grisBorde,
+                              azulFondo: azulFondo,
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) {
+                                  return 'El teléfono es obligatorio';
+                                }
+                                final clean = val.replaceAll(
+                                  RegExp(r'[^0-9]'),
+                                  '',
+                                );
+                                if (clean.length < 7) {
+                                  return 'Ingresa un número de teléfono válido';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: usableHeight * 0.025),
+
+                            // 5. Switch Solicitud Privada
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Solicitud privada',
+                                        style: TextStyle(
+                                          color: azulFondo,
+                                          fontSize: screenWidth * 0.042,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: usableHeight * 0.003),
+                                      Text(
+                                        'Solo el equipo pastoral podrá verla',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: screenWidth * 0.033,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _isPrivate,
+                                  activeThumbColor: Colors.white,
+                                  activeTrackColor: amarilloOro,
+                                  inactiveThumbColor: Colors.white,
+                                  inactiveTrackColor: Colors.grey.shade300,
+                                  onChanged: (val) =>
+                                      setState(() => _isPrivate = val),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: usableHeight * 0.03),
+
+                            // 6. Botón Enviar Solicitud
+                            SizedBox(
+                              width: double.infinity,
+                              height: usableHeight * 0.058,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: amarilloOro,
+                                  foregroundColor: azulFondo,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      screenWidth * 0.03,
+                                    ),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  if (_formKey.currentState!.validate()) {
+                                    ModalConfirmacionSolicitud.mostrar(
+                                      context: context,
+                                      tipoSolicitud:
+                                          _selectedTipoSolicitud ?? 'General',
+                                      asunto: _asuntoController.text.trim(),
+                                      isPrivate: _isPrivate,
+                                      onConfirmado: () {
+                                        Navigator.pop(context);
+                                      },
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: const Color(
+                                          0xFFC0392B,
+                                        ),
+                                        content: const Text(
+                                          'Por favor completa todos los campos obligatorios.',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        duration: const Duration(seconds: 3),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  'Enviar solicitud',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.02),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -368,14 +474,43 @@ class _NuevaSolicitudScreenState extends State {
     );
   }
 
-  Widget _buildFieldLabel(String text, double screenWidth, Color azulFondo) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: azulFondo,
-        fontSize: screenWidth * 0.040,
-        fontWeight: FontWeight.bold,
-      ),
+  Widget _buildFieldLabel(
+    String text,
+    double screenWidth,
+    Color azulFondo, {
+    bool isRequired = false,
+  }) {
+    if (!isRequired) {
+      return Text(
+        text,
+        style: TextStyle(
+          color: azulFondo,
+          fontSize: screenWidth * 0.040,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          text,
+          style: TextStyle(
+            color: azulFondo,
+            fontSize: screenWidth * 0.040,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.01),
+        Text(
+          '*',
+          style: TextStyle(
+            color: Colors.red.shade700,
+            fontSize: screenWidth * 0.042,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -387,27 +522,45 @@ class _NuevaSolicitudScreenState extends State {
     required Color grisBorde,
     required Color azulFondo,
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
-    return Container(
-      height: usableHeight * 0.055,
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(screenWidth * 0.03),
-        border: Border.all(color: grisBorde),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        style: TextStyle(color: azulFondo, fontSize: screenWidth * 0.036),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: Colors.grey.shade400,
-            fontSize: screenWidth * 0.035,
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: usableHeight * 0.014),
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: TextStyle(color: azulFondo, fontSize: screenWidth * 0.036),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
+          fontSize: screenWidth * 0.035,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: usableHeight * 0.015,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          borderSide: BorderSide(color: grisBorde),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          borderSide: BorderSide(color: azulFondo, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          borderSide: BorderSide(color: Colors.red.shade700, width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          borderSide: BorderSide(color: Colors.red.shade700, width: 1.5),
+        ),
+        errorStyle: TextStyle(
+          color: Colors.red.shade700,
+          fontSize: screenWidth * 0.030,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/biblia_provider.dart';
 
 class AyudaSoporteScreen extends StatefulWidget {
@@ -46,37 +47,44 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
     }
   }
 
-  final List<Map<String, String>> _faqs = [
+  List<Map<String, String>> _getFaqs(AppLocalizations? l10n) => [
     {
-      'pregunta': '¿Cómo realizar una ofrenda o donación a mi iglesia?',
-      'respuesta':
-          'Accede a la sección "Mis donaciones" desde tu perfil o pulsa el botón "Ofrendar / Aportar" en la pantalla de tu iglesia. Podrás seleccionar el proyecto solidario, ingresar el monto y proceder con total seguridad.',
+      'pregunta':
+          l10n?.faq1Pregunta ??
+          '¿Cómo realizar una ofrenda o donación a mi iglesia?',
+      'respuesta': l10n?.faq1Respuesta ?? 'Accede a la sección "Mis donaciones" desde tu perfil o pulsa el botón "Ofrendar / Aportar" en la pantalla de tu iglesia. Podrás seleccionar el proyecto solidario, ingresar el monto y proceder con total seguridad.',
     },
     {
-      'pregunta': '¿Cómo enviar y consultar el estado de mis solicitudes pastorales?',
-      'respuesta':
-          'Dirígete a la sección "Mis solicitudes" en tu perfil o desde el menú de tu iglesia. Allí podrás enviar peticiones de oración, consejería o apoyo social y verificar el seguimiento de respuesta de tu comunidad.',
+      'pregunta':
+          l10n?.faq2Pregunta ??
+          '¿Cómo enviar y consultar el estado de mis solicitudes pastorales?',
+      'respuesta': l10n?.faq2Respuesta ?? 'Dirígete a la sección "Mis solicitudes" en tu perfil o desde el menú de tu iglesia. Allí podrás enviar peticiones de oración, consejería o apoyo social y verificar el seguimiento de respuesta de tu comunidad.',
     },
     {
-      'pregunta': '¿Dónde puedo explorar iglesias cercanas y verlas en el mapa?',
-      'respuesta':
-          'Desde la pantalla principal pulsa sobre "Explorar Iglesias" o el mapa interactivo. Podrás filtrar por tradición cristiana, conocer horarios de servicios, pastores encargados y obtener la ruta en el mapa.',
+      'pregunta':
+          l10n?.faq3Pregunta ??
+          '¿Dónde puedo explorar iglesias cercanas y verlas en el mapa?',
+      'respuesta': l10n?.faq3Respuesta ?? 'Desde la pantalla principal pulsa sobre "Explorar Iglesias" o el mapa interactivo. Podrás filtrar por tradición cristiana, conocer horarios de servicios, pastores encargados y obtener la ruta en el mapa.',
     },
     {
-      'pregunta': '¿Puedo leer la Biblia y guardar notas o favoritos sin conexión?',
-      'respuesta':
-          '¡Sí! El texto bíblico, tus notas de estudio y los versículos destacados quedan almacenados de manera segura y local en tu dispositivo mediante SQLite para que los disfrutes en todo momento.',
+      'pregunta':
+          l10n?.faq4Pregunta ??
+          '¿Puedo leer la Biblia y guardar notas o favoritos sin conexión?',
+      'respuesta': l10n?.faq4Respuesta ?? '¡Sí! El texto bíblico, tus notas de estudio y los versículos destacados quedan almacenados de manera segura y local en tu dispositivo mediante SQLite para que los disfrutes en todo momento.',
     },
     {
-      'pregunta': '¿Cómo actualizar mis datos de perfil o cambiar de iglesia?',
-      'respuesta':
-          'En la pestaña Perfil, presiona "Mis datos" o el botón de edición para actualizar tu nombre, correo o teléfono celular. Si deseas afiliarte a otra comunidad, pulsa "Cambiar de iglesia".',
+      'pregunta':
+          l10n?.faq5Pregunta ??
+          '¿Cómo actualizar mis datos de perfil o cambiar de iglesia?',
+      'respuesta': l10n?.faq5Respuesta ?? 'En la pestaña Perfil, presiona "Mis datos" o el botón de edición para actualizar tu nombre, correo o teléfono celular. Si deseas afiliarte a otra comunidad, pulsa "Cambiar de iglesia".',
     },
   ];
 
   Future<void> _abrirWhatsApp(Color azulFondo) async {
+    final l10n = AppLocalizations.of(context);
     const String telefono = '+18099587028';
-    const String mensaje = 'Hola, necesito ayuda con la app ATRIO.';
+    final String mensaje =
+        l10n?.mensajeWhatsAppAyuda ?? 'Hola, necesito ayuda con la app ATRIO.';
     final Uri url = Uri.parse(
       'whatsapp://send?phone=$telefono&text=${Uri.encodeComponent(mensaje)}',
     );
@@ -91,26 +99,28 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
         await launchUrl(urlWeb, mode: LaunchMode.externalApplication);
       } else {
         _mostrarAlerta(
-          'No se pudo abrir WhatsApp en este dispositivo.',
+          l10n?.errorAbrirWhatsAppDispositivo ??
+              'No se pudo abrir WhatsApp en este dispositivo.',
           azulFondo,
         );
       }
     } catch (_) {
       _mostrarAlerta(
-        'Ocurrió un error al intentar abrir WhatsApp.',
+        l10n?.errorAbrirWhatsApp ??
+            'Ocurrió un error al intentar abrir WhatsApp.',
         azulFondo,
       );
     }
   }
 
   Future<void> _abrirCorreo(Color azulFondo) async {
+    final l10n = AppLocalizations.of(context);
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
       path: 'soporte@atrioapp.com',
       queryParameters: {
-        'subject': 'Soporte - App ATRIO',
-        'body':
-            'Describe aquí tu consulta o inconveniente:\n\n---\nVersión de la app: 1.0.0',
+        'subject': l10n?.asuntoCorreoSoporte ?? 'Soporte - App ATRIO',
+        'body': l10n?.cuerpoCorreoSoporte ?? 'Describe aquí tu consulta o inconveniente:\n\n---\nVersión de la app: 1.0.0',
       },
     );
 
@@ -119,13 +129,15 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
         await launchUrl(emailLaunchUri);
       } else {
         _mostrarAlerta(
-          'No se encontró un cliente de correo configurado.',
+          l10n?.errorNoClienteCorreo ??
+              'No se encontró un cliente de correo configurado.',
           azulFondo,
         );
       }
     } catch (_) {
       _mostrarAlerta(
-        'Ocurrió un error al intentar abrir el correo.',
+        l10n?.errorAbrirCorreo ??
+            'Ocurrió un error al intentar abrir el correo.',
         azulFondo,
       );
     }
@@ -144,18 +156,19 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
   }
 
   void _cambiarModoLectura(BibliaProvider provider) {
+    final l10n = AppLocalizations.of(context);
     switch (provider.modoLectura) {
       case ModoLectura.calido:
         provider.actualizarModoLectura(ModoLectura.suave);
-        _mostrarMensaje('Modo Claro Suave');
+        _mostrarMensaje(l10n?.modoClaroSuave ?? 'Modo Claro Suave');
         break;
       case ModoLectura.suave:
         provider.actualizarModoLectura(ModoLectura.noche);
-        _mostrarMensaje('Modo Lectura Nocturna');
+        _mostrarMensaje(l10n?.modoLecturaNocturna ?? 'Modo Lectura Nocturna');
         break;
       case ModoLectura.noche:
         provider.actualizarModoLectura(ModoLectura.calido);
-        _mostrarMensaje('Modo Papiro Cálido');
+        _mostrarMensaje(l10n?.modoPapiroCalido ?? 'Modo Papiro Cálido');
         break;
     }
   }
@@ -196,6 +209,8 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
         ),
       ),
       builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx);
+
         return Consumer<BibliaProvider>(
           builder: (context, provider, child) {
             return Padding(
@@ -213,7 +228,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Ajustes de lectura',
+                        l10n?.ajustesDeLectura ?? 'Ajustes de lectura',
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.05,
@@ -232,7 +247,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.02),
                   Text(
-                    'Tamaño de letra',
+                    l10n?.tamanoDeLetra ?? 'Tamaño de letra',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.035,
@@ -278,7 +293,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.02),
                   Text(
-                    'Tipo de fuente',
+                    l10n?.tipoDeFuente ?? 'Tipo de fuente',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.035,
@@ -330,7 +345,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.02),
                   Text(
-                    'Modo de lectura',
+                    l10n?.modoDeLectura ?? 'Modo de lectura',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.035,
@@ -346,7 +361,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                             Icons.wb_incandescent_outlined,
                             size: 18,
                           ),
-                          label: const Text('Papiro'),
+                          label: Text(l10n?.papiro ?? 'Papiro'),
                           selected: provider.modoLectura == ModoLectura.calido,
                           selectedColor: const Color(0xFFC28518)
                               .withValues(alpha: 0.25),
@@ -357,7 +372,9 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                                 ModoLectura.calido,
                               );
                               Navigator.pop(ctx);
-                              _mostrarMensaje('Modo Papiro Cálido');
+                              _mostrarMensaje(
+                                l10n?.modoPapiroCalido ?? 'Modo Papiro Cálido',
+                              );
                             }
                           },
                         ),
@@ -366,7 +383,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                       Expanded(
                         child: ChoiceChip(
                           avatar: const Icon(Icons.wb_sunny_rounded, size: 18),
-                          label: const Text('Claro'),
+                          label: Text(l10n?.claro ?? 'Claro'),
                           selected: provider.modoLectura == ModoLectura.suave,
                           selectedColor: const Color(0xFF0F4C81)
                               .withValues(alpha: 0.2),
@@ -375,7 +392,9 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                             if (selected) {
                               provider.actualizarModoLectura(ModoLectura.suave);
                               Navigator.pop(ctx);
-                              _mostrarMensaje('Modo Claro Suave');
+                              _mostrarMensaje(
+                                l10n?.modoClaroSuave ?? 'Modo Claro Suave',
+                              );
                             }
                           },
                         ),
@@ -384,7 +403,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                       Expanded(
                         child: ChoiceChip(
                           avatar: const Icon(Icons.nightlight_round, size: 18),
-                          label: const Text('Noche'),
+                          label: Text(l10n?.noche ?? 'Noche'),
                           selected: provider.modoLectura == ModoLectura.noche,
                           selectedColor: const Color(0xFFF59E0B)
                               .withValues(alpha: 0.25),
@@ -393,7 +412,10 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                             if (selected) {
                               provider.actualizarModoLectura(ModoLectura.noche);
                               Navigator.pop(ctx);
-                              _mostrarMensaje('Modo Lectura Nocturna');
+                              _mostrarMensaje(
+                                l10n?.modoLecturaNocturna ??
+                                    'Modo Lectura Nocturna',
+                              );
                             }
                           },
                         ),
@@ -412,6 +434,9 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final faqs = _getFaqs(l10n);
+
     final provider = Provider.of<BibliaProvider>(context);
     final double fontScale = provider.fontScale;
     final String selectedFont = provider.selectedFont;
@@ -490,7 +515,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
           ),
         ),
         title: Text(
-          'Ayuda y soporte',
+          l10n?.ayudaYSoporte ?? 'Ayuda y soporte',
           style: _getFontStyle(
             TextStyle(
               color: colorHeaderTexto,
@@ -503,7 +528,8 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Cambiar tono de lectura',
+            tooltip:
+                l10n?.cambiarTonoLecturaTooltip ?? 'Cambiar tono de lectura',
             icon: Icon(
               esNoche
                   ? Icons.nightlight_round
@@ -516,7 +542,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
             onPressed: () => _cambiarModoLectura(provider),
           ),
           IconButton(
-            tooltip: 'Ajustes de lectura',
+            tooltip: l10n?.ajustesDeLectura ?? 'Ajustes de lectura',
             icon: Icon(
               Icons.text_format_rounded,
               color: colorHeaderTexto,
@@ -563,14 +589,17 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                         ),
                         child: Icon(
                           Icons.support_agent_rounded,
-                          color: esNoche ? const Color(0xFF0A1017) : colorHeader,
+                          color: esNoche
+                              ? const Color(0xFF0A1017)
+                              : colorHeader,
                           size: 26,
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.03),
                       Expanded(
                         child: Text(
-                          '¿Cómo podemos ayudarte?',
+                          l10n?.comoPodemosAyudarte ??
+                              '¿Cómo podemos ayudarte?',
                           style: _getFontStyle(
                             TextStyle(
                               color: Colors.white,
@@ -585,7 +614,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                   ),
                   SizedBox(height: screenHeight * 0.012),
                   Text(
-                    'Encuentra respuestas rápidas o comunícate directamente con nuestro equipo de asistencia técnica de ATRIO.',
+                    l10n?.descripcionAyudaSoporte ?? 'Encuentra respuestas rápidas o comunícate directamente con nuestro equipo de asistencia técnica de ATRIO.',
                     style: _getFontStyle(
                       TextStyle(
                         color: Colors.white70,
@@ -602,7 +631,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
 
             // Canales de Contacto Directo
             _sectionTitle(
-              'Canales de atención',
+              l10n?.canalesDeAtencion ?? 'Canales de atención',
               screenWidth,
               colorTextoPrincipal,
               fontScale,
@@ -614,7 +643,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                 Expanded(
                   child: _buildContactCard(
                     title: 'WhatsApp',
-                    subtitle: 'Chat directo',
+                    subtitle: l10n?.chatDirecto ?? 'Chat directo',
                     icon: Icons.chat_bubble_outline_rounded,
                     colorIcon: const Color(0xFF25D366),
                     onTap: () => _abrirWhatsApp(colorHeader),
@@ -631,7 +660,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                 SizedBox(width: screenWidth * 0.03),
                 Expanded(
                   child: _buildContactCard(
-                    title: 'Correo',
+                    title: l10n?.correo ?? 'Correo',
                     subtitle: 'soporte@atrioapp.com',
                     icon: Icons.mail_outline_rounded,
                     colorIcon: colorAcento,
@@ -652,7 +681,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
 
             // Preguntas Frecuentes
             _sectionTitle(
-              'Preguntas frecuentes',
+              l10n?.preguntasFrecuentes ?? 'Preguntas frecuentes',
               screenWidth,
               colorTextoPrincipal,
               fontScale,
@@ -667,20 +696,17 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(
-                children: List.generate(_faqs.length, (index) {
-                  final faq = _faqs[index];
-                  final isLast = index == _faqs.length - 1;
+                children: List.generate(faqs.length, (index) {
+                  final faq = faqs[index];
+                  final isLast = index == faqs.length - 1;
                   return Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
+                    data: Theme.of(context)
+                        .copyWith(dividerColor: Colors.transparent),
                     child: Container(
                       decoration: BoxDecoration(
                         border: isLast
                             ? null
-                            : Border(
-                                bottom: BorderSide(color: colorBorde),
-                              ),
+                            : Border(bottom: BorderSide(color: colorBorde)),
                       ),
                       child: ExpansionTile(
                         iconColor: colorAcento,
@@ -737,7 +763,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
               child: Column(
                 children: [
                   Text(
-                    'ATRIO · Versión 1.0.0',
+                    l10n?.atrioVersion('1.0.0') ?? 'ATRIO · Versión 1.0.0',
                     style: _getFontStyle(
                       TextStyle(
                         color: colorTextoSecundario,
@@ -748,7 +774,8 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                   ),
                   SizedBox(height: screenHeight * 0.005),
                   Text(
-                    'Todos los derechos reservados',
+                    l10n?.todosLosDerechosReservados ??
+                        'Todos los derechos reservados',
                     style: _getFontStyle(
                       TextStyle(
                         color: colorTextoSecundario.withValues(alpha: 0.7),

@@ -1,0 +1,595 @@
+{
+  "@@locale": "en",
+  "bienvenida": "Welcome to Atrio",
+  "saludo": "Hello, {nombre}",
+  "@saludo": {
+    "description": "Personalized greeting with user name",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "appTitulo": "ATRIO",
+  "lema": "Live your Faith in community",
+  "subtituloBienvenida": "A space to live and share your faith",
+  "accesoRapidoSeguro": "Fast and Secure Access",
+  "ingresaUnToque": "Sign in with a single tap",
+  "continuarConGoogle": "Continue with Google",
+  "continuarConApple": "Continue with Apple",
+  "explorarInvitado": "Explore as guest",
+  "avisoPrivacidadOdoo": "By continuing, you securely link your account with the ATRIO church server in Odoo ERP.",
+  "terminosDeUso": "Terms of use",
+  "politicaPrivacidad": "Privacy policy",
+  "privacidad": "Privacy",
+  "eliminarMisDatos": "Delete my data",
+  "eliminarCuentaYDatos": "Delete account and data",
+  "solicitarEliminacion": "Request deletion",
+  "opcionNoDisponible": "Option not available",
+  "entendido": "Understood",
+  "inicio": "Home",
+  "perfil": "Profile",
+  "biblia": "Bible",
+  "eventos": "Events",
+  "donaciones": "Donations",
+  "solicitudes": "Requests",
+  "notificaciones": "Notifications",
+  "configuracion": "Settings",
+  "ajustes": "Settings",
+  "idiomaPreferido": "Preferred language",
+  "seleccionarIdioma": "Select Language",
+  "modoVisualizacion": "Display mode",
+  "claro": "Light",
+  "oscuro": "Dark",
+  "sistema": "System",
+  "guardar": "Save",
+  "cancelar": "Cancel",
+  "cerrar": "Close",
+  "deseasSalirAtrio": "Do you want to exit Atrio?",
+  "presionaSalirCerrar": "Press \"Exit\" to close the application.",
+  "salir": "Exit",
+  "iglesia": "Church",
+  "explorar": "Explore",
+  "radio": "Radio",
+  "miIglesia": "My Church",
+  "tocaParaCambiar": "· Tap to change",
+  "sinIglesiaSeleccionada": "No church selected",
+  "proyectosSolidarios": "Solidarity\nprojects",
+  "tienda": "Store",
+  "libros": "Books",
+  "videos": "Videos",
+  "nuevoAviso": "New notice",
+  "cambioHorarioAviso": "Schedule change · Wednesday, 7:00 PM",
+  "categoriaServicios": "Services",
+  "inscripcionesAbiertas": "Open registrations",
+  "retiroAnualAviso": "Annual Retreat 2026 · Limited spots",
+  "categoriaComunidad": "Community",
+  "accionSolidaria": "Solidarity action",
+  "campanaDonacionesAviso": "\"Hands that Bless\" campaign · Donations",
+  "anunciosYConciertos": "ANNOUNCEMENTS & CONCERTS",
+  "cargandoNovedades": "Loading updates...",
+  "infoArtistaEnviada": "Information about \"{artista}\" sent.",
+  "@infoArtistaEnviada": {
+    "description": "Information message confirming details sent for the artist or event",
+    "placeholders": {
+      "artista": {
+        "type": "String"
+      }
+    }
+  },
+  "noSePudoAbrirMarcador": "Could not open dialer with number {telefono}",
+  "@noSePudoAbrirMarcador": {
+    "description": "Error when dialer cannot be opened",
+    "placeholders": {
+      "telefono": {
+        "type": "String"
+      }
+    }
+  },
+  "noSePudoAbrirNavegacion": "Could not open navigation application.",
+  "noSePudoAbrirEnlace": "Could not open link {url}",
+  "@noSePudoAbrirEnlace": {
+    "description": "Error when a web link cannot be opened",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "compartirUbicacion": "Share location",
+  "plusCodeCopiadoPregunta": "The Plus Code has been copied to the clipboard. Do you want to share it directly?",
+  "plusCodeCopiadoSnack": "Plus Code copied: {plusCode}",
+  "@plusCodeCopiadoSnack": {
+    "description": "Snackbar notification when Plus Code is copied to clipboard",
+    "placeholders": {
+      "plusCode": {
+        "type": "String"
+      }
+    }
+  },
+  "correo": "Email",
+  "reintentar": "Retry",
+  "cambiarDeIglesia": "Change church",
+  "exploraYSeleccionaComunidad": "Explore and select another community",
+  "llamar": "Call",
+  "comoLlegar": "Directions",
+  "sitioWeb": "Website",
+  "verAhora": "Watch now",
+  "horariosDeServicio": "Service times",
+  "ubicacionYContacto": "Location & contact",
+  "direccion": "Address",
+  "telefono": "Phone",
+  "avisos": "Notices",
+  "encuentraTuFeEn10Km": "Find your ideal Faith within 10 km",
+  "buscarIglesiasPlaceholder": "E.g., Christian church, Baptist...",
+  "catolica": "Catholic",
+  "evangelica": "Evangelical",
+  "pentecostal": "Pentecostal",
+  "bautista": "Baptist",
+  "adventista": "Adventist",
+  "visualizaIglesiasEnMapa": "View churches on the Map",
+  "comunidadesSugeridas": "Suggested communities",
+  "noSeEncontraronIglesias10km": "No churches found within 10 km.",
+  "gpsDesactivado": "GPS is disabled. Please turn it on.",
+  "permisosUbicacionDenegados": "Location permissions denied.",
+  "permisosUbicacionPermanentemente": "Location permissions permanently denied on your device.",
+  "obteniendoUbicacionEspera": "Getting your location, please try again in a moment...",
+  "errorCargarMapa": "😕 Oops! Could not load the Map\n\n📡 Check your internet connection and try again",
+  "sinNombre": "Unnamed",
+  "comunidadCristiana": "Christian community",
+  "aDistanciaKm": "{distancia} km away",
+  "@aDistanciaKm": {
+    "description": "Distance label in kilometers",
+    "placeholders": {
+      "distancia": {
+        "type": "String"
+      }
+    }
+  },
+  "emisorasCristianas": "Christian Radio Stations",
+  "buscarEmisorasPlaceholder": "Search by name, denomination, city...",
+  "todosLosPaises": "All countries",
+  "otrosPaises": "Other countries",
+  "todos": "All",
+  "espanol": "Spanish",
+  "ingles": "English",
+  "mostrandoSoloFavoritas": "Showing favorites only ({total})",
+  "@mostrandoSoloFavoritas": {
+    "description": "Indicator of favorites banner",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "verTodas": "View all",
+  "sinFavoritasEnPais": "You don't have any favorite stations saved in {pais}.\n\nTap the heart button above to view all stations.",
+  "@sinFavoritasEnPais": {
+    "description": "Message when no favorites in selected country",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "sinFavoritasAun": "You don't have any favorite stations saved yet.\n\nTap the heart button above to view all stations.",
+  "noEmisorasCoincidencia": "No stations found matching \"{busqueda}\".",
+  "@noEmisorasCoincidencia": {
+    "description": "Search empty state message",
+    "placeholders": {
+      "busqueda": {
+        "type": "String"
+      }
+    }
+  },
+  "noEmisorasDisponiblesPais": "No stations available for {pais}.",
+  "@noEmisorasDisponiblesPais": {
+    "description": "Message when no stations available for country",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "verTodasLasEmisoras": "View all stations",
+  "sintonizandoAudio": "Tuning audio...",
+  "enVivoConDenominacion": "Live · {denominacion} ({frecuencia})",
+  "@enVivoConDenominacion": {
+    "description": "Live state with denomination and frequency",
+    "placeholders": {
+      "denominacion": {
+        "type": "String"
+      },
+      "frecuencia": {
+        "type": "String"
+      }
+    }
+  },
+  "enVivoFrecuencia": "Live · {frecuencia}",
+  "@enVivoFrecuencia": {
+    "description": "Live state with frequency",
+    "placeholders": {
+      "frecuencia": {
+        "type": "String"
+      }
+    }
+  },
+  "emisora": "Station",
+  "errorEmisoraNoDisponible": "Error: The station is not available at this moment.",
+  "sinInternetSintonizar": "No internet connection to tune the station.",
+  "usuario": "User",
+  "miActividad": "My activity",
+  "cuenta": "Account",
+  "soporte": "Support",
+  "misSolicitudes": "My requests",
+  "misDonaciones": "My donations",
+  "misNotasDeLaBiblia": "My Bible notes",
+  "misDatos": "My personal data",
+  "ajustesDeLaApp": "App settings",
+  "ayudaYSoporte": "Help & support",
+  "terminosYPrivacidad": "Terms & privacy",
+  "cerrarSesion": "Log out",
+  "misDatosDePerfil": "My profile details",
+  "nombreCompleto": "Full name",
+  "ingresaUnNombre": "Enter a name",
+  "correoElectronico": "Email",
+  "ingresaUnCorreoValido": "Enter a valid email",
+  "telefonoCelular": "Mobile phone",
+  "iglesiaActual": "Current church",
+  "helperCambiarIglesia": "To change it, use the \"Change church\" option",
+  "guardarCambios": "Save changes",
+  "datosActualizadosCorrectamente": "Data updated successfully",
+  "seguroDeseasCerrarSesion": "Are you sure you want to log out?",
+  "eliminarCuenta": "Delete account",
+  "seguroEliminarCuenta": "Are you sure you want to delete your account and all your personal data from ATRIO?",
+  "detalleEliminarCuenta": "This action is final and irreversible. The following will be permanently deleted:\n• Your user profile and community connection.\n• All your personal Bible notes and saved favorites.\n• Your history of requests and local contributions.\n• Deactivation of your record in the Odoo ERP backend will be requested.",
+  "eliminarDefinitivamente": "Delete permanently",
+  "cuentaEliminadaExito": "Your account and personal data have been successfully deleted.",
+  "versionDeLaBiblia": "Bible version",
+  "noSePudoAbrirWhatsApp": "Could not open WhatsApp.",
+  "buscarBibliaPlaceholder": "Search verse, word, or phrase...",
+  "buscar": "Search",
+  "borrarTexto": "Clear text",
+  "buscandoEnVersion": "Searching in {version}...",
+  "@buscandoEnVersion": {
+    "description": "Loading text during Bible search",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "versiculoDelDia": "Verse of the day",
+  "compartirVersiculo": "Share verse",
+  "errorCargarVersiculo": "Could not load today's verse.",
+  "librosDeLaBiblia": "Books of the Bible",
+  "antiguoYNuevoTestamento": "Old and New Testament",
+  "continuarLeyendo": "Continue reading",
+  "capituloNumero": "Chapter {numero}",
+  "@capituloNumero": {
+    "description": "Bible chapter number",
+    "placeholders": {
+      "numero": {
+        "type": "String"
+      }
+    }
+  },
+  "escuchar": "Listen",
+  "escuchaLaBibliaNarrada": "Listen to the narrated Bible",
+  "favoritos": "Favorites",
+  "pasajeGuardado": "1 saved passage",
+  "pasajesGuardados": "{total} saved passages",
+  "@pasajesGuardados": {
+    "description": "Count of saved passages in favorites",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "misNotas": "My notes",
+  "notaSingular": "1 note",
+  "notasPlural": "{total} notes",
+  "@notasPlural": {
+    "description": "Count of personal notes",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "noVersiculosEncontrados": "No verses found for:\n\"{consulta}\"",
+  "@noVersiculosEncontrados": {
+    "description": "Message when Bible search returns no results",
+    "placeholders": {
+      "consulta": {
+        "type": "String"
+      }
+    }
+  },
+  "pruebaPalabrasClave": "Try using more general keywords or check your spelling.",
+  "versiculosEncontrados": "{total} verses found",
+  "@versiculosEncontrados": {
+    "description": "Count of verses found",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "cerrarBusqueda": "Close search",
+  "eventos": "Events",
+  "buscarEventosPlaceholder": "Search events, speakers, or venues...",
+  "categorias": "Categories",
+  "categoriaTodos": "All",
+  "categoriaLiderazgo": "Leadership",
+  "categoriaAdoracion": "Worship",
+  "categoriaJovenes": "Youth",
+  "categoriaFamilias": "Families",
+  "categoriaComunidad": "Community",
+  "explorarEventos": "Explore events",
+  "verTodos": "See all",
+  "noEventosEnCategoria": "No events found in this category",
+  "proximosEnAgenda": "Upcoming on schedule",
+  "mostrandoCalendarioCompleto": "Showing full schedule of activities...",
+  "verCalendario": "View calendar",
+  "destacadoMayus": "FEATURED",
+  "inscribirmeAhora": "Register now",
+  "eventoAnadidoACalendario": "Event \"{titulo}\" added to your calendar.",
+  "@eventoAnadidoACalendario": {
+    "description": "Message when event is added to calendar",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "anadirACalendario": "Add to calendar",
+  "miActividadAgendada": "My scheduled activity",
+  "porcentajeOcupacion": "{porcentaje}% capacity",
+  "@porcentajeOcupacion": {
+    "description": "Capacity occupancy percentage",
+    "placeholders": {
+      "porcentaje": {
+        "type": "int"
+      }
+    }
+  },
+  "disponibilidadCupos": "Seat availability",
+  "detallesDelEvento": "Event details",
+  "inscripcionConfirmada": "Registration confirmed for \"{titulo}\". See you there!",
+  "@inscripcionConfirmada": {
+    "description": "Event registration confirmation",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "yaEstasInscrito": "Already registered",
+  "eventoAgregadoAgendaLocal": "Event \"{titulo}\" added to your local calendar.",
+  "@eventoAgregadoAgendaLocal": {
+    "description": "Message when event is added to local schedule",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "mensajeWhatsAppAyuda": "Hello, I need help with the ATRIO app.",
+  "errorAbrirWhatsAppDispositivo": "Could not open WhatsApp on this device.",
+  "errorAbrirWhatsApp": "An error occurred while trying to open WhatsApp.",
+  "asuntoCorreoSoporte": "Support - ATRIO App",
+  "cuerpoCorreoSoporte": "Describe your query or issue here:\n\n---\nApp version: 1.0.0",
+  "errorNoClienteCorreo": "No email client configured.",
+  "errorAbrirCorreo": "An error occurred while trying to open email.",
+  "modoClaroSuave": "Soft Light Mode",
+  "modoLecturaNocturna": "Night Reading Mode",
+  "modoPapiroCalido": "Warm Papyrus Mode",
+  "ajustesDeLectura": "Reading settings",
+  "tamanoDeLetra": "Font size",
+  "tipoDeFuente": "Font type",
+  "modoDeLectura": "Reading mode",
+  "papiro": "Papyrus",
+  "claro": "Light",
+  "noche": "Night",
+  "cambiarTonoLecturaTooltip": "Change reading tone",
+  "comoPodemosAyudarte": "How can we help you?",
+  "descripcionAyudaSoporte": "Find quick answers or contact our ATRIO technical support team directly.",
+  "canalesDeAtencion": "Support channels",
+  "chatDirecto": "Direct chat",
+  "correo": "Email",
+  "preguntasFrecuentes": "Frequently asked questions",
+  "faq1Pregunta": "How do I make an offering or donation to my church?",
+  "faq1Respuesta": "Access the \"My donations\" section from your profile or tap the \"Give / Donate\" button on your church's screen. You will be able to select the mission project, enter the amount, and proceed securely.",
+  "faq2Pregunta": "How do I send and check the status of my pastoral requests?",
+  "faq2Respuesta": "Go to the \"My requests\" section in your profile or from your church menu. There you can submit prayer, counseling, or community support requests and check your community's response.",
+  "faq3Pregunta": "Where can I explore nearby churches and view them on the map?",
+  "faq3Respuesta": "From the home screen, tap \"Explore Churches\" or the interactive map. You can filter by Christian tradition, check service times, lead pastors, and get directions on the map.",
+  "faq4Pregunta": "Can I read the Bible and save notes or favorites offline?",
+  "faq4Respuesta": "Yes! The Bible text, your study notes, and highlighted verses are safely stored locally on your device via SQLite so you can enjoy them anytime.",
+  "faq5Pregunta": "How do I update my profile details or switch churches?",
+  "faq5Respuesta": "In the Profile tab, tap \"My details\" or the edit button to update your name, email, or mobile phone. If you want to affiliate with another community, tap \"Switch church\".",
+  "atrioVersion": "ATRIO · Version {version}",
+  "@atrioVersion": {
+    "description": "Application version label",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "todosLosDerechosReservados": "All rights reserved",
+  "tiposDeSolicitud": "Request types",
+  "peticionDeOracion": "Prayer request",
+  "orientacionPastoral": "Pastoral guidance",
+  "consejeriaFamiliar": "Family counseling",
+  "visitaAEnfermos": "Visit to the sick",
+  "ayudaComunitaria": "Community assistance",
+  "otraSolicitud": "Other request",
+  "volver": "Back",
+  "comunidadVerificada": "Verified community",
+  "diezmo": "Tithe",
+  "ofrenda": "Offering",
+  "campanaEspecial": "Special campaign",
+  "otroAporte": "Other contribution",
+  "historialYRecibos": "History and receipts",
+  "proyectosSolidariosTitulo": "Solidarity projects",
+  "lemaProyectosSolidarios": "Together we can transform lives",
+  "noHayDatosDisponibles": "No data available",
+  "masCampanas": "More campaigns",
+  "metaPrefijo": "Goal:",
+  "deMonto": "of",
+  "porcentajeAlcanzado": "{porcentaje}% reached",
+  "@porcentajeAlcanzado": {
+    "description": "Percentage reached in solidarity project",
+    "placeholders": {
+      "porcentaje": {
+        "type": "String"
+      }
+    }
+  },
+  "diasRestantes": "{dias} days left",
+  "@diasRestantes": {
+    "description": "Remaining days for solidarity project campaign",
+    "placeholders": {
+      "dias": {
+        "type": "String"
+      }
+    }
+  },
+  "carritoCantidadProductos": "You have {cantidad} products in your shopping cart",
+  "@carritoCantidadProductos": {
+    "description": "Snackbar message indicating product count in cart",
+    "placeholders": {
+      "cantidad": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarProductosPlaceholder": "Search Bibles, books, or gifts...",
+  "categoriaTodos": "All",
+  "categoriaBiblias": "Bibles",
+  "categoriaLibros": "Books",
+  "categoriaRegalos": "Gifts",
+  "recursosParaCrecerEnTuFe": "Resources to\ngrow in your faith",
+  "verDestacados": "View featured",
+  "catalogoDeProductos": "Product catalog",
+  "noSeEncontraronProductosCategoria": "No products found in this category",
+  "entregaORetiro": "Delivery or pickup",
+  "envioADomicilio": "Home delivery",
+  "retiroEnIglesia": "Church pickup",
+  "unidadesEnInventario": "{cantidad} units in stock",
+  "@unidadesEnInventario": {
+    "description": "Inventory count for a product in store",
+    "placeholders": {
+      "cantidad": {
+        "type": "String"
+      }
+    }
+  },
+  "detallesDelProducto": "Product details",
+  "productoAgregadoAlCarrito": "\"{nombre}\" added to cart!",
+  "@productoAgregadoAlCarrito": {
+    "description": "Message confirming product was added to cart",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "agregarAlCarritoConPrecio": "Add to cart · {precio}",
+  "@agregarAlCarritoConPrecio": {
+    "description": "Button text to add to cart with formatted price",
+    "placeholders": {
+      "precio": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarLibrosPlaceholder": "Search books or authors...",
+  "categoriaVidaCristiana": "Christian life",
+  "categoriaCrecimiento": "Growth",
+  "categoriaLiderazgo": "Leadership",
+  "explorarLibros": "Explore books",
+  "noSeEncontraronLibrosCategoria": "No books found in this category",
+  "leerAhora": "Read now",
+  "escucharMuestra": "Listen to sample",
+  "reproduciendoMuestra": "Playing sample of \"{titulo}\"...",
+  "@reproduciendoMuestra": {
+    "description": "Snackbar message when playing book sample",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "continuarLeyendo": "Continue reading",
+  "totalPaginas": "{paginas} pages",
+  "@totalPaginas": {
+    "description": "Total pages of a book",
+    "placeholders": {
+      "paginas": {
+        "type": "String"
+      }
+    }
+  },
+  "porcentajeLeido": "{porcentaje}% read",
+  "@porcentajeLeido": {
+    "description": "Reading progress percentage",
+    "placeholders": {
+      "porcentaje": {
+        "type": "String"
+      }
+    }
+  },
+  "sinopsis": "Synopsis",
+  "abriendoLibro": "Opening \"{titulo}\"...",
+  "@abriendoLibro": {
+    "description": "Snackbar message when opening a book",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "videosYTransmisiones": "Videos and streams",
+  "buscarVideosPlaceholder": "Search sermons, channels or topics...",
+  "enVivoBadge": "LIVE",
+  "verAhora": "Watch now",
+  "categoriaEnVivo": "Live",
+  "categoriaPredicas": "Sermons",
+  "categoriaEstudios": "Bible studies",
+  "categoriaMusica": "Music",
+  "noSeEncontraronVideosCategoria": "No videos found in this category",
+  "descripcion": "Description",
+  "conectandoTransmision": "Connecting to stream \"{titulo}\"...",
+  "@conectandoTransmision": {
+    "description": "Snackbar message when connecting to a live stream",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "reproduciendoVideo": "Playing \"{titulo}\"...",
+  "@reproduciendoVideo": {
+    "description": "Snackbar message when playing a video",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "verTransmisionEnVivo": "Watch live stream",
+  "reproducirAhora": "Play now",
+  "enlaceCopiadoPortapapeles": "Link to \"{titulo}\" copied to clipboard",
+  "@enlaceCopiadoPortapapeles": {
+    "description": "Snackbar message when video link is copied to clipboard",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  }
+}

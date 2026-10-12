@@ -1,0 +1,595 @@
+{
+  "@@locale": "fr",
+  "bienvenida": "Bienvenue à Atrio",
+  "saludo": "Bonjour, {nombre}",
+  "@saludo": {
+    "description": "Salutation personnalisée avec le nom",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "appTitulo": "ATRIO",
+  "lema": "Vivez votre Foi en communauté",
+  "subtituloBienvenida": "Un espace pour vivre et partager votre foi",
+  "accesoRapidoSeguro": "Accès Rapide et Sécurisé",
+  "ingresaUnToque": "Connectez-vous en un seul geste",
+  "continuarConGoogle": "Continuer avec Google",
+  "continuarConApple": "Continuer avec Apple",
+  "explorarInvitado": "Explorer en tant qu'invité",
+  "avisoPrivacidadOdoo": "En continuant, vous associez en toute sécurité votre compte au serveur ecclésial ATRIO dans Odoo ERP.",
+  "terminosDeUso": "Conditions d'utilisation",
+  "politicaPrivacidad": "Politique de confidentialité",
+  "privacidad": "Confidentialité",
+  "eliminarMisDatos": "Supprimer mes données",
+  "eliminarCuentaYDatos": "Supprimer le compte et les données",
+  "solicitarEliminacion": "Demander la suppression",
+  "opcionNoDisponible": "Option non disponible",
+  "entendido": "Compris",
+  "inicio": "Accueil",
+  "perfil": "Profil",
+  "biblia": "Bible",
+  "eventos": "Événements",
+  "donaciones": "Dons",
+  "solicitudes": "Demandes",
+  "notificaciones": "Notifications",
+  "configuracion": "Paramètres",
+  "ajustes": "Paramètres",
+  "idiomaPreferido": "Langue préférée",
+  "seleccionarIdioma": "Sélectionner la langue",
+  "modoVisualizacion": "Mode d'affichage",
+  "claro": "Clair",
+  "oscuro": "Sombre",
+  "sistema": "Système",
+  "guardar": "Enregistrer",
+  "cancelar": "Annuler",
+  "cerrar": "Fermer",
+  "deseasSalirAtrio": "Voulez-vous quitter Atrio ?",
+  "presionaSalirCerrar": "Appuyez sur \"Quitter\" pour fermer l'application.",
+  "salir": "Quitter",
+  "iglesia": "Église",
+  "explorar": "Explorer",
+  "radio": "Radio",
+  "miIglesia": "Mon Église",
+  "tocaParaCambiar": "· Appuyer pour modifier",
+  "sinIglesiaSeleccionada": "Aucune église sélectionnée",
+  "proyectosSolidarios": "Projets\nsolidaires",
+  "tienda": "Boutique",
+  "libros": "Livres",
+  "videos": "Vidéos",
+  "nuevoAviso": "Nouvel avis",
+  "cambioHorarioAviso": "Changement d'horaire · Mercredi, 19h00",
+  "categoriaServicios": "Services",
+  "inscripcionesAbiertas": "Inscriptions ouvertes",
+  "retiroAnualAviso": "Retraite annuelle 2026 · Places limitées",
+  "categoriaComunidad": "Communauté",
+  "accionSolidaria": "Action solidaire",
+  "campanaDonacionesAviso": "Campagne \"Des mains qui bénissent\" · Dons",
+  "anunciosYConciertos": "ANNONCES & CONCERTS",
+  "cargandoNovedades": "Chargement des nouveautés...",
+  "infoArtistaEnviada": "Informations sur \"{artista}\" envoyées.",
+  "@infoArtistaEnviada": {
+    "description": "Message informatif confirmant l'envoi des détails de l'artiste ou de l'événement",
+    "placeholders": {
+      "artista": {
+        "type": "String"
+      }
+    }
+  },
+  "noSePudoAbrirMarcador": "Impossible d'ouvrir le composeur avec le numéro {telefono}",
+  "@noSePudoAbrirMarcador": {
+    "description": "Erreur lors de l'ouverture du composeur",
+    "placeholders": {
+      "telefono": {
+        "type": "String"
+      }
+    }
+  },
+  "noSePudoAbrirNavegacion": "Impossible d'ouvrir l'application de navigation.",
+  "noSePudoAbrirEnlace": "Impossible d'ouvrir le lien {url}",
+  "@noSePudoAbrirEnlace": {
+    "description": "Erreur lors de l'ouverture d'un lien",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "compartirUbicacion": "Partager l'emplacement",
+  "plusCodeCopiadoPregunta": "Le Plus Code a été copié dans le presse-papiers. Souhaitez-vous le partager directement ?",
+  "plusCodeCopiadoSnack": "Plus Code copié : {plusCode}",
+  "@plusCodeCopiadoSnack": {
+    "description": "Notification lorsque le Plus Code est copié",
+    "placeholders": {
+      "plusCode": {
+        "type": "String"
+      }
+    }
+  },
+  "correo": "E-mail",
+  "reintentar": "Réessayer",
+  "cambiarDeIglesia": "Changer d'église",
+  "exploraYSeleccionaComunidad": "Explorez et sélectionnez une autre communauté",
+  "llamar": "Appeler",
+  "comoLlegar": "Itinéraire",
+  "sitioWeb": "Site Web",
+  "verAhora": "Regarder maintenant",
+  "horariosDeServicio": "Horaires des services",
+  "ubicacionYContacto": "Emplacement et contact",
+  "direccion": "Adresse",
+  "telefono": "Téléphone",
+  "avisos": "Avis",
+  "encuentraTuFeEn10Km": "Trouvez votre Foi idéale dans un rayon de 10 km",
+  "buscarIglesiasPlaceholder": "Ex. Église chrétienne, Baptiste...",
+  "catolica": "Catholique",
+  "evangelica": "Évangélique",
+  "pentecostal": "Pentecôtiste",
+  "bautista": "Baptiste",
+  "adventista": "Adventiste",
+  "visualizaIglesiasEnMapa": "Visualisez les églises sur la Carte",
+  "comunidadesSugeridas": "Communautés suggérées",
+  "noSeEncontraronIglesias10km": "Aucune église trouvée dans un rayon de 10 km.",
+  "gpsDesactivado": "Le GPS est désactivé. Veuillez l'activer.",
+  "permisosUbicacionDenegados": "Autorisations de localisation refusées.",
+  "permisosUbicacionPermanentemente": "Autorisations de localisation définitivement refusées sur votre appareil.",
+  "obteniendoUbicacionEspera": "Obtention de votre position, veuillez réessayer dans un instant...",
+  "errorCargarMapa": "😕 Oups ! Impossible de charger la Carte\n\n📡 Vérifiez votre connexion Internet et réessayez",
+  "sinNombre": "Sans nom",
+  "comunidadCristiana": "Communauté chrétienne",
+  "aDistanciaKm": "À {distancia} km",
+  "@aDistanciaKm": {
+    "description": "Étiquette de distance en kilomètres",
+    "placeholders": {
+      "distancia": {
+        "type": "String"
+      }
+    }
+  },
+  "emisorasCristianas": "Stations Chrétiennes",
+  "buscarEmisorasPlaceholder": "Rechercher par nom, confession, ville...",
+  "todosLosPaises": "Tous les pays",
+  "otrosPaises": "Autres pays",
+  "todos": "Tous",
+  "espanol": "Espagnol",
+  "ingles": "Anglais",
+  "mostrandoSoloFavoritas": "Affichage des favoris uniquement ({total})",
+  "@mostrandoSoloFavoritas": {
+    "description": "Indicateur de la bannière des favoris",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "verTodas": "Tout afficher",
+  "sinFavoritasEnPais": "Vous n'avez pas de stations favorites enregistrées en {pais}.\n\nAppuyez sur le bouton cœur ci-dessus pour afficher toutes les stations.",
+  "@sinFavoritasEnPais": {
+    "description": "Message lorsqu'aucun favori dans le pays sélectionné",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "sinFavoritasAun": "Vous n'avez pas encore de stations favorites enregistrées.\n\nAppuyez sur le bouton cœur ci-dessus pour afficher toutes les stations.",
+  "noEmisorasCoincidencia": "Aucune station trouvée correspondant à \"{busqueda}\".",
+  "@noEmisorasCoincidencia": {
+    "description": "Message de recherche sans résultat",
+    "placeholders": {
+      "busqueda": {
+        "type": "String"
+      }
+    }
+  },
+  "noEmisorasDisponiblesPais": "Aucune station disponible pour {pais}.",
+  "@noEmisorasDisponiblesPais": {
+    "description": "Message lorsqu'aucune station disponible dans un pays",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "verTodasLasEmisoras": "Voir toutes les stations",
+  "sintonizandoAudio": "Syntonisation audio...",
+  "enVivoConDenominacion": "En direct · {denominacion} ({frecuencia})",
+  "@enVivoConDenominacion": {
+    "description": "État en direct avec confession et fréquence",
+    "placeholders": {
+      "denominacion": {
+        "type": "String"
+      },
+      "frecuencia": {
+        "type": "String"
+      }
+    }
+  },
+  "enVivoFrecuencia": "En direct · {frecuencia}",
+  "@enVivoFrecuencia": {
+    "description": "État en direct avec fréquence",
+    "placeholders": {
+      "frecuencia": {
+        "type": "String"
+      }
+    }
+  },
+  "emisora": "Station",
+  "errorEmisoraNoDisponible": "Erreur : La station n'est pas disponible pour le moment.",
+  "sinInternetSintonizar": "Aucune connexion Internet pour syntoniser la station.",
+  "usuario": "Utilisateur",
+  "miActividad": "Mon activité",
+  "cuenta": "Compte",
+  "soporte": "Assistance",
+  "misSolicitudes": "Mes demandes",
+  "misDonaciones": "Mes dons",
+  "misNotasDeLaBiblia": "Mes notes de la Bible",
+  "misDatos": "Mes données",
+  "ajustesDeLaApp": "Paramètres de l'application",
+  "ayudaYSoporte": "Aide et assistance",
+  "terminosYPrivacidad": "Conditions et confidentialité",
+  "cerrarSesion": "Se déconnecter",
+  "misDatosDePerfil": "Mes données de profil",
+  "nombreCompleto": "Nom complet",
+  "ingresaUnNombre": "Entrez un nom",
+  "correoElectronico": "Adresse e-mail",
+  "ingresaUnCorreoValido": "Entrez un e-mail valide",
+  "telefonoCelular": "Téléphone portable",
+  "iglesiaActual": "Église actuelle",
+  "helperCambiarIglesia": "Pour la modifier, utilisez l'option « Changer d'église »",
+  "guardarCambios": "Enregistrer les modifications",
+  "datosActualizadosCorrectamente": "Données mises à jour avec succès",
+  "seguroDeseasCerrarSesion": "Êtes-vous sûr de vouloir vous déconnecter ?",
+  "eliminarCuenta": "Supprimer le compte",
+  "seguroEliminarCuenta": "Êtes-vous sûr de vouloir supprimer votre compte et toutes vos données personnelles d'ATRIO ?",
+  "detalleEliminarCuenta": "Cette action est définitive et irréversible. Les éléments suivants seront supprimés définitivement :\n• Votre profil utilisateur et votre rattachement communautaire.\n• Toutes vos notes personnelles de la Bible et vos favoris enregistrés.\n• Votre historique de demandes et de contributions locales.\n• La désactivation de votre compte sur le backend Odoo ERP sera demandée.",
+  "eliminarDefinitivamente": "Supprimer définitivement",
+  "cuentaEliminadaExito": "Votre compte et vos données personnelles ont été supprimés avec succès.",
+  "versionDeLaBiblia": "Version de la Bible",
+  "noSePudoAbrirWhatsApp": "Impossible d'ouvrir WhatsApp.",
+  "buscarBibliaPlaceholder": "Rechercher un verset, un mot ou une phrase...",
+  "buscar": "Rechercher",
+  "borrarTexto": "Effacer le texte",
+  "buscandoEnVersion": "Recherche dans {version}...",
+  "@buscandoEnVersion": {
+    "description": "Texte de chargement pendant la recherche biblique",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "versiculoDelDia": "Verset du jour",
+  "compartirVersiculo": "Partager le verset",
+  "errorCargarVersiculo": "Impossible de charger le verset du jour.",
+  "librosDeLaBiblia": "Livres de la Bible",
+  "antiguoYNuevoTestamento": "Ancien et Nouveau Testament",
+  "continuarLeyendo": "Continuer la lecture",
+  "capituloNumero": "Chapitre {numero}",
+  "@capituloNumero": {
+    "description": "Numéro du chapitre biblique",
+    "placeholders": {
+      "numero": {
+        "type": "String"
+      }
+    }
+  },
+  "escuchar": "Écouter",
+  "escuchaLaBibliaNarrada": "Écoutez la Bible narrée",
+  "favoritos": "Favoris",
+  "pasajeGuardado": "1 passage enregistré",
+  "pasajesGuardados": "{total} passages enregistrés",
+  "@pasajesGuardados": {
+    "description": "Nombre de passages enregistrés dans les favoris",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "misNotas": "Mes notes",
+  "notaSingular": "1 note",
+  "notasPlural": "{total} notes",
+  "@notasPlural": {
+    "description": "Nombre de notes personnelles",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "noVersiculosEncontrados": "Aucun verset trouvé pour :\n\"{consulta}\"",
+  "@noVersiculosEncontrados": {
+    "description": "Message lorsqu'aucun verset n'est trouvé",
+    "placeholders": {
+      "consulta": {
+        "type": "String"
+      }
+    }
+  },
+  "pruebaPalabrasClave": "Essayez d'utiliser des mots-clés plus généraux ou vérifiez l'orthographe.",
+  "versiculosEncontrados": "{total} versets trouvés",
+  "@versiculosEncontrados": {
+    "description": "Nombre de versets trouvés",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "cerrarBusqueda": "Fermer la recherche",
+  "eventos": "Événements",
+  "buscarEventosPlaceholder": "Rechercher des événements, des intervenants ou des lieux...",
+  "categorias": "Catégories",
+  "categoriaTodos": "Tous",
+  "categoriaLiderazgo": "Leadership",
+  "categoriaAdoracion": "Adoration",
+  "categoriaJovenes": "Jeunes",
+  "categoriaFamilias": "Familles",
+  "categoriaComunidad": "Communauté",
+  "explorarEventos": "Explorer les événements",
+  "verTodos": "Voir tout",
+  "noEventosEnCategoria": "Aucun événement trouvé dans cette catégorie",
+  "proximosEnAgenda": "À venir au programme",
+  "mostrandoCalendarioCompleto": "Affichage du calendrier complet des activités...",
+  "verCalendario": "Voir le calendrier",
+  "destacadoMayus": "EN VEDETTE",
+  "inscribirmeAhora": "S'inscrire maintenant",
+  "eventoAnadidoACalendario": "Événement \"{titulo}\" ajouté à votre calendrier.",
+  "@eventoAnadidoACalendario": {
+    "description": "Message lors de l'ajout d'un événement au calendrier",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "anadirACalendario": "Ajouter au calendrier",
+  "miActividadAgendada": "Mon activité programmée",
+  "porcentajeOcupacion": "{porcentaje}% d'occupation",
+  "@porcentajeOcupacion": {
+    "description": "Pourcentage de capacité occupée",
+    "placeholders": {
+      "porcentaje": {
+        "type": "int"
+      }
+    }
+  },
+  "disponibilidadCupos": "Disponibilité des places",
+  "detallesDelEvento": "Détails de l'événement",
+  "inscripcionConfirmada": "Inscription confirmée pour \"{titulo}\". Nous vous attendons !",
+  "@inscripcionConfirmada": {
+    "description": "Confirmation d'inscription à l'événement",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "yaEstasInscrito": "Déjà inscrit",
+  "eventoAgregadoAgendaLocal": "Événement \"{titulo}\" ajouté à votre agenda local.",
+  "@eventoAgregadoAgendaLocal": {
+    "description": "Message d'événement ajouté à l'agenda local",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "mensajeWhatsAppAyuda": "Bonjour, j'ai besoin d'aide avec l'application ATRIO.",
+  "errorAbrirWhatsAppDispositivo": "Impossible d'ouvrir WhatsApp sur cet appareil.",
+  "errorAbrirWhatsApp": "Une erreur est survenue lors de l'ouverture de WhatsApp.",
+  "asuntoCorreoSoporte": "Support - Application ATRIO",
+  "cuerpoCorreoSoporte": "Décrivez votre demande ou problème ici :\n\n---\nVersion de l'application : 1.0.0",
+  "errorNoClienteCorreo": "Aucun client de messagerie configuré.",
+  "errorAbrirCorreo": "Une erreur est survenue lors de l'ouverture de l'e-mail.",
+  "modoClaroSuave": "Mode Clair Doux",
+  "modoLecturaNocturna": "Mode Lecture Nocturne",
+  "modoPapiroCalido": "Mode Papyrus Chaud",
+  "ajustesDeLectura": "Paramètres de lecture",
+  "tamanoDeLetra": "Taille de police",
+  "tipoDeFuente": "Type de police",
+  "modoDeLectura": "Mode de lecture",
+  "papiro": "Papyrus",
+  "claro": "Clair",
+  "noche": "Nuit",
+  "cambiarTonoLecturaTooltip": "Changer le ton de lecture",
+  "comoPodemosAyudarte": "Comment pouvons-nous vous aider ?",
+  "descripcionAyudaSoporte": "Trouvez des réponses rapides ou contactez directement notre équipe d'assistance technique ATRIO.",
+  "canalesDeAtencion": "Canaux d'assistance",
+  "chatDirecto": "Chat direct",
+  "correo": "E-mail",
+  "preguntasFrecuentes": "Foire aux questions",
+  "faq1Pregunta": "Comment faire une offrande ou un don à mon église ?",
+  "faq1Respuesta": "Accédez à la section « Mes dons » depuis votre profil ou appuyez sur « Donner / Contribuer » sur l'écran de votre église. Vous pourrez choisir le projet, saisir le montant et procéder en toute sécurité.",
+  "faq2Pregunta": "Comment envoyer et suivre l'état de mes demandes pastorales ?",
+  "faq2Respuesta": "Rendez-vous dans « Mes demandes » sur votre profil ou depuis le menu de votre église. Vous pourrez y envoyer des demandes de prière, de conseil ou de soutien social et suivre les réponses de votre communauté.",
+  "faq3Pregunta": "Où puis-je découvrir les églises à proximité et les voir sur la carte ?",
+  "faq3Respuesta": "Depuis l'écran d'accueil, appuyez sur « Explorer les églises » ou sur la carte interactive. Vous pourrez filtrer par tradition chrétienne, voir les horaires de culte, les pasteurs et obtenir l'itinéraire.",
+  "faq4Pregunta": "Puis-je lire la Bible et enregistrer des notes ou des favoris hors ligne ?",
+  "faq4Respuesta": "Oui ! Le texte biblique, vos notes d'étude et vos versets favoris sont enregistrés localement sur votre appareil via SQLite pour que vous puissiez en profiter à tout moment.",
+  "faq5Pregunta": "Comment mettre à jour mes informations de profil ou changer d'église ?",
+  "faq5Respuesta": "Dans l'onglet Profil, appuyez sur « Mes données » ou sur le bouton de modification pour mettre à jour votre nom, e-mail ou téléphone. Si vous souhaitez rejoindre une autre communauté, appuyez sur « Changer d'église ».",
+  "atrioVersion": "ATRIO · Version {version}",
+  "@atrioVersion": {
+    "description": "Texte de version de l'application",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "todosLosDerechosReservados": "Tous droits réservés",
+  "tiposDeSolicitud": "Types de demande",
+  "peticionDeOracion": "Demande de prière",
+  "orientacionPastoral": "Orientation pastorale",
+  "consejeriaFamiliar": "Conseil familial",
+  "visitaAEnfermos": "Visite aux malades",
+  "ayudaComunitaria": "Aide communautaire",
+  "otraSolicitud": "Autre demande",
+  "volver": "Retour",
+  "comunidadVerificada": "Communauté vérifiée",
+  "diezmo": "Dîme",
+  "ofrenda": "Offrande",
+  "campanaEspecial": "Campagne spéciale",
+  "otroAporte": "Autre contribution",
+  "historialYRecibos": "Historique et reçus",
+  "proyectosSolidariosTitulo": "Projets solidaires",
+  "lemaProyectosSolidarios": "Ensemble, nous pouvons transformer des vies",
+  "noHayDatosDisponibles": "Aucune donnée disponible",
+  "masCampanas": "Plus de campagnes",
+  "metaPrefijo": "Objectif :",
+  "deMonto": "sur",
+  "porcentajeAlcanzado": "{porcentaje}% atteint",
+  "@porcentajeAlcanzado": {
+    "description": "Pourcentage atteint pour le projet solidaire",
+    "placeholders": {
+      "porcentaje": {
+        "type": "String"
+      }
+    }
+  },
+  "diasRestantes": "{dias} jours restants",
+  "@diasRestantes": {
+    "description": "Jours restants pour la campagne du projet solidaire",
+    "placeholders": {
+      "dias": {
+        "type": "String"
+      }
+    }
+  },
+  "carritoCantidadProductos": "Vous avez {cantidad} produits dans votre panier",
+  "@carritoCantidadProductos": {
+    "description": "Message indiquant le nombre de produits dans le panier",
+    "placeholders": {
+      "cantidad": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarProductosPlaceholder": "Rechercher des bibles, livres ou cadeaux...",
+  "categoriaTodos": "Tous",
+  "categoriaBiblias": "Bibles",
+  "categoriaLibros": "Livres",
+  "categoriaRegalos": "Cadeaux",
+  "recursosParaCrecerEnTuFe": "Ressources pour\ngrandir dans votre foi",
+  "verDestacados": "Voir les vedettes",
+  "catalogoDeProductos": "Catalogue de produits",
+  "noSeEncontraronProductosCategoria": "Aucun produit trouvé dans cette catégorie",
+  "entregaORetiro": "Livraison ou retrait",
+  "envioADomicilio": "Livraison à domicile",
+  "retiroEnIglesia": "Retrait à l'église",
+  "unidadesEnInventario": "{cantidad} unités en stock",
+  "@unidadesEnInventario": {
+    "description": "Nombre d'unités en stock pour un produit",
+    "placeholders": {
+      "cantidad": {
+        "type": "String"
+      }
+    }
+  },
+  "detallesDelProducto": "Détails du produit",
+  "productoAgregadoAlCarrito": "« {nombre} » ajouté au panier !",
+  "@productoAgregadoAlCarrito": {
+    "description": "Message confirmant l'ajout au panier",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "agregarAlCarritoConPrecio": "Ajouter au panier · {precio}",
+  "@agregarAlCarritoConPrecio": {
+    "description": "Texte du bouton d'ajout au panier avec prix",
+    "placeholders": {
+      "precio": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarLibrosPlaceholder": "Rechercher des livres ou des auteurs...",
+  "categoriaVidaCristiana": "Vie chrétienne",
+  "categoriaCrecimiento": "Croissance",
+  "categoriaLiderazgo": "Leadership",
+  "explorarLibros": "Explorer des livres",
+  "noSeEncontraronLibrosCategoria": "Aucun livre trouvé dans cette catégorie",
+  "leerAhora": "Lire maintenant",
+  "escucharMuestra": "Écouter l'extrait",
+  "reproduciendoMuestra": "Lecture de l'extrait de « {titulo} »...",
+  "@reproduciendoMuestra": {
+    "description": "Message lors de la lecture d'un extrait de livre",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "continuarLeyendo": "Continuer la lecture",
+  "totalPaginas": "{paginas} pages",
+  "@totalPaginas": {
+    "description": "Nombre total de pages d'un livre",
+    "placeholders": {
+      "paginas": {
+        "type": "String"
+      }
+    }
+  },
+  "porcentajeLeido": "{porcentaje}% lu",
+  "@porcentajeLeido": {
+    "description": "Pourcentage de lecture terminé",
+    "placeholders": {
+      "porcentaje": {
+        "type": "String"
+      }
+    }
+  },
+  "sinopsis": "Synopsis",
+  "abriendoLibro": "Ouverture de « {titulo} »...",
+  "@abriendoLibro": {
+    "description": "Message lors de l'ouverture d'un livre",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "videosYTransmisiones": "Vidéos et diffusions",
+  "buscarVideosPlaceholder": "Rechercher des sermons, chaînes ou thèmes...",
+  "enVivoBadge": "EN DIRECT",
+  "verAhora": "Regarder maintenant",
+  "categoriaEnVivo": "En direct",
+  "categoriaPredicas": "Prédications",
+  "categoriaEstudios": "Études bibliques",
+  "categoriaMusica": "Musique",
+  "noSeEncontraronVideosCategoria": "Aucune vidéo trouvée dans cette catégorie",
+  "descripcion": "Description",
+  "conectandoTransmision": "Connexion à la diffusion « {titulo} »...",
+  "@conectandoTransmision": {
+    "description": "Message lors de la connexion à une diffusion en direct",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "reproduciendoVideo": "Lecture de « {titulo} »...",
+  "@reproduciendoVideo": {
+    "description": "Message lors de la lecture d'une vidéo",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "verTransmisionEnVivo": "Regarder la diffusion en direct",
+  "reproducirAhora": "Lire maintenant",
+  "enlaceCopiadoPortapapeles": "Lien vers « {titulo} » copié dans le presse-papiers",
+  "@enlaceCopiadoPortapapeles": {
+    "description": "Message lors de la copie du lien vidéo",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  }
+}

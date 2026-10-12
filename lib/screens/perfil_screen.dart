@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Importación de las pantallas para obtener sus static const routeName
 import '../data/atrio_database_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import 'ayuda_soporte_screen.dart';
 import 'biblia_screen.dart';
-import 'donaciones_screen.dart';
 import 'mis_donaciones_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'notificaciones_screen.dart';
@@ -71,8 +72,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
     // Escuchamos el estado reactivo de IglesiaProvider
     final iglesiaProvider = Provider.of<IglesiaProvider>(context);
 
+    final l10n = AppLocalizations.of(context);
+    final String sinIglesiaTexto =
+        l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada';
+
     // Extracción segura de los datos de SQLite o del Provider de Iglesia
-    final String nombre = _usuarioData?['nombre'] ?? 'Usuario';
+    final String nombre =
+        _usuarioData?['nombre'] ?? (l10n?.usuario ?? 'Usuario');
     final String inicial = nombre.trim().isNotEmpty
         ? nombre.trim()[0].toUpperCase()
         : 'U';
@@ -90,9 +96,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ? nombreProvider
         : ((nombreSqlite != null &&
                   nombreSqlite.isNotEmpty &&
-                  nombreSqlite != 'Sin iglesia seleccionada')
+                  nombreSqlite != 'Sin iglesia seleccionada' &&
+                  nombreSqlite != sinIglesiaTexto)
               ? nombreSqlite
-              : 'Sin iglesia seleccionada');
+              : sinIglesiaTexto);
 
     return Container(
       color: blancoFondo,
@@ -115,31 +122,40 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: usableHeight * 0.025),
-                  _sectionLabel('Mi actividad', screenWidth, usableHeight),
+                  _sectionLabel(
+                    l10n?.miActividad ?? 'Mi actividad',
+                    screenWidth,
+                    usableHeight,
+                  ),
                   _buildMenuGroup(
                     context: context,
                     screenWidth: screenWidth,
                     usableHeight: usableHeight,
-                    items: const [
+                    items: [
                       _MenuItemData(
                         icon: Icons.edit_note_outlined,
-                        label: 'Mis solicitudes',
+                        label: l10n?.misSolicitudes ?? 'Mis solicitudes',
                         route: SeguimientoSolicitudScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.favorite_border_rounded,
-                        label: 'Mis donaciones',
+                        label: l10n?.misDonaciones ?? 'Mis donaciones',
                         route: MisDonacionesScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.menu_book_outlined,
-                        label: 'Mis notas de la Biblia',
+                        label: l10n?.misNotasDeLaBiblia ??
+                            'Mis notas de la Biblia',
                         route: BibliaScreen.routeName,
                       ),
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),
-                  _sectionLabel('Cuenta', screenWidth, usableHeight),
+                  _sectionLabel(
+                    l10n?.cuenta ?? 'Cuenta',
+                    screenWidth,
+                    usableHeight,
+                  ),
                   _buildMenuGroup(
                     context: context,
                     screenWidth: screenWidth,
@@ -147,7 +163,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     items: [
                       _MenuItemData(
                         icon: Icons.person_outline_rounded,
-                        label: 'Mis datos',
+                        label: l10n?.misDatos ?? 'Mis datos',
                         route: null,
                         onCustomTap: () => _mostrarDialogoEditarDatos(
                           context,
@@ -156,24 +172,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           iglesiaActual: iglesia,
                         ),
                       ),
-                      const _MenuItemData(
+                      _MenuItemData(
                         icon: Icons.church_outlined,
-                        label: 'Cambiar de iglesia',
+                        label: l10n?.cambiarDeIglesia ?? 'Cambiar de iglesia',
                         route: TradicionCristianaScreen.routeName,
                       ),
-                      const _MenuItemData(
+                      _MenuItemData(
                         icon: Icons.notifications_none_rounded,
-                        label: 'Notificaciones',
+                        label: l10n?.notificaciones ?? 'Notificaciones',
                         route: NotificacionesScreen.routeName,
                       ),
-                      const _MenuItemData(
+                      _MenuItemData(
                         icon: Icons.settings_outlined,
-                        label: 'Ajustes de la app',
+                        label: l10n?.ajustesDeLaApp ?? 'Ajustes de la app',
                         route: ConfiguracionScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.delete_forever_outlined,
-                        label: 'Eliminar cuenta y datos',
+                        label: l10n?.eliminarCuentaYDatos ??
+                            'Eliminar cuenta y datos',
                         customColor: Colors.red.shade700,
                         route: null,
                         onCustomTap: () => _confirmarEliminarCuenta(context),
@@ -181,20 +198,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),
-                  _sectionLabel('Soporte', screenWidth, usableHeight),
+                  _sectionLabel(
+                    l10n?.soporte ?? 'Soporte',
+                    screenWidth,
+                    usableHeight,
+                  ),
                   _buildMenuGroup(
                     context: context,
                     screenWidth: screenWidth,
                     usableHeight: usableHeight,
-                    items: const [
+                    items: [
                       _MenuItemData(
                         icon: Icons.help_outline_rounded,
-                        label: 'Ayuda y soporte',
+                        label: l10n?.ayudaYSoporte ?? 'Ayuda y soporte',
                         route: AyudaSoporteScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.privacy_tip_outlined,
-                        label: 'Términos y privacidad',
+                        label: l10n?.terminosYPrivacidad ??
+                            'Términos y privacidad',
                         route: TerminosPrivacidadScreen.routeName,
                       ),
                     ],
@@ -227,6 +249,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     double usableHeight, {
     String? iglesiaActual,
   }) {
+    final l10n = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
     final nombreCtrl = TextEditingController(
       text: _usuarioData?['nombre'] ?? '',
@@ -238,7 +261,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final String defaultIglesia =
         (iglesiaActual != null &&
             iglesiaActual.isNotEmpty &&
-            iglesiaActual != 'Sin iglesia seleccionada')
+            iglesiaActual != 'Sin iglesia seleccionada' &&
+            iglesiaActual != (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada'))
         ? iglesiaActual
         : (_usuarioData?['iglesia_nombre'] ?? '');
 
@@ -266,7 +290,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               SizedBox(width: screenWidth * 0.02),
               Text(
-                'Mis datos de perfil',
+                l10n?.misDatosDePerfil ?? 'Mis datos de perfil',
                 style: TextStyle(
                   color: azulFondo,
                   fontSize: screenWidth * 0.045,
@@ -287,30 +311,31 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   children: [
                     _buildFormField(
                       controller: nombreCtrl,
-                      label: 'Nombre completo',
+                      label: l10n?.nombreCompleto ?? 'Nombre completo',
                       icon: Icons.person_outline,
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,
                       validator: (val) => (val == null || val.trim().isEmpty)
-                          ? 'Ingresa un nombre'
+                          ? (l10n?.ingresaUnNombre ?? 'Ingresa un nombre')
                           : null,
                     ),
                     SizedBox(height: usableHeight * 0.025),
                     _buildFormField(
                       controller: emailCtrl,
-                      label: 'Correo electrónico',
+                      label: l10n?.correoElectronico ?? 'Correo electrónico',
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,
                       validator: (val) => (val == null || !val.contains('@'))
-                          ? 'Ingresa un correo válido'
+                          ? (l10n?.ingresaUnCorreoValido ??
+                              'Ingresa un correo válido')
                           : null,
                     ),
                     SizedBox(height: usableHeight * 0.025),
                     _buildFormField(
                       controller: telefonoCtrl,
-                      label: 'Teléfono celular',
+                      label: l10n?.telefonoCelular ?? 'Teléfono celular',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                       screenWidth: screenWidth,
@@ -319,12 +344,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     SizedBox(height: usableHeight * 0.025),
                     _buildFormField(
                       controller: iglesiaCtrl,
-                      label: 'Iglesia actual',
+                      label: l10n?.iglesiaActual ?? 'Iglesia actual',
                       icon: Icons.church_outlined,
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,
                       readOnly: true,
-                      helperText:
+                      helperText: l10n?.helperCambiarIglesia ??
                           'Para cambiarla usa la opción "Cambiar de iglesia"',
                     ),
                   ],
@@ -340,7 +365,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
               child: Text(
-                'Cancelar',
+                l10n?.cancelar ?? 'Cancelar',
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: screenWidth * 0.035,
@@ -394,7 +419,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     SnackBar(
                       backgroundColor: azulFondo,
                       content: Text(
-                        'Datos actualizados correctamente',
+                        l10n?.datosActualizadosCorrectamente ??
+                            'Datos actualizados correctamente',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.035,
@@ -406,7 +432,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 }
               },
               child: Text(
-                'Guardar cambios',
+                l10n?.guardarCambios ?? 'Guardar cambios',
                 style: TextStyle(
                   fontSize: screenWidth * 0.045,
                   fontWeight: FontWeight.bold,
@@ -665,6 +691,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
@@ -679,7 +706,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ),
         icon: Icon(Icons.logout_rounded, size: screenWidth * 0.05),
         label: Text(
-          'Cerrar sesión',
+          l10n?.cerrarSesion ?? 'Cerrar sesión',
           style: TextStyle(
             fontSize: screenWidth * 0.038,
             fontWeight: FontWeight.bold,
@@ -690,30 +717,39 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   void _confirmLogout(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cerrar sesión'),
-        content: const Text('¿Seguro que deseas cerrar sesión?'),
+        title: Text(l10n?.cerrarSesion ?? 'Cerrar sesión'),
+        content: Text(
+          l10n?.seguroDeseasCerrarSesion ?? '¿Seguro que deseas cerrar sesión?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            child: Text(l10n?.cancelar ?? 'Cancelar'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              // Conservamos el llamado a UserProvider SOLO para el limpiado de sesión
-              Provider.of<UserProvider>(context, listen: false).clearSession();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                InicioSesionScreen.routeName,
-                (route) => false,
-              );
+              try {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('isLoggedIn', false);
+              } catch (_) {}
+              if (context.mounted) {
+                // Conservamos el llamado a UserProvider SOLO para el limpiado de sesión
+                Provider.of<UserProvider>(context, listen: false).clearSession();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  InicioSesionScreen.routeName,
+                  (route) => false,
+                );
+              }
             },
-            child: const Text(
-              'Cerrar sesión',
-              style: TextStyle(color: Color(0xFFC0392B)),
+            child: Text(
+              l10n?.cerrarSesion ?? 'Cerrar sesión',
+              style: const TextStyle(color: Color(0xFFC0392B)),
             ),
           ),
         ],
@@ -724,6 +760,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   /// Diálogo y flujo para eliminar cuenta de forma permanente
   /// (Cumplimiento de Apple App Store Guideline 5.1.1(v) y Google Play Console)
   void _confirmarEliminarCuenta(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -736,31 +773,33 @@ class _PerfilScreenState extends State<PerfilScreen> {
               size: 28,
             ),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Eliminar cuenta',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                l10n?.eliminarCuenta ?? 'Eliminar cuenta',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '¿Estás seguro de que deseas eliminar tu cuenta y todos tus datos personales de ATRIO?',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                l10n?.seguroEliminarCuenta ??
+                    '¿Estás seguro de que deseas eliminar tu cuenta y todos tus datos personales de ATRIO?',
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
-                'Esta acción es definitiva e irreversible. Se eliminarán permanentemente:\n'
-                '• Tu perfil de usuario y vinculación comunitaria.\n'
-                '• Todas tus notas personales de la Biblia y favoritos guardados.\n'
-                '• Tu historial de solicitudes y aportes locales.\n'
-                '• Se solicitará la desactivación de tu registro en el backend Odoo ERP.',
-                style: TextStyle(
+                l10n?.detalleEliminarCuenta ??
+                    'Esta acción es definitiva e irreversible. Se eliminarán permanentemente:\n'
+                    '• Tu perfil de usuario y vinculación comunitaria.\n'
+                    '• Todas tus notas personales de la Biblia y favoritos guardados.\n'
+                    '• Tu historial de solicitudes y aportes locales.\n'
+                    '• Se solicitará la desactivación de tu registro en el backend Odoo ERP.',
+                style: const TextStyle(
                   fontSize: 13,
                   color: Colors.black87,
                   height: 1.4,
@@ -772,7 +811,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            child: Text(l10n?.cancelar ?? 'Cancelar'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -784,21 +823,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
               // ===============================================================
               // TODO: ODOO 19 BACKEND INTEGRATION - SOLICITUD DE BORRADO DE CUENTA
-              // ===============================================================
-              // Cuando el backend provea el endpoint:
-              //
-              // final response = await http.post(
-              //   Uri.parse('${AppConfig.odooBaseUrl}${AppConfig.odooDeleteAccountEndpoint}'),
-              //   headers: {
-              //     'Content-Type': 'application/json',
-              //     'Cookie': 'session_id=$sessionId', // O Bearer token
-              //   },
-              //   body: jsonEncode({
-              //     'user_id': _usuarioData?['id'],
-              //     'email': _usuarioData?['email'],
-              //     'db': AppConfig.odooDatabase,
-              //   }),
-              // );
               // ===============================================================
 
               // 1. Purgar datos personales en la base de datos local SQLite
@@ -815,12 +839,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
               // 3. Redirigir a la pantalla de Inicio de Sesión
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                      'Tu cuenta y datos personales han sido eliminados satisfactoriamente.',
+                      l10n?.cuentaEliminadaExito ??
+                          'Tu cuenta y datos personales han sido eliminados satisfactoriamente.',
                     ),
-                    backgroundColor: Color(0xFF072B4F),
-                    duration: Duration(seconds: 4),
+                    backgroundColor: const Color(0xFF072B4F),
+                    duration: const Duration(seconds: 4),
                   ),
                 );
 
@@ -831,9 +856,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 );
               }
             },
-            child: const Text(
-              'Eliminar definitivamente',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Text(
+              l10n?.eliminarDefinitivamente ?? 'Eliminar definitivamente',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],

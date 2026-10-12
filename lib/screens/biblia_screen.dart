@@ -1,15 +1,16 @@
-import 'package:atrio/screens/escuchar_libro_biblia_screen.dart';
-import 'package:atrio/screens/libros_de_biblia.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/atrio_database_helper.dart';
-import '../providers/biblia_provider.dart';
+import '../l10n/app_localizations.dart';
 import '../modelos/versiculo_dia.dart';
+import '../providers/biblia_provider.dart';
 import '../servicios/versiculo_service.dart';
-import 'mis_notas_screen.dart';
+import 'escuchar_libro_biblia_screen.dart';
+import 'libros_de_biblia.dart';
 import 'mis_favoritos_screen.dart';
+import 'mis_notas_screen.dart';
 
 class BibliaScreen extends StatefulWidget {
   static const routeName = 'biblia_screen';
@@ -83,6 +84,7 @@ class _BibliaScreenState extends State {
     double screenWidth,
     double usableHeight,
   ) {
+    final l10n = AppLocalizations.of(context);
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
 
@@ -108,7 +110,7 @@ class _BibliaScreenState extends State {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Versión de la Biblia',
+                    l10n?.versionDeLaBiblia ?? 'Versión de la Biblia',
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.048,
@@ -182,8 +184,13 @@ class _BibliaScreenState extends State {
         await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
       } else {
         if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+          SnackBar(
+            content: Text(
+              l10n?.noSePudoAbrirWhatsApp ?? 'No se pudo abrir WhatsApp.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -205,6 +212,8 @@ class _BibliaScreenState extends State {
     const Color grisBorde = Color(0xFFE5E5E5);
 
     final bibliaProvider = Provider.of<BibliaProvider>(context);
+
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -246,7 +255,7 @@ class _BibliaScreenState extends State {
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Text(
-                          'Biblia',
+                          l10n?.biblia ?? 'Biblia',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.060,
@@ -341,7 +350,8 @@ class _BibliaScreenState extends State {
                           fontSize: screenWidth * 0.037,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Buscar versículo, palabra o frase...',
+                          hintText: l10n?.buscarBibliaPlaceholder ??
+                              'Buscar versículo, palabra o frase...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.034,
@@ -352,7 +362,7 @@ class _BibliaScreenState extends State {
                               color: azulFondo,
                               size: screenWidth * 0.055,
                             ),
-                            tooltip: 'Buscar',
+                            tooltip: l10n?.buscar ?? 'Buscar',
                             onPressed: () {
                               FocusScope.of(context).unfocus();
                               bibliaProvider.ejecutarBusqueda(
@@ -370,7 +380,7 @@ class _BibliaScreenState extends State {
                                     color: Colors.grey.shade400,
                                     size: screenWidth * 0.048,
                                   ),
-                                  tooltip: 'Borrar texto',
+                                  tooltip: l10n?.borrarTexto ?? 'Borrar texto',
                                   onPressed: () {
                                     _searchController.clear();
                                     bibliaProvider.limpiarBusqueda();
@@ -401,7 +411,7 @@ class _BibliaScreenState extends State {
                                         ),
                                       ),
                                       child: Text(
-                                        'Buscar',
+                                        l10n?.buscar ?? 'Buscar',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -453,7 +463,10 @@ class _BibliaScreenState extends State {
                                 ),
                                 SizedBox(height: usableHeight * 0.02),
                                 Text(
-                                  'Buscando en ${bibliaProvider.nombreVersionActual}...',
+                                  l10n?.buscandoEnVersion(
+                                        bibliaProvider.nombreVersionActual,
+                                      ) ??
+                                      'Buscando en ${bibliaProvider.nombreVersionActual}...',
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontSize: screenWidth * 0.036,
@@ -487,8 +500,10 @@ class _BibliaScreenState extends State {
                                 SizedBox(height: usableHeight * 0.018),
                                 _buildOptionTile(
                                   icon: Icons.book_outlined,
-                                  title: 'Libros de la Biblia',
-                                  subtitle: 'Antiguo y Nuevo Testamento',
+                                  title: l10n?.librosDeLaBiblia ??
+                                      'Libros de la Biblia',
+                                  subtitle: l10n?.antiguoYNuevoTestamento ??
+                                      'Antiguo y Nuevo Testamento',
                                   screenWidth: screenWidth,
                                   usableHeight: usableHeight,
                                   azulFondo: azulFondo,
@@ -503,8 +518,9 @@ class _BibliaScreenState extends State {
                                 SizedBox(height: usableHeight * 0.012),
                                 _buildOptionTile(
                                   icon: Icons.menu_book_outlined,
-                                  title: 'Continuar leyendo',
-                                  subtitle: '(_ultimoLibro)_ultimoCapitulo',
+                                  title: l10n?.continuarLeyendo ??
+                                      'Continuar leyendo',
+                                  subtitle: '$_ultimoLibro $_ultimoCapitulo',
                                   screenWidth: screenWidth,
                                   usableHeight: usableHeight,
                                   azulFondo: azulFondo,
@@ -517,7 +533,9 @@ class _BibliaScreenState extends State {
                                         'nombre': _ultimoLibro,
                                         'capitulo': _ultimoCapitulo,
                                         'totalCapitulos': _ultimoTotalCapitulos,
-                                        'subtitulo':
+                                        'subtitulo': l10n?.capituloNumero(
+                                              _ultimoCapitulo.toString(),
+                                            ) ??
                                             'Capítulo $_ultimoCapitulo',
                                       },
                                     );
@@ -528,8 +546,9 @@ class _BibliaScreenState extends State {
                                 SizedBox(height: usableHeight * 0.012),
                                 _buildOptionTile(
                                   icon: Icons.headphones_outlined,
-                                  title: 'Escuchar',
-                                  subtitle: 'Escucha la Biblia narrada',
+                                  title: l10n?.escuchar ?? 'Escuchar',
+                                  subtitle: l10n?.escuchaLaBibliaNarrada ??
+                                      'Escucha la Biblia narrada',
                                   screenWidth: screenWidth,
                                   usableHeight: usableHeight,
                                   azulFondo: azulFondo,
@@ -544,9 +563,14 @@ class _BibliaScreenState extends State {
                                 SizedBox(height: usableHeight * 0.012),
                                 _buildOptionTile(
                                   icon: Icons.bookmark_border_rounded,
-                                  title: 'Favoritos',
-                                  subtitle:
-                                      '$_totalFavoritos pasaje${_totalFavoritos == 1 ? "" : "s"} guardado${_totalFavoritos == 1 ? "" : "s"}',
+                                  title: l10n?.favoritos ?? 'Favoritos',
+                                  subtitle: _totalFavoritos == 1
+                                      ? (l10n?.pasajeGuardado ??
+                                          '1 pasaje guardado')
+                                      : (l10n?.pasajesGuardados(
+                                            _totalFavoritos.toString(),
+                                          ) ??
+                                          '$_totalFavoritos pasajes guardados'),
                                   screenWidth: screenWidth,
                                   usableHeight: usableHeight,
                                   azulFondo: azulFondo,
@@ -562,9 +586,13 @@ class _BibliaScreenState extends State {
                                 SizedBox(height: usableHeight * 0.012),
                                 _buildOptionTile(
                                   icon: Icons.edit_note_outlined,
-                                  title: 'Mis notas',
-                                  subtitle:
-                                      '$_totalNotas nota${_totalNotas == 1 ? "" : "s"}',
+                                  title: l10n?.misNotas ?? 'Mis notas',
+                                  subtitle: _totalNotas == 1
+                                      ? (l10n?.notaSingular ?? '1 nota')
+                                      : (l10n?.notasPlural(
+                                            _totalNotas.toString(),
+                                          ) ??
+                                          '$_totalNotas notas'),
                                   screenWidth: screenWidth,
                                   usableHeight: usableHeight,
                                   azulFondo: azulFondo,
@@ -596,6 +624,7 @@ class _BibliaScreenState extends State {
     double usableHeight,
     Color azulFondo,
   ) {
+    final l10n = AppLocalizations.of(context);
     return FutureBuilder(
       future: _versiculoFuture,
       builder: (context, snapshot) {
@@ -639,7 +668,7 @@ class _BibliaScreenState extends State {
                       ),
                       SizedBox(width: screenWidth * 0.015),
                       Text(
-                        'Versículo del día',
+                        l10n?.versiculoDelDia ?? 'Versículo del día',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: screenWidth * 0.034,
@@ -652,7 +681,7 @@ class _BibliaScreenState extends State {
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      tooltip: 'Compartir versículo',
+                      tooltip: l10n?.compartirVersiculo ?? 'Compartir versículo',
                       icon: Icon(
                         Icons.share_outlined,
                         color: Colors.white,
@@ -664,7 +693,7 @@ class _BibliaScreenState extends State {
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      tooltip: 'Reintentar',
+                      tooltip: l10n?.reintentar ?? 'Reintentar',
                       icon: const Icon(Icons.refresh, color: Colors.white),
                       onPressed: _cargarVersiculo,
                     ),
@@ -682,7 +711,8 @@ class _BibliaScreenState extends State {
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: usableHeight * 0.01),
                   child: Text(
-                    'No se pudo cargar el versículo de hoy.',
+                    l10n?.errorCargarVersiculo ??
+                        'No se pudo cargar el versículo de hoy.',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: screenWidth * 0.038,
@@ -723,6 +753,7 @@ class _BibliaScreenState extends State {
     Color azulFondo,
     Color grisBorde,
   ) {
+    final l10n = AppLocalizations.of(context);
     if (provider.searchErrorMessage != null) {
       return Center(
         child: Padding(
@@ -758,9 +789,9 @@ class _BibliaScreenState extends State {
                   ),
                 ),
                 icon: const Icon(Icons.refresh, color: Colors.white),
-                label: const Text(
-                  'Reintentar',
-                  style: TextStyle(
+                label: Text(
+                  l10n?.reintentar ?? 'Reintentar',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -791,7 +822,8 @@ class _BibliaScreenState extends State {
               ),
               SizedBox(height: usableHeight * 0.015),
               Text(
-                'No se encontraron versículos para:\n"${provider.ultimaConsulta}"',
+                l10n?.noVersiculosEncontrados(provider.ultimaConsulta) ??
+                    'No se encontraron versículos para:\n"${provider.ultimaConsulta}"',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: azulFondo,
@@ -801,7 +833,8 @@ class _BibliaScreenState extends State {
               ),
               SizedBox(height: usableHeight * 0.01),
               Text(
-                'Prueba usando palabras clave más generales o revisa la ortografía.',
+                l10n?.pruebaPalabrasClave ??
+                    'Prueba usando palabras clave más generales o revisa la ortografía.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey.shade600,
@@ -832,7 +865,10 @@ class _BibliaScreenState extends State {
             children: [
               Expanded(
                 child: Text(
-                  '${provider.resultadosBusqueda.length} versículos encontrados',
+                  l10n?.versiculosEncontrados(
+                        provider.resultadosBusqueda.length.toString(),
+                      ) ??
+                      '${provider.resultadosBusqueda.length} versículos encontrados',
                   style: TextStyle(
                     color: azulFondo,
                     fontWeight: FontWeight.bold,
@@ -847,11 +883,11 @@ class _BibliaScreenState extends State {
                   setState(() {});
                 },
                 child: Text(
-                  'Cerrar búsqueda',
-                  style: TextStyle(
-                    color: const Color(0xFFE5A023),
+                  l10n?.cerrarBusqueda ?? 'Cerrar búsqueda',
+                  style: const TextStyle(
+                    color: Color(0xFFE5A023),
                     fontWeight: FontWeight.bold,
-                    fontSize: screenWidth * 0.032,
+                    fontSize: 14,
                   ),
                 ),
               ),
@@ -895,7 +931,8 @@ class _BibliaScreenState extends State {
                       arguments: {
                         'nombre': nombreLibro,
                         'capitulo': capitulo,
-                        'subtitulo': 'Capítulo $capitulo',
+                        'subtitulo': l10n?.capituloNumero(capitulo.toString()) ??
+                            'Capítulo $capitulo',
                       },
                     );
                     _cargarUltimaLectura();

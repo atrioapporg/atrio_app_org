@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/ajustes_provider.dart';
 
 class ConfiguracionScreen extends StatelessWidget {
@@ -45,18 +46,33 @@ class ConfiguracionScreen extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: screenWidth * 0.05,
+                fontSize: screenWidth * 0.046,
               ),
             ),
             Text(
               'Personaliza tu experiencia en ATRIO',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: screenWidth * 0.03,
+                fontSize: screenWidth * 0.028,
               ),
             ),
           ],
         ),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: screenWidth * 0.035),
+            child: Center(
+              child: _buildBotonSelectorIdioma(
+                context: context,
+                provider: provider,
+                screenWidth: screenWidth,
+                usableHeight: usableHeight,
+              ),
+            ),
+          ),
+        ],
       ),
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator(color: amarilloOro))
@@ -79,6 +95,41 @@ class ConfiguracionScreen extends StatelessWidget {
                     screenWidth: screenWidth,
                     children: [
                       _buildIdiomaTile(context, provider, screenWidth),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          screenWidth * 0.035,
+                          0,
+                          screenWidth * 0.035,
+                          screenWidth * 0.035,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildBotonOpcionIdioma(
+                                context: context,
+                                provider: provider,
+                                codigo: 'es',
+                                region: 'DO',
+                                nombre: 'Español',
+                                bandera: '🇩🇴',
+                                screenWidth: screenWidth,
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.025),
+                            Expanded(
+                              child: _buildBotonOpcionIdioma(
+                                context: context,
+                                provider: provider,
+                                codigo: 'en',
+                                region: 'US',
+                                nombre: 'English',
+                                bandera: '🇺🇸',
+                                screenWidth: screenWidth,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),
@@ -717,7 +768,7 @@ class ConfiguracionScreen extends StatelessWidget {
         child: Text(bandera, style: TextStyle(fontSize: screenWidth * 0.055)),
       ),
       title: Text(
-        'Idioma preferido',
+        AppLocalizations.of(context)?.idiomaPreferido ?? 'Idioma preferido',
         style: TextStyle(
           color: azulFondo,
           fontWeight: FontWeight.bold,
@@ -760,6 +811,143 @@ class ConfiguracionScreen extends StatelessWidget {
     );
   }
 
+  // ============================================================================
+  // GESTIÓN Y SELECTOR DE IDIOMA (flutter_localizations)
+  // ============================================================================
+  String _obtenerNombreIdioma(String codigo) {
+    switch (codigo) {
+      case 'en':
+        return 'English';
+      case 'pt':
+        return 'Português';
+      case 'fr':
+        return 'Français';
+      case 'es':
+      default:
+        return 'Español';
+    }
+  }
+
+  /// Botón idéntico al de InicioSesionScreen para cambio de idioma
+  Widget _buildBotonSelectorIdioma({
+    required BuildContext context,
+    required AjustesProvider provider,
+    required double screenWidth,
+    required double usableHeight,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+        onTap: () => _mostrarSelectorIdioma(context, provider, screenWidth),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.025,
+            vertical: usableHeight * 0.006,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            border: Border.all(color: Colors.white38),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.language,
+                color: Colors.white,
+                size: screenWidth * 0.04,
+              ),
+              SizedBox(width: screenWidth * 0.015),
+              Text(
+                _obtenerNombreIdioma(provider.idiomaCodigo),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: screenWidth * 0.03,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.white,
+                size: screenWidth * 0.04,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Botón de cambio directo entre opciones principales de idioma
+  Widget _buildBotonOpcionIdioma({
+    required BuildContext context,
+    required AjustesProvider provider,
+    required String codigo,
+    required String region,
+    required String nombre,
+    required String bandera,
+    required double screenWidth,
+  }) {
+    final isSelected = provider.idiomaCodigo == codigo;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => provider.cambiarIdioma(codigo, region: region),
+        borderRadius: BorderRadius.circular(screenWidth * 0.025),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.03,
+            vertical: screenWidth * 0.025,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? azulFondo : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(screenWidth * 0.025),
+            border: Border.all(
+              color: isSelected ? azulFondo : grisBorde,
+              width: isSelected ? 1.5 : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: azulFondo.withValues(alpha: 0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                bandera,
+                style: TextStyle(fontSize: screenWidth * 0.042),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              Text(
+                nombre,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : azulFondo,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  fontSize: screenWidth * 0.032,
+                ),
+              ),
+              if (isSelected) ...[
+                SizedBox(width: screenWidth * 0.015),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: amarilloOro,
+                  size: screenWidth * 0.038,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _mostrarSelectorIdioma(
     BuildContext context,
     AjustesProvider provider,
@@ -777,6 +965,8 @@ class ConfiguracionScreen extends StatelessWidget {
       {'codigo': 'fr', 'region': 'FR', 'nombre': 'Français', 'bandera': '🇫🇷'},
     ];
 
+    final l10n = AppLocalizations.of(context);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -785,55 +975,71 @@ class ConfiguracionScreen extends StatelessWidget {
           top: Radius.circular(screenWidth * 0.06),
         ),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.all(screenWidth * 0.05),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.translate_rounded, color: azulFondo),
-                SizedBox(width: screenWidth * 0.02),
-                Text(
-                  'Seleccionar Idioma',
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontWeight: FontWeight.bold,
-                    fontSize: screenWidth * 0.045,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: screenWidth * 0.04,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.translate_rounded, color: azulFondo),
+                  SizedBox(width: screenWidth * 0.02),
+                  Text(
+                    l10n?.seleccionarIdioma ?? 'Seleccionar Idioma',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.045,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            ...opciones.map((opcion) {
-              final isSelected = provider.idiomaCodigo == opcion['codigo'];
-              return ListTile(
-                leading: Text(
-                  opcion['bandera']!,
-                  style: TextStyle(fontSize: screenWidth * 0.06),
-                ),
-                title: Text(
-                  opcion['nombre']!,
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ],
+              ),
+              const Divider(height: 24),
+              ...opciones.map((opcion) {
+                final isSelected = provider.idiomaCodigo == opcion['codigo'];
+                return ListTile(
+                  leading: Text(
+                    opcion['bandera']!,
+                    style: TextStyle(fontSize: screenWidth * 0.06),
                   ),
-                ),
-                trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: amarilloOro)
-                    : null,
-                onTap: () {
-                  provider.cambiarIdioma(
-                    opcion['codigo']!,
-                    region: opcion['region'],
-                  );
-                  Navigator.pop(ctx);
-                },
-              );
-            }),
-            SizedBox(height: screenWidth * 0.04),
-          ],
+                  title: Text(
+                    opcion['nombre']!,
+                    style: TextStyle(
+                      color: isSelected ? azulFondo : Colors.black87,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      fontSize: screenWidth * 0.038,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: amarilloOro,
+                        )
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  ),
+                  tileColor: isSelected
+                      ? azulFondo.withValues(alpha: 0.05)
+                      : Colors.transparent,
+                  onTap: () {
+                    provider.cambiarIdioma(
+                      opcion['codigo']!,
+                      region: opcion['region'],
+                    );
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import 'package:atrio/screens/mis_notas_screen.dart';
 import 'package:atrio/servicios/connectivity_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -105,12 +106,15 @@ Future<void> main() async {
     debugPrint('💥 Error inicializando bases de datos SQLite: $e');
   }
 
-  // 4. Determinar la ruta inicial según el estado de bienvenida
+  // 4. Determinar la ruta inicial según el estado de bienvenida y autenticación
   final prefs = await SharedPreferences.getInstance();
   final bool introVista = prefs.getBool('intro_vista') ?? false;
-  final String rutaInicial = introVista
-      ? InicioSesionScreen.routeName
-      : IntroEncuentraScreen.routeName;
+  final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final String rutaInicial = !introVista
+      ? IntroEncuentraScreen.routeName
+      : (isLoggedIn
+          ? InicioAtrioScreen.routeName
+          : InicioSesionScreen.routeName);
 
   //
   // Iniciar monitoreo de internet en toda la app
@@ -148,9 +152,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ajustes = context.watch<AjustesProvider>();
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'ATRIO',
+      locale: ajustes.locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routes: _routes,
       initialRoute: initialRoute,
     );

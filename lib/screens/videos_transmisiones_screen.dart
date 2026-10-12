@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../modelos/video_model.dart';
 
 class VideosTransmisionesScreen extends StatefulWidget {
@@ -24,6 +25,25 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     'Estudios',
     'Música',
   ];
+
+  String _getLocalizedCategory(String category, AppLocalizations? l10n) {
+    switch (category.toLowerCase()) {
+      case 'todos':
+        return l10n?.categoriaTodos ?? 'Todos';
+      case 'en vivo':
+        return l10n?.categoriaEnVivo ?? 'En vivo';
+      case 'prédicas':
+      case 'predicas':
+        return l10n?.categoriaPredicas ?? 'Prédicas';
+      case 'estudios':
+        return l10n?.categoriaEstudios ?? 'Estudios';
+      case 'música':
+      case 'musica':
+        return l10n?.categoriaMusica ?? 'Música';
+      default:
+        return category;
+    }
+  }
 
   // Video / Transmisión destacada principal (preparada para Odoo 19)
   final VideoModel _featuredLiveVideo = VideoModel(
@@ -136,6 +156,8 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // 1. Obtención de métricas relativas dinámicas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -171,23 +193,27 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.02),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              color: Colors.white,
-                              size: screenWidth * 0.07,
+                          child: Tooltip(
+                            message: l10n?.volver ?? 'Volver',
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.07,
+                              ),
                             ),
                           ),
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Expanded(
                           child: Text(
-                            'Videos y transmisiones',
+                            l10n?.videosYTransmisiones ??
+                                'Videos y transmisiones',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: screenWidth * 0.060,
@@ -209,7 +235,8 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Buscar prédicas, canales o temas...',
+                          hintText: l10n?.buscarVideosPlaceholder ??
+                              'Buscar prédicas, canales o temas...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.035,
@@ -247,6 +274,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       usableHeight: usableHeight,
                       azulFondo: azulFondo,
                       amarilloOro: amarilloOro,
+                      l10n: l10n,
                       onTap: () =>
                           _showVideoDetailsModal(context, _featuredLiveVideo),
                     ),
@@ -317,7 +345,10 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        _categories[index],
+                                        _getLocalizedCategory(
+                                          _categories[index],
+                                          l10n,
+                                        ),
                                         style: TextStyle(
                                           color: isSelected
                                               ? Colors.white
@@ -352,7 +383,8 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                         ),
                                         SizedBox(width: screenWidth * 0.02),
                                         Text(
-                                          'No se encontraron videos en esta categoría',
+                                          l10n?.noSeEncontraronVideosCategoria ??
+                                              'No se encontraron videos en esta categoría',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: screenWidth * 0.032,
@@ -377,6 +409,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                       azulFondo: azulFondo,
                                       amarilloOro: amarilloOro,
                                       grisBorde: grisBorde,
+                                      l10n: l10n,
                                       onTap: () =>
                                           _showVideoDetailsModal(context, item),
                                     );
@@ -404,6 +437,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     required Color azulFondo,
     required Color amarilloOro,
     required VoidCallback onTap,
+    AppLocalizations? l10n,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -489,9 +523,9 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                             ),
                           ),
                           SizedBox(width: screenWidth * 0.015),
-                          const Text(
-                            'EN VIVO',
-                            style: TextStyle(
+                          Text(
+                            l10n?.enVivoBadge ?? 'EN VIVO',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -548,7 +582,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                               ),
                               SizedBox(width: screenWidth * 0.01),
                               Text(
-                                'Ver ahora',
+                                l10n?.verAhora ?? 'Ver ahora',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: screenWidth * 0.03,
@@ -579,6 +613,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     required Color amarilloOro,
     required Color grisBorde,
     required VoidCallback onTap,
+    AppLocalizations? l10n,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -686,7 +721,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                             ],
                             Text(
                               video.esEnVivo
-                                  ? 'EN VIVO'
+                                  ? (l10n?.enVivoBadge ?? 'EN VIVO')
                                   : (video.duracion ?? ''),
                               style: TextStyle(
                                 color: Colors.white,
@@ -777,6 +812,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
 
   // Modal Inferior de Detalle Rápido y Reproducción del Video (Bottom Sheet moderno)
   void _showVideoDetailsModal(BuildContext context, VideoModel video) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
@@ -908,9 +944,9 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                   ),
                                 ),
                                 SizedBox(width: screenWidth * 0.015),
-                                const Text(
-                                  'EN VIVO',
-                                  style: TextStyle(
+                                Text(
+                                  l10n?.enVivoBadge ?? 'EN VIVO',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -964,7 +1000,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       borderRadius: BorderRadius.circular(screenWidth * 0.015),
                     ),
                     child: Text(
-                      video.categoria,
+                      _getLocalizedCategory(video.categoria, l10n),
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.028,
@@ -1017,7 +1053,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
               // Descripción / Sinopsis
               if (video.sinopsis.isNotEmpty) ...[
                 Text(
-                  'Descripción',
+                  l10n?.descripcion ?? 'Descripción',
                   style: TextStyle(
                     color: azulFondo,
                     fontSize: screenWidth * 0.038,
@@ -1070,8 +1106,14 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                               SnackBar(
                                 content: Text(
                                   video.esEnVivo
-                                      ? 'Conectando a transmisión "${video.titulo}"...'
-                                      : 'Reproduciendo "${video.titulo}"...',
+                                      ? (l10n?.conectandoTransmision(
+                                              video.titulo,
+                                            ) ??
+                                          'Conectando a transmisión "${video.titulo}"...')
+                                      : (l10n?.reproduciendoVideo(
+                                              video.titulo,
+                                            ) ??
+                                          'Reproduciendo "${video.titulo}"...'),
                                 ),
                                 backgroundColor: azulFondo,
                                 duration: const Duration(seconds: 2),
@@ -1088,8 +1130,9 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       ),
                       label: Text(
                         video.esEnVivo
-                            ? 'Ver transmisión en vivo'
-                            : 'Reproducir ahora',
+                            ? (l10n?.verTransmisionEnVivo ??
+                                'Ver transmisión en vivo')
+                            : (l10n?.reproducirAhora ?? 'Reproducir ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,
                           fontWeight: FontWeight.bold,
@@ -1117,7 +1160,8 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Enlace de "${video.titulo}" copiado al portapapeles',
+                            l10n?.enlaceCopiadoPortapapeles(video.titulo) ??
+                                'Enlace de "${video.titulo}" copiado al portapapeles',
                           ),
                           backgroundColor: azulFondo,
                           duration: const Duration(seconds: 2),

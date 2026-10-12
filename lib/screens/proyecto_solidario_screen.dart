@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../modelos/proyecto_solidario_model.dart';
 import '../providers/proyecto_solidario_provider.dart';
 import 'aportar_a_proyecto_screen.dart';
@@ -45,6 +46,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
+    final l10n = AppLocalizations.of(context);
     final provider = Provider.of<ProyectoSolidarioProvider>(context);
     final data = provider.data;
 
@@ -69,23 +71,27 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.02),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              color: Colors.white,
-                              size: screenWidth * 0.07,
+                          child: Tooltip(
+                            message: l10n?.volver ?? 'Volver',
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.07,
+                              ),
                             ),
                           ),
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Expanded(
                           child: Text(
-                            'Proyectos solidarios',
+                            l10n?.proyectosSolidariosTitulo ??
+                                'Proyectos solidarios',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: screenWidth * 0.065,
@@ -121,6 +127,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                       data,
                       screenWidth,
                       usableHeight,
+                      l10n,
                     ),
                   ),
                 ),
@@ -137,6 +144,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
     ProyectosSolidariosData? data,
     double screenWidth,
     double usableHeight,
+    AppLocalizations? l10n,
   ) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator(color: amarilloOro));
@@ -156,7 +164,8 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
               ),
               SizedBox(height: usableHeight * 0.015),
               Text(
-                provider.errorMessage ?? 'No hay datos disponibles',
+                provider.errorMessage ??
+                    (l10n?.noHayDatosDisponibles ?? 'No hay datos disponibles'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: azulFondo,
@@ -167,9 +176,9 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: azulFondo),
                 onPressed: () => provider.cargarProyectos(),
-                child: const Text(
-                  'Reintentar',
-                  style: TextStyle(color: Colors.white),
+                child: Text(
+                  l10n?.reintentar ?? 'Reintentar',
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ],
@@ -188,7 +197,9 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            data.lema,
+            data.lema == 'Juntos podemos transformar vidas'
+                ? (l10n?.lemaProyectosSolidarios ?? data.lema)
+                : data.lema,
             style: TextStyle(
               color: Colors.grey.shade600,
               fontSize: screenWidth * 0.040,
@@ -202,6 +213,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
             proyecto: data.proyectoDestacado,
             screenWidth: screenWidth,
             usableHeight: usableHeight,
+            l10n: l10n,
             onTap: () {
               Navigator.pushNamed(
                 context,
@@ -216,7 +228,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
           SizedBox(height: usableHeight * 0.03),
 
           Text(
-            'Más campañas',
+            l10n?.masCampanas ?? 'Más campañas',
             style: TextStyle(
               color: azulFondo,
               fontSize: screenWidth * 0.055,
@@ -233,6 +245,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                 campana: campana,
                 screenWidth: screenWidth,
                 usableHeight: usableHeight,
+                l10n: l10n,
                 onTap: () {
                   Navigator.pushNamed(
                     context,
@@ -240,7 +253,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                     arguments: {
                       'titulo': campana.titulo,
                       'subtitulo':
-                          '${campana.categoria} · Meta: RD\$ ${NumberFormat("#,##0", "en_US").format(campana.metaMonto)}',
+                          '${campana.categoria} · ${l10n?.metaPrefijo ?? 'Meta:'} RD\$ ${NumberFormat("#,##0", "en_US").format(campana.metaMonto)}',
                     },
                   );
                 },
@@ -257,6 +270,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
     required ProyectoModel proyecto,
     required double screenWidth,
     required double usableHeight,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
   }) {
     final formatCurrency = NumberFormat("#,##0", "en_US");
@@ -314,7 +328,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                           ),
                         ),
                         child: Text(
-                          'DESTACADO',
+                          l10n?.destacadoMayus ?? 'DESTACADO',
                           style: TextStyle(
                             color: azulFondo,
                             fontSize: screenWidth * 0.026,
@@ -372,7 +386,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                         ),
                       ),
                       Text(
-                        ' de RD\$ ${formatCurrency.format(proyecto.metaMonto)}',
+                        ' ${l10n?.deMonto ?? 'de'} RD\$ ${formatCurrency.format(proyecto.metaMonto)}',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: screenWidth * 0.036,
@@ -382,7 +396,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.005),
                   Text(
-                    '${proyecto.porcentajeEntero}% alcanzado · ${proyecto.diasRestantes} días restantes',
+                    '${l10n?.porcentajeAlcanzado(proyecto.porcentajeEntero.toString()) ?? '${proyecto.porcentajeEntero}% alcanzado'} · ${l10n?.diasRestantes(proyecto.diasRestantes.toString()) ?? '${proyecto.diasRestantes} días restantes'}',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.032,
@@ -401,6 +415,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
     required CampanaSecundariaModel campana,
     required double screenWidth,
     required double usableHeight,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
   }) {
     final Color bgColor = Color(int.parse(campana.colorFondoHex));
@@ -443,7 +458,6 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     campana.titulo,
@@ -455,7 +469,7 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.004),
                   Text(
-                    '${campana.categoria} · ${campana.porcentajeEntero}% alcanzado',
+                    '${campana.categoria} · ${l10n?.porcentajeAlcanzado(campana.porcentajeEntero.toString()) ?? '${campana.porcentajeEntero}% alcanzado'}',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.031,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 import '../modelos/evento_model.dart';
 
@@ -23,6 +24,28 @@ class _EventosScreenState extends State<EventosScreen> {
     'Familias',
     'Comunidad',
   ];
+
+  String _getCategoryName(BuildContext context, String category) {
+    final l10n = AppLocalizations.of(context);
+    switch (category.toLowerCase()) {
+      case 'todos':
+        return l10n?.categoriaTodos ?? 'Todos';
+      case 'liderazgo':
+        return l10n?.categoriaLiderazgo ?? 'Liderazgo';
+      case 'adoración':
+      case 'adoracion':
+        return l10n?.categoriaAdoracion ?? 'Adoración';
+      case 'jóvenes':
+      case 'jovenes':
+        return l10n?.categoriaJovenes ?? 'Jóvenes';
+      case 'familias':
+        return l10n?.categoriaFamilias ?? 'Familias';
+      case 'comunidad':
+        return l10n?.categoriaComunidad ?? 'Comunidad';
+      default:
+        return category;
+    }
+  }
 
   // Evento destacado (preparado con campos Odoo 19 módulo event.event)
   final EventoModel _featuredEvent = EventoModel(
@@ -155,6 +178,8 @@ class _EventosScreenState extends State<EventosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // 1. Métricas relativas dinámicas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -204,7 +229,7 @@ class _EventosScreenState extends State<EventosScreen> {
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Text(
-                          'Eventos',
+                          l10n?.eventos ?? 'Eventos',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.068,
@@ -225,7 +250,8 @@ class _EventosScreenState extends State<EventosScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Buscar eventos, expositores o lugares...',
+                          hintText: l10n?.buscarEventosPlaceholder ??
+                              'Buscar eventos, expositores o lugares...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.035,
@@ -312,7 +338,7 @@ class _EventosScreenState extends State<EventosScreen> {
 
                           // Sección Categorías
                           Text(
-                            'Categorías',
+                            l10n?.categorias ?? 'Categorías',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.045,
@@ -358,7 +384,10 @@ class _EventosScreenState extends State<EventosScreen> {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        _categories[index],
+                                        _getCategoryName(
+                                          context,
+                                          _categories[index],
+                                        ),
                                         style: TextStyle(
                                           color: isSelected
                                               ? Colors.white
@@ -380,7 +409,7 @@ class _EventosScreenState extends State<EventosScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Explorar eventos',
+                                l10n?.explorarEventos ?? 'Explorar eventos',
                                 style: TextStyle(
                                   color: azulFondo,
                                   fontSize: screenWidth * 0.045,
@@ -395,7 +424,7 @@ class _EventosScreenState extends State<EventosScreen> {
                                     });
                                   },
                                   child: Text(
-                                    'Ver todos',
+                                    l10n?.verTodos ?? 'Ver todos',
                                     style: TextStyle(
                                       color: amarilloOro,
                                       fontSize: screenWidth * 0.034,
@@ -423,7 +452,8 @@ class _EventosScreenState extends State<EventosScreen> {
                                         ),
                                         SizedBox(width: screenWidth * 0.02),
                                         Text(
-                                          'No se encontraron eventos en esta categoría',
+                                          l10n?.noEventosEnCategoria ??
+                                              'No se encontraron eventos en esta categoría',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: screenWidth * 0.03,
@@ -461,7 +491,7 @@ class _EventosScreenState extends State<EventosScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Próximos en agenda',
+                                l10n?.proximosEnAgenda ?? 'Próximos en agenda',
                                 style: TextStyle(
                                   color: azulFondo,
                                   fontSize: screenWidth * 0.045,
@@ -472,8 +502,9 @@ class _EventosScreenState extends State<EventosScreen> {
                                 onTap: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: const Text(
-                                        'Mostrando calendario completo de actividades...',
+                                      content: Text(
+                                        l10n?.mostrandoCalendarioCompleto ??
+                                            'Mostrando calendario completo de actividades...',
                                       ),
                                       backgroundColor: azulFondo,
                                       duration: const Duration(seconds: 2),
@@ -481,7 +512,7 @@ class _EventosScreenState extends State<EventosScreen> {
                                   );
                                 },
                                 child: Text(
-                                  'Ver calendario',
+                                  l10n?.verCalendario ?? 'Ver calendario',
                                   style: TextStyle(
                                     color: amarilloOro,
                                     fontSize: screenWidth * 0.034,
@@ -538,6 +569,8 @@ class _EventosScreenState extends State<EventosScreen> {
     required Color grisBorde,
     required VoidCallback onTap,
   }) {
+    final l10n = AppLocalizations.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -632,7 +665,7 @@ class _EventosScreenState extends State<EventosScreen> {
                       borderRadius: BorderRadius.circular(screenWidth * 0.015),
                     ),
                     child: Text(
-                      'DESTACADO',
+                      l10n?.destacadoMayus ?? 'DESTACADO',
                       style: TextStyle(
                         color: const Color(0xFF9E6500),
                         fontSize: screenWidth * 0.024,
@@ -716,7 +749,7 @@ class _EventosScreenState extends State<EventosScreen> {
                       ),
                       onPressed: onTap,
                       child: Text(
-                        'Inscribirme ahora',
+                        l10n?.inscribirmeAhora ?? 'Inscribirme ahora',
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,
                           fontWeight: FontWeight.bold,
@@ -744,7 +777,8 @@ class _EventosScreenState extends State<EventosScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Evento "${evento.titulo}" añadido a tu calendario.',
+                              l10n?.eventoAnadidoACalendario(evento.titulo) ??
+                                  'Evento "${evento.titulo}" añadido a tu calendario.',
                             ),
                             backgroundColor: azulFondo,
                             duration: const Duration(seconds: 2),
@@ -757,7 +791,7 @@ class _EventosScreenState extends State<EventosScreen> {
                         color: azulFondo,
                       ),
                       label: Text(
-                        'Añadir a calendario',
+                        l10n?.anadirACalendario ?? 'Añadir a calendario',
                         style: TextStyle(
                           fontSize: screenWidth * 0.030,
                           fontWeight: FontWeight.bold,
@@ -785,6 +819,7 @@ class _EventosScreenState extends State<EventosScreen> {
     required VoidCallback onTap,
   }) {
     final progressPercent = (evento.porcentajeOcupacion * 100).toInt();
+    final l10n = AppLocalizations.of(context);
 
     return GestureDetector(
       onTap: onTap,
@@ -851,7 +886,7 @@ class _EventosScreenState extends State<EventosScreen> {
                           ),
                           SizedBox(width: screenWidth * 0.015),
                           Text(
-                            'Mi actividad agendada',
+                            l10n?.miActividadAgendada ?? 'Mi actividad agendada',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.038,
@@ -908,7 +943,8 @@ class _EventosScreenState extends State<EventosScreen> {
                 ),
                 SizedBox(width: screenWidth * 0.03),
                 Text(
-                  '$progressPercent% ocupación',
+                  l10n?.porcentajeOcupacion(progressPercent) ??
+                      '$progressPercent% ocupación',
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: screenWidth * 0.030,
@@ -1240,6 +1276,8 @@ class _EventosScreenState extends State<EventosScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
+        final l10n = AppLocalizations.of(modalContext);
+
         return Container(
           decoration: BoxDecoration(
             color: blancoFondo,
@@ -1343,7 +1381,7 @@ class _EventosScreenState extends State<EventosScreen> {
                             ),
                           ),
                           child: Text(
-                            evento.categoria,
+                            _getCategoryName(modalContext, evento.categoria),
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.028,
@@ -1427,7 +1465,7 @@ class _EventosScreenState extends State<EventosScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Disponibilidad de cupos',
+                      l10n?.disponibilidadCupos ?? 'Disponibilidad de cupos',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.034,
@@ -1460,7 +1498,7 @@ class _EventosScreenState extends State<EventosScreen> {
               // Descripción
               if (evento.descripcion.isNotEmpty) ...[
                 Text(
-                  'Detalles del evento',
+                  l10n?.detallesDelEvento ?? 'Detalles del evento',
                   style: TextStyle(
                     color: azulFondo,
                     fontSize: screenWidth * 0.04,
@@ -1504,7 +1542,8 @@ class _EventosScreenState extends State<EventosScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Inscripción confirmada para "${evento.titulo}". ¡Te esperamos!',
+                              l10n?.inscripcionConfirmada(evento.titulo) ??
+                                  'Inscripción confirmada para "${evento.titulo}". ¡Te esperamos!',
                             ),
                             backgroundColor: azulFondo,
                             duration: const Duration(seconds: 2),
@@ -1517,8 +1556,8 @@ class _EventosScreenState extends State<EventosScreen> {
                       ),
                       label: Text(
                         evento.estaInscrito
-                            ? 'Ya estás inscrito'
-                            : 'Inscribirme ahora',
+                            ? (l10n?.yaEstasInscrito ?? 'Ya estás inscrito')
+                            : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,
                           fontWeight: FontWeight.bold,
@@ -1546,7 +1585,8 @@ class _EventosScreenState extends State<EventosScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Evento "${evento.titulo}" agregado a tu agenda local.',
+                            l10n?.eventoAgregadoAgendaLocal(evento.titulo) ??
+                                'Evento "${evento.titulo}" agregado a tu agenda local.',
                           ),
                           backgroundColor: azulFondo,
                           duration: const Duration(seconds: 2),

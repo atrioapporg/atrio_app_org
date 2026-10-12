@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../data/atrio_database_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../modelos/anuncio_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
@@ -53,6 +54,32 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       'titulo': 'Acción solidaria',
       'mensaje': 'Campaña "Manos que Bendicen" · Donaciones',
       'categoria': 'Comunidad',
+      'tag': '3/3',
+    },
+  ];
+
+  List<Map<String, String>> _obtenerAvisos(AppLocalizations? l10n) => [
+    {
+      'titulo': l10n?.nuevoAviso ?? 'Nuevo aviso',
+      'mensaje':
+          l10n?.cambioHorarioAviso ??
+          'Cambio de horario · Miércoles, 7:00 p. m.',
+      'categoria': l10n?.categoriaServicios ?? 'Servicios',
+      'tag': '1/3',
+    },
+    {
+      'titulo': l10n?.inscripcionesAbiertas ?? 'Inscripciones abiertas',
+      'mensaje':
+          l10n?.retiroAnualAviso ?? 'Retiro Anual 2026 · Cupos limitados',
+      'categoria': l10n?.eventos ?? 'Eventos',
+      'tag': '2/3',
+    },
+    {
+      'titulo': l10n?.accionSolidaria ?? 'Acción solidaria',
+      'mensaje':
+          l10n?.campanaDonacionesAviso ??
+          'Campaña "Manos que Bendicen" · Donaciones',
+      'categoria': l10n?.categoriaComunidad ?? 'Comunidad',
       'tag': '3/3',
     },
   ];
@@ -190,28 +217,30 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   }
 
   void _mostrarDialogoSalida(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFFFAF7F0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '¿Deseas salir de atrio?',
-          style: TextStyle(
+        title: Text(
+          l10n?.deseasSalirAtrio ?? '¿Deseas salir de atrio?',
+          style: const TextStyle(
             color: Color(0xFF072B4F),
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
-          'Presiona "Salir" para cerrar la aplicación.',
-          style: TextStyle(color: Colors.black87),
+        content: Text(
+          l10n?.presionaSalirCerrar ??
+              'Presiona "Salir" para cerrar la aplicación.',
+          style: const TextStyle(color: Colors.black87),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Color(0xFF072B4F)),
+            child: Text(
+              l10n?.cancelar ?? 'Cancelar',
+              style: const TextStyle(color: Color(0xFF072B4F)),
             ),
           ),
           TextButton(
@@ -219,9 +248,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               Navigator.pop(ctx);
               SystemNavigator.pop();
             },
-            child: const Text(
-              'Salir',
-              style: TextStyle(
+            child: Text(
+              l10n?.salir ?? 'Salir',
+              style: const TextStyle(
                 color: Color(0xFFC0392B),
                 fontWeight: FontWeight.bold,
               ),
@@ -245,6 +274,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFEFEFEF);
 
+    final l10n = AppLocalizations.of(context);
+
     final List<Widget> vistasPrincipales = [
       _buildHomeView(
         screenWidth,
@@ -253,6 +284,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         amarilloOro,
         blancoFondo,
         grisBorde,
+        l10n,
       ),
       const IglesiaScreen(),
       const ExplorarScreen(),
@@ -288,31 +320,31 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               _cargarDatosPerfil();
             }
           },
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home, color: azulFondo),
-              label: 'Inicio',
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home, color: azulFondo),
+              label: l10n?.inicio ?? 'Inicio',
             ),
             NavigationDestination(
-              icon: Icon(Icons.church_outlined),
-              selectedIcon: Icon(Icons.church, color: azulFondo),
-              label: 'Iglesia',
+              icon: const Icon(Icons.church_outlined),
+              selectedIcon: const Icon(Icons.church, color: azulFondo),
+              label: l10n?.iglesia ?? 'Iglesia',
             ),
             NavigationDestination(
-              icon: Icon(Icons.explore_outlined),
-              selectedIcon: Icon(Icons.explore, color: azulFondo),
-              label: 'Explorar',
+              icon: const Icon(Icons.explore_outlined),
+              selectedIcon: const Icon(Icons.explore, color: azulFondo),
+              label: l10n?.explorar ?? 'Explorar',
             ),
             NavigationDestination(
-              icon: Icon(Icons.radio_outlined),
-              selectedIcon: Icon(Icons.radio, color: azulFondo),
-              label: 'Radio',
+              icon: const Icon(Icons.radio_outlined),
+              selectedIcon: const Icon(Icons.radio, color: azulFondo),
+              label: l10n?.radio ?? 'Radio',
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person, color: azulFondo),
-              label: 'Perfil',
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person, color: azulFondo),
+              label: l10n?.perfil ?? 'Perfil',
             ),
           ],
         ),
@@ -348,6 +380,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     Color amarilloOro,
     Color blancoFondo,
     Color grisBorde,
+    AppLocalizations? l10n,
   ) {
     return Column(
       children: [
@@ -422,6 +455,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               // Botón interactivo: Nombre de la iglesia y cambio rápido de comunidad
               Consumer<IglesiaProvider>(
                 builder: (context, provider, child) {
+                  final String sinIglesia =
+                      l10n?.sinIglesiaSeleccionada ??
+                      'Sin iglesia seleccionada';
                   final String nombreIglesia =
                       (provider.tieneIglesiaGuardada &&
                           provider.iglesiaActual != null &&
@@ -431,7 +467,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                 _iglesiaLocal!.trim().isNotEmpty &&
                                 _iglesiaLocal != 'Sin iglesia seleccionada')
                             ? _iglesiaLocal!.trim()
-                            : 'Sin iglesia seleccionada');
+                            : sinIglesia);
 
                   return Material(
                     color: Colors.transparent,
@@ -441,11 +477,10 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                           context,
                           TradicionCristianaScreen.routeName,
                         );
-                        if (mounted) {
-                          Provider.of<IglesiaProvider>(
-                            context,
-                            listen: false,
-                          ).cargarIglesiaSeleccionada();
+                        if (context.mounted) {
+                          context
+                              .read<IglesiaProvider>()
+                              .cargarIglesiaSeleccionada();
                           _cargarDatosPerfil();
                         }
                       },
@@ -490,7 +525,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                   Row(
                                     children: [
                                       Text(
-                                        'Mi Iglesia',
+                                        l10n?.miIglesia ?? 'Mi Iglesia',
                                         style: TextStyle(
                                           color: Colors.white70,
                                           fontSize: screenWidth * 0.027,
@@ -499,7 +534,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                       ),
                                       SizedBox(width: screenWidth * 0.015),
                                       Text(
-                                        '· Toca para cambiar',
+                                        l10n?.tocaParaCambiar ??
+                                            '· Toca para cambiar',
                                         style: TextStyle(
                                           color: amarilloOro,
                                           fontSize: screenWidth * 0.026,
@@ -583,24 +619,15 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,
                       azulFondo: azulFondo,
+                      l10n: l10n,
                     ),
-                    /*
-                    SizedBox(height: usableHeight * 0.02),
-                    Text(
-                      'Para ti',
-                      style: TextStyle(
-                        color: azulFondo,
-                        fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    */
                     SizedBox(height: usableHeight * 0.012),
                     _buildActionGrid(
                       screenWidth,
                       usableHeight,
                       azulFondo,
                       grisBorde,
+                      l10n,
                     ),
                     SizedBox(height: usableHeight * 0.02),
                     _buildAnnouncementsSection(
@@ -609,6 +636,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       azulFondo,
                       amarilloOro,
                       grisBorde,
+                      l10n,
                     ),
                     SizedBox(height: usableHeight * 0.02),
                   ],
@@ -625,6 +653,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     required double screenWidth,
     required double usableHeight,
     required Color azulFondo,
+    required AppLocalizations? l10n,
   }) {
     return GestureDetector(
       onTap: () {
@@ -659,7 +688,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _avisosPageController,
-                itemCount: _avisosFicticios.length,
+                itemCount: _obtenerAvisos(l10n).length,
                 onPageChanged: (index) {
                   setState(() {
                     _avisoActivoIndex = index;
@@ -667,7 +696,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                   _iniciarTimerAvisos(_ultimoIntervaloAvisos);
                 },
                 itemBuilder: (context, index) {
-                  final aviso = _avisosFicticios[index];
+                  final aviso = _obtenerAvisos(l10n)[index];
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,52 +765,53 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     double usableHeight,
     Color azulFondo,
     Color grisBorde,
+    AppLocalizations? l10n,
   ) {
     final List<Map<String, dynamic>> items = [
       {
-        'title': 'Biblia',
+        'title': l10n?.biblia ?? 'Biblia',
         'icon': Icons.menu_book_outlined,
         'color': const Color(0xFF0055A5),
         'route': 'biblia_screen',
       },
       {
-        'title': 'Eventos',
+        'title': l10n?.eventos ?? 'Eventos',
         'icon': Icons.calendar_today_outlined,
         'color': const Color(0xFFE5A023),
         'route': 'eventos_screen',
       },
       {
-        'title': 'Solicitudes',
+        'title': l10n?.solicitudes ?? 'Solicitudes',
         'icon': Icons.edit_note_outlined,
         'color': const Color(0xFF2B7A78),
         'route': 'tipos_solicitud_screen',
       },
       {
-        'title': 'Donaciones',
+        'title': l10n?.donaciones ?? 'Donaciones',
         'icon': Icons.favorite_border_rounded,
         'color': const Color(0xFF4A7C59),
         'route': 'donaciones_screen',
       },
       {
-        'title': 'Proyectos\nsolidarios',
+        'title': l10n?.proyectosSolidarios ?? 'Proyectos\nsolidarios',
         'icon': Icons.health_and_safety,
         'color': const Color(0xFF2B7A78),
         'route': 'proyecto_solidario_screen',
       },
       {
-        'title': 'Tienda',
+        'title': l10n?.tienda ?? 'Tienda',
         'icon': Icons.store_rounded,
         'color': const Color(0xFF4A7C59),
         'route': 'tienda_screen',
       },
       {
-        'title': 'Libros',
+        'title': l10n?.libros ?? 'Libros',
         'icon': Icons.book_outlined,
         'color': const Color(0xFF2B7A78),
         'route': 'libros_screen',
       },
       {
-        'title': 'Videos',
+        'title': l10n?.videos ?? 'Videos',
         'icon': Icons.video_camera_front,
         'color': const Color(0xFF4A7C59),
         'route': 'videos_transmisiones_screen',
@@ -847,6 +877,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     Color azulFondo,
     Color amarilloOro,
     Color grisBorde,
+    AppLocalizations? l10n,
   ) {
     if (_anuncios.isEmpty) {
       return Container(
@@ -883,7 +914,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'ANUNCIOS & CONCIERTOS',
+                    l10n?.anunciosYConciertos ?? 'ANUNCIOS & CONCIERTOS',
                     style: TextStyle(
                       color: const Color(0xFF0055A5),
                       fontSize: screenWidth * 0.028,
@@ -893,7 +924,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.003),
                   Text(
-                    'Cargando novedades...',
+                    l10n?.cargandoNovedades ?? 'Cargando novedades...',
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.038,
@@ -1346,10 +1377,12 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       ),
                       onPressed: () {
                         Navigator.pop(modalContext);
+                        final l10nModal = AppLocalizations.of(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Información sobre "${anuncio.artista}" enviada.',
+                              l10nModal?.infoArtistaEnviada(anuncio.artista) ??
+                                  'Información sobre "${anuncio.artista}" enviada.',
                               style: const TextStyle(fontSize: 15),
                             ),
                             backgroundColor: azulFondo,
@@ -1384,7 +1417,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     ),
                     onPressed: () => Navigator.pop(modalContext),
                     child: Text(
-                      'Cerrar',
+                      AppLocalizations.of(context)?.cerrar ?? 'Cerrar',
                       style: TextStyle(
                         fontSize: screenWidth * 0.038,
                         fontWeight: FontWeight.bold,

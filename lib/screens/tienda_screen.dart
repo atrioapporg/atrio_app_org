@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../modelos/producto_model.dart';
 
 class TiendaScreen extends StatefulWidget {
@@ -18,6 +19,21 @@ class _TiendaScreenState extends State<TiendaScreen> {
   int _cartItemCount = 2;
 
   final List<String> _categories = ['Todos', 'Biblias', 'Libros', 'Regalos'];
+
+  String _getLocalizedCategory(String category, AppLocalizations? l10n) {
+    switch (category.toLowerCase()) {
+      case 'todos':
+        return l10n?.categoriaTodos ?? 'Todos';
+      case 'biblias':
+        return l10n?.categoriaBiblias ?? 'Biblias';
+      case 'libros':
+        return l10n?.categoriaLibros ?? 'Libros';
+      case 'regalos':
+        return l10n?.categoriaRegalos ?? 'Regalos';
+      default:
+        return category;
+    }
+  }
 
   // Catálogo inicial de 5 productos reales (preparado para Odoo 19)
   late final List<ProductoModel> _productsList = [
@@ -126,6 +142,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
+    final l10n = AppLocalizations.of(context);
+
     // Paleta de diseño Atrio
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -158,7 +176,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Tienes $_cartItemCount productos en tu carrito de compras',
+                                  l10n?.carritoCantidadProductos(
+                                        _cartItemCount.toString(),
+                                      ) ??
+                                      'Tienes $_cartItemCount productos en tu carrito de compras',
                                 ),
                                 backgroundColor: azulFondo,
                                 duration: const Duration(seconds: 2),
@@ -210,22 +231,25 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.02),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              color: Colors.white,
-                              size: screenWidth * 0.07,
+                          child: Tooltip(
+                            message: l10n?.volver ?? 'Volver',
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.07,
+                              ),
                             ),
                           ),
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Text(
-                          'Tienda',
+                          l10n?.tienda ?? 'Tienda',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.068,
@@ -246,7 +270,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Buscar biblias, libros o regalos...',
+                          hintText: l10n?.buscarProductosPlaceholder ??
+                              'Buscar biblias, libros o regalos...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.035,
@@ -342,7 +367,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        _categories[index],
+                                        _getLocalizedCategory(
+                                          _categories[index],
+                                          l10n,
+                                        ),
                                         style: TextStyle(
                                           color: isSelected
                                               ? Colors.white
@@ -364,6 +392,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
                             amarilloOro: amarilloOro,
+                            l10n: l10n,
                             onTap: () {
                               _showProductDetailsModal(
                                 context,
@@ -378,7 +407,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Catálogo de productos',
+                                l10n?.catalogoDeProductos ??
+                                    'Catálogo de productos',
                                 style: TextStyle(
                                   color: azulFondo,
                                   fontSize: screenWidth * 0.045,
@@ -393,7 +423,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                     });
                                   },
                                   child: Text(
-                                    'Ver todos',
+                                    l10n?.verTodos ?? 'Ver todos',
                                     style: TextStyle(
                                       color: amarilloOro,
                                       fontSize: screenWidth * 0.034,
@@ -423,7 +453,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                         ),
                                         SizedBox(width: screenWidth * 0.02),
                                         Text(
-                                          'No se encontraron productos en esta categoría',
+                                          l10n?.noSeEncontraronProductosCategoria ??
+                                              'No se encontraron productos en esta categoría',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: screenWidth * 0.03,
@@ -453,6 +484,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                       azulFondo: azulFondo,
                                       grisBorde: grisBorde,
                                       amarilloOro: amarilloOro,
+                                      l10n: l10n,
                                       onTap: () => _showProductDetailsModal(
                                         context,
                                         item,
@@ -469,7 +501,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
 
                           // Título "Entrega o retiro"
                           Text(
-                            'Entrega o retiro',
+                            l10n?.entregaORetiro ?? 'Entrega o retiro',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.045,
@@ -483,7 +515,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             children: [
                               Expanded(
                                 child: _buildDeliveryOption(
-                                  title: 'Envío a domicilio',
+                                  title: l10n?.envioADomicilio ??
+                                      'Envío a domicilio',
                                   icon: Icons.local_shipping_outlined,
                                   isSelected: _selectedDeliveryOption == 0,
                                   screenWidth: screenWidth,
@@ -501,7 +534,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                               SizedBox(width: screenWidth * 0.03),
                               Expanded(
                                 child: _buildDeliveryOption(
-                                  title: 'Retiro en iglesia',
+                                  title: l10n?.retiroEnIglesia ??
+                                      'Retiro en iglesia',
                                   icon: Icons.church_outlined,
                                   isSelected: _selectedDeliveryOption == 1,
                                   screenWidth: screenWidth,
@@ -537,6 +571,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     required double screenWidth,
     required double usableHeight,
     required Color amarilloOro,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
   }) {
     return Container(
@@ -566,7 +601,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recursos para\ncrecer en tu fe',
+                  l10n?.recursosParaCrecerEnTuFe ??
+                      'Recursos para\ncrecer en tu fe',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: screenWidth * 0.052,
@@ -589,7 +625,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   ),
                   onPressed: onTap,
                   child: Text(
-                    'Ver destacados',
+                    l10n?.verDestacados ?? 'Ver destacados',
                     style: TextStyle(
                       fontSize: screenWidth * 0.032,
                       fontWeight: FontWeight.bold,
@@ -641,6 +677,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     required Color azulFondo,
     required Color grisBorde,
     required Color amarilloOro,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
     required VoidCallback onFavoriteTap,
   }) {
@@ -738,7 +775,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           ),
                         ),
                         child: Text(
-                          producto.categoria,
+                          _getLocalizedCategory(producto.categoria, l10n),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.022,
@@ -815,6 +852,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
 
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -929,7 +967,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    producto.categoria,
+                                    _getLocalizedCategory(
+                                      producto.categoria,
+                                      l10n,
+                                    ),
                                     style: TextStyle(
                                       color: azulFondo,
                                       fontSize: screenWidth * 0.028,
@@ -980,7 +1021,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             ),
                             SizedBox(height: usableHeight * 0.004),
                             Text(
-                              '${producto.stock} unidades en inventario',
+                              l10n?.unidadesEnInventario(
+                                    producto.stock.toString(),
+                                  ) ??
+                                  '${producto.stock} unidades en inventario',
                               style: TextStyle(
                                 color: Colors.green.shade700,
                                 fontSize: screenWidth * 0.026,
@@ -997,7 +1041,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   // Descripción del producto
                   if (producto.descripcion.isNotEmpty) ...[
                     Text(
-                      'Detalles del producto',
+                      l10n?.detallesDelProducto ?? 'Detalles del producto',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.038,
@@ -1041,7 +1085,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              '¡"${producto.nombre}" agregado al carrito!',
+                              l10n?.productoAgregadoAlCarrito(
+                                    producto.nombre,
+                                  ) ??
+                                  '¡"${producto.nombre}" agregado al carrito!',
                             ),
                             backgroundColor: azulFondo,
                             duration: const Duration(seconds: 2),
@@ -1053,7 +1100,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                         size: screenWidth * 0.05,
                       ),
                       label: Text(
-                        'Agregar al carrito · ${producto.precioFormateado}',
+                        l10n?.agregarAlCarritoConPrecio(
+                              producto.precioFormateado,
+                            ) ??
+                            'Agregar al carrito · ${producto.precioFormateado}',
                         style: TextStyle(
                           fontSize: screenWidth * 0.035,
                           fontWeight: FontWeight.bold,

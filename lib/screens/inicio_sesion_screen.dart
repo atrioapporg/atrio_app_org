@@ -8,8 +8,10 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/data/atrio_database_helper.dart';
+import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 
 import 'inicio_atrio_screen.dart';
 import 'tradicion_cristiana_screen.dart';
@@ -58,6 +60,22 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+        if (isLoggedIn && mounted) {
+          await _redirigirUsuarioPostLogin();
+        }
+      } catch (e) {
+        debugPrint('[AUTH] Error verificando sesión inicial: $e');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Métricas dinámicas relativas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -65,6 +83,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    final ajustesProvider = context.watch<AjustesProvider>();
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -103,39 +124,55 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         ),
 
                         // Selector de Idioma
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.025,
-                            vertical: usableHeight * 0.006,
-                          ),
-                          decoration: BoxDecoration(
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(
                               screenWidth * 0.02,
                             ),
-                            border: Border.all(color: Colors.white38),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.language,
-                                color: Colors.white,
-                                size: screenWidth * 0.04,
+                            onTap: () => _mostrarSelectorIdioma(
+                              context,
+                              ajustesProvider,
+                              screenWidth,
+                            ),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.025,
+                                vertical: usableHeight * 0.006,
                               ),
-                              SizedBox(width: screenWidth * 0.015),
-                              Text(
-                                'Español',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: screenWidth * 0.03,
-                                  fontWeight: FontWeight.w500,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.02,
                                 ),
+                                border: Border.all(color: Colors.white38),
                               ),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                color: Colors.white,
-                                size: screenWidth * 0.04,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.language,
+                                    color: Colors.white,
+                                    size: screenWidth * 0.04,
+                                  ),
+                                  SizedBox(width: screenWidth * 0.015),
+                                  Text(
+                                    _obtenerNombreIdioma(
+                                      ajustesProvider.idiomaCodigo,
+                                    ),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: screenWidth * 0.03,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: Colors.white,
+                                    size: screenWidth * 0.04,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
@@ -146,7 +183,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Bienvenido a Atrio',
+                        l10n?.bienvenida ?? 'Bienvenido a Atrio',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.075,
@@ -158,7 +195,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Un espacio para vivir y compartir tu fe',
+                        l10n?.subtituloBienvenida ??
+                            'Un espacio para vivir y compartir tu fe',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: screenWidth * 0.042,
@@ -217,7 +255,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
                           // Título de la sección
                           Text(
-                            'Acceso Rápido y Seguro',
+                            l10n?.accesoRapidoSeguro ??
+                                'Acceso Rápido y Seguro',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.065,
@@ -228,7 +267,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                           SizedBox(height: usableHeight * 0.008),
 
                           Text(
-                            'Ingresa en un solo toque',
+                            l10n?.ingresaUnToque ?? 'Ingresa en un solo toque',
                             style: TextStyle(
                               color: textoGris,
                               fontSize: screenWidth * 0.045,
@@ -242,7 +281,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                           // BOTÓN 1: CONTINUAR CON GOOGLE
                           // ===================================================
                           _buildSocialButton(
-                            title: 'Continuar con Google',
+                            title:
+                                l10n?.continuarConGoogle ??
+                                'Continuar con Google',
                             imageAsset: 'assets/images/google_logo.png',
                             backgroundColor: Colors.white,
                             textColor: azulFondo,
@@ -252,13 +293,15 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                             usableHeight: usableHeight,
                             onTap: _isProcessing ? null : _iniciarSesionGoogle,
                           ),
-                          SizedBox(height: usableHeight * 0.016),
+                          SizedBox(height: usableHeight * 0.040),
 
                           // ===================================================
                           // BOTÓN 2: CONTINUAR CON APPLE (Obligatorio iOS)
                           // ===================================================
                           _buildSocialButton(
-                            title: '   Continuar con Apple',
+                            title: l10n != null
+                                ? '   ${l10n.continuarConApple}'
+                                : '   Continuar con Apple',
                             customIcon: FaIcon(
                               FontAwesomeIcons.apple,
                               color: Colors.white,
@@ -300,7 +343,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               size: screenWidth * 0.045,
                             ),
                             label: Text(
-                              'Explorar como invitado',
+                              l10n?.explorarInvitado ??
+                                  'Explorar como invitado',
                               style: TextStyle(
                                 color: azulLink,
                                 fontSize: screenWidth * 0.050,
@@ -316,7 +360,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               horizontal: screenWidth * 0.04,
                             ),
                             child: Text(
-                              'Al continuar, vinculas tu cuenta de forma segura con el servidor eclesial de ATRIO en Odoo ERP.',
+                              l10n?.avisoPrivacidadOdoo ?? 'Al continuar, vinculas tu cuenta de forma segura con el servidor eclesial de ATRIO en Odoo ERP.',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: screenWidth * 0.029,
@@ -336,7 +380,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               GestureDetector(
                                 onTap: _mostrarTerminosDeUso,
                                 child: Text(
-                                  'Términos de uso',
+                                  l10n?.terminosDeUso ?? 'Términos de uso',
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontSize: screenWidth * 0.040,
@@ -359,7 +403,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               GestureDetector(
                                 onTap: _mostrarPoliticaPrivacidad,
                                 child: Text(
-                                  'Privacidad',
+                                  l10n?.privacidad ?? 'Privacidad',
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontSize: screenWidth * 0.040,
@@ -380,7 +424,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               usableHeight,
                             ),
                             child: Text(
-                              'Eliminar mis datos',
+                              l10n?.eliminarMisDatos ?? 'Eliminar mis datos',
                               style: TextStyle(
                                 color: Colors.red.shade700,
                                 fontSize: screenWidth * 0.040,
@@ -404,6 +448,120 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   }
 
   // ============================================================================
+  // GESTIÓN Y SELECTOR DE IDIOMA (flutter_localizations)
+  // ============================================================================
+  String _obtenerNombreIdioma(String codigo) {
+    switch (codigo) {
+      case 'en':
+        return 'English';
+      case 'pt':
+        return 'Português';
+      case 'fr':
+        return 'Français';
+      case 'es':
+      default:
+        return 'Español';
+    }
+  }
+
+  void _mostrarSelectorIdioma(
+    BuildContext context,
+    AjustesProvider provider,
+    double screenWidth,
+  ) {
+    final opciones = [
+      {'codigo': 'es', 'region': 'DO', 'nombre': 'Español', 'bandera': '🇩🇴'},
+      {'codigo': 'en', 'region': 'US', 'nombre': 'English', 'bandera': '🇺🇸'},
+      {
+        'codigo': 'pt',
+        'region': 'BR',
+        'nombre': 'Português',
+        'bandera': '🇧🇷',
+      },
+      {'codigo': 'fr', 'region': 'FR', 'nombre': 'Français', 'bandera': '🇫🇷'},
+    ];
+
+    final l10n = AppLocalizations.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: screenWidth * 0.04,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.translate_rounded, color: azulFondo),
+                  SizedBox(width: screenWidth * 0.02),
+                  Text(
+                    l10n?.seleccionarIdioma ?? 'Seleccionar Idioma',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.045,
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              ...opciones.map((opcion) {
+                final isSelected = provider.idiomaCodigo == opcion['codigo'];
+                return ListTile(
+                  leading: Text(
+                    opcion['bandera']!,
+                    style: TextStyle(fontSize: screenWidth * 0.06),
+                  ),
+                  title: Text(
+                    opcion['nombre']!,
+                    style: TextStyle(
+                      color: isSelected ? azulFondo : Colors.black87,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      fontSize: screenWidth * 0.038,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: amarilloOro,
+                        )
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  ),
+                  tileColor: isSelected
+                      ? azulFondo.withValues(alpha: 0.05)
+                      : Colors.transparent,
+                  onTap: () {
+                    provider.cambiarIdioma(
+                      opcion['codigo']!,
+                      region: opcion['region'],
+                    );
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================================
   // TODO: INTEGRACIÓN DEFINITIVA CON ODOO 19
   // Cambiar esta implementación temporal cuando se tengan las credenciales, APIs
   // y endpoints definitivos de los dueños del código de ATRIO.
@@ -418,20 +576,21 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       String email = 'usuario.google@gmail.com';
       String nombre = 'Usuario Google';
 
-      // Intento de conexión nativa con timeout de seguridad (1.5 segundos)
-      // para evitar que se quede "pensando" indefinidamente si el entorno local
-      // no tiene aún las credenciales SHA-1 / google-services.json registradas.
+      // Intento de conexión nativa con Google Sign-In
       try {
-        final GoogleSignInAccount? googleUser = await _googleSignIn
-            .signIn()
-            .timeout(const Duration(milliseconds: 1500));
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-        if (googleUser != null) {
-          email = googleUser.email;
-          if (googleUser.displayName != null &&
-              googleUser.displayName!.trim().isNotEmpty) {
-            nombre = googleUser.displayName!.trim();
-          }
+        if (googleUser == null) {
+          // El usuario canceló voluntariamente el diálogo de Google
+          debugPrint('[AUTH] Inicio de sesión cancelado por el usuario.');
+          if (mounted) setState(() => _isLoadingGoogle = false);
+          return;
+        }
+
+        email = googleUser.email;
+        if (googleUser.displayName != null &&
+            googleUser.displayName!.trim().isNotEmpty) {
+          nombre = googleUser.displayName!.trim();
         }
       } catch (e) {
         debugPrint(
@@ -635,7 +794,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         usuario['iglesia_nombre'].toString().trim() !=
             'Sin iglesia seleccionada';
 
-    final bool usuarioTieneIglesia = tieneIglesiaLocal && tieneIglesiaDb;
+    final bool usuarioTieneIglesia = tieneIglesiaLocal || tieneIglesiaDb;
 
     if (!mounted) return;
 
@@ -665,6 +824,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     double usableHeight,
   ) {
     final emailController = TextEditingController();
+    final l10n = AppLocalizations.of(context);
 
     showDialog(
       context: context,
@@ -684,7 +844,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
               SizedBox(width: screenWidth * 0.02),
               Expanded(
                 child: Text(
-                  'Eliminar cuenta y datos',
+                  l10n?.eliminarCuentaYDatos ?? 'Eliminar cuenta y datos',
                   style: TextStyle(
                     color: azulFondo,
                     fontSize: screenWidth * 0.045,
@@ -773,7 +933,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Cancelar'),
+              child: Text(l10n?.cancelar ?? 'Cancelar'),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -818,7 +978,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   ),
                 );
               },
-              child: const Text('Solicitar eliminación'),
+              child: Text(
+                l10n?.solicitarEliminacion ?? 'Solicitar eliminación',
+              ),
             ),
           ],
         );
@@ -834,6 +996,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final l10n = AppLocalizations.of(context);
+
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -858,7 +1022,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             SizedBox(width: screenWidth * 0.025),
             Expanded(
               child: Text(
-                'Opción no disponible',
+                l10n?.opcionNoDisponible ?? 'Opción no disponible',
                 style: TextStyle(
                   color: azulFondo,
                   fontSize: screenWidth * 0.045,
@@ -915,7 +1079,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
-              'Entendido',
+              l10n?.entendido ?? 'Entendido',
               style: TextStyle(
                 color: Colors.grey.shade700,
                 fontWeight: FontWeight.w600,

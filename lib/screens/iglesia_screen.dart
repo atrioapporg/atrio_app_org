@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../modelos/iglesia_model.dart';
 import '../providers/iglesia_provider.dart';
 
@@ -31,8 +32,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     });
   }
 
-  // 1. Acción: Llamar por teléfono
   Future<void> _hacerLlamada(BuildContext context, String telefono) async {
+    final l10n = AppLocalizations.of(context);
     final String numeroLimpio = telefono.replaceAll(RegExp(r'[^\d+]'), '');
     final Uri telUri = Uri(scheme: 'tel', path: numeroLimpio);
     if (await canLaunchUrl(telUri)) {
@@ -40,7 +41,10 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo abrir el marcador con el número $telefono'),
+          content: Text(
+            l10n?.noSePudoAbrirMarcador(telefono) ??
+                'No se pudo abrir el marcador con el número $telefono',
+          ),
         ),
       );
     }
@@ -69,9 +73,13 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
         await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
       } else {
         if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo abrir la aplicación de navegación.'),
+          SnackBar(
+            content: Text(
+              l10n?.noSePudoAbrirNavegacion ??
+                  'No se pudo abrir la aplicación de navegación.',
+            ),
           ),
         );
       }
@@ -91,8 +99,13 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     if (await canLaunchUrl(webUri)) {
       await launchUrl(webUri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el enlace $url')),
+        SnackBar(
+          content: Text(
+            l10n?.noSePudoAbrirEnlace(url) ?? 'No se pudo abrir el enlace $url',
+          ),
+        ),
       );
     }
   }
@@ -104,13 +117,17 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     double screenWidth,
     double usableHeight,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final plusCode = iglesia.plusCode;
     final mensaje = 'Ubicación de ${iglesia.nombre}: $plusCode';
     await Clipboard.setData(ClipboardData(text: plusCode));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Plus Code copiado: $plusCode'),
+        content: Text(
+          l10n?.plusCodeCopiadoSnack(plusCode) ??
+              'Plus Code copiado: $plusCode',
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -151,7 +168,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
             SizedBox(width: screenWidth * 0.03),
             Expanded(
               child: Text(
-                'Compartir ubicación',
+                l10n?.compartirUbicacion ?? 'Compartir ubicación',
                 style: TextStyle(
                   color: azulFondo,
                   fontSize: screenWidth * 0.046,
@@ -167,7 +184,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
           children: [
             SizedBox(height: usableHeight * 0.008),
             Text(
-              'El Plus Code ha sido copiado al portapapeles. ¿Deseas compartirlo directamente?',
+              l10n?.plusCodeCopiadoPregunta ??
+                  'El Plus Code ha sido copiado al portapapeles. ¿Deseas compartirlo directamente?',
               style: TextStyle(
                 color: Colors.black87,
                 fontSize: screenWidth * 0.035,
@@ -274,7 +292,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     ),
                     icon: Icon(Icons.email_outlined, size: screenWidth * 0.048),
                     label: Text(
-                      'Correo',
+                      l10n?.correo ?? 'Correo',
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         fontWeight: FontWeight.bold,
@@ -305,7 +323,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
             child: TextButton(
               onPressed: () => Navigator.pop(dialogCtx),
               child: Text(
-                'Cerrar',
+                l10n?.cerrar ?? 'Cerrar',
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: screenWidth * 0.038,
@@ -321,6 +339,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -365,9 +384,9 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: amarilloOro),
                 onPressed: () => iglesiaProvider.cargarIglesiaSeleccionada(),
-                child: const Text(
-                  'Reintentar',
-                  style: TextStyle(
+                child: Text(
+                  l10n?.reintentar ?? 'Reintentar',
+                  style: const TextStyle(
                     color: azulFondo,
                     fontWeight: FontWeight.bold,
                   ),
@@ -553,7 +572,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Cambiar de iglesia',
+                                      l10n?.cambiarDeIglesia ??
+                                          'Cambiar de iglesia',
                                       style: TextStyle(
                                         color: azulFondo,
                                         fontWeight: FontWeight.bold,
@@ -562,7 +582,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                     ),
                                     SizedBox(height: usableHeight * 0.002),
                                     Text(
-                                      'Explora y selecciona otra comunidad',
+                                      l10n?.exploraYSeleccionaComunidad ??
+                                          'Explora y selecciona otra comunidad',
                                       style: TextStyle(
                                         color: Colors.black54,
                                         fontSize: screenWidth * 0.029,
@@ -588,21 +609,21 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                         _buildQuickAction(
                           screenWidth,
                           Icons.call_outlined,
-                          'Llamar',
+                          l10n?.llamar ?? 'Llamar',
                           () => _hacerLlamada(context, iglesia.telefono),
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         _buildQuickAction(
                           screenWidth,
                           Icons.directions_outlined,
-                          'Cómo llegar',
+                          l10n?.comoLlegar ?? 'Cómo llegar',
                           () => _abrirNavegacion(iglesia),
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         _buildQuickAction(
                           screenWidth,
                           Icons.language_outlined,
-                          'Sitio web',
+                          l10n?.sitioWeb ?? 'Sitio web',
                           () => _abrirSitioWeb(context, iglesia.sitioWeb),
                         ),
                       ],
@@ -688,7 +709,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                               size: screenWidth * 0.045,
                             ),
                             label: Text(
-                              'Ver ahora',
+                              l10n?.verAhora ?? 'Ver ahora',
                               style: TextStyle(
                                 fontSize: screenWidth * 0.032,
                                 fontWeight: FontWeight.bold,
@@ -702,7 +723,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
 
                     // Horarios
                     _sectionLabel(
-                      'Horarios de servicio',
+                      l10n?.horariosDeServicio ?? 'Horarios de servicio',
                       screenWidth,
                       usableHeight,
                     ),
@@ -723,7 +744,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
 
                     // Ubicación y Contacto
                     _sectionLabel(
-                      'Ubicación y contacto',
+                      l10n?.ubicacionYContacto ?? 'Ubicación y contacto',
                       screenWidth,
                       usableHeight,
                     ),
@@ -731,13 +752,13 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       [
                         _InfoRow(
                           icon: Icons.location_on_outlined,
-                          label: 'Dirección',
+                          label: l10n?.direccion ?? 'Dirección',
                           value: iglesia.direccion,
                           onTap: () => _abrirNavegacion(iglesia),
                         ),
                         _InfoRow(
                           icon: Icons.phone_outlined,
-                          label: 'Teléfono',
+                          label: l10n?.telefono ?? 'Teléfono',
                           value: iglesia.telefono,
                           onTap: () => _hacerLlamada(context, iglesia.telefono),
                         ),
@@ -760,7 +781,11 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     SizedBox(height: usableHeight * 0.025),
 
                     // Aviso actual
-                    _sectionLabel('Avisos', screenWidth, usableHeight),
+                    _sectionLabel(
+                      l10n?.avisos ?? 'Avisos',
+                      screenWidth,
+                      usableHeight,
+                    ),
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: screenWidth * 0.04,

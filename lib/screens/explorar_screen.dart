@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import 'iglesias_en_mapa_screen.dart';
 
 class ExplorarScreen extends StatefulWidget {
@@ -39,6 +40,23 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     'Adventista',
   ];
 
+  String _getFiltroLabel(int index, AppLocalizations? l10n) {
+    switch (index) {
+      case 0:
+        return l10n?.catolica ?? _filtros[0];
+      case 1:
+        return l10n?.evangelica ?? _filtros[1];
+      case 2:
+        return l10n?.pentecostal ?? _filtros[2];
+      case 3:
+        return l10n?.bautista ?? _filtros[3];
+      case 4:
+        return l10n?.adventista ?? _filtros[4];
+      default:
+        return _filtros[index];
+    }
+  }
+
   final List<Color> _brandColors = const [
     Color(0xFF0055A5),
     Color(0xFF4A7C59),
@@ -67,8 +85,14 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
       } else {
         if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir la navegación.')),
+          SnackBar(
+            content: Text(
+              l10n?.noSePudoAbrirNavegacion ??
+                  'No se pudo abrir la navegación.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -80,7 +104,11 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
   @override
   void initState() {
     super.initState();
-    _obtenerUbicacionYBuscar();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _obtenerUbicacionYBuscar();
+      }
+    });
   }
 
   @override
@@ -96,23 +124,30 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       _errorMessage = null;
     });
 
+    final l10n = mounted ? AppLocalizations.of(context) : null;
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw Exception('El GPS está desactivado. Por favor, enciéndelo.');
+        throw Exception(
+          l10n?.gpsDesactivado ??
+              'El GPS está desactivado. Por favor, enciéndelo.',
+        );
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw Exception('Permisos de ubicación denegados.');
+          throw Exception(
+            l10n?.permisosUbicacionDenegados ??
+                'Permisos de ubicación denegados.',
+          );
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         throw Exception(
-          'Permisos de ubicación denegados permanentemente en tu dispositivo.',
+          l10n?.permisosUbicacionPermanentemente ?? 'Permisos de ubicación denegados permanentemente en tu dispositivo.',
         );
       }
 
@@ -134,13 +169,14 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     }
   }
 
-  // 2. Búsqueda y filtrado estricto a 10 km
   Future<void> _buscarIglesiasEnRadio(String query) async {
+    final l10n = mounted ? AppLocalizations.of(context) : null;
     if (_currentPosition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Obteniendo tu ubicación, por favor intenta en un momento...',
+            l10n?.obteniendoUbicacionEspera ??
+                'Obteniendo tu ubicación, por favor intenta en un momento...',
           ),
         ),
       );
@@ -210,16 +246,19 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
 
           // FILTRO ESTRICTO: Solo agregamos a la lista si la distancia real es menor o igual a 10 km
           if (distanceInMeters <= 10000.0) {
+            final distanciaKm = (distanceInMeters / 1000).toStringAsFixed(1);
             nuevasIglesias.add({
               'id': place['id'],
-              'nombre': place['displayName']?['text'] ?? 'Sin nombre',
+              'nombre':
+                  place['displayName']?['text'] ??
+                  (l10n?.sinNombre ?? 'Sin nombre'),
               'denominacion':
                   (place['formattedAddress'] as String?)?.split(',').first ??
-                  'Comunidad cristiana',
+                  (l10n?.comunidadCristiana ?? 'Comunidad cristiana'),
               'rating': (place['rating'] ?? 0.0).toString(),
               'distanciaNum': distanceInMeters / 1000,
-              'distancia':
-                  'A ${(distanceInMeters / 1000).toStringAsFixed(1)} km',
+              'distanciaKm': distanciaKm,
+              'distancia': 'A $distanciaKm km',
               'color': _brandColors[colorIndex % _brandColors.length],
               'latLng': LatLng(placeLat, placeLng),
             });
@@ -246,8 +285,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10nCatch = AppLocalizations.of(context);
         setState(() {
-          _errorMessage = '😕 ¡Ups! No se pudo cargar el Mapa\n\n📡 Revisa tu conexión a internet e inténtalo de nuevo';
+          _errorMessage = l10nCatch?.errorCargarMapa ?? '😕 ¡Ups! No se pudo cargar el Mapa\n\n📡 Revisa tu conexión a internet e inténtalo de nuevo';
           _isLoading = false;
           debugPrint(e.toString());
         });
@@ -257,6 +297,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final usableHeight = MediaQuery.sizeOf(context).height - safeAreaTop;
@@ -276,7 +317,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Explorar',
+                l10n?.explorar ?? 'Explorar',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: screenWidth * 0.068,
@@ -285,7 +326,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               ),
               SizedBox(height: usableHeight * 0.004),
               Text(
-                'Encuentra tu Fe ideal en 10 km',
+                l10n?.encuentraTuFeEn10Km ?? 'Encuentra tu Fe ideal en 10 km',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: screenWidth * 0.045,
@@ -349,7 +390,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                                 }
                               },
                               decoration: InputDecoration(
-                                hintText: 'Ej. Iglesia cristiana, Bautista...',
+                                hintText:
+                                    l10n?.buscarIglesiasPlaceholder ??
+                                    'Ej. Iglesia cristiana, Bautista...',
                                 hintStyle: TextStyle(
                                   color: Colors.grey.shade400,
                                   fontSize: screenWidth * 0.036,
@@ -402,7 +445,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  _filtros[index],
+                                  _getFiltroLabel(index, l10n),
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white
@@ -465,7 +508,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Visualiza las iglesias en el Mapa',
+                                    l10n?.visualizaIglesiasEnMapa ??
+                                        'Visualiza las iglesias en el Mapa',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: screenWidth * 0.055,
@@ -488,7 +532,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
 
                     // Título de Sección
                     Text(
-                      'Comunidades sugeridas',
+                      l10n?.comunidadesSugeridas ?? 'Comunidades sugeridas',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.05,
@@ -522,9 +566,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                                   backgroundColor: amarilloOro,
                                 ),
                                 onPressed: _obtenerUbicacionYBuscar,
-                                child: const Text(
-                                  'Reintentar',
-                                  style: TextStyle(
+                                child: Text(
+                                  l10n?.reintentar ?? 'Reintentar',
+                                  style: const TextStyle(
                                     color: azulFondo,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -539,7 +583,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 30.0),
                           child: Text(
-                            'No se encontraron iglesias a menos de 10 km.',
+                            l10n?.noSeEncontraronIglesias10km ??
+                                'No se encontraron iglesias a menos de 10 km.',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: screenWidth * 0.035,
@@ -560,7 +605,13 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                             usableHeight: usableHeight,
                             nombre: iglesia['nombre'],
                             denominacion: iglesia['denominacion'],
-                            distancia: iglesia['distancia'],
+                            distancia:
+                                l10n?.aDistanciaKm(
+                                  iglesia['distanciaKm'] ??
+                                      iglesia['distancia'] ??
+                                      '',
+                                ) ??
+                                (iglesia['distancia'] ?? ''),
                             rating: iglesia['rating'],
                             color: iglesia['color'],
                             latLng:

@@ -10,6 +10,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
 import '../servicios/connectivity_service.dart';
 
 class CambiarTabAtrioNotification extends Notification {
@@ -71,9 +72,10 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     'OTROS': 'Otros países',
   };
 
-  static String _obtenerNombrePais(String codigo) {
+  static String _obtenerNombrePais(String codigo, [AppLocalizations? l10n]) {
     final String codigoUpper = codigo.toUpperCase().trim();
-    if (codigoUpper == 'TODOS') return 'Todos los países';
+    if (codigoUpper == 'TODOS') return l10n?.todosLosPaises ?? 'Todos los países';
+    if (codigoUpper == 'OTROS') return l10n?.otrosPaises ?? 'Otros países';
     if (_nombresPaises.containsKey(codigoUpper)) {
       return _nombresPaises[codigoUpper]!;
     }
@@ -185,11 +187,13 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
         onError: (Object e, StackTrace stackTrace) {
           debugPrint('[RADIO_ERROR] Error en streaming: $e');
           if (!mounted) return;
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               backgroundColor: rojoError,
               content: Text(
-                'Error: La emisora no está disponible en este momento.',
+                l10n?.errorEmisoraNoDisponible ??
+                    'Error: La emisora no está disponible en este momento.',
               ),
             ),
           );
@@ -231,6 +235,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     if (!mounted) return;
 
     if (!tieneInternet) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: rojoError,
@@ -246,10 +251,11 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                 size: screenWidth * 0.06,
               ),
               SizedBox(width: screenWidth * 0.03),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'No hay conexión a internet para sintonizar la emisora.',
-                  style: TextStyle(
+                  l10n?.sinInternetSintonizar ??
+                      'No hay conexión a internet para sintonizar la emisora.',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -826,7 +832,11 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
   // ===========================================================================
   // WIDGETS
   // ===========================================================================
-  Widget _buildCustomDropdown(double screenWidth, double usableHeight) {
+  Widget _buildCustomDropdown(
+    double screenWidth,
+    double usableHeight,
+    AppLocalizations? l10n,
+  ) {
     final String valorSeguro = _paisesDisponibles.contains(_paisSeleccionado)
         ? _paisSeleccionado
         : 'TODOS';
@@ -881,7 +891,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                   items: _paisesDisponibles.map<DropdownMenuItem<String>>((
                     String codigo,
                   ) {
-                    final String nombrePais = _obtenerNombrePais(codigo);
+                    final String nombrePais = _obtenerNombrePais(codigo, l10n);
                     return DropdownMenuItem<String>(
                       value: codigo,
                       child: Row(
@@ -945,7 +955,11 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     );
   }
 
-  Widget _buildSelectorIdioma(double screenWidth, double usableHeight) {
+  Widget _buildSelectorIdioma(
+    double screenWidth,
+    double usableHeight,
+    AppLocalizations? l10n,
+  ) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         screenWidth * 0.05,
@@ -958,7 +972,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
           Expanded(
             child: _buildChipIdioma(
               id: 'TODOS',
-              label: 'Todos',
+              label: l10n?.todos ?? 'Todos',
               icono: Icons.language_rounded,
               screenWidth: screenWidth,
               usableHeight: usableHeight,
@@ -968,7 +982,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
           Expanded(
             child: _buildChipIdioma(
               id: 'es',
-              label: 'Español',
+              label: l10n?.espanol ?? 'Español',
               icono: Icons.translate_rounded,
               screenWidth: screenWidth,
               usableHeight: usableHeight,
@@ -978,7 +992,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
           Expanded(
             child: _buildChipIdioma(
               id: 'en',
-              label: 'Inglés',
+              label: l10n?.ingles ?? 'Inglés',
               icono: Icons.public_rounded,
               screenWidth: screenWidth,
               usableHeight: usableHeight,
@@ -1056,6 +1070,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     double screenWidth,
     double usableHeight,
     int totalMostradas,
+    AppLocalizations? l10n,
   ) {
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -1093,7 +1108,8 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
           SizedBox(width: screenWidth * 0.025),
           Expanded(
             child: Text(
-              'Mostrando solo favoritas ($totalMostradas)',
+              l10n?.mostrandoSoloFavoritas(totalMostradas.toString()) ??
+                  'Mostrando solo favoritas ($totalMostradas)',
               style: TextStyle(
                 color: azulFondo,
                 fontWeight: FontWeight.bold,
@@ -1122,7 +1138,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Text(
-                    'Ver todas',
+                    l10n?.verTodas ?? 'Ver todas',
                     style: TextStyle(
                       color: azulFondo,
                       fontWeight: FontWeight.bold,
@@ -1178,7 +1194,11 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     );
   }
 
-  Widget _buildHeader(double screenWidth, double usableHeight) {
+  Widget _buildHeader(
+    double screenWidth,
+    double usableHeight,
+    AppLocalizations? l10n,
+  ) {
     return Container(
       width: screenWidth,
       padding: EdgeInsets.symmetric(
@@ -1206,7 +1226,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                 ),
               ),
               Text(
-                'Emisoras Cristianas',
+                l10n?.emisorasCristianas ?? 'Emisoras Cristianas',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: screenWidth * 0.05,
@@ -1250,7 +1270,8 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                   fontSize: screenWidth * 0.04,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Buscar por nombre, denominación, ciudad...',
+                  hintText: l10n?.buscarEmisorasPlaceholder ??
+                      'Buscar por nombre, denominación, ciudad...',
                   hintStyle: TextStyle(
                     color: Colors.grey.shade500,
                     fontSize: screenWidth * 0.035,
@@ -1434,6 +1455,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     List<Map<String, dynamic>> emisoras,
     double screenWidth,
     double usableHeight,
+    AppLocalizations? l10n,
   ) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator(color: amarilloOro));
@@ -1446,20 +1468,21 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
       if (_mostrarSoloFavoritos) {
         iconoVacio = Icons.favorite_border_rounded;
         if (_paisSeleccionado != 'TODOS') {
-          final String nombrePais = _obtenerNombrePais(_paisSeleccionado);
-          mensajeVacio =
+          final String nombrePais = _obtenerNombrePais(_paisSeleccionado, l10n);
+          mensajeVacio = l10n?.sinFavoritasEnPais(nombrePais) ??
               'No tienes emisoras favoritas guardadas en $nombrePais.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
         } else {
-          mensajeVacio = 'No tienes emisoras favoritas guardadas todavía.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
+          mensajeVacio = l10n?.sinFavoritasAun ??
+              'No tienes emisoras favoritas guardadas todavía.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
         }
       } else if (_filtroBusqueda.isNotEmpty) {
         iconoVacio = Icons.search_off_rounded;
-        mensajeVacio =
+        mensajeVacio = l10n?.noEmisorasCoincidencia(_filtroBusqueda) ??
             'No se encontraron emisoras que coincidan con "$_filtroBusqueda".';
       } else {
         iconoVacio = Icons.radio_outlined;
-        final String nombrePais = _obtenerNombrePais(_paisSeleccionado);
-        mensajeVacio =
+        final String nombrePais = _obtenerNombrePais(_paisSeleccionado, l10n);
+        mensajeVacio = l10n?.noEmisorasDisponiblesPais(nombrePais) ??
             'No se encontraron emisoras disponibles para $nombrePais.';
       }
 
@@ -1495,9 +1518,9 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                     });
                   },
                   icon: const Icon(Icons.refresh_rounded, color: azulFondo),
-                  label: const Text(
-                    'Ver todas las emisoras',
-                    style: TextStyle(
+                  label: Text(
+                    l10n?.verTodasLasEmisoras ?? 'Ver todas las emisoras',
+                    style: const TextStyle(
                       color: azulFondo,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1550,8 +1573,10 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     double screenWidth,
     double usableHeight,
     double safeAreaBottom,
+    AppLocalizations? l10n,
   ) {
-    final String nombre = (emisora['name'] ?? 'Emisora').toString();
+    final String nombre =
+        (emisora['name'] ?? (l10n?.emisora ?? 'Emisora')).toString();
     final String denominacion = (emisora['denomination'] ?? 'Cristiana')
         .toString();
     final String frecuencia = (emisora['frequency'] ?? 'Online').toString();
@@ -1614,10 +1639,12 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                 ),
                 Text(
                   _isBuffering
-                      ? 'Sintonizando audio...'
+                      ? (l10n?.sintonizandoAudio ?? 'Sintonizando audio...')
                       : denominacion.isNotEmpty && denominacion != 'Cristiana'
-                      ? 'En vivo · $denominacion ($frecuencia)'
-                      : 'En vivo · $frecuencia',
+                      ? (l10n?.enVivoConDenominacion(denominacion, frecuencia) ??
+                          'En vivo · $denominacion ($frecuencia)')
+                      : (l10n?.enVivoFrecuencia(frecuencia) ??
+                          'En vivo · $frecuencia'),
                   style: TextStyle(
                     color: _isBuffering ? amarilloOro : Colors.grey.shade700,
                     fontSize: screenWidth * 0.03,
@@ -1671,6 +1698,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations? l10n = AppLocalizations.of(context);
     final Size size = MediaQuery.sizeOf(context);
     final EdgeInsets padding = MediaQuery.paddingOf(context);
     final double screenWidth = size.width;
@@ -1697,7 +1725,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
             height: screenHeight - safeAreaTop,
             child: Column(
               children: <Widget>[
-                _buildHeader(screenWidth, usableHeight),
+                _buildHeader(screenWidth, usableHeight, l10n),
                 // CONTENEDOR BLANCO CON LISTADO
                 Expanded(
                   child: Container(
@@ -1715,9 +1743,9 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                       child: Column(
                         children: <Widget>[
                           // FILTRO POR PAÍS Y BOTÓN DE FAVORITOS
-                          _buildCustomDropdown(screenWidth, usableHeight),
+                          _buildCustomDropdown(screenWidth, usableHeight, l10n),
                           // FILTRO POR IDIOMA (TODOS, ESPAÑOL, INGLÉS)
-                          _buildSelectorIdioma(screenWidth, usableHeight),
+                          _buildSelectorIdioma(screenWidth, usableHeight, l10n),
                           SizedBox(height: usableHeight * 0.015),
                           // BANNER INDICADOR DE FAVORITOS
                           if (_mostrarSoloFavoritos)
@@ -1725,6 +1753,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                               screenWidth,
                               usableHeight,
                               emisorasFiltradas.length,
+                              l10n,
                             ),
                           // CUADRÍCULA DE EMISORAS
                           Expanded(
@@ -1732,6 +1761,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                               emisorasFiltradas,
                               screenWidth,
                               usableHeight,
+                              l10n,
                             ),
                           ),
                         ],
@@ -1746,6 +1776,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                     screenWidth,
                     usableHeight,
                     safeAreaBottom,
+                    l10n,
                   ),
               ],
             ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class TiposSolicitudScreen extends StatelessWidget {
   static const routeName = 'tipos_solicitud_screen';
   const TiposSolicitudScreen({super.key});
@@ -13,6 +15,8 @@ class TiposSolicitudScreen extends StatelessWidget {
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
+    final l10n = AppLocalizations.of(context);
+
     // Paleta de diseño Atrio
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -21,37 +25,37 @@ class TiposSolicitudScreen extends StatelessWidget {
 
     final List<Map<String, dynamic>> tiposSolicitud = [
       {
-        'title': 'Petición de oración',
+        'title': l10n?.peticionDeOracion ?? 'Petición de oración',
         'icon': Icons.pan_tool_alt_outlined,
         'iconColor': const Color(0xFF7A8B43),
         'route': 'nueva_solicitud_screen',
       },
       {
-        'title': 'Orientación pastoral',
+        'title': l10n?.orientacionPastoral ?? 'Orientación pastoral',
         'icon': Icons.church_outlined,
         'iconColor': const Color(0xFF0055A5),
         'route': 'nueva_solicitud_screen',
       },
       {
-        'title': 'Consejería familiar',
+        'title': l10n?.consejeriaFamiliar ?? 'Consejería familiar',
         'icon': Icons.family_restroom_rounded,
         'iconColor': const Color(0xFF072B4F),
         'route': 'nueva_solicitud_screen',
       },
       {
-        'title': 'Visita a enfermos',
+        'title': l10n?.visitaAEnfermos ?? 'Visita a enfermos',
         'icon': Icons.favorite_border_rounded,
         'iconColor': const Color(0xFF7A8B43),
         'route': 'nueva_solicitud_screen',
       },
       {
-        'title': 'Ayuda comunitaria',
+        'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
         'icon': Icons.groups_outlined,
         'iconColor': const Color(0xFF072B4F),
         'route': 'nueva_solicitud_screen',
       },
       {
-        'title': 'Otra solicitud',
+        'title': l10n?.otraSolicitud ?? 'Otra solicitud',
         'icon': Icons.edit_document,
         'iconColor': const Color(0xFF0055A5),
         'route': 'nueva_solicitud_screen',
@@ -79,23 +83,26 @@ class TiposSolicitudScreen extends StatelessWidget {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.02),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.chevron_left_rounded,
-                          color: Colors.white,
-                          size: screenWidth * 0.07,
+                      child: Tooltip(
+                        message: l10n?.volver ?? 'Volver',
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.02),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: Colors.white,
+                            size: screenWidth * 0.07,
+                          ),
                         ),
                       ),
                     ),
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
-                        '¿Cómo podemos\nayudarte?',
+                        l10n?.comoPodemosAyudarte ?? '¿Cómo podemos\nayudarte?',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.058,
@@ -105,34 +112,37 @@ class TiposSolicitudScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.notifications_none_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.058,
-                          ),
-                        ),
-                        Positioned(
-                          top: screenWidth * 0.015,
-                          right: screenWidth * 0.015,
-                          child: Container(
-                            width: screenWidth * 0.022,
-                            height: screenWidth * 0.022,
-                            decoration: const BoxDecoration(
-                              color: amarilloOro,
+                    Tooltip(
+                      message: l10n?.notificaciones ?? 'Notificaciones',
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.02),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
+                            child: Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: screenWidth * 0.058,
+                            ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            top: screenWidth * 0.015,
+                            right: screenWidth * 0.015,
+                            child: Container(
+                              width: screenWidth * 0.022,
+                              height: screenWidth * 0.022,
+                              decoration: const BoxDecoration(
+                                color: amarilloOro,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

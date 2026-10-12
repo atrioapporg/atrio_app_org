@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../modelos/libro_model.dart';
 
 class LibrosScreen extends StatefulWidget {
@@ -21,6 +22,21 @@ class _LibrosScreenState extends State<LibrosScreen> {
     'Crecimiento',
     'Liderazgo',
   ];
+
+  String _getLocalizedCategory(String category, AppLocalizations? l10n) {
+    switch (category.toLowerCase()) {
+      case 'todos':
+        return l10n?.categoriaTodos ?? 'Todos';
+      case 'vida cristiana':
+        return l10n?.categoriaVidaCristiana ?? 'Vida cristiana';
+      case 'crecimiento':
+        return l10n?.categoriaCrecimiento ?? 'Crecimiento';
+      case 'liderazgo':
+        return l10n?.categoriaLiderazgo ?? 'Liderazgo';
+      default:
+        return category;
+    }
+  }
 
   // Libro destacado (preparado con campos Odoo 19)
   final LibroModel _featuredBook = LibroModel(
@@ -131,6 +147,8 @@ class _LibrosScreenState extends State<LibrosScreen> {
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
+    final l10n = AppLocalizations.of(context);
+
     // Paleta de diseño Atrio
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -158,22 +176,25 @@ class _LibrosScreenState extends State<LibrosScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.02),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              color: Colors.white,
-                              size: screenWidth * 0.07,
+                          child: Tooltip(
+                            message: l10n?.volver ?? 'Volver',
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.07,
+                              ),
                             ),
                           ),
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Text(
-                          'Libros',
+                          l10n?.libros ?? 'Libros',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.068,
@@ -194,7 +215,8 @@ class _LibrosScreenState extends State<LibrosScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Buscar libros o autores...',
+                          hintText: l10n?.buscarLibrosPlaceholder ??
+                              'Buscar libros o autores...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.035,
@@ -261,6 +283,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                             azulFondo: azulFondo,
                             amarilloOro: amarilloOro,
                             grisBorde: grisBorde,
+                            l10n: l10n,
                             onTap: () =>
                                 _showBookDetailsModal(context, _featuredBook),
                           ),
@@ -274,6 +297,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                             azulFondo: azulFondo,
                             amarilloOro: amarilloOro,
                             grisBorde: grisBorde,
+                            l10n: l10n,
                             onTap: () =>
                                 _showBookDetailsModal(context, _featuredBook),
                           ),
@@ -281,7 +305,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
 
                           // Sección Categorías
                           Text(
-                            'Categorías',
+                            l10n?.categorias ?? 'Categorías',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.045,
@@ -327,7 +351,10 @@ class _LibrosScreenState extends State<LibrosScreen> {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        _categories[index],
+                                        _getLocalizedCategory(
+                                          _categories[index],
+                                          l10n,
+                                        ),
                                         style: TextStyle(
                                           color: isSelected
                                               ? Colors.white
@@ -349,7 +376,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Explorar libros',
+                                l10n?.explorarLibros ?? 'Explorar libros',
                                 style: TextStyle(
                                   color: azulFondo,
                                   fontSize: screenWidth * 0.045,
@@ -364,7 +391,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                                     });
                                   },
                                   child: Text(
-                                    'Ver todos',
+                                    l10n?.verTodos ?? 'Ver todos',
                                     style: TextStyle(
                                       color: amarilloOro,
                                       fontSize: screenWidth * 0.034,
@@ -392,7 +419,8 @@ class _LibrosScreenState extends State<LibrosScreen> {
                                         ),
                                         SizedBox(width: screenWidth * 0.02),
                                         Text(
-                                          'No se encontraron libros en esta categoría',
+                                          l10n?.noSeEncontraronLibrosCategoria ??
+                                              'No se encontraron libros en esta categoría',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: screenWidth * 0.03,
@@ -444,6 +472,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
     required Color azulFondo,
     required Color amarilloOro,
     required Color grisBorde,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -565,7 +594,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                       ),
                       onPressed: onTap,
                       child: Text(
-                        'Leer ahora',
+                        l10n?.leerAhora ?? 'Leer ahora',
                         style: TextStyle(
                           fontSize: screenWidth * 0.035,
                           fontWeight: FontWeight.bold,
@@ -593,7 +622,8 @@ class _LibrosScreenState extends State<LibrosScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Reproduciendo muestra de "${libro.titulo}"...',
+                              l10n?.reproduciendoMuestra(libro.titulo) ??
+                                  'Reproduciendo muestra de "${libro.titulo}"...',
                             ),
                             backgroundColor: azulFondo,
                             duration: const Duration(seconds: 2),
@@ -606,7 +636,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                         color: azulFondo,
                       ),
                       label: Text(
-                        'Escuchar muestra',
+                        l10n?.escucharMuestra ?? 'Escuchar muestra',
                         style: TextStyle(
                           fontSize: screenWidth * 0.032,
                           fontWeight: FontWeight.bold,
@@ -631,6 +661,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
     required Color azulFondo,
     required Color amarilloOro,
     required Color grisBorde,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
   }) {
     final progressPercent = (book.progreso * 100).toInt();
@@ -700,7 +731,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                           ),
                           SizedBox(width: screenWidth * 0.015),
                           Text(
-                            'Continuar leyendo',
+                            l10n?.continuarLeyendo ?? 'Continuar leyendo',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.038,
@@ -895,6 +926,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
 
   // Modal Inferior de Detalle Rápido del Libro (Bottom Sheet moderno)
   void _showBookDetailsModal(BuildContext context, LibroModel libro) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
@@ -1011,7 +1043,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
                             ),
                           ),
                           child: Text(
-                            libro.categoria,
+                            _getLocalizedCategory(libro.categoria, l10n),
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.028,
@@ -1051,7 +1083,10 @@ class _LibrosScreenState extends State<LibrosScreen> {
                               ),
                               SizedBox(width: screenWidth * 0.015),
                               Text(
-                                '${libro.totalPaginas} páginas',
+                                l10n?.totalPaginas(
+                                      libro.totalPaginas.toString(),
+                                    ) ??
+                                    '${libro.totalPaginas} páginas',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: screenWidth * 0.028,
@@ -1071,7 +1106,10 @@ class _LibrosScreenState extends State<LibrosScreen> {
                               ),
                               SizedBox(width: screenWidth * 0.015),
                               Text(
-                                '${(libro.progreso * 100).toInt()}% leído',
+                                l10n?.porcentajeLeido(
+                                      (libro.progreso * 100).toInt().toString(),
+                                    ) ??
+                                    '${(libro.progreso * 100).toInt()}% leído',
                                 style: TextStyle(
                                   color: amarilloOro,
                                   fontSize: screenWidth * 0.028,
@@ -1091,7 +1129,7 @@ class _LibrosScreenState extends State<LibrosScreen> {
               // Sinopsis
               if (libro.sinopsis.isNotEmpty) ...[
                 Text(
-                  'Sinopsis',
+                  l10n?.sinopsis ?? 'Sinopsis',
                   style: TextStyle(
                     color: azulFondo,
                     fontSize: screenWidth * 0.04,
@@ -1134,7 +1172,10 @@ class _LibrosScreenState extends State<LibrosScreen> {
                         Navigator.pop(modalContext);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Abriendo "${libro.titulo}"...'),
+                            content: Text(
+                              l10n?.abriendoLibro(libro.titulo) ??
+                                  'Abriendo "${libro.titulo}"...',
+                            ),
                             backgroundColor: azulFondo,
                             duration: const Duration(seconds: 2),
                           ),
@@ -1145,7 +1186,9 @@ class _LibrosScreenState extends State<LibrosScreen> {
                         size: screenWidth * 0.045,
                       ),
                       label: Text(
-                        libro.progreso > 0 ? 'Continuar leyendo' : 'Leer ahora',
+                        libro.progreso > 0
+                            ? (l10n?.continuarLeyendo ?? 'Continuar leyendo')
+                            : (l10n?.leerAhora ?? 'Leer ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,
                           fontWeight: FontWeight.bold,
@@ -1173,7 +1216,8 @@ class _LibrosScreenState extends State<LibrosScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Reproduciendo muestra de "${libro.titulo}"...',
+                            l10n?.reproduciendoMuestra(libro.titulo) ??
+                                'Reproduciendo muestra de "${libro.titulo}"...',
                           ),
                           backgroundColor: azulFondo,
                           duration: const Duration(seconds: 2),

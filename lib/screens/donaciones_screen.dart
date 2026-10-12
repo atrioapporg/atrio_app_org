@@ -2,6 +2,8 @@ import 'package:atrio/screens/realizar_aporte_screen.dart';
 import 'package:atrio/screens/mis_donaciones_screen.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class DonacionesScreen extends StatelessWidget {
   static const routeName = 'donaciones_screen';
   const DonacionesScreen({super.key});
@@ -14,6 +16,8 @@ class DonacionesScreen extends StatelessWidget {
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    final l10n = AppLocalizations.of(context);
 
     // Paleta de colores oficial Atrio
     const Color azulFondo = Color(0xFF072B4F);
@@ -45,16 +49,19 @@ class DonacionesScreen extends StatelessWidget {
                     // Botón de retroceso circular estilizado
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.02),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.chevron_left_rounded,
-                          color: Colors.white,
-                          size: screenWidth * 0.07,
+                      child: Tooltip(
+                        message: l10n?.volver ?? 'Volver',
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.02),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: Colors.white,
+                            size: screenWidth * 0.07,
+                          ),
                         ),
                       ),
                     ),
@@ -62,7 +69,7 @@ class DonacionesScreen extends StatelessWidget {
                     // Título de la pantalla
                     Expanded(
                       child: Text(
-                        'Donaciones',
+                        l10n?.donaciones ?? 'Donaciones',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.062,
@@ -72,34 +79,37 @@ class DonacionesScreen extends StatelessWidget {
                       ),
                     ),
                     // Campana de notificaciones con punto de alerta
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.notifications_none_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.058,
-                          ),
-                        ),
-                        Positioned(
-                          top: screenWidth * 0.015,
-                          right: screenWidth * 0.015,
-                          child: Container(
-                            width: screenWidth * 0.022,
-                            height: screenWidth * 0.022,
-                            decoration: const BoxDecoration(
-                              color: amarilloOro,
+                    Tooltip(
+                      message: l10n?.notificaciones ?? 'Notificaciones',
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.02),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
+                            child: Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: screenWidth * 0.058,
+                            ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            top: screenWidth * 0.015,
+                            right: screenWidth * 0.015,
+                            child: Container(
+                              width: screenWidth * 0.022,
+                              height: screenWidth * 0.022,
+                              decoration: const BoxDecoration(
+                                color: amarilloOro,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -136,12 +146,13 @@ class DonacionesScreen extends StatelessWidget {
                             azulFondo: azulFondo,
                             azulBadge: azulBadge,
                             grisBorde: grisBorde,
+                            l10n: l10n,
                           ),
                           SizedBox(height: usableHeight * 0.02),
 
                           // 1. Diezmo
                           _buildDonationCategoryTile(
-                            title: 'Diezmo',
+                            title: l10n?.diezmo ?? 'Diezmo',
                             icon: Icons.church_outlined,
                             iconColor: amarilloOro,
                             screenWidth: screenWidth,
@@ -160,7 +171,7 @@ class DonacionesScreen extends StatelessWidget {
 
                           // 2. Ofrenda
                           _buildDonationCategoryTile(
-                            title: 'Ofrenda',
+                            title: l10n?.ofrenda ?? 'Ofrenda',
                             icon: Icons.favorite_border_rounded,
                             iconColor: amarilloOro,
                             screenWidth: screenWidth,
@@ -179,7 +190,7 @@ class DonacionesScreen extends StatelessWidget {
 
                           // 3. Campaña especial
                           _buildDonationCategoryTile(
-                            title: 'Campaña especial',
+                            title: l10n?.campanaEspecial ?? 'Campaña especial',
                             icon: Icons.campaign_outlined,
                             iconColor: verdeIcono,
                             screenWidth: screenWidth,
@@ -198,7 +209,7 @@ class DonacionesScreen extends StatelessWidget {
 
                           // 4. Ayuda comunitaria
                           _buildDonationCategoryTile(
-                            title: 'Ayuda comunitaria',
+                            title: l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
                             icon: Icons.volunteer_activism_outlined,
                             iconColor: verdeIcono,
                             screenWidth: screenWidth,
@@ -217,7 +228,7 @@ class DonacionesScreen extends StatelessWidget {
 
                           // 5. Otro aporte
                           _buildDonationCategoryTile(
-                            title: 'Otro aporte',
+                            title: l10n?.otroAporte ?? 'Otro aporte',
                             icon: Icons.more_horiz_rounded,
                             iconColor: const Color(0xFF0055A5),
                             screenWidth: screenWidth,
@@ -241,6 +252,7 @@ class DonacionesScreen extends StatelessWidget {
                             azulFondo: azulFondo,
                             celesteCard: celesteCard,
                             grisBorde: grisBorde,
+                            l10n: l10n,
                             onTap: () {
                               Navigator.pushNamed(
                                 context,
@@ -268,6 +280,7 @@ class DonacionesScreen extends StatelessWidget {
     required Color azulFondo,
     required Color azulBadge,
     required Color grisBorde,
+    required AppLocalizations? l10n,
   }) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.035),
@@ -319,7 +332,7 @@ class DonacionesScreen extends StatelessWidget {
                 ),
                 SizedBox(height: usableHeight * 0.002),
                 Text(
-                  'Comunidad verificada',
+                  l10n?.comunidadVerificada ?? 'Comunidad verificada',
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: screenWidth * 0.03,
@@ -384,6 +397,7 @@ class DonacionesScreen extends StatelessWidget {
     required Color azulFondo,
     required Color celesteCard,
     required Color grisBorde,
+    required AppLocalizations? l10n,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -410,7 +424,7 @@ class DonacionesScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mis donaciones',
+                    l10n?.misDonaciones ?? 'Mis donaciones',
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.055,
@@ -419,7 +433,7 @@ class DonacionesScreen extends StatelessWidget {
                   ),
                   SizedBox(height: usableHeight * 0.002),
                   Text(
-                    'Historial y recibos',
+                    l10n?.historialYRecibos ?? 'Historial y recibos',
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: screenWidth * 0.03,

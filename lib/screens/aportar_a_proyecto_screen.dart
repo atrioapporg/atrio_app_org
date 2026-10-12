@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../widgets/modal_otro_monto.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 
 class AportarAProyectoScreen extends StatefulWidget {
   static const routeName = 'aportar_a_proyecto_screen';
@@ -62,6 +63,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // Métricas dinámicas relativas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -150,7 +153,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                 right: screenWidth * 0.11, // Compensar el ancho del botón circular
                               ),
                               child: Text(
-                                'Realizar un aporte',
+                                l10n?.realizarUnAporte ?? 'Realizar un aporte',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: screenWidth * 0.055,
@@ -199,12 +202,13 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                             comunidad: _comunidad,
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
+                            l10n: l10n,
                           ),
                           SizedBox(height: usableHeight * 0.025),
 
                           // 2. ¿Cuánto deseas aportar?
                           Text(
-                            '¿Cuánto deseas aportar?',
+                            l10n?.cuantoDeseasAportar ?? '¿Cuánto deseas aportar?',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.045,
@@ -238,6 +242,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
                             montoPersonalizado: _montoPersonalizado,
+                            l10n: l10n,
                             onTap: () async {
                               final int? montoIngresado =
                                   await ModalOtroMonto.mostrar(context);
@@ -253,7 +258,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
 
                           // 3. NUEVO: Selección Dinámica del Método de Pago
                           Text(
-                            'Método de pago',
+                            l10n?.metodoDePago ?? 'Método de pago',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.045,
@@ -265,7 +270,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                             children: [
                               Expanded(
                                 child: _buildPaymentOption(
-                                  title: 'Transferencia',
+                                  title: l10n?.transferencia ?? 'Transferencia',
                                   icon: FontAwesomeIcons.buildingColumns,
                                   isSelected:
                                       _selectedPaymentMethod == 'Transferencia',
@@ -280,6 +285,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                       context,
                                       screenWidth,
                                       usableHeight,
+                                      l10n,
                                     );
                                   },
                                 ),
@@ -336,7 +342,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
 
                           // 4. Mensaje de apoyo
                           Text(
-                            'Mensaje de apoyo',
+                            l10n?.mensajeDeApoyo ?? 'Mensaje de apoyo',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.045,
@@ -363,7 +369,9 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                               expands: true,
                               textAlignVertical: TextAlignVertical.top,
                               decoration: InputDecoration(
-                                hintText: 'Escribe un mensaje opcional...',
+                                hintText:
+                                    l10n?.escribeMensajeOpcional ??
+                                    'Escribe un mensaje opcional...',
                                 hintStyle: TextStyle(
                                   color: Colors.grey.shade400,
                                   fontSize: screenWidth * 0.036,
@@ -403,7 +411,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                               ),
                               SizedBox(width: screenWidth * 0.025),
                               Text(
-                                'Mostrar mi aporte como anónimo',
+                                l10n?.mostrarAporteAnonimo ??
+                                    'Mostrar mi aporte como anónimo',
                                 style: TextStyle(
                                   color: Colors.grey.shade700,
                                   fontSize: screenWidth * 0.034,
@@ -440,10 +449,16 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                   'confirmar_donacion_screen',
                                   arguments: {
                                     'comunidad': _comunidad,
-                                    'concepto': 'Proyecto: $_proyectoTitulo',
+                                    'concepto':
+                                        l10n?.conceptoProyecto(_proyectoTitulo) ??
+                                        'Proyecto: $_proyectoTitulo',
                                     'monto': montoAEnviar,
-                                    'frecuencia': 'Una sola vez',
-                                    'metodoPago': _selectedPaymentMethod,
+                                    'frecuencia':
+                                        l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez',
+                                    'metodoPago':
+                                        _selectedPaymentMethod == 'Transferencia'
+                                            ? (l10n?.transferencia ?? 'Transferencia')
+                                            : _selectedPaymentMethod,
                                     'mensajeApoyo': _supportMessageController
                                         .text
                                         .trim(),
@@ -461,7 +476,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                   ),
                                   SizedBox(width: screenWidth * 0.02),
                                   Text(
-                                    'Continuar con el aporte',
+                                    l10n?.continuarConElAporte ??
+                                        'Continuar con el aporte',
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.04,
                                       fontWeight: FontWeight.bold,
@@ -493,6 +509,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
     required String comunidad,
     required double screenWidth,
     required double usableHeight,
+    AppLocalizations? l10n,
   }) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
@@ -535,7 +552,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'PROYECTO',
+                  l10n?.proyectoTag ?? 'PROYECTO',
                   style: TextStyle(
                     color: Colors.grey.shade500,
                     fontSize: screenWidth * 0.026,
@@ -610,11 +627,12 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
     required double usableHeight,
     required VoidCallback onTap,
     int? montoPersonalizado,
+    AppLocalizations? l10n,
   }) {
     final formatCurrency = NumberFormat("#,##0", "en_US");
     final String label = (isSelected && montoPersonalizado != null)
         ? 'RD\$ ${formatCurrency.format(montoPersonalizado)}'
-        : 'Otro monto';
+        : (l10n?.otroMonto ?? 'Otro monto');
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -694,8 +712,9 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
     String banco,
     String cuenta,
     double screenWidth,
-    double usableHeight,
-  ) {
+    double usableHeight, {
+    AppLocalizations? l10n,
+  }) {
     Clipboard.setData(ClipboardData(text: cuenta));
 
     final overlay = Overlay.of(modalContext);
@@ -749,7 +768,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '¡Cuenta copiada al portapapeles!',
+                        l10n?.cuentaCopiadaPortapapeles ??
+                            '¡Cuenta copiada al portapapeles!',
                         style: TextStyle(
                           color: amarilloOro,
                           fontSize: screenWidth * 0.055,
@@ -792,6 +812,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
     BuildContext context,
     double screenWidth,
     double usableHeight,
+    AppLocalizations? l10n,
   ) {
     showModalBottomSheet(
       context: context,
@@ -832,7 +853,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'MÉTODOS',
+                        l10n?.metodosTitulo ?? 'MÉTODOS',
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.075,
@@ -841,7 +862,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                         ),
                       ),
                       Text(
-                        'de pago',
+                        l10n?.dePagoTitulo ?? 'de pago',
                         style: TextStyle(
                           color: amarilloOro,
                           fontSize: screenWidth * 0.070,
@@ -872,7 +893,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                             ),
                             SizedBox(width: screenWidth * 0.02),
                             Text(
-                              'VÍA TRANSFERENCIA',
+                              l10n?.viaTransferencia ?? 'VÍA TRANSFERENCIA',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: screenWidth * 0.035,
@@ -885,7 +906,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                       ),
                       SizedBox(height: usableHeight * 0.015),
                       Text(
-                        'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
+                        l10n?.aceptamosTransferenciasDesc ??
+                            'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: azulFondo.withValues(alpha: 0.8),
@@ -903,6 +925,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                         screenWidth: screenWidth,
                         usableHeight: usableHeight,
                         logoBanco: 'bhd_logo',
+                        l10n: l10n,
                       ),
                       SizedBox(height: usableHeight * 0.014),
                       _buildBancoCard(
@@ -914,6 +937,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                         screenWidth: screenWidth,
                         usableHeight: usableHeight,
                         logoBanco: 'popular_logo',
+                        l10n: l10n,
                       ),
                       SizedBox(height: usableHeight * 0.014),
                       _buildBancoCard(
@@ -925,6 +949,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                         screenWidth: screenWidth,
                         usableHeight: usableHeight,
                         logoBanco: 'banreservas_logo',
+                        l10n: l10n,
                       ),
                       SizedBox(height: usableHeight * 0.015),
                       Container(
@@ -959,7 +984,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'TU PAGO ESTÁ SEGURO',
+                                    l10n?.tuPagoEstaSeguro ??
+                                        'TU PAGO ESTÁ SEGURO',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: screenWidth * 0.031,
@@ -967,7 +993,8 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                     ),
                                   ),
                                   Text(
-                                    'Confianza, rapidez y seguridad en cada transacción.',
+                                    l10n?.tuPagoSeguroDesc ??
+                                        'Confianza, rapidez y seguridad en cada transacción.',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: screenWidth * 0.026,
@@ -1001,6 +1028,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
     required Color colorLogo,
     required double screenWidth,
     required double usableHeight,
+    AppLocalizations? l10n,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1076,6 +1104,7 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                 cuenta,
                 screenWidth,
                 usableHeight,
+                l10n: l10n,
               ),
               child: Container(
                 padding: EdgeInsets.all(screenWidth * 0.025),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'donaciones_screen.dart';
 
 class MisDonacionesScreen extends StatelessWidget {
@@ -9,6 +10,8 @@ class MisDonacionesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // 1. Obtención de métricas dinámicas relativas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -26,56 +29,74 @@ class MisDonacionesScreen extends StatelessWidget {
     // Listado de 4 donaciones ficticias basadas en las categorías de DonacionesScreen
     final List<Map<String, dynamic>> donaciones = [
       {
-        'title': 'Diezmo',
+        'title': l10n?.diezmo ?? 'Diezmo',
         'monto': '\$ 75.00 USD',
-        'status': 'Completada',
+        'status': l10n?.estadoCompletada ?? 'Completada',
         'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': '15 Oct 2026 · 10:30 a. m.',
+        'dateInfo': l10n?.fechaDiezmoMock ?? '15 Oct 2026 · 10:30 a. m.',
         'icon': Icons.church_outlined,
         'iconColor': amarilloOro,
         'referencia': 'DON-2026-0104',
-        'metodoPago': 'Tarjeta de débito (Visa)',
-        'destino': 'Fondo General Ministerial',
-        'detalle': 'Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.',
+        'metodoPago':
+            l10n?.metodoTarjetaDebitoVisa ?? 'Tarjeta de débito (Visa)',
+        'destino':
+            l10n?.destinoFondoGeneralMinisterial ?? 'Fondo General Ministerial',
+        'detalle':
+            l10n?.detalleDiezmoMock ??
+            'Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.',
       },
       {
-        'title': 'Ofrenda',
+        'title': l10n?.ofrenda ?? 'Ofrenda',
         'monto': '\$ 25.00 USD',
-        'status': 'Completada',
+        'status': l10n?.estadoCompletada ?? 'Completada',
         'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': '08 Oct 2026 · 7:15 p. m.',
+        'dateInfo': l10n?.fechaOfrendaMock ?? '08 Oct 2026 · 7:15 p. m.',
         'icon': Icons.favorite_border_rounded,
         'iconColor': amarilloOro,
         'referencia': 'DON-2026-0092',
-        'metodoPago': 'Transferencia ACH',
-        'destino': 'Culto de Adoración Dominical',
-        'detalle': 'Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.',
+        'metodoPago': l10n?.metodoTransferenciaACH ?? 'Transferencia ACH',
+        'destino':
+            l10n?.destinoCultoAdoracionDominical ??
+            'Culto de Adoración Dominical',
+        'detalle':
+            l10n?.detalleOfrendaMock ??
+            'Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.',
       },
       {
-        'title': 'Campaña especial',
+        'title': l10n?.campanaEspecial ?? 'Campaña especial',
         'monto': '\$ 100.00 USD',
-        'status': 'En proceso',
+        'status': l10n?.estadoEnProceso ?? 'En proceso',
         'statusColor': const Color(0xFF0055A5),
-        'dateInfo': '28 Sep 2026 · 4:20 p. m.',
+        'dateInfo': l10n?.fechaCampanaMock ?? '28 Sep 2026 · 4:20 p. m.',
         'icon': Icons.campaign_outlined,
         'iconColor': verdeIcono,
         'referencia': 'DON-2026-0081',
-        'metodoPago': 'Tarjeta de crédito (Mastercard)',
-        'destino': 'Campaña "Construyendo Esperanza 2026"',
-        'detalle': 'Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.',
+        'metodoPago':
+            l10n?.metodoTarjetaCreditoMastercard ??
+            'Tarjeta de crédito (Mastercard)',
+        'destino':
+            l10n?.destinoCampanaMock ?? 'Campaña "Construyendo Esperanza 2026"',
+        'detalle':
+            l10n?.detalleCampanaMock ??
+            'Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.',
       },
       {
-        'title': 'Ayuda comunitaria',
+        'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
         'monto': '\$ 40.00 USD',
-        'status': 'Completada',
+        'status': l10n?.estadoCompletada ?? 'Completada',
         'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': '14 Sep 2026 · 11:00 a. m.',
+        'dateInfo': l10n?.fechaAyudaMock ?? '14 Sep 2026 · 11:00 a. m.',
         'icon': Icons.volunteer_activism_outlined,
         'iconColor': verdeIcono,
         'referencia': 'DON-2026-0065',
-        'metodoPago': 'PayPal / Saldo digital',
-        'destino': 'Programa "Manos que Bendicen"',
-        'detalle': 'Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.',
+        'metodoPago':
+            l10n?.metodoPayPalSaldoDigital ?? 'PayPal / Saldo digital',
+        'destino':
+            l10n?.destinoProgramaManosQueBendicen ??
+            'Programa "Manos que Bendicen"',
+        'detalle':
+            l10n?.detalleAyudaMock ??
+            'Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.',
       },
     ];
 
@@ -115,7 +136,7 @@ class MisDonacionesScreen extends StatelessWidget {
                         ),
                         SizedBox(width: screenWidth * 0.035),
                         Text(
-                          'Mis donaciones',
+                          l10n?.misDonaciones ?? 'Mis donaciones',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.065,
@@ -184,6 +205,7 @@ class MisDonacionesScreen extends StatelessWidget {
                                       blancoFondo: blancoFondo,
                                       grisBorde: grisBorde,
                                       amarilloOro: amarilloOro,
+                                      l10n: l10n,
                                     );
                                   },
                                 );
@@ -215,7 +237,7 @@ class MisDonacionesScreen extends StatelessWidget {
                                 );
                               },
                               child: Text(
-                                'Nueva donación',
+                                l10n?.nuevaDonacion ?? 'Nueva donación',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.048,
                                   fontWeight: FontWeight.bold,
@@ -377,6 +399,7 @@ class MisDonacionesScreen extends StatelessWidget {
     required Color blancoFondo,
     required Color grisBorde,
     required Color amarilloOro,
+    AppLocalizations? l10n,
   }) {
     showModalBottomSheet(
       context: context,
@@ -448,7 +471,8 @@ class MisDonacionesScreen extends StatelessWidget {
                         ),
                         SizedBox(height: usableHeight * 0.003),
                         Text(
-                          'ID Odoo: ${item['referencia'] ?? 'DON-2026-0001'}',
+                          l10n?.idOdoo(item['referencia'] as String? ?? 'DON-2026-0001') ??
+                              'ID Odoo: ${item['referencia'] ?? 'DON-2026-0001'}',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: screenWidth * 0.030,
@@ -500,7 +524,7 @@ class MisDonacionesScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Monto aportado:',
+                          l10n?.montoAportado ?? 'Monto aportado:',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: screenWidth * 0.034,
@@ -522,7 +546,7 @@ class MisDonacionesScreen extends StatelessWidget {
                     if (item['dateInfo'] != null) ...[
                       _buildDetailRow(
                         icon: Icons.calendar_today_rounded,
-                        label: 'Fecha y hora:',
+                        label: l10n?.fechaYHora ?? 'Fecha y hora:',
                         value: item['dateInfo'] as String,
                         screenWidth: screenWidth,
                         azulFondo: azulFondo,
@@ -533,7 +557,7 @@ class MisDonacionesScreen extends StatelessWidget {
                     if (item['metodoPago'] != null) ...[
                       _buildDetailRow(
                         icon: Icons.credit_card_rounded,
-                        label: 'Método:',
+                        label: l10n?.metodo ?? 'Método:',
                         value: item['metodoPago'] as String,
                         screenWidth: screenWidth,
                         azulFondo: azulFondo,
@@ -544,7 +568,7 @@ class MisDonacionesScreen extends StatelessWidget {
                     if (item['destino'] != null) ...[
                       _buildDetailRow(
                         icon: Icons.flag_outlined,
-                        label: 'Destino:',
+                        label: l10n?.destino ?? 'Destino:',
                         value: item['destino'] as String,
                         screenWidth: screenWidth,
                         azulFondo: azulFondo,
@@ -555,7 +579,7 @@ class MisDonacionesScreen extends StatelessWidget {
                     Divider(height: usableHeight * 0.020, color: grisBorde),
 
                     Text(
-                      'Detalle del aporte:',
+                      l10n?.detalleDelAporte ?? 'Detalle del aporte:',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: screenWidth * 0.032,
@@ -565,7 +589,8 @@ class MisDonacionesScreen extends StatelessWidget {
                     SizedBox(height: usableHeight * 0.006),
                     Text(
                       item['detalle'] as String? ??
-                          'Aporte voluntario registrado en ATRIO.',
+                          (l10n?.aporteVoluntarioRegistrado ??
+                              'Aporte voluntario registrado en ATRIO.'),
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.035,
@@ -593,7 +618,7 @@ class MisDonacionesScreen extends StatelessWidget {
                   ),
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
-                    'Entendido',
+                    l10n?.entendido ?? 'Entendido',
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.bold,

@@ -9,6 +9,7 @@ import 'package:atrio/modelos/video_model.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/servicios/versiculo_service.dart';
 import 'package:atrio/widgets/modal_versiculo_imagen.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 
 enum HeroBannerTipo { cultoEnVivo, versiculoDelDia, palabraDelDia }
 
@@ -193,6 +194,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
     double screenWidth,
     double screenHeight,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final List<_BannerSlideData> slides = [];
 
     // 1. La palabra del día
@@ -206,14 +208,14 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
         tipo: HeroBannerTipo.palabraDelDia,
         title: palabraActual.titulo,
         subtitle: '${palabraActual.autor} · ${palabraActual.citaBiblica}',
-        buttonText: 'Leer reflexión',
+        buttonText: l10n.leerReflexion,
         backgroundImage:
             palabraActual.imagenFondo ?? 'assets/images/biblia1.jpg',
         watermarkIcon: Icons.auto_stories_rounded,
         onTap: () {
           _mostrarModalPalabra(context, palabraActual);
         },
-        topLeading: _buildPalabraBadge(screenWidth, screenHeight),
+        topLeading: _buildPalabraBadge(screenWidth, screenHeight, l10n),
       ),
     );
 
@@ -231,13 +233,13 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
         tipo: HeroBannerTipo.versiculoDelDia,
         title: versiculo.referencia,
         subtitle: '«${versiculo.texto}»',
-        buttonText: 'Ver versículo',
+        buttonText: l10n.verVersiculo,
         backgroundImage: 'assets/images/biblia3.jpg',
         watermarkIcon: Icons.menu_book_rounded,
         onTap: () {
           ModalVersiculoImagen.mostrar(context, versiculo: versiculo);
         },
-        topLeading: _buildVersiculoBadge(screenWidth, screenHeight),
+        topLeading: _buildVersiculoBadge(screenWidth, screenHeight, l10n),
       ),
     );
 
@@ -256,8 +258,8 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
           subtitle:
               cultoActivo.horario ??
               cultoActivo.estadisticas ??
-              'En vivo ahora',
-          buttonText: 'Ver ahora',
+              l10n.enVivoAhora,
+          buttonText: l10n.verAhora,
           backgroundImage: cultoActivo.thumbnailUrl.isNotEmpty
               ? cultoActivo.thumbnailUrl
               : 'assets/images/culto2.jpg',
@@ -265,7 +267,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
           onTap: () {
             Navigator.pushNamed(context, 'videos_transmisiones_screen');
           },
-          topLeading: _buildLiveBadge(screenWidth, screenHeight),
+          topLeading: _buildLiveBadge(screenWidth, screenHeight, l10n),
         ),
       );
     }
@@ -273,7 +275,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
     return slides;
   }
 
-  Widget _buildLiveBadge(double screenWidth, double screenHeight) {
+  Widget _buildLiveBadge(double screenWidth, double screenHeight, AppLocalizations l10n) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: screenWidth * 0.024,
@@ -303,7 +305,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
           ),
           SizedBox(width: screenWidth * 0.012),
           Text(
-            'EN VIVO',
+            l10n.enVivo,
             style: TextStyle(
               color: Colors.white,
               fontSize: screenWidth * 0.027,
@@ -316,7 +318,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
     );
   }
 
-  Widget _buildVersiculoBadge(double screenWidth, double screenHeight) {
+  Widget _buildVersiculoBadge(double screenWidth, double screenHeight, AppLocalizations l10n) {
     const Color dorado = Color(0xFFE5A023);
     return Container(
       padding: EdgeInsets.symmetric(
@@ -338,7 +340,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
           ),
           SizedBox(width: screenWidth * 0.012),
           Text(
-            'VERSÍCULO DEL DÍA',
+            l10n.versiculoDelDia.toUpperCase(),
             style: TextStyle(
               color: dorado,
               fontSize: screenWidth * 0.045,
@@ -351,7 +353,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
     );
   }
 
-  Widget _buildPalabraBadge(double screenWidth, double screenHeight) {
+  Widget _buildPalabraBadge(double screenWidth, double screenHeight, AppLocalizations l10n) {
     const Color azulClaro = Color(0xFF64B5F6);
     return Container(
       padding: EdgeInsets.symmetric(
@@ -373,7 +375,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
           ),
           SizedBox(width: screenWidth * 0.012),
           Text(
-            'PALABRA DEL DÍA',
+            l10n.palabraDelDia.toUpperCase(),
             style: TextStyle(
               color: azulClaro,
               fontSize: screenWidth * 0.045,
@@ -387,6 +389,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
   }
 
   void _mostrarModalPalabra(BuildContext context, PalabraDelDiaModel palabra) {
+    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final usableHeight =
         MediaQuery.sizeOf(context).height -
@@ -444,7 +447,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Palabra del día',
+                          l10n.palabraDelDia,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: screenWidth * 0.032,
@@ -504,7 +507,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
                           SizedBox(width: screenWidth * 0.025),
                           Expanded(
                             child: Text(
-                              'Cita base: ${palabra.citaBiblica}',
+                              l10n.citaBase(palabra.citaBiblica),
                               style: TextStyle(
                                 color: azulFondo,
                                 fontSize: screenWidth * 0.035,
@@ -574,7 +577,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
                   ),
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
-                    'Entendido · Amén',
+                    l10n.entendidoAmen,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: screenWidth * 0.055,

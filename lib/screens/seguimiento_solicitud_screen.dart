@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class SeguimientoSolicitudScreen extends StatelessWidget {
   static const routeName = 'seguimiento_solicitud_screen';
 
@@ -7,6 +9,8 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // 1. Obtención de métricas dinámicas relativas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -23,54 +27,64 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
     // Listado de 5 solicitudes de relleno (mock) según los tipos de solicitud disponibles
     final List<Map<String, dynamic>> solicitudes = [
       {
-        'title': 'Orientación pastoral',
-        'status': 'Programada',
+        'title': l10n?.orientacionPastoral ?? 'Orientación pastoral',
+        'status': l10n?.estadoProgramada ?? 'Programada',
         'statusColor': amarilloOro,
-        'dateInfo': 'Martes · 4:00 p. m.',
+        'dateInfo': l10n?.fechaMartesHora ?? 'Martes · 4:00 p. m.',
         'icon': Icons.church_outlined,
         'iconColor': const Color(0xFF0055A5),
         'referencia': 'REQ-2026-0041',
-        'detalle': 'Cita de acompañamiento espiritual y orientación pastoral presencial con el pastor titular.',
+        'detalle':
+            l10n?.detalleOrientacionPastoral ??
+            'Cita de acompañamiento espiritual y orientación pastoral presencial con el pastor titular.',
       },
       {
-        'title': 'Petición de oración',
-        'status': 'Recibida',
+        'title': l10n?.peticionDeOracion ?? 'Petición de oración',
+        'status': l10n?.estadoRecibida ?? 'Recibida',
         'statusColor': const Color(0xFF0055A5),
         'dateInfo': null,
         'icon': Icons.pan_tool_alt_outlined,
         'iconColor': const Color(0xFF7A8B43),
         'referencia': 'REQ-2026-0038',
-        'detalle': 'Petición de intercesión por pronta recuperación de salud y bienestar familiar en el culto de oración.',
+        'detalle':
+            l10n?.detallePeticionOracion ??
+            'Petición de intercesión por pronta recuperación de salud y bienestar familiar en el culto de oración.',
       },
       {
-        'title': 'Ayuda comunitaria',
-        'status': 'En revisión',
+        'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
+        'status': l10n?.estadoEnRevision ?? 'En revisión',
         'statusColor': amarilloOro,
         'dateInfo': null,
         'icon': Icons.groups_outlined,
         'iconColor': azulFondo,
         'referencia': 'REQ-2026-0035',
-        'detalle': 'Solicitud de canasta de alimentos básicos y apoyo solidario para una familia en situación de necesidad.',
+        'detalle':
+            l10n?.detalleAyudaComunitaria ??
+            'Solicitud de canasta de alimentos básicos y apoyo solidario para una familia en situación de necesidad.',
       },
       {
-        'title': 'Consejería familiar',
-        'status': 'Confirmada',
+        'title': l10n?.consejeriaFamiliar ?? 'Consejería familiar',
+        'status': l10n?.estadoConfirmada ?? 'Confirmada',
         'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': 'Jueves · 5:30 p. m.',
+        'dateInfo': l10n?.fechaJuevesHora ?? 'Jueves · 5:30 p. m.',
         'icon': Icons.family_restroom_rounded,
         'iconColor': azulFondo,
         'referencia': 'REQ-2026-0029',
-        'detalle': 'Sesión de consejería familiar y diálogo guiado por el equipo ministerial de la iglesia.',
+        'detalle':
+            l10n?.detalleConsejeriaFamiliar ??
+            'Sesión de consejería familiar y diálogo guiado por el equipo ministerial de la iglesia.',
       },
       {
-        'title': 'Visita a enfermos',
-        'status': 'En proceso',
+        'title': l10n?.visitaAEnfermos ?? 'Visita a enfermos',
+        'status': l10n?.estadoEnProceso ?? 'En proceso',
         'statusColor': const Color(0xFF0055A5),
-        'dateInfo': 'Viernes · 10:00 a. m.',
+        'dateInfo': l10n?.fechaViernesHora ?? 'Viernes · 10:00 a. m.',
         'icon': Icons.favorite_border_rounded,
         'iconColor': const Color(0xFF7A8B43),
         'referencia': 'REQ-2026-0022',
-        'detalle': 'Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.',
+        'detalle':
+            l10n?.detalleVisitaEnfermos ??
+            'Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.',
       },
     ];
 
@@ -112,7 +126,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                         // Fin botón de retroceso (Back <-)
                         SizedBox(width: screenWidth * 0.035),
                         Text(
-                          'Mis solicitudes',
+                          l10n?.misSolicitudes ?? 'Mis solicitudes',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.065,
@@ -180,6 +194,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                                       blancoFondo: blancoFondo,
                                       grisBorde: grisBorde,
                                       amarilloOro: amarilloOro,
+                                      l10n: l10n,
                                     );
                                   },
                                 );
@@ -211,7 +226,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                                 );
                               },
                               child: Text(
-                                'Nueva solicitud',
+                                l10n?.nuevaSolicitud ?? 'Nueva solicitud',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.048,
                                   fontWeight: FontWeight.bold,
@@ -331,6 +346,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
     required Color blancoFondo,
     required Color grisBorde,
     required Color amarilloOro,
+    AppLocalizations? l10n,
   }) {
     showModalBottomSheet(
       context: context,
@@ -402,7 +418,8 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                         ),
                         SizedBox(height: usableHeight * 0.003),
                         Text(
-                          'ID Odoo: ${item['referencia'] ?? 'REQ-2026-0001'}',
+                          l10n?.idOdoo(item['referencia'] as String? ?? 'REQ-2026-0001') ??
+                              'ID Odoo: ${item['referencia'] ?? 'REQ-2026-0001'}',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: screenWidth * 0.030,
@@ -471,7 +488,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                       Divider(height: usableHeight * 0.025, color: grisBorde),
                     ],
                     Text(
-                      'Detalle de la solicitud:',
+                      l10n?.detalleDeLaSolicitud ?? 'Detalle de la solicitud:',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: screenWidth * 0.032,
@@ -480,7 +497,9 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                     ),
                     SizedBox(height: usableHeight * 0.006),
                     Text(
-                      item['detalle'] as String? ?? 'Solicitud registrada y asignada al equipo ministerial.',
+                      item['detalle'] as String? ??
+                          (l10n?.solicitudRegistradaAsignada ??
+                              'Solicitud registrada y asignada al equipo ministerial.'),
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.035,
@@ -508,7 +527,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                   ),
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
-                    'Entendido',
+                    l10n?.entendido ?? 'Entendido',
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.bold,

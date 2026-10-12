@@ -1,7 +1,7 @@
 name: atrio
 description: "Vive tu Fe en comunidad"
 publish_to: "none"
-version: 0.1.0+6
+version: 0.1.0+7
 
 environment:
   sdk: ^3.13.0

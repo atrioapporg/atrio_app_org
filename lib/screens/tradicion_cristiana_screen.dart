@@ -1,4 +1,6 @@
 import 'package:atrio/data/atrio_database_helper.dart';
+import 'package:atrio/l10n/app_localizations.dart';
+import 'package:atrio/modelos/tradicion_cristiana_model.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
 import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
 import 'package:flutter/material.dart';
@@ -52,6 +54,32 @@ class _TradicionCristianaScreenState extends State {
     }
   }
 
+  String _resolverTituloTradicion(
+    AppLocalizations? l10n,
+    TradicionCristianaModel item,
+  ) {
+    switch (item.id) {
+      case 'trad_catolica':
+        return l10n?.catolica ?? item.titulo;
+      case 'trad_evangelica':
+        return l10n?.evangelica ?? item.titulo;
+      case 'trad_pentecostal':
+        return l10n?.pentecostal ?? item.titulo;
+      case 'trad_bautista':
+        return l10n?.bautista ?? item.titulo;
+      case 'trad_adventista':
+        return l10n?.adventista ?? item.titulo;
+      case 'trad_no_denominacional':
+        return l10n?.noDenominacional ?? item.titulo;
+      case 'trad_otra':
+        return l10n?.otra ?? item.titulo;
+      case 'trad_despues':
+        return l10n?.prefieroIndicarloDespues ?? item.titulo;
+      default:
+        return item.titulo;
+    }
+  }
+
   Future _continuarYGuardar(dynamic provider) async {
     final tradicion = provider.tradicionSeleccionada;
     if (tradicion == null || _isSaving) return;
@@ -73,12 +101,14 @@ class _TradicionCristianaScreenState extends State {
     } catch (e) {
       debugPrint('[SQLITE] Error al guardar tradición en atrio.db: $e');
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red.shade700,
-            content: const Text(
-              'No se pudo guardar la selección localmente.',
-              style: TextStyle(color: Colors.white),
+            content: Text(
+              l10n?.errorGuardarSeleccionLocal ??
+                  'No se pudo guardar la selección localmente.',
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         );
@@ -94,6 +124,7 @@ class _TradicionCristianaScreenState extends State {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -137,7 +168,7 @@ class _TradicionCristianaScreenState extends State {
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
-                        'Queremos conocerte',
+                        l10n?.queremosConocerte ?? 'Queremos conocerte',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.056,
@@ -200,7 +231,8 @@ class _TradicionCristianaScreenState extends State {
                       children: [
                         Center(
                           child: Text(
-                            '¿Con cuál tradición de fe te identificas?',
+                            l10n?.conCualTradicionTeIdentificas ??
+                                '¿Con cuál tradición de fe te identificas?',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: azulFondo,
@@ -215,6 +247,7 @@ class _TradicionCristianaScreenState extends State {
                             provider,
                             screenWidth,
                             usableHeight,
+                            l10n,
                           ),
                         ),
                         SizedBox(height: usableHeight * 0.015),
@@ -247,7 +280,7 @@ class _TradicionCristianaScreenState extends State {
                                     ),
                                   )
                                 : Text(
-                                    'Continuar',
+                                    l10n?.continuar ?? 'Continuar',
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.048,
                                       fontWeight: FontWeight.bold,
@@ -272,6 +305,7 @@ class _TradicionCristianaScreenState extends State {
     TradicionCristianaProvider provider,
     double screenWidth,
     double usableHeight,
+    AppLocalizations? l10n,
   ) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator(color: amarilloOro));
@@ -290,9 +324,9 @@ class _TradicionCristianaScreenState extends State {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: azulFondo),
               onPressed: () => provider.cargarTradiciones(),
-              child: const Text(
-                'Reintentar',
-                style: TextStyle(color: Colors.white),
+              child: Text(
+                l10n?.reintentar ?? 'Reintentar',
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -308,7 +342,7 @@ class _TradicionCristianaScreenState extends State {
         final item = provider.tradiciones[index];
         final isSelected = provider.tradicionSeleccionada?.id == item.id;
         return _buildTraditionCard(
-          title: item.titulo,
+          title: _resolverTituloTradicion(l10n, item),
           icon: _resolverIcono(item.iconoNombre),
           iconColor: Color(int.parse(item.colorHex)),
           isSelected: isSelected,

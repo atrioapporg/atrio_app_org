@@ -1,6 +1,8 @@
 import 'package:atrio/servicios/bible_service.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class DetalleLibroBibliaScreen extends StatefulWidget {
   static const routeName = 'detalle_libro_biblia_screen';
 
@@ -47,15 +49,20 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE5E5E5);
 
+    final l10n = AppLocalizations.of(context);
     final Map<String, dynamic> args =
         (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?) ??
         {};
 
-    final String nombreLibro = args['nombre'] ?? 'Génesis';
+    final String nombreLibro =
+        args['nombre'] ?? (l10n?.libroGenesis ?? 'Génesis');
     final int totalCapitulos = args['capitulos'] ?? 50;
     final String subtitulo = args['subtitulo'] ?? '';
     final Color colorIcono = args['color'] ?? const Color(0xFF4CAF50);
     final IconData icono = args['icon'] ?? Icons.menu_book_rounded;
+    final String textoCapitulos = totalCapitulos == 1
+        ? (l10n?.unCapitulo ?? '1 capítulo')
+        : (l10n?.totalCapitulos('$totalCapitulos') ?? '$totalCapitulos capítulos');
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -120,7 +127,7 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
                             ),
                           ),
                           Text(
-                            '$totalCapitulos capítulos',
+                            textoCapitulos,
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: screenWidth * 0.032,
@@ -175,7 +182,7 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
                           child: Row(
                             children: [
                               _buildTabItem(
-                                title: 'Capítulos',
+                                title: l10n?.capitulosTab ?? 'Capítulos',
                                 isSelected: _isCapitulosTab,
                                 screenWidth: screenWidth,
                                 usableHeight: usableHeight,
@@ -184,7 +191,7 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
                                     setState(() => _isCapitulosTab = true),
                               ),
                               _buildTabItem(
-                                title: 'Información',
+                                title: l10n?.informacionTab ?? 'Información',
                                 isSelected: !_isCapitulosTab,
                                 screenWidth: screenWidth,
                                 usableHeight: usableHeight,
@@ -215,7 +222,8 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
                                     final int numCapitulo = index + 1;
                                     return _buildChapterTile(
                                       chapterNumber: numCapitulo,
-                                      title: 'Capítulo $numCapitulo', // o 'Capítulo $numCapitulo'
+                                      title: l10n?.capituloNumero('$numCapitulo') ??
+                                          'Capítulo $numCapitulo',
                                       screenWidth: screenWidth,
                                       usableHeight: usableHeight,
                                       azulFondo: azulFondo,
@@ -240,6 +248,7 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
                                   screenWidth,
                                   usableHeight,
                                   azulFondo,
+                                  l10n,
                                 ),
                         ),
                       ],
@@ -355,6 +364,7 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
     double screenWidth,
     double usableHeight,
     Color azulFondo,
+    AppLocalizations? l10n,
   ) {
     return FutureBuilder<Map<String, String>>(
       future: _infoLibroFuture,
@@ -370,7 +380,8 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
             child: Padding(
               padding: EdgeInsets.all(screenWidth * 0.06),
               child: Text(
-                'No se pudo cargar la información de la API.',
+                l10n?.errorCargarInfoLibro ??
+                    'No se pudo cargar la información de la API.',
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: screenWidth * 0.036,
@@ -388,7 +399,7 @@ class _DetalleLibroBibliaScreenState extends State<DetalleLibroBibliaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Acerca del libro',
+                l10n?.acercaDelLibro ?? 'Acerca del libro',
                 style: TextStyle(
                   color: azulFondo,
                   fontSize: screenWidth * 0.050,

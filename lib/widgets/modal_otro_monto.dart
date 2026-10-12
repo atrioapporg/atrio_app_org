@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
+
 class ModalOtroMonto {
   static Future<int?> mostrar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Cálculo estricto de dimensiones dinámicas relativas
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -34,7 +37,7 @@ class ModalOtroMonto {
               ),
               SizedBox(width: screenWidth * 0.02),
               Text(
-                'Monto personalizado',
+                l10n.montoPersonalizado,
                 style: TextStyle(
                   color: azulFondo,
                   fontSize: screenWidth * 0.045,
@@ -56,7 +59,7 @@ class ModalOtroMonto {
                   fontSize: screenWidth * 0.04,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Monto a donar (RD\$)',
+                  labelText: l10n.montoADonarMoneda,
                   labelStyle: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: screenWidth * 0.035,
@@ -85,12 +88,12 @@ class ModalOtroMonto {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Ingresa un monto';
+                    return l10n.ingresaUnMonto;
                   }
                   final intMonto = int.tryParse(value);
-                  if (intMonto == null) return 'Monto inválido';
-                  if (intMonto < 500) return 'El mínimo es RD\$500';
-                  if (intMonto > 1000000) return 'El máximo es RD\$1,000,000';
+                  if (intMonto == null) return l10n.montoInvalido;
+                  if (intMonto < 500) return l10n.elMinimoEs500;
+                  if (intMonto > 1000000) return l10n.elMaximoEs1000000;
                   return null;
                 },
               ),
@@ -104,7 +107,7 @@ class ModalOtroMonto {
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
-                'Cancelar',
+                l10n.cancelar,
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: screenWidth * 0.035,
@@ -131,7 +134,7 @@ class ModalOtroMonto {
                 }
               },
               child: Text(
-                'Confirmar',
+                l10n.confirmar,
                 style: TextStyle(
                   fontSize: screenWidth * 0.036,
                   fontWeight: FontWeight.bold,

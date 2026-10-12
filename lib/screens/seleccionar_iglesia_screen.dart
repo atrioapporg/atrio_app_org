@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
@@ -139,13 +140,14 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       // 1. Comprobar si el servicio GPS está habilitado en el dispositivo
       final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled && mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              'El GPS está desactivado. Actívalo para encontrar iglesias cercanas a ti.',
+            content: Text(
+              l10n.gpsDesactivadoMensaje,
             ),
             action: SnackBarAction(
-              label: 'Ajustes',
+              label: l10n.ajustes,
               onPressed: () => Geolocator.openLocationSettings(),
             ),
             duration: const Duration(seconds: 4),
@@ -161,12 +163,13 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
 
       if (permission == LocationPermission.denied) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Permiso de ubicación no concedido. Se mostrará ubicación predeterminada.',
+                l10n.permisoUbicacionNoConcedido,
               ),
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -176,13 +179,14 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text(
-                'Permisos de ubicación denegados permanentemente en los ajustes.',
+              content: Text(
+                l10n.permisosUbicacionDenegadosPermanentemente,
               ),
               action: SnackBarAction(
-                label: 'Ajustes',
+                label: l10n.ajustes,
                 onPressed: () => Geolocator.openAppSettings(),
               ),
               duration: const Duration(seconds: 5),
@@ -339,7 +343,10 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       );
 
       if (response.statusCode != 200) {
-        _mostrarError('Error del servidor: ${response.statusCode}');
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          _mostrarError(l10n.errorServidorCodigo(response.statusCode));
+        }
         return;
       }
 
@@ -361,7 +368,8 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       });
 
       if (nuevasIglesias.isEmpty) {
-        _mostrarError('No se encontraron iglesias cercanas para "$query".');
+        final l10n = AppLocalizations.of(context)!;
+        _mostrarError(l10n.noSeEncontraronIglesiasCercanas(query));
         return;
       }
 
@@ -374,7 +382,10 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
         ),
       );
     } catch (e) {
-      if (mounted) _mostrarError('Error de conexión. Verifica tu internet.');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        _mostrarError(l10n.errorConexionInternet);
+      }
     }
   }
 
@@ -387,6 +398,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     double lng,
   ) {
     final List<Map<String, dynamic>> iglesias = [];
+    final l10n = mounted ? AppLocalizations.of(context) : null;
 
     for (final place in resultados) {
       final location = place['location'];
@@ -409,18 +421,23 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
           ? openingHours['openNow'] as bool?
           : true;
 
+      final String distanciaTexto = _currentPosition != null
+          ? (l10n != null
+              ? l10n.aDistanciaKm((distanceInMeters / 1000).toStringAsFixed(1))
+              : 'A ${(distanceInMeters / 1000).toStringAsFixed(1)} km')
+          : (l10n?.ubicacionExacta ?? 'Ubicación exacta');
+
       iglesias.add({
         'id': place['id'],
-        'nombre': place['displayName']?['text'] ?? 'Sin nombre',
+        'nombre': place['displayName']?['text'] ??
+            (l10n?.sinNombre ?? 'Sin nombre'),
         'denominacion':
             (place['formattedAddress'] as String?)?.split(',').first ??
-            'Comunidad cristiana',
+            (l10n?.comunidadCristiana ?? 'Comunidad cristiana'),
         'rating': (place['rating'] ?? 0.0).toString(),
         'resenas': (place['userRatingCount'] ?? 0).toString(),
         'distanciaNum': distanceInMeters,
-        'distancia': _currentPosition != null
-            ? 'A ${(distanceInMeters / 1000).toStringAsFixed(1)} km'
-            : 'Ubicación exacta',
+        'distancia': distanciaTexto,
         'latLng': LatLng(placeLat, placeLng),
         'abierto': isOpen ?? true,
         'destacada': false,
@@ -454,38 +471,46 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   // que devuelva el backend en vez de _generarIdLocal().
   // ---------------------------------------------------------------------
   Future<void> _registrarIglesia(Map<String, dynamic> datos) async {
+    final l10n = mounted ? AppLocalizations.of(context) : null;
     final Map<String, dynamic> datosParaGuardar = {
       "id": _generarIdLocal(),
       "nombre": datos['nombre'],
       "denominacion": datos['denominacion'],
       "calificacion": double.tryParse(datos['rating'].toString()) ?? 0.0,
       "total_resenas": int.tryParse(datos['resenas'].toString()) ?? 0,
-      "distancia": datos['distancia'] ?? "A 1.8 km",
+      "distancia": datos['distancia'] ??
+          (l10n?.distanciaAproximadaDefault ?? "A 1.8 km"),
       "es_verificada": true,
       "direccion": datos['denominacion'],
-      "plus_code": "Código Plus no disponible",
+      "plus_code":
+          l10n?.codigoPlusNoDisponible ?? "Código Plus no disponible",
       "telefono": "(809) 000-0000",
       "sitio_web": "https://atrio.app",
       "proximo_culto": {
-        "titulo": "Servicio de Bienvenida",
-        "dia_hora": "Domingo · 10:00 a. m.",
-        "estado": "Cerrado · Abre a las 10 a.m. del dom",
+        "titulo": l10n?.servicioDeBienvenida ?? "Servicio de Bienvenida",
+        "dia_hora": l10n?.diaHoraDomingo10am ?? "Domingo · 10:00 a. m.",
+        "estado": l10n?.estadoCerradoAbreDomingo ??
+            "Cerrado · Abre a las 10 a.m. del dom",
       },
       "horarios": [
         {
-          "dia": "Domingo",
-          "detalle": "10:00 a. m. · Culto Dominical",
+          "dia": l10n?.diaDomingo ?? "Domingo",
+          "detalle":
+              l10n?.cultoDominical10am ?? "10:00 a. m. · Culto Dominical",
           "tipo": "culto",
         },
         {
-          "dia": "Miércoles",
-          "detalle": "7:30 p. m. · Estudio Bíblico",
+          "dia": l10n?.diaMiercoles ?? "Miércoles",
+          "detalle":
+              l10n?.estudioBiblico730pm ?? "7:30 p. m. · Estudio Bíblico",
           "tipo": "estudio",
         },
       ],
       "aviso_actual": {
-        "titulo": "¡Bienvenido a tu nueva comunidad!",
-        "descripcion": "Te has registrado correctamente en esta iglesia a través de atrio.",
+        "titulo": l10n?.bienvenidoNuevaComunidad ??
+            "¡Bienvenido a tu nueva comunidad!",
+        "descripcion": l10n?.descripcionRegistroIglesia ??
+            "Te has registrado correctamente en esta iglesia a través de atrio.",
       },
     };
 
@@ -554,6 +579,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   }
 
   Widget _buildEncabezado(double screenWidth, double usableHeight) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: usableHeight * 0.15,
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -578,7 +604,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
               ),
               SizedBox(width: screenWidth * 0.03),
               Text(
-                'Selecciona tu iglesia',
+                l10n.seleccionaTuIglesia,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: screenWidth * 0.062,
@@ -595,6 +621,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   }
 
   Widget _buildBuscador(double screenWidth, double usableHeight) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       height: usableHeight * 0.065,
       decoration: BoxDecoration(
@@ -629,7 +656,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                   _buscarEnGooglePlaces(value);
                 },
                 decoration: InputDecoration(
-                  hintText: 'Buscar iglesia o denominación...',
+                  hintText: l10n.buscarIglesiaPlaceholder,
                   hintStyle: TextStyle(
                     color: Colors.grey.shade500,
                     fontSize: screenWidth * 0.034,
@@ -764,6 +791,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     required double screenWidth,
     required double usableHeight,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final bool estaAbierto = datos['abierto'] ?? false;
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
@@ -850,7 +878,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                   borderRadius: BorderRadius.circular(screenWidth * 0.01),
                 ),
                 child: Text(
-                  estaAbierto ? 'Abierto ahora' : 'Cerrado',
+                  estaAbierto ? l10n.abiertoAhora : l10n.cerrado,
                   style: TextStyle(
                     color: estaAbierto
                         ? const Color(0xFF2E7D32)
@@ -877,7 +905,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
               ),
               onPressed: () => _registrarIglesia(datos),
               child: Text(
-                'Seleccionar iglesia',
+                l10n.seleccionarIglesia,
                 style: TextStyle(
                   fontSize: screenWidth * 0.038,
                   fontWeight: FontWeight.bold,

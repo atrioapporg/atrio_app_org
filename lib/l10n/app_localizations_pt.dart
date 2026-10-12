@@ -68,7 +68,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get opcionNoDisponible => 'Opção indisponível';
 
   @override
-  String get entendido => 'Entendi';
+  String get entendido => 'Entendido';
 
   @override
   String get inicio => 'Início';
@@ -433,7 +433,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get ayudaYSoporte => 'Ajuda e suporte';
 
   @override
-  String get terminosYPrivacidad => 'Termos e privacidade';
+  String get terminosYPrivacidad => 'Termos e Privacidade';
 
   @override
   String get cerrarSesion => 'Sair da conta';
@@ -1002,4 +1002,1165 @@ class AppLocalizationsPt extends AppLocalizations {
   String enlaceCopiadoPortapapeles(String titulo) {
     return 'Link de \"$titulo\" copiado para a área de transferência';
   }
+
+  @override
+  String get filtrarPorNombreDeLibro => 'Filtrar por nome do livro...';
+
+  @override
+  String get antiguoTestamento => 'Antigo Testamento';
+
+  @override
+  String get nuevoTestamento => 'Novo Testamento';
+
+  @override
+  String get noSeEncontraronLibros => 'Nenhum livro encontrado';
+
+  @override
+  String get unCapitulo => '1 capítulo';
+
+  @override
+  String totalCapitulos(String total) {
+    return '$total capítulos';
+  }
+
+  @override
+  String get libroGenesis => 'Gênesis';
+
+  @override
+  String get libroExodo => 'Êxodo';
+
+  @override
+  String get libroLevitico => 'Levítico';
+
+  @override
+  String get libroNumeros => 'Números';
+
+  @override
+  String get libroDeuteronomio => 'Deuteronômio';
+
+  @override
+  String get libroJosue => 'Josué';
+
+  @override
+  String get libroJueces => 'Juízes';
+
+  @override
+  String get libroRut => 'Rute';
+
+  @override
+  String get libro1Samuel => '1 Samuel';
+
+  @override
+  String get libro2Samuel => '2 Samuel';
+
+  @override
+  String get libro1Reyes => '1 Reis';
+
+  @override
+  String get libro2Reyes => '2 Reis';
+
+  @override
+  String get libro1Cronicas => '1 Crônicas';
+
+  @override
+  String get libro2Cronicas => '2 Crônicas';
+
+  @override
+  String get libroEsdras => 'Esdras';
+
+  @override
+  String get libroNehemias => 'Neemias';
+
+  @override
+  String get libroEster => 'Ester';
+
+  @override
+  String get libroJob => 'Jó';
+
+  @override
+  String get libroSalmos => 'Salmos';
+
+  @override
+  String get libroProverbios => 'Provérbios';
+
+  @override
+  String get libroEclesiastes => 'Eclesiastes';
+
+  @override
+  String get libroCantares => 'Cantares';
+
+  @override
+  String get libroIsaias => 'Isaías';
+
+  @override
+  String get libroJeremias => 'Jeremias';
+
+  @override
+  String get libroLamentaciones => 'Lamentações';
+
+  @override
+  String get libroEzequiel => 'Ezequiel';
+
+  @override
+  String get libroDaniel => 'Daniel';
+
+  @override
+  String get libroOseas => 'Oseias';
+
+  @override
+  String get libroJoel => 'Joel';
+
+  @override
+  String get libroAmos => 'Amós';
+
+  @override
+  String get libroAbdias => 'Obadias';
+
+  @override
+  String get libroJonas => 'Jonas';
+
+  @override
+  String get libroMiqueas => 'Miqueias';
+
+  @override
+  String get libroNahum => 'Naum';
+
+  @override
+  String get libroHabacuc => 'Habacuque';
+
+  @override
+  String get libroSofonias => 'Sofonias';
+
+  @override
+  String get libroHageo => 'Ageu';
+
+  @override
+  String get libroZacarias => 'Zacarias';
+
+  @override
+  String get libroMalaquias => 'Malaquias';
+
+  @override
+  String get libroMateo => 'Mateus';
+
+  @override
+  String get libroMarcos => 'Marcos';
+
+  @override
+  String get libroLucas => 'Lucas';
+
+  @override
+  String get libroJuan => 'João';
+
+  @override
+  String get libroHechos => 'Atos';
+
+  @override
+  String get libroRomanos => 'Romanos';
+
+  @override
+  String get libro1Corintios => '1 Coríntios';
+
+  @override
+  String get libro2Corintios => '2 Coríntios';
+
+  @override
+  String get libroGalatas => 'Gálatas';
+
+  @override
+  String get libroEfesios => 'Efésios';
+
+  @override
+  String get libroFilipenses => 'Filipenses';
+
+  @override
+  String get libroColosenses => 'Colossenses';
+
+  @override
+  String get libro1Tesalonicenses => '1 Tessalonicenses';
+
+  @override
+  String get libro2Tesalonicenses => '2 Tessalonicenses';
+
+  @override
+  String get libro1Timoteo => '1 Timóteo';
+
+  @override
+  String get libro2Timoteo => '2 Timóteo';
+
+  @override
+  String get libroTito => 'Tito';
+
+  @override
+  String get libroFilemon => 'Filemom';
+
+  @override
+  String get libroHebreos => 'Hebreus';
+
+  @override
+  String get libroSantiago => 'Tiago';
+
+  @override
+  String get libro1Pedro => '1 Pedro';
+
+  @override
+  String get libro2Pedro => '2 Pedro';
+
+  @override
+  String get libro1Juan => '1 João';
+
+  @override
+  String get libro2Juan => '2 João';
+
+  @override
+  String get libro3Juan => '3 João';
+
+  @override
+  String get libroJudas => 'Judas';
+
+  @override
+  String get libroApocalipsis => 'Apocalipse';
+
+  @override
+  String get capitulosTab => 'Capítulos';
+
+  @override
+  String get informacionTab => 'Informação';
+
+  @override
+  String get acercaDelLibro => 'Sobre o livro';
+
+  @override
+  String get errorCargarInfoLibro =>
+      'Não foi possível carregar as informações do livro.';
+
+  @override
+  String get escucharBiblia => 'Ouvir a Bíblia';
+
+  @override
+  String get sinInternetAudio =>
+      'Sem conexão com a internet para reproduzir o áudio.';
+
+  @override
+  String audioDramatizadoProximamente(String nombre) {
+    return 'O áudio dramatizado de $nombre estará disponível em breve.';
+  }
+
+  @override
+  String finLecturaAudio(String libro, String capitulo) {
+    return 'Fim da leitura de áudio de $libro $capitulo';
+  }
+
+  @override
+  String audioCapituloTitulo(String libro, String capitulo) {
+    return '$libro $capitulo (Áudio)';
+  }
+
+  @override
+  String get eliminadoDeFavoritos => 'Removido dos favoritos';
+
+  @override
+  String get sinFavoritos => 'Sem favoritos';
+
+  @override
+  String get sinFavoritosDesc =>
+      'Toque no ícone de marcador em qualquer capítulo para salvá-lo aqui e acessá-lo rapidamente.';
+
+  @override
+  String guardadoEl(String fecha) {
+    return 'Salvo em $fecha';
+  }
+
+  @override
+  String get desdeFavoritos => 'Dos Favoritos';
+
+  @override
+  String get eliminarNotaTitulo => 'Excluir nota';
+
+  @override
+  String get seguroEliminarNota =>
+      'Tem certeza de que deseja excluir esta nota permanentemente?';
+
+  @override
+  String get eliminar => 'Excluir';
+
+  @override
+  String get notaEliminadaCorrectamente => 'Nota excluída com sucesso';
+
+  @override
+  String get aunNoTienesNotas => 'Você ainda não tem notas';
+
+  @override
+  String get aunNoTienesNotasDesc =>
+      'Suas reflexões e notas bíblicas aparecerão aqui. Abra qualquer capítulo e toque no ícone de Nota para começar.';
+
+  @override
+  String get nuevaSolicitud => 'Nova solicitação';
+
+  @override
+  String get tipoSolicitudLabel => 'Tipo de solicitação';
+
+  @override
+  String get seleccionaUnaOpcion => 'Selecione uma opção';
+
+  @override
+  String get asunto => 'Assunto';
+
+  @override
+  String get asuntoPlaceholder => 'Escreva um assunto breve';
+
+  @override
+  String get asuntoObligatorio => 'O assunto é obrigatório';
+
+  @override
+  String get describeComoAyudarte => 'Descreva como podemos ajudar você';
+
+  @override
+  String get descripcionObligatoria => 'A descrição é obrigatória';
+
+  @override
+  String get detallesSolicitudPlaceholder =>
+      'Conte-nos os detalhes da sua solicitação';
+
+  @override
+  String get telefonoObligatorio => 'O telefone é obrigatório';
+
+  @override
+  String get telefonoInvalido => 'Digite um número de telefone válido';
+
+  @override
+  String get solicitudPrivada => 'Solicitação privada';
+
+  @override
+  String get solicitudPrivadaDesc => 'Apenas a equipe pastoral poderá vê-la';
+
+  @override
+  String get general => 'Geral';
+
+  @override
+  String get completaCamposObligatorios =>
+      'Por favor, preencha todos os campos obrigatórios.';
+
+  @override
+  String get enviarSolicitud => 'Enviar Solicitação';
+
+  @override
+  String get realizaTuAporte => 'Faça sua contribuição';
+
+  @override
+  String get errorCargarDatos => 'Erro ao carregar dados';
+
+  @override
+  String get tipoDonacion => 'Tipo de doação';
+
+  @override
+  String get seleccionaElMonto => 'Selecione o valor';
+
+  @override
+  String get otroMonto => 'Outro valor';
+
+  @override
+  String get frecuencia => 'Frequência';
+
+  @override
+  String get frecuenciaUnaSolaVez => 'Apenas uma vez';
+
+  @override
+  String get frecuenciaMensual => 'Mensal';
+
+  @override
+  String get metodoDePago => 'Método de pagamento';
+
+  @override
+  String get transferencia => 'Transferência';
+
+  @override
+  String get donacionAnonima => 'Doação anônima';
+
+  @override
+  String get donacionAnonimaDesc =>
+      'Seu nome não ficará visível nas listagens.';
+
+  @override
+  String get continuarDeFormaSegura => 'Continuar com segurança';
+
+  @override
+  String get cuentaCopiadaPortapapeles =>
+      'Conta copiada para a área de transferência!';
+
+  @override
+  String get metodosTitulo => 'MÉTODOS';
+
+  @override
+  String get dePagoTitulo => 'de pagamento';
+
+  @override
+  String get viaTransferencia => 'VIA TRANSFERÊNCIA';
+
+  @override
+  String get aceptamosTransferenciasDesc =>
+      'Aceitamos transferências bancárias de\nqualquer banco da República Dominicana.';
+
+  @override
+  String get tuPagoEstaSeguro => 'SEU PAGAMENTO ESTÁ SEGURO';
+
+  @override
+  String get tuPagoSeguroDesc =>
+      'Confiança, rapidez e segurança em cada transação.';
+
+  @override
+  String get revisaTuDonacion => 'Revise sua doação';
+
+  @override
+  String get resumenDeTuDonacion => 'Resumo da sua doação';
+
+  @override
+  String get para => 'Para';
+
+  @override
+  String get concepto => 'Conceito';
+
+  @override
+  String get monto => 'Valor';
+
+  @override
+  String get tuDonacionEsSegura => 'Sua doação é segura';
+
+  @override
+  String get conexionCifradaProteccion =>
+      'Usamos uma conexão criptografada para proteger\nsuas informações e sua contribuição.';
+
+  @override
+  String get confirmarDonacion => 'Confirmar doação';
+
+  @override
+  String get confirmarTransaccion => 'Confirmar Transação';
+
+  @override
+  String get transaccionValidaraOdoo =>
+      'A transação será validada através da plataforma segura do Odoo.';
+
+  @override
+  String get totalAProcesar => 'Total a processar';
+
+  @override
+  String get pagarYValidar => 'Pagar e Validar';
+
+  @override
+  String get validandoConOdoo => 'Validando com Odoo...';
+
+  @override
+  String get registrandoOrdenConfirmandoPago =>
+      'Estamos registrando seu pedido e confirmando o pagamento.';
+
+  @override
+  String get aporteExitoso => 'Contribuição Concluída com Sucesso!';
+
+  @override
+  String referenciaOdoo(String orden) {
+    return 'Referência Odoo: $orden';
+  }
+
+  @override
+  String get contribucionValidadaRecibo =>
+      'Sua contribuição foi validada e o recibo digital foi enviado para seu e-mail.';
+
+  @override
+  String get finalizar => 'Finalizar';
+
+  @override
+  String get realizarUnAporte => 'Fazer uma contribuição';
+
+  @override
+  String get cuantoDeseasAportar => 'Quanto você deseja contribuir?';
+
+  @override
+  String get mensajeDeApoyo => 'Mensagem de apoio';
+
+  @override
+  String get escribeMensajeOpcional => 'Escreva uma mensagem opcional...';
+
+  @override
+  String get mostrarAporteAnonimo => 'Mostrar minha contribuição como anônima';
+
+  @override
+  String get continuarConElAporte => 'Continuar com a contribuição';
+
+  @override
+  String get proyectoTag => 'PROJETO';
+
+  @override
+  String conceptoProyecto(String titulo) {
+    return 'Projeto: $titulo';
+  }
+
+  @override
+  String get estadoProgramada => 'Agendada';
+
+  @override
+  String get estadoRecibida => 'Recebida';
+
+  @override
+  String get estadoEnRevision => 'Em análise';
+
+  @override
+  String get estadoConfirmada => 'Confirmada';
+
+  @override
+  String get estadoEnProceso => 'Em andamento';
+
+  @override
+  String get fechaMartesHora => 'Terça-feira · 16:00';
+
+  @override
+  String get fechaJuevesHora => 'Quinta-feira · 17:30';
+
+  @override
+  String get fechaViernesHora => 'Sexta-feira · 10:00';
+
+  @override
+  String get detalleOrientacionPastoral =>
+      'Consulta de acompanhamento espiritual e orientação pastoral presencial com o pastor titular.';
+
+  @override
+  String get detallePeticionOracion =>
+      'Pedido de intercessão por rápida recuperação de saúde e bem-estar familiar no culto de oração.';
+
+  @override
+  String get detalleAyudaComunitaria =>
+      'Solicitação de cesta básica e apoio solidário para uma família em situação de necessidade.';
+
+  @override
+  String get detalleConsejeriaFamiliar =>
+      'Sessão de aconselhamento familiar e diálogo orientado pela equipe ministerial da igreja.';
+
+  @override
+  String get detalleVisitaEnfermos =>
+      'Visita domiciliar da equipe de visitação pastoral para ministração e oração por cura.';
+
+  @override
+  String idOdoo(String id) {
+    return 'ID Odoo: $id';
+  }
+
+  @override
+  String get detalleDeLaSolicitud => 'Detalhe da solicitação:';
+
+  @override
+  String get solicitudRegistradaAsignada =>
+      'Solicitação registrada e atribuída à equipe ministerial.';
+
+  @override
+  String get estadoCompletada => 'Concluída';
+
+  @override
+  String get fechaDiezmoMock => '15 Out 2026 · 10:30';
+
+  @override
+  String get metodoTarjetaDebitoVisa => 'Cartão de débito (Visa)';
+
+  @override
+  String get destinoFondoGeneralMinisterial => 'Fundo Geral Ministerial';
+
+  @override
+  String get detalleDiezmoMock =>
+      'Contribuição do dízimo mensal para manutenção do templo e ministério pastoral.';
+
+  @override
+  String get fechaOfrendaMock => '08 Out 2026 · 19:15';
+
+  @override
+  String get metodoTransferenciaACH => 'Transferência ACH';
+
+  @override
+  String get destinoCultoAdoracionDominical => 'Culto de Adoração Dominical';
+
+  @override
+  String get detalleOfrendaMock =>
+      'Oferta voluntária de gratidão e adoração durante o culto de louvor.';
+
+  @override
+  String get fechaCampanaMock => '28 Set 2026 · 16:20';
+
+  @override
+  String get metodoTarjetaCreditoMastercard => 'Cartão de crédito (Mastercard)';
+
+  @override
+  String get destinoCampanaMock => 'Campanha \"Construindo Esperança 2026\"';
+
+  @override
+  String get detalleCampanaMock =>
+      'Contribuição especial voluntária para obras de reforma e manutenção do templo.';
+
+  @override
+  String get fechaAyudaMock => '14 Set 2026 · 11:00';
+
+  @override
+  String get metodoPayPalSaldoDigital => 'PayPal / Saldo digital';
+
+  @override
+  String get destinoProgramaManosQueBendicen =>
+      'Programa \"Mãos que Abençoam\"';
+
+  @override
+  String get detalleAyudaMock =>
+      'Doação beneficente de cestas básicas e medicamentos para famílias vulneráveis.';
+
+  @override
+  String get nuevaDonacion => 'Nova doação';
+
+  @override
+  String get montoAportado => 'Valor contribuído:';
+
+  @override
+  String get fechaYHora => 'Data e hora:';
+
+  @override
+  String get metodo => 'Método:';
+
+  @override
+  String get destino => 'Destino:';
+
+  @override
+  String get detalleDelAporte => 'Detalhe da contribuição:';
+
+  @override
+  String get aporteVoluntarioRegistrado =>
+      'Contribuição voluntária registrada no ATRIO.';
+
+  @override
+  String get errorGuardarSeleccionLocal =>
+      'Não foi possível salvar a seleção localmente.';
+
+  @override
+  String get queremosConocerte => 'Queremos conhecer você';
+
+  @override
+  String get conCualTradicionTeIdentificas =>
+      'Com qual tradição de fé você se identifica?';
+
+  @override
+  String get continuar => 'Continuar';
+
+  @override
+  String get noDenominacional => 'Não denominacional';
+
+  @override
+  String get otra => 'Outra';
+
+  @override
+  String get prefieroIndicarloDespues => 'Prefiro indicar mais tarde';
+
+  @override
+  String get gpsDesactivadoMensaje =>
+      'O GPS está desativado. Ative-o para encontrar igrejas perto de você.';
+
+  @override
+  String get permisoUbicacionNoConcedido =>
+      'Permissão de localização não concedida. O local padrão será exibido.';
+
+  @override
+  String get permisosUbicacionDenegadosPermanentemente =>
+      'Permissões de localização negadas permanentemente nos ajustes.';
+
+  @override
+  String errorServidorCodigo(int codigo) {
+    return 'Erro do servidor: $codigo';
+  }
+
+  @override
+  String noSeEncontraronIglesiasCercanas(String query) {
+    return 'Nenhuma igreja próxima encontrada para \"$query\".';
+  }
+
+  @override
+  String get errorConexionInternet =>
+      'Erro de conexão. Verifique sua internet.';
+
+  @override
+  String get ubicacionExacta => 'Localização exata';
+
+  @override
+  String get seleccionaTuIglesia => 'Selecione sua igreja';
+
+  @override
+  String get buscarIglesiaPlaceholder => 'Buscar igreja ou denominação...';
+
+  @override
+  String get abiertoAhora => 'Aberto agora';
+
+  @override
+  String get cerrado => 'Fechado';
+
+  @override
+  String get seleccionarIglesia => 'Selecionar igreja';
+
+  @override
+  String get codigoPlusNoDisponible => 'Código Plus não disponível';
+
+  @override
+  String get distanciaAproximadaDefault => 'A 1.8 km';
+
+  @override
+  String get servicioDeBienvenida => 'Culto de Boas-vindas';
+
+  @override
+  String get diaHoraDomingo10am => 'Domingo · 10:00';
+
+  @override
+  String get estadoCerradoAbreDomingo => 'Fechado · Abre domingo às 10h';
+
+  @override
+  String get diaDomingo => 'Domingo';
+
+  @override
+  String get cultoDominical10am => '10:00 · Culto Dominical';
+
+  @override
+  String get diaMiercoles => 'Quarta-feira';
+
+  @override
+  String get estudioBiblico730pm => '19:30 · Estudo Bíblico';
+
+  @override
+  String get bienvenidoNuevaComunidad => 'Bem-vindo à sua nova comunidade!';
+
+  @override
+  String get descripcionRegistroIglesia =>
+      'Você foi registrado com sucesso nesta igreja através do ATRIO.';
+
+  @override
+  String get filtroTodas => 'Todas';
+
+  @override
+  String get filtroNoLeidas => 'Não lidas';
+
+  @override
+  String get categoriaEventos => 'Eventos';
+
+  @override
+  String get notiHorarioServicioTitulo => 'Mudança no horário do culto';
+
+  @override
+  String get notiHorarioServicioResumen =>
+      'Quarta de Oração · 19:00 no Templo Principal.';
+
+  @override
+  String get notiHorarioServicioCuerpo =>
+      'Querida congregação: Por motivos de jornada pastoral e preparação para as atividades do mês, nosso culto de intercessão e estudo bíblico desta quarta-feira será adiantado em 30 minutos, iniciando às 19:00. Convidamos você a chegar cedo com sua família.';
+
+  @override
+  String get notiRetiroTitulo => 'Inscrições abertas: Retiro 2026';
+
+  @override
+  String get notiRetiroResumen =>
+      'Vagas limitadas disponíveis para jovens e famílias.';
+
+  @override
+  String get notiRetiroCuerpo =>
+      'Já pode garantir seu lugar! Foram abertas oficialmente as inscrições para o Retiro Anual \"Vida & Fé 2026\" no Acampamento Los Pinos. Você pode fazer sua inscrição diretamente na seção de Eventos do app.';
+
+  @override
+  String get notiCampanaTitulo => 'Campanha solidária \"Mãos que Abençoam\"';
+
+  @override
+  String get notiCampanaResumen =>
+      'Recebimento de mantimentos e doações neste fim de semana.';
+
+  @override
+  String get notiCampanaCuerpo =>
+      'Estaremos arrecadando alimentos não perecíveis, agasalhos e kits de higiene no saguão principal antes de cada reunião dominical. Sua generosa colaboração abençoará mais de 50 famílias vulneráveis em nossa comunidade.';
+
+  @override
+  String get fechaHoy => 'Hoje';
+
+  @override
+  String get fechaAyer => 'Ontem';
+
+  @override
+  String get fechaHace2Dias => 'Há 2 dias';
+
+  @override
+  String get hora1030am => '10:30';
+
+  @override
+  String get hora415pm => '16:15';
+
+  @override
+  String get hora900am => '09:00';
+
+  @override
+  String get remitenteAdmin => 'Administração ATRIO';
+
+  @override
+  String get remitenteEventos => 'Comitê de Eventos';
+
+  @override
+  String get remitentePastoralSocial => 'Pastoral Social';
+
+  @override
+  String get todasNotificacionesLeidas =>
+      'Todas as notificações foram marcadas como lidas';
+
+  @override
+  String notificacionEliminada(String titulo) {
+    return 'Notificação \"$titulo\" excluída';
+  }
+
+  @override
+  String get deshacer => 'Desfazer';
+
+  @override
+  String get borrarAvisos => 'Excluir avisos';
+
+  @override
+  String get confirmarBorrarTodasMensaje =>
+      'Deseja excluir todas as notificações recebidas? Você poderá desfazer a ação imediatamente se desejar.';
+
+  @override
+  String get borrarTodas => 'Excluir todas';
+
+  @override
+  String get todasNotificacionesEliminadas =>
+      'Todas as notificações foram excluídas';
+
+  @override
+  String get avisosEjemploRestaurados => 'Avisos de exemplo restaurados';
+
+  @override
+  String get marcarTodasComoLeidas => 'Marcar todas como lidas';
+
+  @override
+  String get buscarEnAvisosPlaceholder => 'Buscar em avisos...';
+
+  @override
+  String get avisosDeLaComunidad => 'Avisos da comunidade';
+
+  @override
+  String conteoNoLeidas(int conteo) {
+    return '$conteo não lidas';
+  }
+
+  @override
+  String get deslizaAvisoParaEliminar =>
+      'Deslize um aviso para a esquerda para excluí-lo';
+
+  @override
+  String get noHayAvisosMomento => 'Não há avisos no momento';
+
+  @override
+  String get avisosOdooApareceranAqui =>
+      'Os avisos publicados no Odoo aparecerão aqui.';
+
+  @override
+  String get restaurarAvisosEjemplo => 'Restaurar avisos de exemplo';
+
+  @override
+  String get eliminarAviso => 'Excluir aviso';
+
+  @override
+  String get eliminarEsteAviso => 'Excluir este aviso';
+
+  @override
+  String get personalizaTuExperienciaAtrio =>
+      'Personalize sua experiência no ATRIO';
+
+  @override
+  String get idiomaYRegion => 'Idioma e Região';
+
+  @override
+  String get aparienciaYTema => 'Aparência e Tema';
+
+  @override
+  String get modoDeVisualizacion => 'Modo de exibição';
+
+  @override
+  String get temaClaro => 'Claro';
+
+  @override
+  String get temaOscuro => 'Escuro';
+
+  @override
+  String get temaSistema => 'Sistema';
+
+  @override
+  String get transicionDeNovedades => 'Transição de Novidades';
+
+  @override
+  String get bannerPrincipalHero => 'Banner principal (HeroBannerCard)';
+
+  @override
+  String segundosAbrev(int segundos) {
+    return '$segundos seg';
+  }
+
+  @override
+  String get efectoDesvanecimientoBanner =>
+      'Efeito de esmaecimento suave entre versículo, palavra e cultos.';
+
+  @override
+  String get segundosMinimo => '3 seg';
+
+  @override
+  String get segundosPredeterminado => '5 seg (Padrão)';
+
+  @override
+  String get segundosMaximo => '10 seg';
+
+  @override
+  String get notificacionesYRecordatorios => 'Notificações e Lembretes';
+
+  @override
+  String get recibePorcionBiblica => 'Receba uma porção bíblica a cada manhã';
+
+  @override
+  String get horaDelRecordatorio => 'Hora do lembrete';
+
+  @override
+  String get palabraDelDia => 'Palavra do dia';
+
+  @override
+  String get reflexionDevocionalDiario =>
+      'Reflexão e devocional diário para sua fé';
+
+  @override
+  String get cultosEnVivo => 'Cultos ao vivo';
+
+  @override
+  String get alertaTransmisionDirecto =>
+      'Alerta quando começar uma transmissão ao vivo';
+
+  @override
+  String get anunciosEventosGlobales => 'Avisos e eventos globais';
+
+  @override
+  String get conferenciasConciertosAvisos =>
+      'Conferências, shows e avisos das igrejas';
+
+  @override
+  String get lecturaDeLaBiblia => 'Leitura da Bíblia';
+
+  @override
+  String get versionPredeterminada => 'Versão padrão';
+
+  @override
+  String get tamanoTextoLectura => 'Tamanho do texto na leitura';
+
+  @override
+  String get ejemploTextoBiblia =>
+      '«Lâmpada para os meus pés é tua palavra e luz, para o meu caminho.» — Salmos 119:105';
+
+  @override
+  String get mantenerPantallaEncendida => 'Manter tela ligada';
+
+  @override
+  String get evitaBloqueoTelefonoBiblia =>
+      'Evita que o telefone bloqueie enquanto você lê a Bíblia';
+
+  @override
+  String get emisorasYTransmisiones => 'Emissoras e Transmissões';
+
+  @override
+  String get reproduccionAutomatica => 'Reprodução automática';
+
+  @override
+  String get iniciarRadioAlSintonizar =>
+      'Iniciar rádio ao sintonizar a estação';
+
+  @override
+  String get calidadAudioStreaming => 'Qualidade do áudio em streaming';
+
+  @override
+  String get calidadAudioBaja => 'Baixa (64 kbps)';
+
+  @override
+  String get calidadAudioMedia => 'Média (128 kbps)';
+
+  @override
+  String get calidadAudioAlta => 'Alta (256 kbps)';
+
+  @override
+  String get ahorroDeDatosSoloWifi => 'Economia de dados (Apenas Wi-Fi)';
+
+  @override
+  String get reproducirDescargarSoloWifi =>
+      'Reproduzir e baixar em alta qualidade apenas no Wi-Fi';
+
+  @override
+  String get almacenamientoYMemoria => 'Armazenamento e Memória';
+
+  @override
+  String get limpiarMemoriaCache => 'Limpar memória cache';
+
+  @override
+  String get imagenesAudiosTemporales =>
+      'Imagens e áudios temporários (~18.4 MB)';
+
+  @override
+  String get limpiar => 'Limpar';
+
+  @override
+  String get limpiarCacheTitulo => 'Limpar memória cache?';
+
+  @override
+  String get limpiarCacheMensaje =>
+      'Imagens e arquivos temporários serão removidos para liberar armazenamento. Suas notas e favoritos bíblicos não serão excluídos.';
+
+  @override
+  String get memoriaCacheLiberadaExito => 'Memória cache liberada com sucesso';
+
+  @override
+  String get limpiarAhora => 'Limpar agora';
+
+  @override
+  String get restablecerAjustesPredeterminados =>
+      'Redefinir configurações padrão';
+
+  @override
+  String get restablecerConfiguracionTitulo => 'Redefinir configurações?';
+
+  @override
+  String get restablecerConfiguracionMensaje =>
+      'Todas as configurações do app voltarão aos valores iniciais recomendados.';
+
+  @override
+  String get ajustesRestablecidosFabrica =>
+      'Configurações restauradas para os padrões de fábrica';
+
+  @override
+  String get restablecer => 'Redefinir';
+
+  @override
+  String get idiomaEspanolLatino => 'Espanhol (América Latina)';
+
+  @override
+  String get idiomaInglesUSA => 'Inglês (Estados Unidos)';
+
+  @override
+  String get idiomaPortuguesBrasil => 'Português (Brasil)';
+
+  @override
+  String get idiomaFrances => 'Francês';
+
+  @override
+  String get politicaDePrivacidad => 'Política de Privacidade';
+
+  @override
+  String politicaPrivacidadIntro(String fecha) {
+    return 'Última atualização: $fecha\n\nBem-vindo ao ATRIO (\"Viva sua Fé em comunidade\"). Respeitamos sua privacidade e estamos profundamente comprometidos em proteger seus dados pessoais e sua experiência espiritual.\n\nEsta política detalha como coletamos, gerenciamos, protegemos e salvaguardamos suas informações.';
+  }
+
+  @override
+  String get seccionInfoQueRecopilamos => '1. Informações que coletamos';
+
+  @override
+  String get parrafoInfoQueRecopilamos =>
+      '• Dados da conta: Ao iniciar sessão ou registrar-se (e-mail, Google Sign-In ou Apple ID), armazenamos com segurança seu nome e endereço de e-mail.\n\n• Dados comunitários e de perfil: Número de telefone, tradição cristã e igreja ou comunidade à qual está vinculado voluntariamente para adaptar sua experiência eclesiástica.\n\n• Armazenamento Local no Dispositivo: Suas notas bíblicas, passagens favoritas, configurações pessoais e histórico de navegação são salvos localmente no SQLite. Não compartilhamos suas reflexões privadas com terceiros.\n\n• Solicitações e Doações: Registramos o status de seus pedidos de oração, solicitações pastorais e comprovantes de doações ou contribuições para projetos de solidariedade para lhe dar visibilidade e rastreabilidade direta.';
+
+  @override
+  String get seccionUsoServiciosTerceros => '2. Uso de serviços de terceiros';
+
+  @override
+  String get parrafoUsoServiciosTerceros =>
+      'Nossa plataforma se integra com tecnologias de confiança para oferecer funcionalidade completa:\n\n• Google Play Services, Google Sign-In e Sign in with Apple (Autenticação e segurança).\n\n• Google Maps Platform (Para localização geográfica precisa de templos, paróquias e eventos comunitários no mapa interativo).\n\n• Gateways de Pagamento Seguros (Para recepção confiável e criptografada de ofertas, dízimos e contribuições para causas solidárias).\n\n• YouTube e Reprodutores de Transmissões (Para serviços religiosos, eventos ao vivo e programas de rádio).';
+
+  @override
+  String get seccionRetencionYEliminacion => '3. Retenção e exclusão de dados';
+
+  @override
+  String get parrafoRetencionYEliminacion =>
+      'Mantemos os dados de sua conta enquanto ela estiver ativa. De acordo com as diretrizes da Apple App Store (5.1.1 v) e do Google Play Console, você tem o direito incondicional de solicitar a exclusão total e definitiva de sua conta e dados pessoais.\n\nVocê pode realizar esta ação a qualquer momento pela opção \"Excluir conta e dados\" na tela de Perfil, ou enviando um e-mail para soporte@atrioapp.com com o assunto \"Exclusão de Conta\".\n\nTodos os registros locais no SQLite e vínculos no backend serão removidos.';
+
+  @override
+  String get seccionPermisosDelDispositivo => '4. Permissões do dispositivo';
+
+  @override
+  String get parrafoPermisosDelDispositivo =>
+      'O ATRIO solicita apenas permissões estritamente necessárias para o seu funcionamento:\n\n• Localização (GPS): Utilizada exclusivamente ao acessar o mapa para mostrar igrejas e eventos próximos a você.\n\n• Acesso à Internet e Rede: Para sincronizar solicitações, assistir a transmissões ao vivo e validar contribuições.\n\n• Notificações: Para lembretes de cultos, eventos comunitários e respostas a solicitações.';
+
+  @override
+  String get terminosDeUsoTitulo => 'Termos de Uso';
+
+  @override
+  String get parrafoTerminosDeUso =>
+      '1. Conduta e respeito comunitário: O ATRIO é um espaço digital de comunhão, edificação mútua e apoio às obras da igreja. É terminantemente proibido o uso de linguagem difamatória, fraudulenta ou desrespeitosa.\n\n2. Conteúdo bíblico e multimídia: Os textos bíblicos, transmissões e vídeos compartilhados respeitam os direitos autorais de suas respectivas entidades e ministérios. É proibida sua exploração comercial indevida fora da plataforma.\n\n3. Doações e contribuições: As contribuições realizadas através do ATRIO vão diretamente para as comunidades religiosas e projetos solidários selecionados. O aplicativo atua como uma ponte facilitadora transparente e segura.';
+
+  @override
+  String get aceptacionTerminosPoliticas =>
+      'Ao usar o ATRIO, você aceita estes termos e políticas de convivência.';
+
+  @override
+  String get noSePudoCargarVersiculo =>
+      'Não foi possível carregar o versículo.';
+
+  @override
+  String get montoPersonalizado => 'Valor personalizado';
+
+  @override
+  String get montoADonarMoneda => 'Valor a doar (RD\$)';
+
+  @override
+  String get ingresaUnMonto => 'Insira um valor';
+
+  @override
+  String get montoInvalido => 'Valor inválido';
+
+  @override
+  String get elMinimoEs500 => 'O mínimo é RD\$500';
+
+  @override
+  String get elMaximoEs1000000 => 'O máximo é RD\$1.000.000';
+
+  @override
+  String get confirmar => 'Confirmar';
+
+  @override
+  String get confirmarSolicitudTitulo => 'Confirmar Solicitação';
+
+  @override
+  String get solicitudEnviadaEquipoPastoral =>
+      'Sua solicitação será enviada à equipe pastoral da igreja.';
+
+  @override
+  String get tipo => 'Tipo';
+
+  @override
+  String get privada => 'Privada';
+
+  @override
+  String get publica => 'Pública';
+
+  @override
+  String get enviandoAOdoo => 'Enviando para o Odoo...';
+
+  @override
+  String get registrandoSolicitudSistema =>
+      'Estamos registrando sua solicitação no sistema.';
+
+  @override
+  String get solicitudEnviadaExito => 'Solicitação Enviada!';
+
+  @override
+  String get solicitudRegistradaCorrectamente =>
+      'Sua solicitação foi registrada com sucesso. A equipe entrará em contato em breve.';
+
+  @override
+  String get leerReflexion => 'Ler reflexão';
+
+  @override
+  String get verVersiculo => 'Ver versículo';
+
+  @override
+  String get enVivoAhora => 'Ao vivo agora';
+
+  @override
+  String get enVivo => 'AO VIVO';
+
+  @override
+  String citaBase(String cita) {
+    return 'Citação base: $cita';
+  }
+
+  @override
+  String get entendidoAmen => 'Entendido · Amém';
 }

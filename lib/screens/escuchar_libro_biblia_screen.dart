@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../data/database_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../servicios/connectivity_service.dart';
 
 class EscucharLibroBibliaScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
 
   YoutubePlayerController? _youtubeController;
   String _libroNombre = '';
+  String _libroNombreOriginal = '';
   int _capituloActual = 1;
 
   final List<Map<String, dynamic>> _antiguoTestamento = [
@@ -519,6 +521,161 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     }
   }
 
+  String _obtenerNombreLibro(int id, String fallback, AppLocalizations? l10n) {
+    if (l10n == null) return fallback;
+    switch (id) {
+      case 1:
+        return l10n.libroGenesis;
+      case 2:
+        return l10n.libroExodo;
+      case 3:
+        return l10n.libroLevitico;
+      case 4:
+        return l10n.libroNumeros;
+      case 5:
+        return l10n.libroDeuteronomio;
+      case 6:
+        return l10n.libroJosue;
+      case 7:
+        return l10n.libroJueces;
+      case 8:
+        return l10n.libroRut;
+      case 9:
+        return l10n.libro1Samuel;
+      case 10:
+        return l10n.libro2Samuel;
+      case 11:
+        return l10n.libro1Reyes;
+      case 12:
+        return l10n.libro2Reyes;
+      case 13:
+        return l10n.libro1Cronicas;
+      case 14:
+        return l10n.libro2Cronicas;
+      case 15:
+        return l10n.libroEsdras;
+      case 16:
+        return l10n.libroNehemias;
+      case 17:
+        return l10n.libroEster;
+      case 18:
+        return l10n.libroJob;
+      case 19:
+        return l10n.libroSalmos;
+      case 20:
+        return l10n.libroProverbios;
+      case 21:
+        return l10n.libroEclesiastes;
+      case 22:
+        return l10n.libroCantares;
+      case 23:
+        return l10n.libroIsaias;
+      case 24:
+        return l10n.libroJeremias;
+      case 25:
+        return l10n.libroLamentaciones;
+      case 26:
+        return l10n.libroEzequiel;
+      case 27:
+        return l10n.libroDaniel;
+      case 28:
+        return l10n.libroOseas;
+      case 29:
+        return l10n.libroJoel;
+      case 30:
+        return l10n.libroAmos;
+      case 31:
+        return l10n.libroAbdias;
+      case 32:
+        return l10n.libroJonas;
+      case 33:
+        return l10n.libroMiqueas;
+      case 34:
+        return l10n.libroNahum;
+      case 35:
+        return l10n.libroHabacuc;
+      case 36:
+        return l10n.libroSofonias;
+      case 37:
+        return l10n.libroHageo;
+      case 38:
+        return l10n.libroZacarias;
+      case 39:
+        return l10n.libroMalaquias;
+      case 40:
+        return l10n.libroMateo;
+      case 41:
+        return l10n.libroMarcos;
+      case 42:
+        return l10n.libroLucas;
+      case 43:
+        return l10n.libroJuan;
+      case 44:
+        return l10n.libroHechos;
+      case 45:
+        return l10n.libroRomanos;
+      case 46:
+        return l10n.libro1Corintios;
+      case 47:
+        return l10n.libro2Corintios;
+      case 48:
+        return l10n.libroGalatas;
+      case 49:
+        return l10n.libroEfesios;
+      case 50:
+        return l10n.libroFilipenses;
+      case 51:
+        return l10n.libroColosenses;
+      case 52:
+        return l10n.libro1Tesalonicenses;
+      case 53:
+        return l10n.libro2Tesalonicenses;
+      case 54:
+        return l10n.libro1Timoteo;
+      case 55:
+        return l10n.libro2Timoteo;
+      case 56:
+        return l10n.libroTito;
+      case 57:
+        return l10n.libroFilemon;
+      case 58:
+        return l10n.libroHebreos;
+      case 59:
+        return l10n.libroSantiago;
+      case 60:
+        return l10n.libro1Pedro;
+      case 61:
+        return l10n.libro2Pedro;
+      case 62:
+        return l10n.libro1Juan;
+      case 63:
+        return l10n.libro2Juan;
+      case 64:
+        return l10n.libro3Juan;
+      case 65:
+        return l10n.libroJudas;
+      case 66:
+        return l10n.libroApocalipsis;
+      default:
+        return fallback;
+    }
+  }
+
+  List<Map<String, dynamic>> _traducirLibros(
+    List<Map<String, dynamic>> libros,
+    AppLocalizations? l10n,
+  ) {
+    return libros.map((libro) {
+      final id = libro['id'] as int;
+      final original = libro['nombre'] as String;
+      return {
+        ...libro,
+        'nombreOriginal': original,
+        'nombre': _obtenerNombreLibro(id, original, l10n),
+      };
+    }).toList();
+  }
+
   // =========================================================
   // LOGICA DEL REPRODUCTOR CON SQLITE Y VALIDACION DE RED
   // =========================================================
@@ -528,6 +685,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     Color azulFondo,
     Color amarilloOro,
   ) async {
+    final l10n = AppLocalizations.of(context);
+
     // 1. Verificación previa de conexión a Internet real
     final tieneInternet = await ConnectivityService.instance.hasRealInternet();
     if (!tieneInternet) {
@@ -549,7 +708,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
               SizedBox(width: screenWidth * 0.03),
               Expanded(
                 child: Text(
-                  'No hay conexión a internet para reproducir el audio.',
+                  l10n?.sinInternetAudio ??
+                      'No hay conexión a internet para reproducir el audio.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: screenWidth * 0.035,
@@ -566,8 +726,11 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     }
 
     // 2. Consulta a la Base de Datos de manera asíncrona
+    final nombreParaConsulta = _libroNombreOriginal.isNotEmpty
+        ? _libroNombreOriginal
+        : _libroNombre;
     final dataCapitulo = await DatabaseHelper.instance.getCapitulo(
-      _libroNombre,
+      nombreParaConsulta,
       _capituloActual,
     );
 
@@ -593,7 +756,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
               SizedBox(width: screenWidth * 0.03),
               Expanded(
                 child: Text(
-                  'El audio dramatizado de $_libroNombre estará disponible próximamente.',
+                  l10n?.audioDramatizadoProximamente(_libroNombre) ??
+                      'El audio dramatizado de $_libroNombre estará disponible próximamente.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: screenWidth * 0.035,
@@ -659,7 +823,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                 backgroundColor: azulFondo,
                 behavior: SnackBarBehavior.floating,
                 content: Text(
-                  'Fin de la lectura de $_libroNombre $_capituloActual',
+                  l10n?.finLecturaAudio(_libroNombre, '$_capituloActual') ??
+                      'Fin de la lectura de $_libroNombre $_capituloActual',
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -690,7 +855,11 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                         ),
                         SizedBox(width: screenWidth * 0.007),
                         Text(
-                          '$_libroNombre $_capituloActual (Audio)',
+                          l10n?.audioCapituloTitulo(
+                                _libroNombre,
+                                '$_capituloActual',
+                              ) ??
+                              '$_libroNombre $_capituloActual (Audio)',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.042,
@@ -741,12 +910,14 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
   // =========================================================
   void _mostrarSelectorCapitulos(
     String nombreLibro,
+    String nombreOriginal,
     int totalCapitulos,
     double screenWidth,
     double usableHeight,
     Color azulFondo,
     Color amarilloOro,
   ) {
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -787,7 +958,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                       ),
                     ),
                     Text(
-                      'Libros',
+                      l10n?.libros ?? 'Libros',
                       style: TextStyle(
                         color: Colors.black87,
                         fontSize: screenWidth * 0.045,
@@ -862,6 +1033,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                         Navigator.pop(ctx);
                         setState(() {
                           _libroNombre = nombreLibro;
+                          _libroNombreOriginal = nombreOriginal;
                           _capituloActual = numeroCapitulo;
                         });
 
@@ -904,6 +1076,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -915,9 +1089,10 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE5E5E5);
 
-    final listaBase = _isAntiguoTestamento
-        ? _antiguoTestamento
-        : _nuevoTestamento;
+    final listaBase = _traducirLibros(
+      _isAntiguoTestamento ? _antiguoTestamento : _nuevoTestamento,
+      l10n,
+    );
     final librosFiltrados = listaBase.where((libro) {
       final nombre = (libro['nombre'] as String).toLowerCase();
       return nombre.contains(_filtroBusqueda.toLowerCase());
@@ -960,7 +1135,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                           ),
                         ),
                         Text(
-                          'Escuchar Biblia',
+                          l10n?.escucharBiblia ?? 'Escuchar Biblia',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: screenWidth * 0.055,
@@ -1006,7 +1181,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                             });
                           },
                           decoration: InputDecoration(
-                            hintText: 'Filtrar por nombre de libro...',
+                            hintText: l10n?.filtrarPorNombreDeLibro ??
+                                'Filtrar por nombre de libro...',
                             hintStyle: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: screenWidth * 0.035,
@@ -1078,7 +1254,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                                       ),
                                       child: Center(
                                         child: Text(
-                                          'Antiguo Testamento',
+                                          l10n?.antiguoTestamento ??
+                                              'Antiguo Testamento',
                                           style: TextStyle(
                                             color: _isAntiguoTestamento
                                                 ? Colors.white
@@ -1107,7 +1284,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                                       ),
                                       child: Center(
                                         child: Text(
-                                          'Nuevo Testamento',
+                                          l10n?.nuevoTestamento ??
+                                              'Nuevo Testamento',
                                           style: TextStyle(
                                             color: !_isAntiguoTestamento
                                                 ? Colors.white
@@ -1130,7 +1308,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                           child: librosFiltrados.isEmpty
                               ? Center(
                                   child: Text(
-                                    'No se encontraron libros',
+                                    l10n?.noSeEncontraronLibros ??
+                                        'No se encontraron libros',
                                     style: TextStyle(
                                       color: Colors.grey.shade600,
                                       fontSize: screenWidth * 0.038,
@@ -1150,6 +1329,10 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                                     final libro = librosFiltrados[index];
                                     return _buildBookTile(
                                       nombre: libro['nombre'] as String,
+                                      nombreOriginal:
+                                          (libro['nombreOriginal'] ??
+                                                  libro['nombre'])
+                                              as String,
                                       capitulos: libro['capitulos'] as int,
                                       colorIcono: libro['color'] as Color,
                                       icono: libro['icon'] as IconData,
@@ -1176,6 +1359,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
 
   Widget _buildBookTile({
     required String nombre,
+    required String nombreOriginal,
     required int capitulos,
     required Color colorIcono,
     required IconData icono,
@@ -1185,6 +1369,11 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     required Color amarilloOro,
     required Color grisBorde,
   }) {
+    final l10n = AppLocalizations.of(context);
+    final textoCapitulos = capitulos == 1
+        ? (l10n?.unCapitulo ?? '1 capítulo')
+        : (l10n?.totalCapitulos('$capitulos') ?? '$capitulos capítulos');
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1198,6 +1387,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
           onTap: () {
             _mostrarSelectorCapitulos(
               nombre,
+              nombreOriginal,
               capitulos,
               screenWidth,
               usableHeight,
@@ -1240,7 +1430,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                       ),
                       SizedBox(height: usableHeight * 0.003),
                       Text(
-                        '$capitulos capítulos',
+                        textoCapitulos,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: screenWidth * 0.032,

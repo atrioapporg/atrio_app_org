@@ -591,5 +591,508 @@
         "type": "String"
       }
     }
-  }
+  },
+  "filtrarPorNombreDeLibro": "Filtrar por nombre de libro...",
+  "antiguoTestamento": "Antiguo Testamento",
+  "nuevoTestamento": "Nuevo Testamento",
+  "noSeEncontraronLibros": "No se encontraron libros",
+  "unCapitulo": "1 capítulo",
+  "totalCapitulos": "{total} capítulos",
+  "@totalCapitulos": {
+    "description": "Total de capítulos de un libro",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "libroGenesis": "Génesis",
+  "libroExodo": "Éxodo",
+  "libroLevitico": "Levítico",
+  "libroNumeros": "Números",
+  "libroDeuteronomio": "Deuteronomio",
+  "libroJosue": "Josué",
+  "libroJueces": "Jueces",
+  "libroRut": "Rut",
+  "libro1Samuel": "1 Samuel",
+  "libro2Samuel": "2 Samuel",
+  "libro1Reyes": "1 Reyes",
+  "libro2Reyes": "2 Reyes",
+  "libro1Cronicas": "1 Crónicas",
+  "libro2Cronicas": "2 Crónicas",
+  "libroEsdras": "Esdras",
+  "libroNehemias": "Nehemías",
+  "libroEster": "Ester",
+  "libroJob": "Job",
+  "libroSalmos": "Salmos",
+  "libroProverbios": "Proverbios",
+  "libroEclesiastes": "Eclesiastés",
+  "libroCantares": "Cantares",
+  "libroIsaias": "Isaías",
+  "libroJeremias": "Jeremías",
+  "libroLamentaciones": "Lamentaciones",
+  "libroEzequiel": "Ezequiel",
+  "libroDaniel": "Daniel",
+  "libroOseas": "Oseas",
+  "libroJoel": "Joel",
+  "libroAmos": "Amós",
+  "libroAbdias": "Abdías",
+  "libroJonas": "Jonás",
+  "libroMiqueas": "Miqueas",
+  "libroNahum": "Nahúm",
+  "libroHabacuc": "Habacuc",
+  "libroSofonias": "Sofonías",
+  "libroHageo": "Hageo",
+  "libroZacarias": "Zacarías",
+  "libroMalaquias": "Malaquías",
+  "libroMateo": "Mateo",
+  "libroMarcos": "Marcos",
+  "libroLucas": "Lucas",
+  "libroJuan": "Juan",
+  "libroHechos": "Hechos",
+  "libroRomanos": "Romanos",
+  "libro1Corintios": "1 Corintios",
+  "libro2Corintios": "2 Corintios",
+  "libroGalatas": "Gálatas",
+  "libroEfesios": "Efesios",
+  "libroFilipenses": "Filipenses",
+  "libroColosenses": "Colosenses",
+  "libro1Tesalonicenses": "1 Tesalonicenses",
+  "libro2Tesalonicenses": "2 Tesalonicenses",
+  "libro1Timoteo": "1 Timoteo",
+  "libro2Timoteo": "2 Timoteo",
+  "libroTito": "Tito",
+  "libroFilemon": "Filemón",
+  "libroHebreos": "Hebreos",
+  "libroSantiago": "Santiago",
+  "libro1Pedro": "1 Pedro",
+  "libro2Pedro": "2 Pedro",
+  "libro1Juan": "1 Juan",
+  "libro2Juan": "2 Juan",
+  "libro3Juan": "3 Juan",
+  "libroJudas": "Judas",
+  "libroApocalipsis": "Apocalipsis",
+  "capitulosTab": "Capítulos",
+  "informacionTab": "Información",
+  "acercaDelLibro": "Acerca del libro",
+  "errorCargarInfoLibro": "No se pudo cargar la información del libro.",
+  "escucharBiblia": "Escuchar Biblia",
+  "sinInternetAudio": "No hay conexión a internet para reproducir el audio.",
+  "audioDramatizadoProximamente": "El audio dramatizado de {nombre} estará disponible próximamente.",
+  "@audioDramatizadoProximamente": {
+    "description": "Aviso de audio disponible próximamente",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "finLecturaAudio": "Fin de la lectura de {libro} {capitulo}",
+  "@finLecturaAudio": {
+    "description": "Aviso de fin de lectura de audio",
+    "placeholders": {
+      "libro": {
+        "type": "String"
+      },
+      "capitulo": {
+        "type": "String"
+      }
+    }
+  },
+  "audioCapituloTitulo": "{libro} {capitulo} (Audio)",
+  "@audioCapituloTitulo": {
+    "description": "Título del reproductor de audio",
+    "placeholders": {
+      "libro": {
+        "type": "String"
+      },
+      "capitulo": {
+        "type": "String"
+      }
+    }
+  },
+  "eliminadoDeFavoritos": "Eliminado de favoritos",
+  "sinFavoritos": "Sin favoritos",
+  "sinFavoritosDesc": "Toca el ícono de marcador en cualquier capítulo para guardarlo aquí y acceder rápidamente.",
+  "guardadoEl": "Guardado el {fecha}",
+  "@guardadoEl": {
+    "description": "Fecha en que se guardó el favorito",
+    "placeholders": {
+      "fecha": {
+        "type": "String"
+      }
+    }
+  },
+  "desdeFavoritos": "Desde Favoritos",
+  "eliminarNotaTitulo": "Eliminar nota",
+  "seguroEliminarNota": "¿Estás seguro de que deseas eliminar esta nota de forma permanente?",
+  "eliminar": "Eliminar",
+  "notaEliminadaCorrectamente": "Nota eliminada correctamente",
+  "aunNoTienesNotas": "Aún no tienes notas",
+  "aunNoTienesNotasDesc": "Tus reflexiones y apuntes bíblicos aparecerán aquí. Abre cualquier capítulo y toca el ícono de Nota para empezar.",
+  "nuevaSolicitud": "Nueva solicitud",
+  "tipoSolicitudLabel": "Tipo de solicitud",
+  "seleccionaUnaOpcion": "Selecciona una opción",
+  "asunto": "Asunto",
+  "asuntoPlaceholder": "Escribe un asunto breve",
+  "asuntoObligatorio": "El asunto es obligatorio",
+  "describeComoAyudarte": "Describe cómo podemos ayudarte",
+  "descripcionObligatoria": "La descripción es obligatoria",
+  "detallesSolicitudPlaceholder": "Cuéntanos los detalles de tu solicitud",
+  "telefonoObligatorio": "El teléfono es obligatorio",
+  "telefonoInvalido": "Ingresa un número de teléfono válido",
+  "solicitudPrivada": "Solicitud privada",
+  "solicitudPrivadaDesc": "Solo el equipo pastoral podrá verla",
+  "general": "General",
+  "completaCamposObligatorios": "Por favor completa todos los campos obligatorios.",
+  "enviarSolicitud": "Enviar solicitud",
+  "realizaTuAporte": "Realiza tu aporte",
+  "errorCargarDatos": "Error al cargar datos",
+  "tipoDonacion": "Tipo de donación",
+  "seleccionaElMonto": "Selecciona el monto",
+  "otroMonto": "Otro monto",
+  "frecuencia": "Frecuencia",
+  "frecuenciaUnaSolaVez": "Una sola vez",
+  "frecuenciaMensual": "Mensual",
+  "metodoDePago": "Método de pago",
+  "transferencia": "Transferencia",
+  "donacionAnonima": "Donación anónima",
+  "donacionAnonimaDesc": "Tu nombre no será visible en los listados.",
+  "continuarDeFormaSegura": "Continuar de forma segura",
+  "cuentaCopiadaPortapapeles": "¡Cuenta copiada al portapapeles!",
+  "metodosTitulo": "MÉTODOS",
+  "dePagoTitulo": "de pago",
+  "viaTransferencia": "VÍA TRANSFERENCIA",
+  "aceptamosTransferenciasDesc": "Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.",
+  "tuPagoEstaSeguro": "TU PAGO ESTÁ SEGURO",
+  "tuPagoSeguroDesc": "Confianza, rapidez y seguridad en cada transacción.",
+  "revisaTuDonacion": "Revisa tu donación",
+  "resumenDeTuDonacion": "Resumen de tu donación",
+  "para": "Para",
+  "concepto": "Concepto",
+  "monto": "Monto",
+  "tuDonacionEsSegura": "Tu donación es segura",
+  "conexionCifradaProteccion": "Usamos conexión cifrada para proteger\ntu información y tu aporte.",
+  "confirmarDonacion": "Confirmar donación",
+  "confirmarTransaccion": "Confirmar Transacción",
+  "transaccionValidaraOdoo": "La transacción se validará mediante la pasarela segura de Odoo.",
+  "totalAProcesar": "Total a procesar",
+  "pagarYValidar": "Pagar y Validar",
+  "validandoConOdoo": "Validando con Odoo...",
+  "registrandoOrdenConfirmandoPago": "Estamos registrando tu orden y confirmando el pago.",
+  "aporteExitoso": "¡Aporte Exitoso!",
+  "referenciaOdoo": "Referencia Odoo: {orden}",
+  "@referenciaOdoo": {
+    "description": "Referencia de la orden generada por Odoo",
+    "placeholders": {
+      "orden": {
+        "type": "String"
+      }
+    }
+  },
+  "contribucionValidadaRecibo": "Tu contribución ha sido validada y el recibo digital fue enviado a tu correo.",
+  "finalizar": "Finalizar",
+  "realizarUnAporte": "Realizar un aporte",
+  "cuantoDeseasAportar": "¿Cuánto deseas aportar?",
+  "mensajeDeApoyo": "Mensaje de apoyo",
+  "escribeMensajeOpcional": "Escribe un mensaje opcional...",
+  "mostrarAporteAnonimo": "Mostrar mi aporte como anónimo",
+  "continuarConElAporte": "Continuar con el aporte",
+  "proyectoTag": "PROYECTO",
+  "conceptoProyecto": "Proyecto: {titulo}",
+  "@conceptoProyecto": {
+    "description": "Concepto del aporte al proyecto",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoProgramada": "Programada",
+  "estadoRecibida": "Recibida",
+  "estadoEnRevision": "En revisión",
+  "estadoConfirmada": "Confirmada",
+  "estadoEnProceso": "En proceso",
+  "fechaMartesHora": "Martes · 4:00 p. m.",
+  "fechaJuevesHora": "Jueves · 5:30 p. m.",
+  "fechaViernesHora": "Viernes · 10:00 a. m.",
+  "detalleOrientacionPastoral": "Cita de acompañamiento espiritual y orientación pastoral presencial con el pastor titular.",
+  "detallePeticionOracion": "Petición de intercesión por pronta recuperación de salud y bienestar familiar en el culto de oración.",
+  "detalleAyudaComunitaria": "Solicitud de canasta de alimentos básicos y apoyo solidario para una familia en situación de necesidad.",
+  "detalleConsejeriaFamiliar": "Sesión de consejería familiar y diálogo guiado por el equipo ministerial de la iglesia.",
+  "detalleVisitaEnfermos": "Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.",
+  "idOdoo": "ID Odoo: {id}",
+  "@idOdoo": {
+    "description": "Identificador Odoo de la solicitud",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "REQ-2026-0041"
+      }
+    }
+  },
+  "detalleDeLaSolicitud": "Detalle de la solicitud:",
+  "solicitudRegistradaAsignada": "Solicitud registrada y asignada al equipo ministerial.",
+  "estadoCompletada": "Completada",
+  "fechaDiezmoMock": "15 Oct 2026 · 10:30 a. m.",
+  "metodoTarjetaDebitoVisa": "Tarjeta de débito (Visa)",
+  "destinoFondoGeneralMinisterial": "Fondo General Ministerial",
+  "detalleDiezmoMock": "Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.",
+  "fechaOfrendaMock": "08 Oct 2026 · 7:15 p. m.",
+  "metodoTransferenciaACH": "Transferencia ACH",
+  "destinoCultoAdoracionDominical": "Culto de Adoración Dominical",
+  "detalleOfrendaMock": "Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.",
+  "fechaCampanaMock": "28 Sep 2026 · 4:20 p. m.",
+  "metodoTarjetaCreditoMastercard": "Tarjeta de crédito (Mastercard)",
+  "destinoCampanaMock": "Campaña \"Construyendo Esperanza 2026\"",
+  "detalleCampanaMock": "Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.",
+  "fechaAyudaMock": "14 Sep 2026 · 11:00 a. m.",
+  "metodoPayPalSaldoDigital": "PayPal / Saldo digital",
+  "destinoProgramaManosQueBendicen": "Programa \"Manos que Bendicen\"",
+  "detalleAyudaMock": "Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.",
+  "nuevaDonacion": "Nueva donación",
+  "montoAportado": "Monto aportado:",
+  "fechaYHora": "Fecha y hora:",
+  "metodo": "Método:",
+  "destino": "Destino:",
+  "detalleDelAporte": "Detalle del aporte:",
+  "aporteVoluntarioRegistrado": "Aporte voluntario registrado en ATRIO.",
+  "errorGuardarSeleccionLocal": "No se pudo guardar la selección localmente.",
+  "queremosConocerte": "Queremos conocerte",
+  "conCualTradicionTeIdentificas": "¿Con cuál tradición de fe te identificas?",
+  "continuar": "Continuar",
+  "noDenominacional": "No denominacional",
+  "otra": "Otra",
+  "prefieroIndicarloDespues": "Prefiero indicarlo después",
+  "gpsDesactivadoMensaje": "El GPS está desactivado. Actívalo para encontrar iglesias cercanas a ti.",
+  "ajustes": "Ajustes",
+  "permisoUbicacionNoConcedido": "Permiso de ubicación no concedido. Se mostrará ubicación predeterminada.",
+  "permisosUbicacionDenegadosPermanentemente": "Permisos de ubicación denegados permanentemente en los ajustes.",
+  "errorServidorCodigo": "Error del servidor: {codigo}",
+  "@errorServidorCodigo": {
+    "description": "Error al consultar servidor con código de estado",
+    "placeholders": {
+      "codigo": {
+        "type": "int"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasCercanas": "No se encontraron iglesias cercanas para \"{query}\".",
+  "@noSeEncontraronIglesiasCercanas": {
+    "description": "Mensaje cuando no se encuentran iglesias para la búsqueda",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "errorConexionInternet": "Error de conexión. Verifica tu internet.",
+  "sinNombre": "Sin nombre",
+  "comunidadCristiana": "Comunidad cristiana",
+  "aDistanciaKm": "A {distancia} km",
+  "@aDistanciaKm": {
+    "description": "Distancia en kilómetros",
+    "placeholders": {
+      "distancia": {
+        "type": "String"
+      }
+    }
+  },
+  "ubicacionExacta": "Ubicación exacta",
+  "seleccionaTuIglesia": "Selecciona tu iglesia",
+  "buscarIglesiaPlaceholder": "Buscar iglesia o denominación...",
+  "abiertoAhora": "Abierto ahora",
+  "cerrado": "Cerrado",
+  "seleccionarIglesia": "Seleccionar iglesia",
+  "codigoPlusNoDisponible": "Código Plus no disponible",
+  "distanciaAproximadaDefault": "A 1.8 km",
+  "servicioDeBienvenida": "Servicio de Bienvenida",
+  "diaHoraDomingo10am": "Domingo · 10:00 a. m.",
+  "estadoCerradoAbreDomingo": "Cerrado · Abre a las 10 a.m. del dom",
+  "diaDomingo": "Domingo",
+  "cultoDominical10am": "10:00 a. m. · Culto Dominical",
+  "diaMiercoles": "Miércoles",
+  "estudioBiblico730pm": "7:30 p. m. · Estudio Bíblico",
+  "bienvenidoNuevaComunidad": "¡Bienvenido a tu nueva comunidad!",
+  "descripcionRegistroIglesia": "Te has registrado correctamente en esta iglesia a través de atrio.",
+  "filtroTodas": "Todas",
+  "filtroNoLeidas": "No leídas",
+  "categoriaServicios": "Servicios",
+  "categoriaEventos": "Eventos",
+  "categoriaComunidad": "Comunidad",
+  "notiHorarioServicioTitulo": "Cambio de horario de servicio",
+  "notiHorarioServicioResumen": "Miércoles de Oración · 7:00 p. m. en el Templo Principal.",
+  "notiHorarioServicioCuerpo": "Estimada congregación: Por motivos de la jornada pastoral y preparación para las actividades del mes, nuestro servicio de intercesión y estudio bíblico de este miércoles se adelantará 30 minutos, iniciando a las 7:00 p. m. Te invitamos a llegar temprano con tu familia.",
+  "notiRetiroTitulo": "Inscripciones abiertas: Retiro 2026",
+  "notiRetiroResumen": "Cupos limitados disponibles para jóvenes y familias.",
+  "notiRetiroCuerpo": "¡Ya puedes apartar tu lugar! Se han abierto formalmente los registros para el Retiro Anual \"Vida & Fe 2026\" en el Campamento Los Pinos. Puedes realizar tu inscripción directamente desde la sección de Eventos en la app.",
+  "notiCampanaTitulo": "Campaña solidaria \"Manos que Bendicen\"",
+  "notiCampanaResumen": "Recepción de víveres y donaciones este fin de semana.",
+  "notiCampanaCuerpo": "Estaremos recolectando alimentos no perecibles, abrigos y kits de aseo en el vestíbulo principal antes de cada reunión dominical. Tu generosa colaboración bendecirá a más de 50 familias vulnerables en nuestra comunidad.",
+  "fechaHoy": "Hoy",
+  "fechaAyer": "Ayer",
+  "fechaHace2Dias": "Hace 2 días",
+  "hora1030am": "10:30 a. m.",
+  "hora415pm": "4:15 p. m.",
+  "hora900am": "9:00 a. m.",
+  "remitenteAdmin": "Administración ATRIO",
+  "remitenteEventos": "Comité de Eventos",
+  "remitentePastoralSocial": "Pastoral Social",
+  "todasNotificacionesLeidas": "Todas las notificaciones han sido marcadas como leídas",
+  "notificacionEliminada": "Notificación \"{titulo}\" eliminada",
+  "@notificacionEliminada": {
+    "description": "Mensaje al eliminar una notificación",
+    "placeholders": {
+      "titulo": {
+        "type": "String"
+      }
+    }
+  },
+  "deshacer": "Deshacer",
+  "borrarAvisos": "Borrar avisos",
+  "confirmarBorrarTodasMensaje": "¿Deseas eliminar todas las notificaciones recibidas? Podrás deshacer la acción inmediatamente si lo deseas.",
+  "cancelar": "Cancelar",
+  "borrarTodas": "Borrar todas",
+  "todasNotificacionesEliminadas": "Todas las notificaciones han sido eliminadas",
+  "avisosEjemploRestaurados": "Avisos de ejemplo restaurados",
+  "notificaciones": "Notificaciones",
+  "marcarTodasComoLeidas": "Marcar todas como leídas",
+  "buscarEnAvisosPlaceholder": "Buscar en avisos...",
+  "avisosDeLaComunidad": "Avisos de la comunidad",
+  "conteoNoLeidas": "{conteo} no leídas",
+  "@conteoNoLeidas": {
+    "description": "Conteo de notificaciones no leídas",
+    "placeholders": {
+      "conteo": {
+        "type": "int"
+      }
+    }
+  },
+  "deslizaAvisoParaEliminar": "Desliza un aviso hacia la izquierda para eliminarlo",
+  "noHayAvisosMomento": "No hay avisos en este momento",
+  "avisosOdooApareceranAqui": "Los avisos publicados en Odoo aparecerán aquí.",
+  "restaurarAvisosEjemplo": "Restaurar avisos de ejemplo",
+  "eliminar": "Eliminar",
+  "eliminarAviso": "Eliminar aviso",
+  "eliminarEsteAviso": "Eliminar este aviso",
+  "entendido": "Entendido",
+  "personalizaTuExperienciaAtrio": "Personaliza tu experiencia en ATRIO",
+  "idiomaYRegion": "Idioma y Región",
+  "idiomaPreferido": "Idioma preferido",
+  "seleccionarIdioma": "Seleccionar Idioma",
+  "aparienciaYTema": "Apariencia y Tema",
+  "modoDeVisualizacion": "Modo de visualización",
+  "temaClaro": "Claro",
+  "temaOscuro": "Oscuro",
+  "temaSistema": "Sistema",
+  "transicionDeNovedades": "Transición de Novedades",
+  "bannerPrincipalHero": "Banner principal (HeroBannerCard)",
+  "segundosAbrev": "{segundos} seg",
+  "@segundosAbrev": {
+    "description": "Tiempo en segundos abreviado",
+    "placeholders": {
+      "segundos": {
+        "type": "int"
+      }
+    }
+  },
+  "efectoDesvanecimientoBanner": "Efecto de desvanecimiento suave entre versículo, palabra y cultos.",
+  "segundosMinimo": "3 seg",
+  "segundosPredeterminado": "5 seg (Predeterminado)",
+  "segundosMaximo": "10 seg",
+  "notificacionesYRecordatorios": "Notificaciones y Recordatorios",
+  "versiculoDelDia": "Versículo del día",
+  "recibePorcionBiblica": "Recibe una porción bíblica cada mañana",
+  "horaDelRecordatorio": "Hora del recordatorio",
+  "palabraDelDia": "Palabra del día",
+  "reflexionDevocionalDiario": "Reflexión y devocional diario para tu fe",
+  "cultosEnVivo": "Cultos en vivo",
+  "alertaTransmisionDirecto": "Alerta cuando comience una transmisión en directo",
+  "anunciosEventosGlobales": "Anuncios y eventos globales",
+  "conferenciasConciertosAvisos": "Conferencias, conciertos y avisos de iglesias",
+  "lecturaDeLaBiblia": "Lectura de la Biblia",
+  "versionPredeterminada": "Versión predeterminada",
+  "tamanoTextoLectura": "Tamaño de texto en lectura",
+  "ejemploTextoBiblia": "«Lámpara es a mis pies tu palabra, y lumbrera a mi camino.» — Salmos 119:105",
+  "mantenerPantallaEncendida": "Mantener pantalla encendida",
+  "evitaBloqueoTelefonoBiblia": "Evita que el teléfono se bloquee mientras lees la Biblia",
+  "emisorasYTransmisiones": "Emisoras y Transmisiones",
+  "reproduccionAutomatica": "Reproducción automática",
+  "iniciarRadioAlSintonizar": "Iniciar la radio al sintonizar la emisora",
+  "calidadAudioStreaming": "Calidad de audio streaming",
+  "calidadAudioBaja": "Baja (64 kbps)",
+  "calidadAudioMedia": "Media (128 kbps)",
+  "calidadAudioAlta": "Alta (256 kbps)",
+  "ahorroDeDatosSoloWifi": "Ahorro de datos (Solo Wi-Fi)",
+  "reproducirDescargarSoloWifi": "Reproducir y descargar en alta calidad solo con Wi-Fi",
+  "almacenamientoYMemoria": "Almacenamiento y Memoria",
+  "limpiarMemoriaCache": "Limpiar memoria caché",
+  "imagenesAudiosTemporales": "Imágenes y audios temporales (~18.4 MB)",
+  "limpiar": "Limpiar",
+  "limpiarCacheTitulo": "¿Limpiar memoria caché?",
+  "limpiarCacheMensaje": "Se eliminarán imágenes y archivos temporales para liberar almacenamiento. No se borrarán tus notas ni favoritos bíblicos.",
+  "memoriaCacheLiberadaExito": "Memoria caché liberada con éxito",
+  "limpiarAhora": "Limpiar ahora",
+  "restablecerAjustesPredeterminados": "Restablecer ajustes predeterminados",
+  "restablecerConfiguracionTitulo": "¿Restablecer configuración?",
+  "restablecerConfiguracionMensaje": "Todos los ajustes de la app volverán a sus valores iniciales recomendados.",
+  "ajustesRestablecidosFabrica": "Ajustes restablecidos a valores de fábrica",
+  "restablecer": "Restablecer",
+  "idiomaEspanolLatino": "Español (Latinoamérica)",
+  "idiomaInglesUSA": "English (United States)",
+  "idiomaPortuguesBrasil": "Português (Brasil)",
+  "idiomaFrances": "Français",
+  "terminosYPrivacidad": "Términos y Privacidad",
+  "politicaDePrivacidad": "Política de Privacidad",
+  "politicaPrivacidadIntro": "Última actualización: {fecha}\n\nBienvenido a ATRIO (\"Vive tu Fe en comunidad\"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual.\n\nEsta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.",
+  "@politicaPrivacidadIntro": {
+    "description": "Introducción de la política de privacidad",
+    "placeholders": {
+      "fecha": { "type": "String" }
+    }
+  },
+  "seccionInfoQueRecopilamos": "1. Información que recopilamos",
+  "parrafoInfoQueRecopilamos": "• Datos de la cuenta: Al iniciar sesión o registrarte (correo electrónico, Google Sign-In o Apple ID), almacenamos de manera segura tu nombre y dirección de correo electrónico.\n\n• Datos comunitarios y de perfil: Número telefónico, tradición cristiana e iglesia o comunidad a la que estás vinculado voluntariamente para adaptar tu experiencia eclesiástica.\n\n• Almacenamiento Local en el Dispositivo: Tus notas de la Biblia, pasajes favoritos, configuraciones personales e historial de navegación se guardan localmente en SQLite. No compartimos tus reflexiones privadas con terceros.\n\n• Solicitudes y Donaciones: Registramos el estado de tus peticiones de oración, solicitudes pastorales y constancias de donaciones o aportes a proyectos solidarios para darte visibilidad y trazabilidad directa.",
+  "seccionUsoServiciosTerceros": "2. Uso de servicios de terceros",
+  "parrafoUsoServiciosTerceros": "Nuestra plataforma se integra con tecnologías de confianza para ofrecer una funcionalidad completa:\n\n• Google Play Services, Google Sign-In y Sign in with Apple (Autenticación y seguridad).\n\n• Google Maps Platform (Para la localización geográfica precisa de templos, parroquias y eventos comunitarios en el mapa interactivo).\n\n• Pasarelas de Pago Seguras (Para la recepción confiable y encriptada de ofrendas, diezmos y aportes a causas solidarias).\n\n• YouTube y Reproductores de Transmisiones (Para servicios religiosos, eventos en vivo y programas radiales).",
+  "seccionRetencionYEliminacion": "3. Retención y eliminación de datos",
+  "parrafoRetencionYEliminacion": "Conservamos los datos de tu cuenta mientras esté activa. De acuerdo con las directrices de Apple App Store (5.1.1 v) y Google Play Console, tienes el derecho incondicional de solicitar la eliminación total y definitiva de tu cuenta y datos personales.\n\nPuedes realizar esta acción en cualquier momento desde la opción \"Eliminar cuenta y datos\" en la pantalla de Perfil, o enviando un correo a soporte@atrioapp.com con el asunto \"Eliminación de Cuenta\".\n\nTodos los registros locales en SQLite y vinculaciones en el backend serán purgados.",
+  "seccionPermisosDelDispositivo": "4. Permisos del dispositivo",
+  "parrafoPermisosDelDispositivo": "ATRIO solo solicita permisos estrictamente requeridos para su funcionamiento:\n\n• Ubicación (GPS): Únicamente utilizada cuando accedes al mapa para mostrarte iglesias y eventos en tu cercanía inmediata.\n\n• Acceso a Internet y Red: Para sincronizar solicitudes, consultar transmisiones en directo y validar aportes.\n\n• Notificaciones: Para recordatorios de servicios litúrgicos, eventos comunitarios y respuestas a solicitudes.",
+  "terminosDeUsoTitulo": "Términos de Uso",
+  "parrafoTerminosDeUso": "1. Conducta y respeto comunitario: ATRIO es un espacio digital de comunión, edificación mutua y apoyo a las obras de la iglesia. Queda terminantemente prohibido el uso de lenguaje difamatorio, fraudulento o que atente contra la dignidad de la comunidad.\n\n2. Contenidos bíblicos y multimedia: Los textos bíblicos, transmisiones de emisoras y videos compartidos respetan los derechos de autor de sus respectivas entidades y ministerios emisores. Se prohíbe su explotación comercial indebida fuera de la plataforma.\n\n3. Donaciones y aportes: Los aportes realizados a través de ATRIO van dirigidos directamente a las comunidades religiosas y proyectos solidarios seleccionados. La app actúa como puente facilitador transparente y seguro.",
+  "aceptacionTerminosPoliticas": "Al usar ATRIO, aceptas estos términos y políticas de convivencia.",
+  "noSePudoCargarVersiculo": "No se pudo cargar el versículo.",
+  "montoPersonalizado": "Monto personalizado",
+  "montoADonarMoneda": "Monto a donar (RD$)",
+  "ingresaUnMonto": "Ingresa un monto",
+  "montoInvalido": "Monto inválido",
+  "elMinimoEs500": "El mínimo es RD$500",
+  "elMaximoEs1000000": "El máximo es RD$1,000,000",
+  "confirmar": "Confirmar",
+  "confirmarSolicitudTitulo": "Confirmar Solicitud",
+  "solicitudEnviadaEquipoPastoral": "Tu solicitud será enviada al equipo pastoral de la iglesia.",
+  "tipo": "Tipo",
+  "asunto": "Asunto",
+  "privada": "Privada",
+  "publica": "Pública",
+  "enviarSolicitud": "Enviar Solicitud",
+  "enviandoAOdoo": "Enviando a Odoo...",
+  "registrandoSolicitudSistema": "Estamos registrando tu solicitud en el sistema.",
+  "solicitudEnviadaExito": "¡Solicitud Enviada!",
+  "solicitudRegistradaCorrectamente": "Tu solicitud ha sido registrada correctamente. El equipo se pondrá en contacto contigo pronto.",
+  "leerReflexion": "Leer reflexión",
+  "verVersiculo": "Ver versículo",
+  "enVivoAhora": "En vivo ahora",
+  "enVivo": "EN VIVO",
+  "citaBase": "Cita base: {cita}",
+  "@citaBase": {
+    "description": "Cita bíblica base para la palabra del día",
+    "placeholders": {
+      "cita": {
+        "type": "String"
+      }
+    }
+  },
+  "entendidoAmen": "Entendido · Amén"
 }

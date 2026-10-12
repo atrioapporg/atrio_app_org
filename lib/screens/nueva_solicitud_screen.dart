@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/atrio_database_helper.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
 
 class NuevaSolicitudScreen extends StatefulWidget {
@@ -58,6 +59,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -105,7 +107,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
-                        'Nueva solicitud',
+                        l10n?.nuevaSolicitud ?? 'Nueva solicitud',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.058,
@@ -176,7 +178,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                           children: [
                             // 1. Selector Tipo de Solicitud
                             _buildFieldLabel(
-                              'Tipo de solicitud',
+                              l10n?.tipoSolicitudLabel ?? 'Tipo de solicitud',
                               screenWidth,
                               azulFondo,
                             ),
@@ -206,7 +208,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   children: [
                                     Text(
                                       _selectedTipoSolicitud ??
-                                          'Selecciona una opción',
+                                          (l10n?.seleccionaUnaOpcion ??
+                                              'Selecciona una opción'),
                                       style: TextStyle(
                                         color: _selectedTipoSolicitud != null
                                             ? azulFondo
@@ -231,7 +234,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
                             // 2. Campo Asunto (Obligatorio)
                             _buildFieldLabel(
-                              'Asunto',
+                              l10n?.asunto ?? 'Asunto',
                               screenWidth,
                               azulFondo,
                               isRequired: true,
@@ -239,14 +242,16 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                             SizedBox(height: usableHeight * 0.008),
                             _buildInputField(
                               controller: _asuntoController,
-                              hintText: 'Escribe un asunto breve',
+                              hintText: l10n?.asuntoPlaceholder ??
+                                  'Escribe un asunto breve',
                               screenWidth: screenWidth,
                               usableHeight: usableHeight,
                               grisBorde: grisBorde,
                               azulFondo: azulFondo,
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'El asunto es obligatorio';
+                                  return l10n?.asuntoObligatorio ??
+                                      'El asunto es obligatorio';
                                 }
                                 return null;
                               },
@@ -255,7 +260,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
                             // 3. Campo Descripción (Obligatorio)
                             _buildFieldLabel(
-                              'Describe cómo podemos ayudarte',
+                              l10n?.describeComoAyudarte ??
+                                  'Describe cómo podemos ayudarte',
                               screenWidth,
                               azulFondo,
                               isRequired: true,
@@ -271,12 +277,13 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                               ),
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'La descripción es obligatoria';
+                                  return l10n?.descripcionObligatoria ??
+                                      'La descripción es obligatoria';
                                 }
                                 return null;
                               },
                               decoration: InputDecoration(
-                                hintText:
+                                hintText: l10n?.detallesSolicitudPlaceholder ??
                                     'Cuéntanos los detalles de tu solicitud',
                                 hintStyle: TextStyle(
                                   color: Colors.grey.shade400,
@@ -332,7 +339,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
 
                             // 4. Campo Teléfono (Obligatorio)
                             _buildFieldLabel(
-                              'Teléfono',
+                              l10n?.telefono ?? 'Teléfono',
                               screenWidth,
                               azulFondo,
                               isRequired: true,
@@ -348,14 +355,16 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                               azulFondo: azulFondo,
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'El teléfono es obligatorio';
+                                  return l10n?.telefonoObligatorio ??
+                                      'El teléfono es obligatorio';
                                 }
                                 final clean = val.replaceAll(
                                   RegExp(r'[^0-9]'),
                                   '',
                                 );
                                 if (clean.length < 7) {
-                                  return 'Ingresa un número de teléfono válido';
+                                  return l10n?.telefonoInvalido ??
+                                      'Ingresa un número de teléfono válido';
                                 }
                                 return null;
                               },
@@ -373,7 +382,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Solicitud privada',
+                                        l10n?.solicitudPrivada ??
+                                            'Solicitud privada',
                                         style: TextStyle(
                                           color: azulFondo,
                                           fontSize: screenWidth * 0.042,
@@ -382,7 +392,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                       ),
                                       SizedBox(height: usableHeight * 0.003),
                                       Text(
-                                        'Solo el equipo pastoral podrá verla',
+                                        l10n?.solicitudPrivadaDesc ??
+                                            'Solo el equipo pastoral podrá verla',
                                         style: TextStyle(
                                           color: Colors.grey.shade600,
                                           fontSize: screenWidth * 0.033,
@@ -424,7 +435,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                     ModalConfirmacionSolicitud.mostrar(
                                       context: context,
                                       tipoSolicitud:
-                                          _selectedTipoSolicitud ?? 'General',
+                                          _selectedTipoSolicitud ??
+                                              (l10n?.general ?? 'General'),
                                       asunto: _asuntoController.text.trim(),
                                       isPrivate: _isPrivate,
                                       onConfirmado: () {
@@ -437,9 +449,10 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                         backgroundColor: const Color(
                                           0xFFC0392B,
                                         ),
-                                        content: const Text(
-                                          'Por favor completa todos los campos obligatorios.',
-                                          style: TextStyle(
+                                        content: Text(
+                                          l10n?.completaCamposObligatorios ??
+                                              'Por favor completa todos los campos obligatorios.',
+                                          style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -451,7 +464,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   }
                                 },
                                 child: Text(
-                                  'Enviar solicitud',
+                                  l10n?.enviarSolicitud ?? 'Enviar solicitud',
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.045,
                                     fontWeight: FontWeight.bold,

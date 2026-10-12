@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/biblia_provider.dart';
 
 class TerminosPrivacidadScreen extends StatefulWidget {
@@ -47,18 +48,19 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
   }
 
   void _cambiarModoLectura(BibliaProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     switch (provider.modoLectura) {
       case ModoLectura.calido:
         provider.actualizarModoLectura(ModoLectura.suave);
-        _mostrarMensaje('Modo Claro Suave');
+        _mostrarMensaje(l10n.modoClaroSuave);
         break;
       case ModoLectura.suave:
         provider.actualizarModoLectura(ModoLectura.noche);
-        _mostrarMensaje('Modo Lectura Nocturna');
+        _mostrarMensaje(l10n.modoLecturaNocturna);
         break;
       case ModoLectura.noche:
         provider.actualizarModoLectura(ModoLectura.calido);
-        _mostrarMensaje('Modo Papiro Cálido');
+        _mostrarMensaje(l10n.modoPapiroCalido);
         break;
     }
   }
@@ -89,6 +91,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
     Color azulFondo,
     Color amarilloOro,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFFFAF7F0),
@@ -116,7 +119,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Ajustes de lectura',
+                        l10n.ajustesDeLectura,
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.05,
@@ -135,7 +138,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.02),
                   Text(
-                    'Tamaño de letra',
+                    l10n.tamanoDeLetra,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.035,
@@ -181,7 +184,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.02),
                   Text(
-                    'Tipo de fuente',
+                    l10n.tipoDeFuente,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.035,
@@ -233,7 +236,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.02),
                   Text(
-                    'Modo de lectura',
+                    l10n.modoDeLectura,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.035,
@@ -249,7 +252,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                             Icons.wb_incandescent_outlined,
                             size: 18,
                           ),
-                          label: const Text('Papiro'),
+                          label: Text(l10n.papiro),
                           selected: provider.modoLectura == ModoLectura.calido,
                           selectedColor: const Color(0xFFC28518)
                               .withValues(alpha: 0.25),
@@ -260,7 +263,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                                 ModoLectura.calido,
                               );
                               Navigator.pop(ctx);
-                              _mostrarMensaje('Modo Papiro Cálido');
+                              _mostrarMensaje(l10n.modoPapiroCalido);
                             }
                           },
                         ),
@@ -269,7 +272,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                       Expanded(
                         child: ChoiceChip(
                           avatar: const Icon(Icons.wb_sunny_rounded, size: 18),
-                          label: const Text('Claro'),
+                          label: Text(l10n.claro),
                           selected: provider.modoLectura == ModoLectura.suave,
                           selectedColor: const Color(0xFF0F4C81)
                               .withValues(alpha: 0.2),
@@ -278,7 +281,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                             if (selected) {
                               provider.actualizarModoLectura(ModoLectura.suave);
                               Navigator.pop(ctx);
-                              _mostrarMensaje('Modo Claro Suave');
+                              _mostrarMensaje(l10n.modoClaroSuave);
                             }
                           },
                         ),
@@ -287,7 +290,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                       Expanded(
                         child: ChoiceChip(
                           avatar: const Icon(Icons.nightlight_round, size: 18),
-                          label: const Text('Noche'),
+                          label: Text(l10n.noche),
                           selected: provider.modoLectura == ModoLectura.noche,
                           selectedColor: const Color(0xFFF59E0B)
                               .withValues(alpha: 0.25),
@@ -296,7 +299,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
                             if (selected) {
                               provider.actualizarModoLectura(ModoLectura.noche);
                               Navigator.pop(ctx);
-                              _mostrarMensaje('Modo Lectura Nocturna');
+                              _mostrarMensaje(l10n.modoLecturaNocturna);
                             }
                           },
                         ),
@@ -315,6 +318,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<BibliaProvider>(context);
     final double fontScale = provider.fontScale;
     final String selectedFont = provider.selectedFont;
@@ -385,7 +389,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
           ),
         ),
         title: Text(
-          'Términos y Privacidad',
+          l10n.terminosYPrivacidad,
           style: _getFontStyle(
             TextStyle(
               color: colorHeaderTexto,
@@ -398,7 +402,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Cambiar tono de lectura',
+            tooltip: l10n.cambiarTonoLecturaTooltip,
             icon: Icon(
               esNoche
                   ? Icons.nightlight_round
@@ -411,7 +415,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             onPressed: () => _cambiarModoLectura(provider),
           ),
           IconButton(
-            tooltip: 'Ajustes de lectura',
+            tooltip: l10n.ajustesDeLectura,
             icon: Icon(
               Icons.text_format_rounded,
               color: colorHeaderTexto,
@@ -434,98 +438,86 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTitulo(
-              'Política de Privacidad',
+              l10n.politicaDePrivacidad,
               screenWidth,
               esNoche ? colorHeaderTexto : colorHeader,
               fontScale,
               selectedFont,
             ),
             _buildParrafo(
-              'Última actualización: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}\n\n'
-              'Bienvenido a ATRIO ("Vive tu Fe en comunidad"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual.\n\n Esta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.',
+              l10n.politicaPrivacidadIntro(
+                '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+              ),
               screenWidth,
               colorTextoPrincipal,
               fontScale,
               selectedFont,
             ),
             _buildSubtitulo(
-              '1. Información que recopilamos',
+              l10n.seccionInfoQueRecopilamos,
               screenWidth,
               colorAcento,
               fontScale,
               selectedFont,
             ),
             _buildParrafo(
-              '• Datos de la cuenta: Al iniciar sesión o registrarte (correo electrónico, Google Sign-In o Apple ID), almacenamos de manera segura tu nombre y dirección de correo electrónico.\n\n'
-              '• Datos comunitarios y de perfil: Número telefónico, tradición cristiana e iglesia o comunidad a la que estás vinculado voluntariamente para adaptar tu experiencia eclesiástica.\n\n'
-              '• Almacenamiento Local en el Dispositivo: Tus notas de la Biblia, pasajes favoritos, configuraciones personales e historial de navegación se guardan localmente en SQLite. No compartimos tus reflexiones privadas con terceros.\n\n'
-              '• Solicitudes y Donaciones: Registramos el estado de tus peticiones de oración, solicitudes pastorales y constancias de donaciones o aportes a proyectos solidarios para darte visibilidad y trazabilidad directa.',
+              l10n.parrafoInfoQueRecopilamos,
               screenWidth,
               colorTextoPrincipal,
               fontScale,
               selectedFont,
             ),
             _buildSubtitulo(
-              '2. Uso de servicios de terceros',
+              l10n.seccionUsoServiciosTerceros,
               screenWidth,
               colorAcento,
               fontScale,
               selectedFont,
             ),
             _buildParrafo(
-              'Nuestra plataforma se integra con tecnologías de confianza para ofrecer una funcionalidad completa:\n\n'
-              '• Google Play Services, Google Sign-In y Sign in with Apple (Autenticación y seguridad).\n\n'
-              '• Google Maps Platform (Para la localización geográfica precisa de templos, parroquias y eventos comunitarios en el mapa interactivo).\n\n'
-              '• Pasarelas de Pago Seguras (Para la recepción confiable y encriptada de ofrendas, diezmos y aportes a causas solidarias).\n\n'
-              '• YouTube y Reproductores de Transmisiones (Para servicios religiosos, eventos en vivo y programas radiales).',
+              l10n.parrafoUsoServiciosTerceros,
               screenWidth,
               colorTextoPrincipal,
               fontScale,
               selectedFont,
             ),
             _buildSubtitulo(
-              '3. Retención y eliminación de datos',
+              l10n.seccionRetencionYEliminacion,
               screenWidth,
               colorAcento,
               fontScale,
               selectedFont,
             ),
             _buildParrafo(
-              'Conservamos los datos de tu cuenta mientras esté activa. De acuerdo con las directrices de Apple App Store (5.1.1 v) y Google Play Console, tienes el derecho incondicional de solicitar la eliminación total y definitiva de tu cuenta y datos personales.\n\n'
-              'Puedes realizar esta acción en cualquier momento desde la opción "Eliminar cuenta y datos" en la pantalla de Perfil, o enviando un correo a soporte@atrioapp.com con el asunto "Eliminación de Cuenta".\n\n Todos los registros locales en SQLite y vinculaciones en el backend serán purgados.',
+              l10n.parrafoRetencionYEliminacion,
               screenWidth,
               colorTextoPrincipal,
               fontScale,
               selectedFont,
             ),
             _buildSubtitulo(
-              '4. Permisos del dispositivo',
+              l10n.seccionPermisosDelDispositivo,
               screenWidth,
               colorAcento,
               fontScale,
               selectedFont,
             ),
             _buildParrafo(
-              'ATRIO solo solicita permisos estrictamente requeridos para su funcionamiento:\n\n'
-              '• Ubicación (GPS): Únicamente utilizada cuando accedes al mapa para mostrarte iglesias y eventos en tu cercanía inmediata.\n\n'
-              '• Acceso a Internet y Red: Para sincronizar solicitudes, consultar transmisiones en directo y validar aportes.\n\n'
-              '• Notificaciones: Para recordatorios de servicios litúrgicos, eventos comunitarios y respuestas a solicitudes.',
+              l10n.parrafoPermisosDelDispositivo,
               screenWidth,
               colorTextoPrincipal,
               fontScale,
               selectedFont,
             ),
             _buildTitulo(
-              'Términos de Uso',
+              l10n.terminosDeUsoTitulo,
               screenWidth,
               esNoche ? colorHeaderTexto : colorHeader,
               fontScale,
               selectedFont,
             ),
             _buildParrafo(
-              '1. Conducta y respeto comunitario: ATRIO es un espacio digital de comunión, edificación mutua y apoyo a las obras de la iglesia. Queda terminantemente prohibido el uso de lenguaje difamatorio, fraudulento o que atente contra la dignidad de la comunidad.\n\n'
-              '2. Contenidos bíblicos y multimedia: Los textos bíblicos, transmisiones de emisoras y videos compartidos respetan los derechos de autor de sus respectivas entidades y ministerios emisores. Se prohíbe su explotación comercial indebida fuera de la plataforma.\n\n'
-              '3. Donaciones y aportes: Los aportes realizados a través de ATRIO van dirigidos directamente a las comunidades religiosas y proyectos solidarios seleccionados. La app actúa como puente facilitador transparente y seguro.',
+              l10n.parrafoTerminosDeUso,
               screenWidth,
               colorTextoPrincipal,
               fontScale,
@@ -534,7 +526,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             const SizedBox(height: 30),
             Center(
               child: Text(
-                'Al usar ATRIO, aceptas estos términos y políticas de convivencia.',
+                l10n.aceptacionTerminosPoliticas,
                 textAlign: TextAlign.center,
                 style: _getFontStyle(
                   TextStyle(
@@ -549,7 +541,7 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                'ATRIO · Versión 1.0.0',
+                l10n.atrioVersion('1.0.0'),
                 style: _getFontStyle(
                   TextStyle(
                     color: colorTextoSecundario,

@@ -1,5 +1,6 @@
 import 'package:atrio/widgets/odoo_pago_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 
 class ConfirmarDonacionScreen extends StatelessWidget {
   static const routeName = 'confirmar_donacion_screen';
@@ -7,14 +8,15 @@ class ConfirmarDonacionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     // 1. Recepción dinámica de datos desde RealizarAporteScreen
     final Map donacionData =
         (ModalRoute.of(context)?.settings.arguments as Map?) ??
         {
           'comunidad': 'Comunidad de Esperanza',
-          'concepto': 'Ofrenda',
+          'concepto': l10n?.ofrenda ?? 'Ofrenda',
           'monto': 'RD\$1,000.00',
-          'frecuencia': 'Una sola vez',
+          'frecuencia': l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez',
           'metodoPago': 'Visa •••• 1234',
         };
 
@@ -76,7 +78,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                     // Título de la pantalla
                     Expanded(
                       child: Text(
-                        'Revisa tu donación',
+                        l10n?.revisaTuDonacion ?? 'Revisa tu donación',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.058,
@@ -158,7 +160,8 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Resumen de tu donación',
+                                  l10n?.resumenDeTuDonacion ??
+                                      'Resumen de tu donación',
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontSize: screenWidth * 0.052,
@@ -168,7 +171,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 SizedBox(height: usableHeight * 0.02),
                                 // 1. Para
                                 _buildSummaryRow(
-                                  label: 'Para',
+                                  label: l10n?.para ?? 'Para',
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -209,7 +212,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 ),
                                 // 2. Concepto
                                 _buildSummaryRow(
-                                  label: 'Concepto',
+                                  label: l10n?.concepto ?? 'Concepto',
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -239,7 +242,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 ),
                                 // 3. Monto
                                 _buildSummaryRow(
-                                  label: 'Monto',
+                                  label: l10n?.monto ?? 'Monto',
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -285,7 +288,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 ),
                                 // 4. Frecuencia
                                 _buildSummaryRow(
-                                  label: 'Frecuencia',
+                                  label: l10n?.frecuencia ?? 'Frecuencia',
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -315,7 +318,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 ),
                                 // 5. Método de pago
                                 _buildSummaryRow(
-                                  label: 'Método de pago',
+                                  label: l10n?.metodoDePago ?? 'Método de pago',
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -351,7 +354,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                           ),
                           SizedBox(height: usableHeight * 0.01),
                           Text(
-                            'Tu donación es segura',
+                            l10n?.tuDonacionEsSegura ?? 'Tu donación es segura',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.055,
@@ -360,7 +363,8 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                           ),
                           SizedBox(height: usableHeight * 0.01),
                           Text(
-                            'Usamos conexión cifrada para proteger\ntu información y tu aporte.',
+                            l10n?.conexionCifradaProteccion ??
+                                'Usamos conexión cifrada para proteger\ntu información y tu aporte.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: textoGris,
@@ -406,7 +410,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 size: screenWidth * 0.05,
                               ),
                               label: Text(
-                                'Confirmar donación',
+                                l10n?.confirmarDonacion ?? 'Confirmar donación',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.050,
                                   fontWeight: FontWeight.bold,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class ModalConfirmacionSolicitud {
   static Future<void> mostrar({
     required BuildContext context,
@@ -8,6 +10,7 @@ class ModalConfirmacionSolicitud {
     required bool isPrivate,
     required VoidCallback onConfirmado,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -78,7 +81,7 @@ class ModalConfirmacionSolicitud {
                     SizedBox(height: usableHeight * 0.015),
 
                     Text(
-                      'Confirmar Solicitud',
+                      l10n.confirmarSolicitudTitulo,
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.055,
@@ -87,7 +90,7 @@ class ModalConfirmacionSolicitud {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      'Tu solicitud será enviada al equipo pastoral de la iglesia.',
+                      l10n.solicitudEnviadaEquipoPastoral,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
@@ -113,7 +116,7 @@ class ModalConfirmacionSolicitud {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Tipo',
+                                l10n.tipo,
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: screenWidth * 0.033,
@@ -142,7 +145,7 @@ class ModalConfirmacionSolicitud {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Asunto',
+                                l10n.asunto,
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: screenWidth * 0.033,
@@ -172,7 +175,7 @@ class ModalConfirmacionSolicitud {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Privacidad',
+                                l10n.privacidad,
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: screenWidth * 0.033,
@@ -192,7 +195,7 @@ class ModalConfirmacionSolicitud {
                                   ),
                                 ),
                                 child: Text(
-                                  isPrivate ? 'Privada' : 'Pública',
+                                  isPrivate ? l10n.privada : l10n.publica,
                                   style: TextStyle(
                                     color: isPrivate
                                         ? const Color(0xFFD32F2F)
@@ -235,7 +238,7 @@ class ModalConfirmacionSolicitud {
                           });
                         },
                         child: Text(
-                          'Enviar Solicitud',
+                          l10n.enviarSolicitud,
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,
@@ -247,7 +250,7 @@ class ModalConfirmacionSolicitud {
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       child: Text(
-                        'Cancelar',
+                        l10n.cancelar,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: screenWidth * 0.035,
@@ -260,7 +263,7 @@ class ModalConfirmacionSolicitud {
                     const CircularProgressIndicator(color: amarilloOro),
                     SizedBox(height: usableHeight * 0.03),
                     Text(
-                      'Enviando a Odoo...',
+                      l10n.enviandoAOdoo,
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.048,
@@ -269,7 +272,7 @@ class ModalConfirmacionSolicitud {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      'Estamos registrando tu solicitud en el sistema.',
+                      l10n.registrandoSolicitudSistema,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
@@ -294,7 +297,7 @@ class ModalConfirmacionSolicitud {
                     ),
                     SizedBox(height: usableHeight * 0.015),
                     Text(
-                      '¡Solicitud Enviada!',
+                      l10n.solicitudEnviadaExito,
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.058,
@@ -303,7 +306,7 @@ class ModalConfirmacionSolicitud {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      'Referencia Odoo: $ordenOdoo',
+                      l10n.referenciaOdoo(ordenOdoo),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: screenWidth * 0.032,
@@ -312,7 +315,7 @@ class ModalConfirmacionSolicitud {
                     ),
                     SizedBox(height: usableHeight * 0.01),
                     Text(
-                      'Tu solicitud ha sido registrada correctamente. El equipo se pondrá en contacto contigo pronto.',
+                      l10n.solicitudRegistradaCorrectamente,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade700,
@@ -340,7 +343,7 @@ class ModalConfirmacionSolicitud {
                           onConfirmado();
                         },
                         child: Text(
-                          'Finalizar',
+                          l10n.finalizar,
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,

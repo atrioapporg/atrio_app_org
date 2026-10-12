@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:atrio/l10n/app_localizations.dart';
 import '../modelos/notificacion_model.dart';
 
 class NotificacionesScreen extends StatefulWidget {
@@ -14,54 +15,65 @@ class NotificacionesScreen extends StatefulWidget {
 class _NotificacionesScreenState extends State<NotificacionesScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedFilterIndex = 0;
+  bool _isInit = true;
 
-  final List<String> _filters = [
-    'Todas',
-    'No leídas',
-    'Servicios',
-    'Eventos',
-    'Comunidad',
+  late List<NotificacionModel> _notificaciones;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInit) {
+      _isInit = false;
+      final l10n = AppLocalizations.of(context)!;
+      _notificaciones = _crearAvisosIniciales(l10n);
+    }
+  }
+
+  List<String> _obtenerFiltros(AppLocalizations l10n) => [
+    l10n.filtroTodas,
+    l10n.filtroNoLeidas,
+    l10n.categoriaServicios,
+    l10n.categoriaEventos,
+    l10n.categoriaComunidad,
   ];
 
   // 3 avisos/notificaciones iniciales (preparados para Odoo 19)
-  late List<NotificacionModel> _notificaciones = _crearAvisosIniciales();
-
-  List<NotificacionModel> _crearAvisosIniciales() => [
+  List<NotificacionModel> _crearAvisosIniciales(AppLocalizations l10n) => [
     NotificacionModel(
       id: '1',
-      titulo: 'Cambio de horario de servicio',
-      resumen: 'Miércoles de Oración · 7:00 p. m. en el Templo Principal.',
-      cuerpo: 'Estimada congregación: Por motivos de la jornada pastoral y preparación para las actividades del mes, nuestro servicio de intercesión y estudio bíblico de este miércoles se adelantará 30 minutos, iniciando a las 7:00 p. m. Te invitamos a llegar temprano con tu familia.',
-      fecha: 'Hoy',
-      hora: '10:30 a. m.',
-      categoria: 'Servicios',
-      remitente: 'Administración ATRIO',
+      titulo: l10n.notiHorarioServicioTitulo,
+      resumen: l10n.notiHorarioServicioResumen,
+      cuerpo: l10n.notiHorarioServicioCuerpo,
+      fecha: l10n.fechaHoy,
+      hora: l10n.hora1030am,
+      categoria: l10n.categoriaServicios,
+      remitente: l10n.remitenteAdmin,
       leida: false,
       esUrgente: true,
       iconCode: 'schedule',
     ),
     NotificacionModel(
       id: '2',
-      titulo: 'Inscripciones abiertas: Retiro 2026',
-      resumen: 'Cupos limitados disponibles para jóvenes y familias.',
-      cuerpo: '¡Ya puedes apartar tu lugar! Se han abierto formalmente los registros para el Retiro Anual "Vida & Fe 2026" en el Campamento Los Pinos. Puedes realizar tu inscripción directamente desde la sección de Eventos en la app.',
-      fecha: 'Ayer',
-      hora: '4:15 p. m.',
-      categoria: 'Eventos',
-      remitente: 'Comité de Eventos',
+      titulo: l10n.notiRetiroTitulo,
+      resumen: l10n.notiRetiroResumen,
+      cuerpo: l10n.notiRetiroCuerpo,
+      fecha: l10n.fechaAyer,
+      hora: l10n.hora415pm,
+      categoria: l10n.categoriaEventos,
+      remitente: l10n.remitenteEventos,
       leida: false,
       esUrgente: false,
       iconCode: 'event',
     ),
     NotificacionModel(
       id: '3',
-      titulo: 'Campaña solidaria "Manos que Bendicen"',
-      resumen: 'Recepción de víveres y donaciones este fin de semana.',
-      cuerpo: 'Estaremos recolectando alimentos no perecibles, abrigos y kits de aseo en el vestíbulo principal antes de cada reunión dominical. Tu generosa colaboración bendecirá a más de 50 familias vulnerables en nuestra comunidad.',
-      fecha: 'Hace 2 días',
-      hora: '9:00 a. m.',
-      categoria: 'Comunidad',
-      remitente: 'Pastoral Social',
+      titulo: l10n.notiCampanaTitulo,
+      resumen: l10n.notiCampanaResumen,
+      cuerpo: l10n.notiCampanaCuerpo,
+      fecha: l10n.fechaHace2Dias,
+      hora: l10n.hora900am,
+      categoria: l10n.categoriaComunidad,
+      remitente: l10n.remitentePastoralSocial,
       leida: false,
       esUrgente: false,
       iconCode: 'volunteer',
@@ -84,17 +96,28 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
   int get _conteoNoLeidas => _notificaciones.where((n) => !n.leida).length;
 
-  List<NotificacionModel> get _notificacionesFiltradas {
+  List<NotificacionModel> _filtrarNotificaciones(AppLocalizations l10n) {
     final query = _searchController.text.trim().toLowerCase();
-    final filtroSeleccionado = _filters[_selectedFilterIndex];
 
     return _notificaciones.where((noti) {
       bool coincideFiltro = true;
-      if (filtroSeleccionado == 'No leídas') {
+      if (_selectedFilterIndex == 1) {
         coincideFiltro = !noti.leida;
-      } else if (filtroSeleccionado != 'Todas') {
+      } else if (_selectedFilterIndex == 2) {
         coincideFiltro =
-            noti.categoria.toLowerCase() == filtroSeleccionado.toLowerCase();
+            noti.categoria.toLowerCase() == l10n.categoriaServicios.toLowerCase() ||
+            noti.categoria.toLowerCase() == 'servicios' ||
+            noti.categoria.toLowerCase() == 'services';
+      } else if (_selectedFilterIndex == 3) {
+        coincideFiltro =
+            noti.categoria.toLowerCase() == l10n.categoriaEventos.toLowerCase() ||
+            noti.categoria.toLowerCase() == 'eventos' ||
+            noti.categoria.toLowerCase() == 'events';
+      } else if (_selectedFilterIndex == 4) {
+        coincideFiltro =
+            noti.categoria.toLowerCase() == l10n.categoriaComunidad.toLowerCase() ||
+            noti.categoria.toLowerCase() == 'comunidad' ||
+            noti.categoria.toLowerCase() == 'community';
       }
 
       final coincideQuery =
@@ -114,15 +137,16 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
           .map((n) => n.copyWith(leida: true))
           .toList();
     });
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Todas las notificaciones han sido marcadas como leídas',
-          style: TextStyle(fontSize: 15),
+          l10n.todasNotificacionesLeidas,
+          style: const TextStyle(fontSize: 15),
         ),
-        backgroundColor: Color(0xFF072B4F),
-        duration: Duration(seconds: 2),
+        backgroundColor: const Color(0xFF072B4F),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -145,17 +169,18 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       _notificaciones.removeWhere((n) => n.id == noti.id);
     });
 
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Notificación "${noti.titulo}" eliminada',
+          l10n.notificacionEliminada(noti.titulo),
           style: const TextStyle(fontSize: 15),
         ),
         backgroundColor: const Color(0xFF072B4F),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'Deshacer',
+          label: l10n.deshacer,
           textColor: const Color(0xFFE5A023),
           onPressed: () {
             setState(() {
@@ -175,6 +200,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   void _confirmarBorrarTodas() {
     if (_notificaciones.isEmpty) return;
 
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -182,17 +208,17 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.delete_outline_rounded,
                 color: Colors.redAccent,
                 size: 26,
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Text(
-                'Borrar avisos',
-                style: TextStyle(
+                l10n.borrarAvisos,
+                style: const TextStyle(
                   color: Color(0xFF072B4F),
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
@@ -200,16 +226,16 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
               ),
             ],
           ),
-          content: const Text(
-            '¿Deseas eliminar todas las notificaciones recibidas? Podrás deshacer la acción inmediatamente si lo deseas.',
-            style: TextStyle(color: Colors.black87, fontSize: 16, height: 1.4),
+          content: Text(
+            l10n.confirmarBorrarTodasMensaje,
+            style: const TextStyle(color: Colors.black87, fontSize: 16, height: 1.4),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+              child: Text(
+                l10n.cancelar,
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ),
             ElevatedButton(
@@ -229,9 +255,9 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                 Navigator.pop(dialogContext);
                 _borrarTodas();
               },
-              child: const Text(
-                'Borrar todas',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                l10n.borrarTodas,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -249,17 +275,18 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       _notificaciones.clear();
     });
 
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text(
-          'Todas las notificaciones han sido eliminadas',
-          style: TextStyle(fontSize: 15),
+        content: Text(
+          l10n.todasNotificacionesEliminadas,
+          style: const TextStyle(fontSize: 15),
         ),
         backgroundColor: const Color(0xFF072B4F),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
-          label: 'Deshacer',
+          label: l10n.deshacer,
           textColor: const Color(0xFFE5A023),
           onPressed: () {
             setState(() {
@@ -273,17 +300,18 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
   /// Restaura los avisos ficticios temporales para pruebas
   void _restaurarAvisosEjemplo() {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
-      _notificaciones = _crearAvisosIniciales();
+      _notificaciones = _crearAvisosIniciales(l10n);
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Avisos de ejemplo restaurados',
-          style: TextStyle(fontSize: 15),
+          l10n.avisosEjemploRestaurados,
+          style: const TextStyle(fontSize: 15),
         ),
-        backgroundColor: Color(0xFF072B4F),
-        duration: Duration(seconds: 2),
+        backgroundColor: const Color(0xFF072B4F),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -308,6 +336,10 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    final l10n = AppLocalizations.of(context)!;
+    final filters = _obtenerFiltros(l10n);
+    final notificacionesFiltradas = _filtrarNotificaciones(l10n);
 
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -350,7 +382,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                         SizedBox(width: screenWidth * 0.03),
                         Expanded(
                           child: Text(
-                            'Notificaciones',
+                            l10n.notificaciones,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: screenWidth * 0.052,
@@ -363,7 +395,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                         if (_notificaciones.isNotEmpty) ...[
                           if (_conteoNoLeidas > 0)
                             IconButton(
-                              tooltip: 'Marcar todas como leídas',
+                              tooltip: l10n.marcarTodasComoLeidas,
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.symmetric(
                                 horizontal: screenWidth * 0.01,
@@ -378,7 +410,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             ),
                           SizedBox(width: screenWidth * 0.015),
                           IconButton(
-                            tooltip: 'Borrar todas',
+                            tooltip: l10n.borrarTodas,
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.symmetric(
                               horizontal: screenWidth * 0.01,
@@ -410,7 +442,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                           fontSize: screenWidth * 0.040,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Buscar en avisos...',
+                          hintText: l10n.buscarEnAvisosPlaceholder,
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: screenWidth * 0.038,
@@ -430,6 +462,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                   onPressed: () {
                                     _searchController.clear();
                                   },
+                                padding: EdgeInsets.zero,
                                 )
                               : null,
                           border: InputBorder.none,
@@ -475,14 +508,14 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
-                              itemCount: _filters.length,
+                              itemCount: filters.length,
                               separatorBuilder: (context, index) =>
-                                  SizedBox(width: screenWidth * 0.025),
+                                   SizedBox(width: screenWidth * 0.025),
                               itemBuilder: (context, index) {
                                 final isSelected =
                                     _selectedFilterIndex == index;
-                                final label = _filters[index];
-                                final bool esNoLeidas = label == 'No leídas';
+                                final label = filters[index];
+                                final bool esNoLeidas = index == 1;
 
                                 return GestureDetector(
                                   onTap: () {
@@ -559,7 +592,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Avisos de la comunidad',
+                                  l10n.avisosDeLaComunidad,
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontSize: screenWidth * 0.048,
@@ -571,7 +604,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                               ),
                               SizedBox(width: screenWidth * 0.02),
                               Text(
-                                '$_conteoNoLeidas no leídas',
+                                l10n.conteoNoLeidas(_conteoNoLeidas),
                                 style: TextStyle(
                                   color: _conteoNoLeidas > 0
                                       ? const Color(0xFF9E6500)
@@ -586,7 +619,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
                           if (_notificaciones.isNotEmpty)
                             Text(
-                              'Desliza un aviso hacia la izquierda para eliminarlo',
+                              l10n.deslizaAvisoParaEliminar,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: screenWidth * 0.032,
@@ -596,7 +629,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                           SizedBox(height: usableHeight * 0.014),
 
                           // Lista de Notificaciones
-                          if (_notificacionesFiltradas.isEmpty)
+                          if (notificacionesFiltradas.isEmpty)
                             Center(
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
@@ -611,7 +644,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                     ),
                                     SizedBox(height: usableHeight * 0.015),
                                     Text(
-                                      'No hay avisos en este momento',
+                                      l10n.noHayAvisosMomento,
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                         fontSize: screenWidth * 0.044,
@@ -620,7 +653,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                     ),
                                     SizedBox(height: usableHeight * 0.006),
                                     Text(
-                                      'Los avisos publicados en Odoo aparecerán aquí.',
+                                      l10n.avisosOdooApareceranAqui,
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: screenWidth * 0.034,
@@ -651,7 +684,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                           size: 22,
                                         ),
                                         label: Text(
-                                          'Restaurar avisos de ejemplo',
+                                          l10n.restaurarAvisosEjemplo,
                                           style: TextStyle(
                                             fontSize: screenWidth * 0.036,
                                             fontWeight: FontWeight.bold,
@@ -667,11 +700,11 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _notificacionesFiltradas.length,
+                              itemCount: notificacionesFiltradas.length,
                               separatorBuilder: (context, index) =>
                                   SizedBox(height: usableHeight * 0.016),
                               itemBuilder: (context, index) {
-                                final noti = _notificacionesFiltradas[index];
+                                final noti = notificacionesFiltradas[index];
                                 return Dismissible(
                                   key: Key('noti_${noti.id}'),
                                   direction: DismissDirection.endToStart,
@@ -690,7 +723,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
                                         Text(
-                                          'Eliminar',
+                                          l10n.eliminar,
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
@@ -758,6 +791,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     required VoidCallback onTap,
     required VoidCallback onDelete,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -894,7 +928,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                 color: Colors.grey.shade500,
                 size: screenWidth * 0.058,
               ),
-              tooltip: 'Eliminar aviso',
+              tooltip: l10n.eliminarAviso,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: onDelete,
@@ -915,6 +949,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     Color amarilloOro,
     Color blancoFondo,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1000,7 +1035,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                       color: Colors.red.shade400,
                       size: screenWidth * 0.065,
                     ),
-                    tooltip: 'Eliminar este aviso',
+                    tooltip: l10n.eliminarEsteAviso,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -1093,7 +1128,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                     },
                     icon: const Icon(Icons.delete_outline_rounded, size: 22),
                     label: Text(
-                      'Eliminar',
+                      l10n.eliminar,
                       style: TextStyle(
                         fontSize: screenWidth * 0.038,
                         fontWeight: FontWeight.bold,
@@ -1118,7 +1153,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                       ),
                       onPressed: () => Navigator.pop(modalContext),
                       child: Text(
-                        'Entendido',
+                        l10n.entendido,
                         style: TextStyle(
                           fontSize: screenWidth * 0.042,
                           fontWeight: FontWeight.bold,

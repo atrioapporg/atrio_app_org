@@ -144,7 +144,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
                       _MenuItemData(
                         icon: Icons.menu_book_outlined,
-                        label: l10n?.misNotasDeLaBiblia ??
+                        label:
+                            l10n?.misNotasDeLaBiblia ??
                             'Mis notas de la Biblia',
                         route: BibliaScreen.routeName,
                       ),
@@ -189,7 +190,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
                       _MenuItemData(
                         icon: Icons.delete_forever_outlined,
-                        label: l10n?.eliminarCuentaYDatos ??
+                        label:
+                            l10n?.eliminarCuentaYDatos ??
                             'Eliminar cuenta y datos',
                         customColor: Colors.red.shade700,
                         route: null,
@@ -215,7 +217,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ),
                       _MenuItemData(
                         icon: Icons.privacy_tip_outlined,
-                        label: l10n?.terminosYPrivacidad ??
+                        label:
+                            l10n?.terminosYPrivacidad ??
                             'Términos y privacidad',
                         route: TerminosPrivacidadScreen.routeName,
                       ),
@@ -262,7 +265,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
         (iglesiaActual != null &&
             iglesiaActual.isNotEmpty &&
             iglesiaActual != 'Sin iglesia seleccionada' &&
-            iglesiaActual != (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada'))
+            iglesiaActual !=
+                (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada'))
         ? iglesiaActual
         : (_usuarioData?['iglesia_nombre'] ?? '');
 
@@ -329,7 +333,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       usableHeight: usableHeight,
                       validator: (val) => (val == null || !val.contains('@'))
                           ? (l10n?.ingresaUnCorreoValido ??
-                              'Ingresa un correo válido')
+                                'Ingresa un correo válido')
                           : null,
                     ),
                     SizedBox(height: usableHeight * 0.025),
@@ -349,7 +353,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       screenWidth: screenWidth,
                       usableHeight: usableHeight,
                       readOnly: true,
-                      helperText: l10n?.helperCambiarIglesia ??
+                      helperText:
+                          l10n?.helperCambiarIglesia ??
                           'Para cambiarla usa la opción "Cambiar de iglesia"',
                     ),
                   ],
@@ -608,7 +613,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         text,
         style: TextStyle(
           color: azulFondo,
-          fontSize: screenWidth * 0.035,
+          fontSize: screenWidth * 0.050,
           fontWeight: FontWeight.bold,
           letterSpacing: screenWidth * 0.001,
         ),
@@ -660,14 +665,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       color: item.customColor ?? azulFondo,
                       size: screenWidth * 0.055,
                     ),
-                    SizedBox(width: screenWidth * 0.035),
+                    SizedBox(width: screenWidth * 0.025),
                     Expanded(
                       child: Text(
                         item.label,
                         style: TextStyle(
                           color: item.customColor ?? azulFondo,
-                          fontSize: screenWidth * 0.036,
-                          fontWeight: FontWeight.w600,
+                          fontSize: screenWidth * 0.050,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -739,7 +744,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
               } catch (_) {}
               if (context.mounted) {
                 // Conservamos el llamado a UserProvider SOLO para el limpiado de sesión
-                Provider.of<UserProvider>(context, listen: false).clearSession();
+                Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                ).clearSession();
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   InicioSesionScreen.routeName,
@@ -787,18 +795,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                l10n?.seguroEliminarCuenta ??
-                    '¿Estás seguro de que deseas eliminar tu cuenta y todos tus datos personales de ATRIO?',
+                l10n?.seguroEliminarCuenta ?? '¿Estás seguro de que deseas eliminar tu cuenta y todos tus datos personales de ATRIO?',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               Text(
                 l10n?.detalleEliminarCuenta ??
                     'Esta acción es definitiva e irreversible. Se eliminarán permanentemente:\n'
-                    '• Tu perfil de usuario y vinculación comunitaria.\n'
-                    '• Todas tus notas personales de la Biblia y favoritos guardados.\n'
-                    '• Tu historial de solicitudes y aportes locales.\n'
-                    '• Se solicitará la desactivación de tu registro en el backend Odoo ERP.',
+                        '• Tu perfil de usuario y vinculación comunitaria.\n'
+                        '• Todas tus notas personales de la Biblia y favoritos guardados.\n'
+                        '• Tu historial de solicitudes y aportes locales.\n'
+                        '• Se solicitará la desactivación de tu registro en el backend Odoo ERP.',
                 style: const TextStyle(
                   fontSize: 13,
                   color: Colors.black87,
@@ -841,8 +848,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      l10n?.cuentaEliminadaExito ??
-                          'Tu cuenta y datos personales han sido eliminados satisfactoriamente.',
+                      l10n?.cuentaEliminadaExito ?? 'Tu cuenta y datos personales han sido eliminados satisfactoriamente.',
                     ),
                     backgroundColor: const Color(0xFF072B4F),
                     duration: const Duration(seconds: 4),

@@ -684,7 +684,7 @@ abstract class AppLocalizations {
   /// **'Comunidad cristiana'**
   String get comunidadCristiana;
 
-  /// Etiqueta de distancia en kilómetros
+  /// Distancia en kilómetros
   ///
   /// In es, this message translates to:
   /// **'A {distancia} km'**
@@ -873,7 +873,7 @@ abstract class AppLocalizations {
   /// No description provided for @terminosYPrivacidad.
   ///
   /// In es, this message translates to:
-  /// **'Términos y privacidad'**
+  /// **'Términos y Privacidad'**
   String get terminosYPrivacidad;
 
   /// No description provided for @cerrarSesion.
@@ -1859,6 +1859,2130 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Enlace de \"{titulo}\" copiado al portapapeles'**
   String enlaceCopiadoPortapapeles(String titulo);
+
+  /// No description provided for @filtrarPorNombreDeLibro.
+  ///
+  /// In es, this message translates to:
+  /// **'Filtrar por nombre de libro...'**
+  String get filtrarPorNombreDeLibro;
+
+  /// No description provided for @antiguoTestamento.
+  ///
+  /// In es, this message translates to:
+  /// **'Antiguo Testamento'**
+  String get antiguoTestamento;
+
+  /// No description provided for @nuevoTestamento.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo Testamento'**
+  String get nuevoTestamento;
+
+  /// No description provided for @noSeEncontraronLibros.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron libros'**
+  String get noSeEncontraronLibros;
+
+  /// No description provided for @unCapitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'1 capítulo'**
+  String get unCapitulo;
+
+  /// Total de capítulos de un libro
+  ///
+  /// In es, this message translates to:
+  /// **'{total} capítulos'**
+  String totalCapitulos(String total);
+
+  /// No description provided for @libroGenesis.
+  ///
+  /// In es, this message translates to:
+  /// **'Génesis'**
+  String get libroGenesis;
+
+  /// No description provided for @libroExodo.
+  ///
+  /// In es, this message translates to:
+  /// **'Éxodo'**
+  String get libroExodo;
+
+  /// No description provided for @libroLevitico.
+  ///
+  /// In es, this message translates to:
+  /// **'Levítico'**
+  String get libroLevitico;
+
+  /// No description provided for @libroNumeros.
+  ///
+  /// In es, this message translates to:
+  /// **'Números'**
+  String get libroNumeros;
+
+  /// No description provided for @libroDeuteronomio.
+  ///
+  /// In es, this message translates to:
+  /// **'Deuteronomio'**
+  String get libroDeuteronomio;
+
+  /// No description provided for @libroJosue.
+  ///
+  /// In es, this message translates to:
+  /// **'Josué'**
+  String get libroJosue;
+
+  /// No description provided for @libroJueces.
+  ///
+  /// In es, this message translates to:
+  /// **'Jueces'**
+  String get libroJueces;
+
+  /// No description provided for @libroRut.
+  ///
+  /// In es, this message translates to:
+  /// **'Rut'**
+  String get libroRut;
+
+  /// No description provided for @libro1Samuel.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Samuel'**
+  String get libro1Samuel;
+
+  /// No description provided for @libro2Samuel.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Samuel'**
+  String get libro2Samuel;
+
+  /// No description provided for @libro1Reyes.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Reyes'**
+  String get libro1Reyes;
+
+  /// No description provided for @libro2Reyes.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Reyes'**
+  String get libro2Reyes;
+
+  /// No description provided for @libro1Cronicas.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Crónicas'**
+  String get libro1Cronicas;
+
+  /// No description provided for @libro2Cronicas.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Crónicas'**
+  String get libro2Cronicas;
+
+  /// No description provided for @libroEsdras.
+  ///
+  /// In es, this message translates to:
+  /// **'Esdras'**
+  String get libroEsdras;
+
+  /// No description provided for @libroNehemias.
+  ///
+  /// In es, this message translates to:
+  /// **'Nehemías'**
+  String get libroNehemias;
+
+  /// No description provided for @libroEster.
+  ///
+  /// In es, this message translates to:
+  /// **'Ester'**
+  String get libroEster;
+
+  /// No description provided for @libroJob.
+  ///
+  /// In es, this message translates to:
+  /// **'Job'**
+  String get libroJob;
+
+  /// No description provided for @libroSalmos.
+  ///
+  /// In es, this message translates to:
+  /// **'Salmos'**
+  String get libroSalmos;
+
+  /// No description provided for @libroProverbios.
+  ///
+  /// In es, this message translates to:
+  /// **'Proverbios'**
+  String get libroProverbios;
+
+  /// No description provided for @libroEclesiastes.
+  ///
+  /// In es, this message translates to:
+  /// **'Eclesiastés'**
+  String get libroEclesiastes;
+
+  /// No description provided for @libroCantares.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantares'**
+  String get libroCantares;
+
+  /// No description provided for @libroIsaias.
+  ///
+  /// In es, this message translates to:
+  /// **'Isaías'**
+  String get libroIsaias;
+
+  /// No description provided for @libroJeremias.
+  ///
+  /// In es, this message translates to:
+  /// **'Jeremías'**
+  String get libroJeremias;
+
+  /// No description provided for @libroLamentaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Lamentaciones'**
+  String get libroLamentaciones;
+
+  /// No description provided for @libroEzequiel.
+  ///
+  /// In es, this message translates to:
+  /// **'Ezequiel'**
+  String get libroEzequiel;
+
+  /// No description provided for @libroDaniel.
+  ///
+  /// In es, this message translates to:
+  /// **'Daniel'**
+  String get libroDaniel;
+
+  /// No description provided for @libroOseas.
+  ///
+  /// In es, this message translates to:
+  /// **'Oseas'**
+  String get libroOseas;
+
+  /// No description provided for @libroJoel.
+  ///
+  /// In es, this message translates to:
+  /// **'Joel'**
+  String get libroJoel;
+
+  /// No description provided for @libroAmos.
+  ///
+  /// In es, this message translates to:
+  /// **'Amós'**
+  String get libroAmos;
+
+  /// No description provided for @libroAbdias.
+  ///
+  /// In es, this message translates to:
+  /// **'Abdías'**
+  String get libroAbdias;
+
+  /// No description provided for @libroJonas.
+  ///
+  /// In es, this message translates to:
+  /// **'Jonás'**
+  String get libroJonas;
+
+  /// No description provided for @libroMiqueas.
+  ///
+  /// In es, this message translates to:
+  /// **'Miqueas'**
+  String get libroMiqueas;
+
+  /// No description provided for @libroNahum.
+  ///
+  /// In es, this message translates to:
+  /// **'Nahúm'**
+  String get libroNahum;
+
+  /// No description provided for @libroHabacuc.
+  ///
+  /// In es, this message translates to:
+  /// **'Habacuc'**
+  String get libroHabacuc;
+
+  /// No description provided for @libroSofonias.
+  ///
+  /// In es, this message translates to:
+  /// **'Sofonías'**
+  String get libroSofonias;
+
+  /// No description provided for @libroHageo.
+  ///
+  /// In es, this message translates to:
+  /// **'Hageo'**
+  String get libroHageo;
+
+  /// No description provided for @libroZacarias.
+  ///
+  /// In es, this message translates to:
+  /// **'Zacarías'**
+  String get libroZacarias;
+
+  /// No description provided for @libroMalaquias.
+  ///
+  /// In es, this message translates to:
+  /// **'Malaquías'**
+  String get libroMalaquias;
+
+  /// No description provided for @libroMateo.
+  ///
+  /// In es, this message translates to:
+  /// **'Mateo'**
+  String get libroMateo;
+
+  /// No description provided for @libroMarcos.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcos'**
+  String get libroMarcos;
+
+  /// No description provided for @libroLucas.
+  ///
+  /// In es, this message translates to:
+  /// **'Lucas'**
+  String get libroLucas;
+
+  /// No description provided for @libroJuan.
+  ///
+  /// In es, this message translates to:
+  /// **'Juan'**
+  String get libroJuan;
+
+  /// No description provided for @libroHechos.
+  ///
+  /// In es, this message translates to:
+  /// **'Hechos'**
+  String get libroHechos;
+
+  /// No description provided for @libroRomanos.
+  ///
+  /// In es, this message translates to:
+  /// **'Romanos'**
+  String get libroRomanos;
+
+  /// No description provided for @libro1Corintios.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Corintios'**
+  String get libro1Corintios;
+
+  /// No description provided for @libro2Corintios.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Corintios'**
+  String get libro2Corintios;
+
+  /// No description provided for @libroGalatas.
+  ///
+  /// In es, this message translates to:
+  /// **'Gálatas'**
+  String get libroGalatas;
+
+  /// No description provided for @libroEfesios.
+  ///
+  /// In es, this message translates to:
+  /// **'Efesios'**
+  String get libroEfesios;
+
+  /// No description provided for @libroFilipenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Filipenses'**
+  String get libroFilipenses;
+
+  /// No description provided for @libroColosenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Colosenses'**
+  String get libroColosenses;
+
+  /// No description provided for @libro1Tesalonicenses.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Tesalonicenses'**
+  String get libro1Tesalonicenses;
+
+  /// No description provided for @libro2Tesalonicenses.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Tesalonicenses'**
+  String get libro2Tesalonicenses;
+
+  /// No description provided for @libro1Timoteo.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Timoteo'**
+  String get libro1Timoteo;
+
+  /// No description provided for @libro2Timoteo.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Timoteo'**
+  String get libro2Timoteo;
+
+  /// No description provided for @libroTito.
+  ///
+  /// In es, this message translates to:
+  /// **'Tito'**
+  String get libroTito;
+
+  /// No description provided for @libroFilemon.
+  ///
+  /// In es, this message translates to:
+  /// **'Filemón'**
+  String get libroFilemon;
+
+  /// No description provided for @libroHebreos.
+  ///
+  /// In es, this message translates to:
+  /// **'Hebreos'**
+  String get libroHebreos;
+
+  /// No description provided for @libroSantiago.
+  ///
+  /// In es, this message translates to:
+  /// **'Santiago'**
+  String get libroSantiago;
+
+  /// No description provided for @libro1Pedro.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Pedro'**
+  String get libro1Pedro;
+
+  /// No description provided for @libro2Pedro.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Pedro'**
+  String get libro2Pedro;
+
+  /// No description provided for @libro1Juan.
+  ///
+  /// In es, this message translates to:
+  /// **'1 Juan'**
+  String get libro1Juan;
+
+  /// No description provided for @libro2Juan.
+  ///
+  /// In es, this message translates to:
+  /// **'2 Juan'**
+  String get libro2Juan;
+
+  /// No description provided for @libro3Juan.
+  ///
+  /// In es, this message translates to:
+  /// **'3 Juan'**
+  String get libro3Juan;
+
+  /// No description provided for @libroJudas.
+  ///
+  /// In es, this message translates to:
+  /// **'Judas'**
+  String get libroJudas;
+
+  /// No description provided for @libroApocalipsis.
+  ///
+  /// In es, this message translates to:
+  /// **'Apocalipsis'**
+  String get libroApocalipsis;
+
+  /// No description provided for @capitulosTab.
+  ///
+  /// In es, this message translates to:
+  /// **'Capítulos'**
+  String get capitulosTab;
+
+  /// No description provided for @informacionTab.
+  ///
+  /// In es, this message translates to:
+  /// **'Información'**
+  String get informacionTab;
+
+  /// No description provided for @acercaDelLibro.
+  ///
+  /// In es, this message translates to:
+  /// **'Acerca del libro'**
+  String get acercaDelLibro;
+
+  /// No description provided for @errorCargarInfoLibro.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar la información del libro.'**
+  String get errorCargarInfoLibro;
+
+  /// No description provided for @escucharBiblia.
+  ///
+  /// In es, this message translates to:
+  /// **'Escuchar Biblia'**
+  String get escucharBiblia;
+
+  /// No description provided for @sinInternetAudio.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay conexión a internet para reproducir el audio.'**
+  String get sinInternetAudio;
+
+  /// Aviso de audio disponible próximamente
+  ///
+  /// In es, this message translates to:
+  /// **'El audio dramatizado de {nombre} estará disponible próximamente.'**
+  String audioDramatizadoProximamente(String nombre);
+
+  /// Aviso de fin de lectura de audio
+  ///
+  /// In es, this message translates to:
+  /// **'Fin de la lectura de {libro} {capitulo}'**
+  String finLecturaAudio(String libro, String capitulo);
+
+  /// Título del reproductor de audio
+  ///
+  /// In es, this message translates to:
+  /// **'{libro} {capitulo} (Audio)'**
+  String audioCapituloTitulo(String libro, String capitulo);
+
+  /// No description provided for @eliminadoDeFavoritos.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminado de favoritos'**
+  String get eliminadoDeFavoritos;
+
+  /// No description provided for @sinFavoritos.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin favoritos'**
+  String get sinFavoritos;
+
+  /// No description provided for @sinFavoritosDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca el ícono de marcador en cualquier capítulo para guardarlo aquí y acceder rápidamente.'**
+  String get sinFavoritosDesc;
+
+  /// Fecha en que se guardó el favorito
+  ///
+  /// In es, this message translates to:
+  /// **'Guardado el {fecha}'**
+  String guardadoEl(String fecha);
+
+  /// No description provided for @desdeFavoritos.
+  ///
+  /// In es, this message translates to:
+  /// **'Desde Favoritos'**
+  String get desdeFavoritos;
+
+  /// No description provided for @eliminarNotaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar nota'**
+  String get eliminarNotaTitulo;
+
+  /// No description provided for @seguroEliminarNota.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Estás seguro de que deseas eliminar esta nota de forma permanente?'**
+  String get seguroEliminarNota;
+
+  /// No description provided for @eliminar.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get eliminar;
+
+  /// No description provided for @notaEliminadaCorrectamente.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota eliminada correctamente'**
+  String get notaEliminadaCorrectamente;
+
+  /// No description provided for @aunNoTienesNotas.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes notas'**
+  String get aunNoTienesNotas;
+
+  /// No description provided for @aunNoTienesNotasDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus reflexiones y apuntes bíblicos aparecerán aquí. Abre cualquier capítulo y toca el ícono de Nota para empezar.'**
+  String get aunNoTienesNotasDesc;
+
+  /// No description provided for @nuevaSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva solicitud'**
+  String get nuevaSolicitud;
+
+  /// No description provided for @tipoSolicitudLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de solicitud'**
+  String get tipoSolicitudLabel;
+
+  /// No description provided for @seleccionaUnaOpcion.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona una opción'**
+  String get seleccionaUnaOpcion;
+
+  /// No description provided for @asunto.
+  ///
+  /// In es, this message translates to:
+  /// **'Asunto'**
+  String get asunto;
+
+  /// No description provided for @asuntoPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe un asunto breve'**
+  String get asuntoPlaceholder;
+
+  /// No description provided for @asuntoObligatorio.
+  ///
+  /// In es, this message translates to:
+  /// **'El asunto es obligatorio'**
+  String get asuntoObligatorio;
+
+  /// No description provided for @describeComoAyudarte.
+  ///
+  /// In es, this message translates to:
+  /// **'Describe cómo podemos ayudarte'**
+  String get describeComoAyudarte;
+
+  /// No description provided for @descripcionObligatoria.
+  ///
+  /// In es, this message translates to:
+  /// **'La descripción es obligatoria'**
+  String get descripcionObligatoria;
+
+  /// No description provided for @detallesSolicitudPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuéntanos los detalles de tu solicitud'**
+  String get detallesSolicitudPlaceholder;
+
+  /// No description provided for @telefonoObligatorio.
+  ///
+  /// In es, this message translates to:
+  /// **'El teléfono es obligatorio'**
+  String get telefonoObligatorio;
+
+  /// No description provided for @telefonoInvalido.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un número de teléfono válido'**
+  String get telefonoInvalido;
+
+  /// No description provided for @solicitudPrivada.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud privada'**
+  String get solicitudPrivada;
+
+  /// No description provided for @solicitudPrivadaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo el equipo pastoral podrá verla'**
+  String get solicitudPrivadaDesc;
+
+  /// No description provided for @general.
+  ///
+  /// In es, this message translates to:
+  /// **'General'**
+  String get general;
+
+  /// No description provided for @completaCamposObligatorios.
+  ///
+  /// In es, this message translates to:
+  /// **'Por favor completa todos los campos obligatorios.'**
+  String get completaCamposObligatorios;
+
+  /// No description provided for @enviarSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar Solicitud'**
+  String get enviarSolicitud;
+
+  /// No description provided for @realizaTuAporte.
+  ///
+  /// In es, this message translates to:
+  /// **'Realiza tu aporte'**
+  String get realizaTuAporte;
+
+  /// No description provided for @errorCargarDatos.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al cargar datos'**
+  String get errorCargarDatos;
+
+  /// No description provided for @tipoDonacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de donación'**
+  String get tipoDonacion;
+
+  /// No description provided for @seleccionaElMonto.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona el monto'**
+  String get seleccionaElMonto;
+
+  /// No description provided for @otroMonto.
+  ///
+  /// In es, this message translates to:
+  /// **'Otro monto'**
+  String get otroMonto;
+
+  /// No description provided for @frecuencia.
+  ///
+  /// In es, this message translates to:
+  /// **'Frecuencia'**
+  String get frecuencia;
+
+  /// No description provided for @frecuenciaUnaSolaVez.
+  ///
+  /// In es, this message translates to:
+  /// **'Una sola vez'**
+  String get frecuenciaUnaSolaVez;
+
+  /// No description provided for @frecuenciaMensual.
+  ///
+  /// In es, this message translates to:
+  /// **'Mensual'**
+  String get frecuenciaMensual;
+
+  /// No description provided for @metodoDePago.
+  ///
+  /// In es, this message translates to:
+  /// **'Método de pago'**
+  String get metodoDePago;
+
+  /// No description provided for @transferencia.
+  ///
+  /// In es, this message translates to:
+  /// **'Transferencia'**
+  String get transferencia;
+
+  /// No description provided for @donacionAnonima.
+  ///
+  /// In es, this message translates to:
+  /// **'Donación anónima'**
+  String get donacionAnonima;
+
+  /// No description provided for @donacionAnonimaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu nombre no será visible en los listados.'**
+  String get donacionAnonimaDesc;
+
+  /// No description provided for @continuarDeFormaSegura.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar de forma segura'**
+  String get continuarDeFormaSegura;
+
+  /// No description provided for @cuentaCopiadaPortapapeles.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Cuenta copiada al portapapeles!'**
+  String get cuentaCopiadaPortapapeles;
+
+  /// No description provided for @metodosTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'MÉTODOS'**
+  String get metodosTitulo;
+
+  /// No description provided for @dePagoTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'de pago'**
+  String get dePagoTitulo;
+
+  /// No description provided for @viaTransferencia.
+  ///
+  /// In es, this message translates to:
+  /// **'VÍA TRANSFERENCIA'**
+  String get viaTransferencia;
+
+  /// No description provided for @aceptamosTransferenciasDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.'**
+  String get aceptamosTransferenciasDesc;
+
+  /// No description provided for @tuPagoEstaSeguro.
+  ///
+  /// In es, this message translates to:
+  /// **'TU PAGO ESTÁ SEGURO'**
+  String get tuPagoEstaSeguro;
+
+  /// No description provided for @tuPagoSeguroDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Confianza, rapidez y seguridad en cada transacción.'**
+  String get tuPagoSeguroDesc;
+
+  /// No description provided for @revisaTuDonacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa tu donación'**
+  String get revisaTuDonacion;
+
+  /// No description provided for @resumenDeTuDonacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen de tu donación'**
+  String get resumenDeTuDonacion;
+
+  /// No description provided for @para.
+  ///
+  /// In es, this message translates to:
+  /// **'Para'**
+  String get para;
+
+  /// No description provided for @concepto.
+  ///
+  /// In es, this message translates to:
+  /// **'Concepto'**
+  String get concepto;
+
+  /// No description provided for @monto.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto'**
+  String get monto;
+
+  /// No description provided for @tuDonacionEsSegura.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu donación es segura'**
+  String get tuDonacionEsSegura;
+
+  /// No description provided for @conexionCifradaProteccion.
+  ///
+  /// In es, this message translates to:
+  /// **'Usamos conexión cifrada para proteger\ntu información y tu aporte.'**
+  String get conexionCifradaProteccion;
+
+  /// No description provided for @confirmarDonacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar donación'**
+  String get confirmarDonacion;
+
+  /// No description provided for @confirmarTransaccion.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar Transacción'**
+  String get confirmarTransaccion;
+
+  /// No description provided for @transaccionValidaraOdoo.
+  ///
+  /// In es, this message translates to:
+  /// **'La transacción se validará mediante la pasarela segura de Odoo.'**
+  String get transaccionValidaraOdoo;
+
+  /// No description provided for @totalAProcesar.
+  ///
+  /// In es, this message translates to:
+  /// **'Total a procesar'**
+  String get totalAProcesar;
+
+  /// No description provided for @pagarYValidar.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagar y Validar'**
+  String get pagarYValidar;
+
+  /// No description provided for @validandoConOdoo.
+  ///
+  /// In es, this message translates to:
+  /// **'Validando con Odoo...'**
+  String get validandoConOdoo;
+
+  /// No description provided for @registrandoOrdenConfirmandoPago.
+  ///
+  /// In es, this message translates to:
+  /// **'Estamos registrando tu orden y confirmando el pago.'**
+  String get registrandoOrdenConfirmandoPago;
+
+  /// No description provided for @aporteExitoso.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Aporte Exitoso!'**
+  String get aporteExitoso;
+
+  /// Referencia de la orden generada por Odoo
+  ///
+  /// In es, this message translates to:
+  /// **'Referencia Odoo: {orden}'**
+  String referenciaOdoo(String orden);
+
+  /// No description provided for @contribucionValidadaRecibo.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu contribución ha sido validada y el recibo digital fue enviado a tu correo.'**
+  String get contribucionValidadaRecibo;
+
+  /// No description provided for @finalizar.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizar'**
+  String get finalizar;
+
+  /// No description provided for @realizarUnAporte.
+  ///
+  /// In es, this message translates to:
+  /// **'Realizar un aporte'**
+  String get realizarUnAporte;
+
+  /// No description provided for @cuantoDeseasAportar.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cuánto deseas aportar?'**
+  String get cuantoDeseasAportar;
+
+  /// No description provided for @mensajeDeApoyo.
+  ///
+  /// In es, this message translates to:
+  /// **'Mensaje de apoyo'**
+  String get mensajeDeApoyo;
+
+  /// No description provided for @escribeMensajeOpcional.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe un mensaje opcional...'**
+  String get escribeMensajeOpcional;
+
+  /// No description provided for @mostrarAporteAnonimo.
+  ///
+  /// In es, this message translates to:
+  /// **'Mostrar mi aporte como anónimo'**
+  String get mostrarAporteAnonimo;
+
+  /// No description provided for @continuarConElAporte.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con el aporte'**
+  String get continuarConElAporte;
+
+  /// No description provided for @proyectoTag.
+  ///
+  /// In es, this message translates to:
+  /// **'PROYECTO'**
+  String get proyectoTag;
+
+  /// Concepto del aporte al proyecto
+  ///
+  /// In es, this message translates to:
+  /// **'Proyecto: {titulo}'**
+  String conceptoProyecto(String titulo);
+
+  /// No description provided for @estadoProgramada.
+  ///
+  /// In es, this message translates to:
+  /// **'Programada'**
+  String get estadoProgramada;
+
+  /// No description provided for @estadoRecibida.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibida'**
+  String get estadoRecibida;
+
+  /// No description provided for @estadoEnRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'En revisión'**
+  String get estadoEnRevision;
+
+  /// No description provided for @estadoConfirmada.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmada'**
+  String get estadoConfirmada;
+
+  /// No description provided for @estadoEnProceso.
+  ///
+  /// In es, this message translates to:
+  /// **'En proceso'**
+  String get estadoEnProceso;
+
+  /// No description provided for @fechaMartesHora.
+  ///
+  /// In es, this message translates to:
+  /// **'Martes · 4:00 p. m.'**
+  String get fechaMartesHora;
+
+  /// No description provided for @fechaJuevesHora.
+  ///
+  /// In es, this message translates to:
+  /// **'Jueves · 5:30 p. m.'**
+  String get fechaJuevesHora;
+
+  /// No description provided for @fechaViernesHora.
+  ///
+  /// In es, this message translates to:
+  /// **'Viernes · 10:00 a. m.'**
+  String get fechaViernesHora;
+
+  /// No description provided for @detalleOrientacionPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Cita de acompañamiento espiritual y orientación pastoral presencial con el pastor titular.'**
+  String get detalleOrientacionPastoral;
+
+  /// No description provided for @detallePeticionOracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Petición de intercesión por pronta recuperación de salud y bienestar familiar en el culto de oración.'**
+  String get detallePeticionOracion;
+
+  /// No description provided for @detalleAyudaComunitaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud de canasta de alimentos básicos y apoyo solidario para una familia en situación de necesidad.'**
+  String get detalleAyudaComunitaria;
+
+  /// No description provided for @detalleConsejeriaFamiliar.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión de consejería familiar y diálogo guiado por el equipo ministerial de la iglesia.'**
+  String get detalleConsejeriaFamiliar;
+
+  /// No description provided for @detalleVisitaEnfermos.
+  ///
+  /// In es, this message translates to:
+  /// **'Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.'**
+  String get detalleVisitaEnfermos;
+
+  /// Identificador Odoo de la solicitud
+  ///
+  /// In es, this message translates to:
+  /// **'ID Odoo: {id}'**
+  String idOdoo(String id);
+
+  /// No description provided for @detalleDeLaSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle de la solicitud:'**
+  String get detalleDeLaSolicitud;
+
+  /// No description provided for @solicitudRegistradaAsignada.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud registrada y asignada al equipo ministerial.'**
+  String get solicitudRegistradaAsignada;
+
+  /// No description provided for @estadoCompletada.
+  ///
+  /// In es, this message translates to:
+  /// **'Completada'**
+  String get estadoCompletada;
+
+  /// No description provided for @fechaDiezmoMock.
+  ///
+  /// In es, this message translates to:
+  /// **'15 Oct 2026 · 10:30 a. m.'**
+  String get fechaDiezmoMock;
+
+  /// No description provided for @metodoTarjetaDebitoVisa.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta de débito (Visa)'**
+  String get metodoTarjetaDebitoVisa;
+
+  /// No description provided for @destinoFondoGeneralMinisterial.
+  ///
+  /// In es, this message translates to:
+  /// **'Fondo General Ministerial'**
+  String get destinoFondoGeneralMinisterial;
+
+  /// No description provided for @detalleDiezmoMock.
+  ///
+  /// In es, this message translates to:
+  /// **'Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.'**
+  String get detalleDiezmoMock;
+
+  /// No description provided for @fechaOfrendaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'08 Oct 2026 · 7:15 p. m.'**
+  String get fechaOfrendaMock;
+
+  /// No description provided for @metodoTransferenciaACH.
+  ///
+  /// In es, this message translates to:
+  /// **'Transferencia ACH'**
+  String get metodoTransferenciaACH;
+
+  /// No description provided for @destinoCultoAdoracionDominical.
+  ///
+  /// In es, this message translates to:
+  /// **'Culto de Adoración Dominical'**
+  String get destinoCultoAdoracionDominical;
+
+  /// No description provided for @detalleOfrendaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.'**
+  String get detalleOfrendaMock;
+
+  /// No description provided for @fechaCampanaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'28 Sep 2026 · 4:20 p. m.'**
+  String get fechaCampanaMock;
+
+  /// No description provided for @metodoTarjetaCreditoMastercard.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta de crédito (Mastercard)'**
+  String get metodoTarjetaCreditoMastercard;
+
+  /// No description provided for @destinoCampanaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'Campaña \"Construyendo Esperanza 2026\"'**
+  String get destinoCampanaMock;
+
+  /// No description provided for @detalleCampanaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.'**
+  String get detalleCampanaMock;
+
+  /// No description provided for @fechaAyudaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'14 Sep 2026 · 11:00 a. m.'**
+  String get fechaAyudaMock;
+
+  /// No description provided for @metodoPayPalSaldoDigital.
+  ///
+  /// In es, this message translates to:
+  /// **'PayPal / Saldo digital'**
+  String get metodoPayPalSaldoDigital;
+
+  /// No description provided for @destinoProgramaManosQueBendicen.
+  ///
+  /// In es, this message translates to:
+  /// **'Programa \"Manos que Bendicen\"'**
+  String get destinoProgramaManosQueBendicen;
+
+  /// No description provided for @detalleAyudaMock.
+  ///
+  /// In es, this message translates to:
+  /// **'Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.'**
+  String get detalleAyudaMock;
+
+  /// No description provided for @nuevaDonacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva donación'**
+  String get nuevaDonacion;
+
+  /// No description provided for @montoAportado.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto aportado:'**
+  String get montoAportado;
+
+  /// No description provided for @fechaYHora.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha y hora:'**
+  String get fechaYHora;
+
+  /// No description provided for @metodo.
+  ///
+  /// In es, this message translates to:
+  /// **'Método:'**
+  String get metodo;
+
+  /// No description provided for @destino.
+  ///
+  /// In es, this message translates to:
+  /// **'Destino:'**
+  String get destino;
+
+  /// No description provided for @detalleDelAporte.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle del aporte:'**
+  String get detalleDelAporte;
+
+  /// No description provided for @aporteVoluntarioRegistrado.
+  ///
+  /// In es, this message translates to:
+  /// **'Aporte voluntario registrado en ATRIO.'**
+  String get aporteVoluntarioRegistrado;
+
+  /// No description provided for @errorGuardarSeleccionLocal.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo guardar la selección localmente.'**
+  String get errorGuardarSeleccionLocal;
+
+  /// No description provided for @queremosConocerte.
+  ///
+  /// In es, this message translates to:
+  /// **'Queremos conocerte'**
+  String get queremosConocerte;
+
+  /// No description provided for @conCualTradicionTeIdentificas.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Con cuál tradición de fe te identificas?'**
+  String get conCualTradicionTeIdentificas;
+
+  /// No description provided for @continuar.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get continuar;
+
+  /// No description provided for @noDenominacional.
+  ///
+  /// In es, this message translates to:
+  /// **'No denominacional'**
+  String get noDenominacional;
+
+  /// No description provided for @otra.
+  ///
+  /// In es, this message translates to:
+  /// **'Otra'**
+  String get otra;
+
+  /// No description provided for @prefieroIndicarloDespues.
+  ///
+  /// In es, this message translates to:
+  /// **'Prefiero indicarlo después'**
+  String get prefieroIndicarloDespues;
+
+  /// No description provided for @gpsDesactivadoMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'El GPS está desactivado. Actívalo para encontrar iglesias cercanas a ti.'**
+  String get gpsDesactivadoMensaje;
+
+  /// No description provided for @permisoUbicacionNoConcedido.
+  ///
+  /// In es, this message translates to:
+  /// **'Permiso de ubicación no concedido. Se mostrará ubicación predeterminada.'**
+  String get permisoUbicacionNoConcedido;
+
+  /// No description provided for @permisosUbicacionDenegadosPermanentemente.
+  ///
+  /// In es, this message translates to:
+  /// **'Permisos de ubicación denegados permanentemente en los ajustes.'**
+  String get permisosUbicacionDenegadosPermanentemente;
+
+  /// Error al consultar servidor con código de estado
+  ///
+  /// In es, this message translates to:
+  /// **'Error del servidor: {codigo}'**
+  String errorServidorCodigo(int codigo);
+
+  /// Mensaje cuando no se encuentran iglesias para la búsqueda
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron iglesias cercanas para \"{query}\".'**
+  String noSeEncontraronIglesiasCercanas(String query);
+
+  /// No description provided for @errorConexionInternet.
+  ///
+  /// In es, this message translates to:
+  /// **'Error de conexión. Verifica tu internet.'**
+  String get errorConexionInternet;
+
+  /// No description provided for @ubicacionExacta.
+  ///
+  /// In es, this message translates to:
+  /// **'Ubicación exacta'**
+  String get ubicacionExacta;
+
+  /// No description provided for @seleccionaTuIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona tu iglesia'**
+  String get seleccionaTuIglesia;
+
+  /// No description provided for @buscarIglesiaPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar iglesia o denominación...'**
+  String get buscarIglesiaPlaceholder;
+
+  /// No description provided for @abiertoAhora.
+  ///
+  /// In es, this message translates to:
+  /// **'Abierto ahora'**
+  String get abiertoAhora;
+
+  /// No description provided for @cerrado.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrado'**
+  String get cerrado;
+
+  /// No description provided for @seleccionarIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar iglesia'**
+  String get seleccionarIglesia;
+
+  /// No description provided for @codigoPlusNoDisponible.
+  ///
+  /// In es, this message translates to:
+  /// **'Código Plus no disponible'**
+  String get codigoPlusNoDisponible;
+
+  /// No description provided for @distanciaAproximadaDefault.
+  ///
+  /// In es, this message translates to:
+  /// **'A 1.8 km'**
+  String get distanciaAproximadaDefault;
+
+  /// No description provided for @servicioDeBienvenida.
+  ///
+  /// In es, this message translates to:
+  /// **'Servicio de Bienvenida'**
+  String get servicioDeBienvenida;
+
+  /// No description provided for @diaHoraDomingo10am.
+  ///
+  /// In es, this message translates to:
+  /// **'Domingo · 10:00 a. m.'**
+  String get diaHoraDomingo10am;
+
+  /// No description provided for @estadoCerradoAbreDomingo.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrado · Abre a las 10 a.m. del dom'**
+  String get estadoCerradoAbreDomingo;
+
+  /// No description provided for @diaDomingo.
+  ///
+  /// In es, this message translates to:
+  /// **'Domingo'**
+  String get diaDomingo;
+
+  /// No description provided for @cultoDominical10am.
+  ///
+  /// In es, this message translates to:
+  /// **'10:00 a. m. · Culto Dominical'**
+  String get cultoDominical10am;
+
+  /// No description provided for @diaMiercoles.
+  ///
+  /// In es, this message translates to:
+  /// **'Miércoles'**
+  String get diaMiercoles;
+
+  /// No description provided for @estudioBiblico730pm.
+  ///
+  /// In es, this message translates to:
+  /// **'7:30 p. m. · Estudio Bíblico'**
+  String get estudioBiblico730pm;
+
+  /// No description provided for @bienvenidoNuevaComunidad.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Bienvenido a tu nueva comunidad!'**
+  String get bienvenidoNuevaComunidad;
+
+  /// No description provided for @descripcionRegistroIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Te has registrado correctamente en esta iglesia a través de atrio.'**
+  String get descripcionRegistroIglesia;
+
+  /// No description provided for @filtroTodas.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas'**
+  String get filtroTodas;
+
+  /// No description provided for @filtroNoLeidas.
+  ///
+  /// In es, this message translates to:
+  /// **'No leídas'**
+  String get filtroNoLeidas;
+
+  /// No description provided for @categoriaEventos.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos'**
+  String get categoriaEventos;
+
+  /// No description provided for @notiHorarioServicioTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambio de horario de servicio'**
+  String get notiHorarioServicioTitulo;
+
+  /// No description provided for @notiHorarioServicioResumen.
+  ///
+  /// In es, this message translates to:
+  /// **'Miércoles de Oración · 7:00 p. m. en el Templo Principal.'**
+  String get notiHorarioServicioResumen;
+
+  /// No description provided for @notiHorarioServicioCuerpo.
+  ///
+  /// In es, this message translates to:
+  /// **'Estimada congregación: Por motivos de la jornada pastoral y preparación para las actividades del mes, nuestro servicio de intercesión y estudio bíblico de este miércoles se adelantará 30 minutos, iniciando a las 7:00 p. m. Te invitamos a llegar temprano con tu familia.'**
+  String get notiHorarioServicioCuerpo;
+
+  /// No description provided for @notiRetiroTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Inscripciones abiertas: Retiro 2026'**
+  String get notiRetiroTitulo;
+
+  /// No description provided for @notiRetiroResumen.
+  ///
+  /// In es, this message translates to:
+  /// **'Cupos limitados disponibles para jóvenes y familias.'**
+  String get notiRetiroResumen;
+
+  /// No description provided for @notiRetiroCuerpo.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Ya puedes apartar tu lugar! Se han abierto formalmente los registros para el Retiro Anual \"Vida & Fe 2026\" en el Campamento Los Pinos. Puedes realizar tu inscripción directamente desde la sección de Eventos en la app.'**
+  String get notiRetiroCuerpo;
+
+  /// No description provided for @notiCampanaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Campaña solidaria \"Manos que Bendicen\"'**
+  String get notiCampanaTitulo;
+
+  /// No description provided for @notiCampanaResumen.
+  ///
+  /// In es, this message translates to:
+  /// **'Recepción de víveres y donaciones este fin de semana.'**
+  String get notiCampanaResumen;
+
+  /// No description provided for @notiCampanaCuerpo.
+  ///
+  /// In es, this message translates to:
+  /// **'Estaremos recolectando alimentos no perecibles, abrigos y kits de aseo en el vestíbulo principal antes de cada reunión dominical. Tu generosa colaboración bendecirá a más de 50 familias vulnerables en nuestra comunidad.'**
+  String get notiCampanaCuerpo;
+
+  /// No description provided for @fechaHoy.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy'**
+  String get fechaHoy;
+
+  /// No description provided for @fechaAyer.
+  ///
+  /// In es, this message translates to:
+  /// **'Ayer'**
+  String get fechaAyer;
+
+  /// No description provided for @fechaHace2Dias.
+  ///
+  /// In es, this message translates to:
+  /// **'Hace 2 días'**
+  String get fechaHace2Dias;
+
+  /// No description provided for @hora1030am.
+  ///
+  /// In es, this message translates to:
+  /// **'10:30 a. m.'**
+  String get hora1030am;
+
+  /// No description provided for @hora415pm.
+  ///
+  /// In es, this message translates to:
+  /// **'4:15 p. m.'**
+  String get hora415pm;
+
+  /// No description provided for @hora900am.
+  ///
+  /// In es, this message translates to:
+  /// **'9:00 a. m.'**
+  String get hora900am;
+
+  /// No description provided for @remitenteAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Administración ATRIO'**
+  String get remitenteAdmin;
+
+  /// No description provided for @remitenteEventos.
+  ///
+  /// In es, this message translates to:
+  /// **'Comité de Eventos'**
+  String get remitenteEventos;
+
+  /// No description provided for @remitentePastoralSocial.
+  ///
+  /// In es, this message translates to:
+  /// **'Pastoral Social'**
+  String get remitentePastoralSocial;
+
+  /// No description provided for @todasNotificacionesLeidas.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las notificaciones han sido marcadas como leídas'**
+  String get todasNotificacionesLeidas;
+
+  /// Mensaje al eliminar una notificación
+  ///
+  /// In es, this message translates to:
+  /// **'Notificación \"{titulo}\" eliminada'**
+  String notificacionEliminada(String titulo);
+
+  /// No description provided for @deshacer.
+  ///
+  /// In es, this message translates to:
+  /// **'Deshacer'**
+  String get deshacer;
+
+  /// No description provided for @borrarAvisos.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrar avisos'**
+  String get borrarAvisos;
+
+  /// No description provided for @confirmarBorrarTodasMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas eliminar todas las notificaciones recibidas? Podrás deshacer la acción inmediatamente si lo deseas.'**
+  String get confirmarBorrarTodasMensaje;
+
+  /// No description provided for @borrarTodas.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrar todas'**
+  String get borrarTodas;
+
+  /// No description provided for @todasNotificacionesEliminadas.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las notificaciones han sido eliminadas'**
+  String get todasNotificacionesEliminadas;
+
+  /// No description provided for @avisosEjemploRestaurados.
+  ///
+  /// In es, this message translates to:
+  /// **'Avisos de ejemplo restaurados'**
+  String get avisosEjemploRestaurados;
+
+  /// No description provided for @marcarTodasComoLeidas.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcar todas como leídas'**
+  String get marcarTodasComoLeidas;
+
+  /// No description provided for @buscarEnAvisosPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar en avisos...'**
+  String get buscarEnAvisosPlaceholder;
+
+  /// No description provided for @avisosDeLaComunidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Avisos de la comunidad'**
+  String get avisosDeLaComunidad;
+
+  /// Conteo de notificaciones no leídas
+  ///
+  /// In es, this message translates to:
+  /// **'{conteo} no leídas'**
+  String conteoNoLeidas(int conteo);
+
+  /// No description provided for @deslizaAvisoParaEliminar.
+  ///
+  /// In es, this message translates to:
+  /// **'Desliza un aviso hacia la izquierda para eliminarlo'**
+  String get deslizaAvisoParaEliminar;
+
+  /// No description provided for @noHayAvisosMomento.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay avisos en este momento'**
+  String get noHayAvisosMomento;
+
+  /// No description provided for @avisosOdooApareceranAqui.
+  ///
+  /// In es, this message translates to:
+  /// **'Los avisos publicados en Odoo aparecerán aquí.'**
+  String get avisosOdooApareceranAqui;
+
+  /// No description provided for @restaurarAvisosEjemplo.
+  ///
+  /// In es, this message translates to:
+  /// **'Restaurar avisos de ejemplo'**
+  String get restaurarAvisosEjemplo;
+
+  /// No description provided for @eliminarAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar aviso'**
+  String get eliminarAviso;
+
+  /// No description provided for @eliminarEsteAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar este aviso'**
+  String get eliminarEsteAviso;
+
+  /// No description provided for @personalizaTuExperienciaAtrio.
+  ///
+  /// In es, this message translates to:
+  /// **'Personaliza tu experiencia en ATRIO'**
+  String get personalizaTuExperienciaAtrio;
+
+  /// No description provided for @idiomaYRegion.
+  ///
+  /// In es, this message translates to:
+  /// **'Idioma y Región'**
+  String get idiomaYRegion;
+
+  /// No description provided for @aparienciaYTema.
+  ///
+  /// In es, this message translates to:
+  /// **'Apariencia y Tema'**
+  String get aparienciaYTema;
+
+  /// No description provided for @modoDeVisualizacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Modo de visualización'**
+  String get modoDeVisualizacion;
+
+  /// No description provided for @temaClaro.
+  ///
+  /// In es, this message translates to:
+  /// **'Claro'**
+  String get temaClaro;
+
+  /// No description provided for @temaOscuro.
+  ///
+  /// In es, this message translates to:
+  /// **'Oscuro'**
+  String get temaOscuro;
+
+  /// No description provided for @temaSistema.
+  ///
+  /// In es, this message translates to:
+  /// **'Sistema'**
+  String get temaSistema;
+
+  /// No description provided for @transicionDeNovedades.
+  ///
+  /// In es, this message translates to:
+  /// **'Transición de Novedades'**
+  String get transicionDeNovedades;
+
+  /// No description provided for @bannerPrincipalHero.
+  ///
+  /// In es, this message translates to:
+  /// **'Banner principal (HeroBannerCard)'**
+  String get bannerPrincipalHero;
+
+  /// Tiempo en segundos abreviado
+  ///
+  /// In es, this message translates to:
+  /// **'{segundos} seg'**
+  String segundosAbrev(int segundos);
+
+  /// No description provided for @efectoDesvanecimientoBanner.
+  ///
+  /// In es, this message translates to:
+  /// **'Efecto de desvanecimiento suave entre versículo, palabra y cultos.'**
+  String get efectoDesvanecimientoBanner;
+
+  /// No description provided for @segundosMinimo.
+  ///
+  /// In es, this message translates to:
+  /// **'3 seg'**
+  String get segundosMinimo;
+
+  /// No description provided for @segundosPredeterminado.
+  ///
+  /// In es, this message translates to:
+  /// **'5 seg (Predeterminado)'**
+  String get segundosPredeterminado;
+
+  /// No description provided for @segundosMaximo.
+  ///
+  /// In es, this message translates to:
+  /// **'10 seg'**
+  String get segundosMaximo;
+
+  /// No description provided for @notificacionesYRecordatorios.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones y Recordatorios'**
+  String get notificacionesYRecordatorios;
+
+  /// No description provided for @recibePorcionBiblica.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibe una porción bíblica cada mañana'**
+  String get recibePorcionBiblica;
+
+  /// No description provided for @horaDelRecordatorio.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora del recordatorio'**
+  String get horaDelRecordatorio;
+
+  /// No description provided for @palabraDelDia.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabra del día'**
+  String get palabraDelDia;
+
+  /// No description provided for @reflexionDevocionalDiario.
+  ///
+  /// In es, this message translates to:
+  /// **'Reflexión y devocional diario para tu fe'**
+  String get reflexionDevocionalDiario;
+
+  /// No description provided for @cultosEnVivo.
+  ///
+  /// In es, this message translates to:
+  /// **'Cultos en vivo'**
+  String get cultosEnVivo;
+
+  /// No description provided for @alertaTransmisionDirecto.
+  ///
+  /// In es, this message translates to:
+  /// **'Alerta cuando comience una transmisión en directo'**
+  String get alertaTransmisionDirecto;
+
+  /// No description provided for @anunciosEventosGlobales.
+  ///
+  /// In es, this message translates to:
+  /// **'Anuncios y eventos globales'**
+  String get anunciosEventosGlobales;
+
+  /// No description provided for @conferenciasConciertosAvisos.
+  ///
+  /// In es, this message translates to:
+  /// **'Conferencias, conciertos y avisos de iglesias'**
+  String get conferenciasConciertosAvisos;
+
+  /// No description provided for @lecturaDeLaBiblia.
+  ///
+  /// In es, this message translates to:
+  /// **'Lectura de la Biblia'**
+  String get lecturaDeLaBiblia;
+
+  /// No description provided for @versionPredeterminada.
+  ///
+  /// In es, this message translates to:
+  /// **'Versión predeterminada'**
+  String get versionPredeterminada;
+
+  /// No description provided for @tamanoTextoLectura.
+  ///
+  /// In es, this message translates to:
+  /// **'Tamaño de texto en lectura'**
+  String get tamanoTextoLectura;
+
+  /// No description provided for @ejemploTextoBiblia.
+  ///
+  /// In es, this message translates to:
+  /// **'«Lámpara es a mis pies tu palabra, y lumbrera a mi camino.» — Salmos 119:105'**
+  String get ejemploTextoBiblia;
+
+  /// No description provided for @mantenerPantallaEncendida.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantener pantalla encendida'**
+  String get mantenerPantallaEncendida;
+
+  /// No description provided for @evitaBloqueoTelefonoBiblia.
+  ///
+  /// In es, this message translates to:
+  /// **'Evita que el teléfono se bloquee mientras lees la Biblia'**
+  String get evitaBloqueoTelefonoBiblia;
+
+  /// No description provided for @emisorasYTransmisiones.
+  ///
+  /// In es, this message translates to:
+  /// **'Emisoras y Transmisiones'**
+  String get emisorasYTransmisiones;
+
+  /// No description provided for @reproduccionAutomatica.
+  ///
+  /// In es, this message translates to:
+  /// **'Reproducción automática'**
+  String get reproduccionAutomatica;
+
+  /// No description provided for @iniciarRadioAlSintonizar.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar la radio al sintonizar la emisora'**
+  String get iniciarRadioAlSintonizar;
+
+  /// No description provided for @calidadAudioStreaming.
+  ///
+  /// In es, this message translates to:
+  /// **'Calidad de audio streaming'**
+  String get calidadAudioStreaming;
+
+  /// No description provided for @calidadAudioBaja.
+  ///
+  /// In es, this message translates to:
+  /// **'Baja (64 kbps)'**
+  String get calidadAudioBaja;
+
+  /// No description provided for @calidadAudioMedia.
+  ///
+  /// In es, this message translates to:
+  /// **'Media (128 kbps)'**
+  String get calidadAudioMedia;
+
+  /// No description provided for @calidadAudioAlta.
+  ///
+  /// In es, this message translates to:
+  /// **'Alta (256 kbps)'**
+  String get calidadAudioAlta;
+
+  /// No description provided for @ahorroDeDatosSoloWifi.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahorro de datos (Solo Wi-Fi)'**
+  String get ahorroDeDatosSoloWifi;
+
+  /// No description provided for @reproducirDescargarSoloWifi.
+  ///
+  /// In es, this message translates to:
+  /// **'Reproducir y descargar en alta calidad solo con Wi-Fi'**
+  String get reproducirDescargarSoloWifi;
+
+  /// No description provided for @almacenamientoYMemoria.
+  ///
+  /// In es, this message translates to:
+  /// **'Almacenamiento y Memoria'**
+  String get almacenamientoYMemoria;
+
+  /// No description provided for @limpiarMemoriaCache.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar memoria caché'**
+  String get limpiarMemoriaCache;
+
+  /// No description provided for @imagenesAudiosTemporales.
+  ///
+  /// In es, this message translates to:
+  /// **'Imágenes y audios temporales (~18.4 MB)'**
+  String get imagenesAudiosTemporales;
+
+  /// No description provided for @limpiar.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar'**
+  String get limpiar;
+
+  /// No description provided for @limpiarCacheTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Limpiar memoria caché?'**
+  String get limpiarCacheTitulo;
+
+  /// No description provided for @limpiarCacheMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'Se eliminarán imágenes y archivos temporales para liberar almacenamiento. No se borrarán tus notas ni favoritos bíblicos.'**
+  String get limpiarCacheMensaje;
+
+  /// No description provided for @memoriaCacheLiberadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Memoria caché liberada con éxito'**
+  String get memoriaCacheLiberadaExito;
+
+  /// No description provided for @limpiarAhora.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar ahora'**
+  String get limpiarAhora;
+
+  /// No description provided for @restablecerAjustesPredeterminados.
+  ///
+  /// In es, this message translates to:
+  /// **'Restablecer ajustes predeterminados'**
+  String get restablecerAjustesPredeterminados;
+
+  /// No description provided for @restablecerConfiguracionTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Restablecer configuración?'**
+  String get restablecerConfiguracionTitulo;
+
+  /// No description provided for @restablecerConfiguracionMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los ajustes de la app volverán a sus valores iniciales recomendados.'**
+  String get restablecerConfiguracionMensaje;
+
+  /// No description provided for @ajustesRestablecidosFabrica.
+  ///
+  /// In es, this message translates to:
+  /// **'Ajustes restablecidos a valores de fábrica'**
+  String get ajustesRestablecidosFabrica;
+
+  /// No description provided for @restablecer.
+  ///
+  /// In es, this message translates to:
+  /// **'Restablecer'**
+  String get restablecer;
+
+  /// No description provided for @idiomaEspanolLatino.
+  ///
+  /// In es, this message translates to:
+  /// **'Español (Latinoamérica)'**
+  String get idiomaEspanolLatino;
+
+  /// No description provided for @idiomaInglesUSA.
+  ///
+  /// In es, this message translates to:
+  /// **'English (United States)'**
+  String get idiomaInglesUSA;
+
+  /// No description provided for @idiomaPortuguesBrasil.
+  ///
+  /// In es, this message translates to:
+  /// **'Português (Brasil)'**
+  String get idiomaPortuguesBrasil;
+
+  /// No description provided for @idiomaFrances.
+  ///
+  /// In es, this message translates to:
+  /// **'Français'**
+  String get idiomaFrances;
+
+  /// No description provided for @politicaDePrivacidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Política de Privacidad'**
+  String get politicaDePrivacidad;
+
+  /// Introducción de la política de privacidad
+  ///
+  /// In es, this message translates to:
+  /// **'Última actualización: {fecha}\n\nBienvenido a ATRIO (\"Vive tu Fe en comunidad\"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual.\n\nEsta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.'**
+  String politicaPrivacidadIntro(String fecha);
+
+  /// No description provided for @seccionInfoQueRecopilamos.
+  ///
+  /// In es, this message translates to:
+  /// **'1. Información que recopilamos'**
+  String get seccionInfoQueRecopilamos;
+
+  /// No description provided for @parrafoInfoQueRecopilamos.
+  ///
+  /// In es, this message translates to:
+  /// **'• Datos de la cuenta: Al iniciar sesión o registrarte (correo electrónico, Google Sign-In o Apple ID), almacenamos de manera segura tu nombre y dirección de correo electrónico.\n\n• Datos comunitarios y de perfil: Número telefónico, tradición cristiana e iglesia o comunidad a la que estás vinculado voluntariamente para adaptar tu experiencia eclesiástica.\n\n• Almacenamiento Local en el Dispositivo: Tus notas de la Biblia, pasajes favoritos, configuraciones personales e historial de navegación se guardan localmente en SQLite. No compartimos tus reflexiones privadas con terceros.\n\n• Solicitudes y Donaciones: Registramos el estado de tus peticiones de oración, solicitudes pastorales y constancias de donaciones o aportes a proyectos solidarios para darte visibilidad y trazabilidad directa.'**
+  String get parrafoInfoQueRecopilamos;
+
+  /// No description provided for @seccionUsoServiciosTerceros.
+  ///
+  /// In es, this message translates to:
+  /// **'2. Uso de servicios de terceros'**
+  String get seccionUsoServiciosTerceros;
+
+  /// No description provided for @parrafoUsoServiciosTerceros.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuestra plataforma se integra con tecnologías de confianza para ofrecer una funcionalidad completa:\n\n• Google Play Services, Google Sign-In y Sign in with Apple (Autenticación y seguridad).\n\n• Google Maps Platform (Para la localización geográfica precisa de templos, parroquias y eventos comunitarios en el mapa interactivo).\n\n• Pasarelas de Pago Seguras (Para la recepción confiable y encriptada de ofrendas, diezmos y aportes a causas solidarias).\n\n• YouTube y Reproductores de Transmisiones (Para servicios religiosos, eventos en vivo y programas radiales).'**
+  String get parrafoUsoServiciosTerceros;
+
+  /// No description provided for @seccionRetencionYEliminacion.
+  ///
+  /// In es, this message translates to:
+  /// **'3. Retención y eliminación de datos'**
+  String get seccionRetencionYEliminacion;
+
+  /// No description provided for @parrafoRetencionYEliminacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Conservamos los datos de tu cuenta mientras esté activa. De acuerdo con las directrices de Apple App Store (5.1.1 v) y Google Play Console, tienes el derecho incondicional de solicitar la eliminación total y definitiva de tu cuenta y datos personales.\n\nPuedes realizar esta acción en cualquier momento desde la opción \"Eliminar cuenta y datos\" en la pantalla de Perfil, o enviando un correo a soporte@atrioapp.com con el asunto \"Eliminación de Cuenta\".\n\nTodos los registros locales en SQLite y vinculaciones en el backend serán purgados.'**
+  String get parrafoRetencionYEliminacion;
+
+  /// No description provided for @seccionPermisosDelDispositivo.
+  ///
+  /// In es, this message translates to:
+  /// **'4. Permisos del dispositivo'**
+  String get seccionPermisosDelDispositivo;
+
+  /// No description provided for @parrafoPermisosDelDispositivo.
+  ///
+  /// In es, this message translates to:
+  /// **'ATRIO solo solicita permisos estrictamente requeridos para su funcionamiento:\n\n• Ubicación (GPS): Únicamente utilizada cuando accedes al mapa para mostrarte iglesias y eventos en tu cercanía inmediata.\n\n• Acceso a Internet y Red: Para sincronizar solicitudes, consultar transmisiones en directo y validar aportes.\n\n• Notificaciones: Para recordatorios de servicios litúrgicos, eventos comunitarios y respuestas a solicitudes.'**
+  String get parrafoPermisosDelDispositivo;
+
+  /// No description provided for @terminosDeUsoTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Términos de Uso'**
+  String get terminosDeUsoTitulo;
+
+  /// No description provided for @parrafoTerminosDeUso.
+  ///
+  /// In es, this message translates to:
+  /// **'1. Conducta y respeto comunitario: ATRIO es un espacio digital de comunión, edificación mutua y apoyo a las obras de la iglesia. Queda terminantemente prohibido el uso de lenguaje difamatorio, fraudulento o que atente contra la dignidad de la comunidad.\n\n2. Contenidos bíblicos y multimedia: Los textos bíblicos, transmisiones de emisoras y videos compartidos respetan los derechos de autor de sus respectivas entidades y ministerios emisores. Se prohíbe su explotación comercial indebida fuera de la plataforma.\n\n3. Donaciones y aportes: Los aportes realizados a través de ATRIO van dirigidos directamente a las comunidades religiosas y proyectos solidarios seleccionados. La app actúa como puente facilitador transparente y seguro.'**
+  String get parrafoTerminosDeUso;
+
+  /// No description provided for @aceptacionTerminosPoliticas.
+  ///
+  /// In es, this message translates to:
+  /// **'Al usar ATRIO, aceptas estos términos y políticas de convivencia.'**
+  String get aceptacionTerminosPoliticas;
+
+  /// No description provided for @noSePudoCargarVersiculo.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el versículo.'**
+  String get noSePudoCargarVersiculo;
+
+  /// No description provided for @montoPersonalizado.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto personalizado'**
+  String get montoPersonalizado;
+
+  /// No description provided for @montoADonarMoneda.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto a donar (RD\$)'**
+  String get montoADonarMoneda;
+
+  /// No description provided for @ingresaUnMonto.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un monto'**
+  String get ingresaUnMonto;
+
+  /// No description provided for @montoInvalido.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto inválido'**
+  String get montoInvalido;
+
+  /// No description provided for @elMinimoEs500.
+  ///
+  /// In es, this message translates to:
+  /// **'El mínimo es RD\$500'**
+  String get elMinimoEs500;
+
+  /// No description provided for @elMaximoEs1000000.
+  ///
+  /// In es, this message translates to:
+  /// **'El máximo es RD\$1,000,000'**
+  String get elMaximoEs1000000;
+
+  /// No description provided for @confirmar.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar'**
+  String get confirmar;
+
+  /// No description provided for @confirmarSolicitudTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar Solicitud'**
+  String get confirmarSolicitudTitulo;
+
+  /// No description provided for @solicitudEnviadaEquipoPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu solicitud será enviada al equipo pastoral de la iglesia.'**
+  String get solicitudEnviadaEquipoPastoral;
+
+  /// No description provided for @tipo.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo'**
+  String get tipo;
+
+  /// No description provided for @privada.
+  ///
+  /// In es, this message translates to:
+  /// **'Privada'**
+  String get privada;
+
+  /// No description provided for @publica.
+  ///
+  /// In es, this message translates to:
+  /// **'Pública'**
+  String get publica;
+
+  /// No description provided for @enviandoAOdoo.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviando a Odoo...'**
+  String get enviandoAOdoo;
+
+  /// No description provided for @registrandoSolicitudSistema.
+  ///
+  /// In es, this message translates to:
+  /// **'Estamos registrando tu solicitud en el sistema.'**
+  String get registrandoSolicitudSistema;
+
+  /// No description provided for @solicitudEnviadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Solicitud Enviada!'**
+  String get solicitudEnviadaExito;
+
+  /// No description provided for @solicitudRegistradaCorrectamente.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu solicitud ha sido registrada correctamente. El equipo se pondrá en contacto contigo pronto.'**
+  String get solicitudRegistradaCorrectamente;
+
+  /// No description provided for @leerReflexion.
+  ///
+  /// In es, this message translates to:
+  /// **'Leer reflexión'**
+  String get leerReflexion;
+
+  /// No description provided for @verVersiculo.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver versículo'**
+  String get verVersiculo;
+
+  /// No description provided for @enVivoAhora.
+  ///
+  /// In es, this message translates to:
+  /// **'En vivo ahora'**
+  String get enVivoAhora;
+
+  /// No description provided for @enVivo.
+  ///
+  /// In es, this message translates to:
+  /// **'EN VIVO'**
+  String get enVivo;
+
+  /// Cita bíblica base para la palabra del día
+  ///
+  /// In es, this message translates to:
+  /// **'Cita base: {cita}'**
+  String citaBase(String cita);
+
+  /// No description provided for @entendidoAmen.
+  ///
+  /// In es, this message translates to:
+  /// **'Entendido · Amén'**
+  String get entendidoAmen;
 }
 
 class _AppLocalizationsDelegate

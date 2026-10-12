@@ -8,6 +8,7 @@ import '../widgets/modal_otro_monto.dart';
 import '../providers/aporte_provider.dart';
 
 import 'package:flutter/services.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 
 class RealizarAporteScreen extends StatefulWidget {
   static const routeName = 'realizar_aporte_screen';
@@ -63,6 +64,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -107,7 +109,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
-                        'Realiza tu aporte',
+                        l10n?.realizaTuAporte ?? 'Realiza tu aporte',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.058,
@@ -165,6 +167,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     aporteProvider,
                     screenWidth,
                     usableHeight,
+                    l10n,
                   ),
                 ),
               ),
@@ -180,6 +183,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     AporteProvider provider,
     double screenWidth,
     double usableHeight,
+    AppLocalizations? l10n,
   ) {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator(color: amarilloOro));
@@ -187,7 +191,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     if (provider.errorMessage != null || config == null) {
       return Center(
         child: Text(
-          provider.errorMessage ?? 'Error al cargar datos',
+          provider.errorMessage ?? l10n?.errorCargarDatos ?? 'Error al cargar datos',
           style: TextStyle(color: azulFondo, fontSize: screenWidth * 0.04),
         ),
       );
@@ -216,7 +220,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
           children: [
             // 1. Dropdown Box de Tipo de Donación
             Text(
-              'Tipo de donación',
+              l10n?.tipoDonacion ?? 'Tipo de donación',
               style: TextStyle(
                 color: azulFondo,
                 fontSize: screenWidth * 0.04,
@@ -255,7 +259,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                           ),
                           SizedBox(width: screenWidth * 0.03),
                           Text(
-                            value,
+                            _getNombreTipoDonacion(value, l10n),
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.036,
@@ -280,7 +284,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
 
             // 2. Selección del Monto
             Text(
-              'Selecciona el monto',
+              l10n?.seleccionaElMonto ?? 'Selecciona el monto',
               style: TextStyle(
                 color: azulFondo,
                 fontSize: screenWidth * 0.04,
@@ -308,6 +312,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
               screenWidth: screenWidth,
               usableHeight: usableHeight,
               montoPersonalizado: _montoPersonalizado,
+              l10n: l10n,
               onTap: () async {
                 final int? montoIngresado = await ModalOtroMonto.mostrar(
                   context,
@@ -324,7 +329,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
 
             // 3. Frecuencia
             Text(
-              'Frecuencia',
+              l10n?.frecuencia ?? 'Frecuencia',
               style: TextStyle(
                 color: azulFondo,
                 fontSize: screenWidth * 0.04,
@@ -336,7 +341,10 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
               children: [
                 Expanded(
                   child: _buildFrequencyCard(
-                    title: config.configPago.frecuencias[0],
+                    title: _getNombreFrecuencia(
+                      config.configPago.frecuencias[0],
+                      l10n,
+                    ),
                     isSelected: _selectedFrequencyIndex == 0,
                     screenWidth: screenWidth,
                     usableHeight: usableHeight,
@@ -346,9 +354,12 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                 SizedBox(width: screenWidth * 0.035),
                 Expanded(
                   child: _buildFrequencyCard(
-                    title: config.configPago.frecuencias.length > 1
-                        ? config.configPago.frecuencias[1]
-                        : 'Mensual',
+                    title: _getNombreFrecuencia(
+                      config.configPago.frecuencias.length > 1
+                          ? config.configPago.frecuencias[1]
+                          : 'Mensual',
+                      l10n,
+                    ),
                     isSelected: _selectedFrequencyIndex == 1,
                     screenWidth: screenWidth,
                     usableHeight: usableHeight,
@@ -361,7 +372,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
 
             // 4. Selección Dinámica del Método de Pago
             Text(
-              'Método de pago',
+              l10n?.metodoDePago ?? 'Método de pago',
               style: TextStyle(
                 color: azulFondo,
                 fontSize: screenWidth * 0.04,
@@ -373,7 +384,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
               children: [
                 Expanded(
                   child: _buildPaymentOption(
-                    title: 'Transferencia',
+                    title: l10n?.transferencia ?? 'Transferencia',
                     icon: FontAwesomeIcons.buildingColumns,
                     isSelected: _selectedPaymentMethod == 'Transferencia',
                     screenWidth: screenWidth,
@@ -384,6 +395,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                         context,
                         screenWidth,
                         usableHeight,
+                        l10n,
                       );
                     },
                   ),
@@ -442,7 +454,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Donación anónima',
+                        l10n?.donacionAnonima ?? 'Donación anónima',
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.04,
@@ -451,7 +463,8 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                       ),
                       SizedBox(height: usableHeight * 0.003),
                       Text(
-                        'Tu nombre no será visible en los listados.',
+                        l10n?.donacionAnonimaDesc ??
+                            'Tu nombre no será visible en los listados.',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: screenWidth * 0.032,
@@ -491,14 +504,19 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     ConfirmarDonacionScreen.routeName,
                     arguments: {
                       'comunidad': 'Comunidad de Esperanza',
-                      'concepto': _selectedTipoDonacion,
+                      'concepto': _getNombreTipoDonacion(
+                        _selectedTipoDonacion,
+                        l10n,
+                      ),
                       'monto': _selectedAmountIndex == -1
                           ? 'RD\$${formatCurrency.format(_montoPersonalizado ?? 0)}'
                           : 'RD\$${formatCurrency.format(config.configPago.montosSugeridos[_selectedAmountIndex])}',
                       'frecuencia': _selectedFrequencyIndex == 0
-                          ? 'Una sola vez'
-                          : 'Mensual',
-                      'metodoPago': _selectedPaymentMethod,
+                          ? (l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez')
+                          : (l10n?.frecuenciaMensual ?? 'Mensual'),
+                      'metodoPago': _selectedPaymentMethod == 'Transferencia'
+                          ? (l10n?.transferencia ?? 'Transferencia')
+                          : _selectedPaymentMethod,
                     },
                   );
                 },
@@ -512,7 +530,8 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     ),
                     SizedBox(width: screenWidth * 0.02),
                     Text(
-                      'Continuar de forma segura',
+                      l10n?.continuarDeFormaSegura ??
+                          'Continuar de forma segura',
                       style: TextStyle(
                         fontSize: screenWidth * 0.044,
                         fontWeight: FontWeight.bold,
@@ -528,6 +547,32 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
         ),
       ),
     );
+  }
+
+  String _getNombreTipoDonacion(String type, AppLocalizations? l10n) {
+    switch (type) {
+      case 'Diezmo':
+        return l10n?.diezmo ?? type;
+      case 'Ofrenda':
+        return l10n?.ofrenda ?? type;
+      case 'Campaña especial':
+        return l10n?.campanaEspecial ?? type;
+      case 'Ayuda comunitaria':
+        return l10n?.ayudaComunitaria ?? type;
+      case 'Otro aporte':
+        return l10n?.otroAporte ?? type;
+      default:
+        return type;
+    }
+  }
+
+  String _getNombreFrecuencia(String freq, AppLocalizations? l10n) {
+    if (freq == 'Una sola vez') {
+      return l10n?.frecuenciaUnaSolaVez ?? freq;
+    } else if (freq == 'Mensual') {
+      return l10n?.frecuenciaMensual ?? freq;
+    }
+    return freq;
   }
 
   IconData _getIconForDonationType(String type) {
@@ -586,11 +631,12 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     required double usableHeight,
     required VoidCallback onTap,
     int? montoPersonalizado,
+    AppLocalizations? l10n,
   }) {
     final formatCurrency = NumberFormat("#,##0", "en_US");
     final String label = (isSelected && montoPersonalizado != null)
         ? 'RD\$${formatCurrency.format(montoPersonalizado)}'
-        : 'Otro monto';
+        : (l10n?.otroMonto ?? 'Otro monto');
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -718,8 +764,9 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     Color azulFondo,
     Color amarilloOro,
     Color blancoFondo,
-    Color grisBorde,
-  ) {
+    Color grisBorde, {
+    AppLocalizations? l10n,
+  }) {
     Clipboard.setData(ClipboardData(text: cuenta));
     final overlay = Overlay.of(modalContext);
     late OverlayEntry overlayEntry;
@@ -771,7 +818,8 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '¡Cuenta copiada al portapapeles!',
+                        l10n?.cuentaCopiadaPortapapeles ??
+                            '¡Cuenta copiada al portapapeles!',
                         style: TextStyle(
                           color: amarilloOro,
                           fontSize: screenWidth * 0.055,
@@ -810,6 +858,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     BuildContext context,
     double screenWidth,
     double usableHeight,
+    AppLocalizations? l10n,
   ) {
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -857,7 +906,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'MÉTODOS',
+                        l10n?.metodosTitulo ?? 'MÉTODOS',
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.075,
@@ -866,7 +915,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                         ),
                       ),
                       Text(
-                        'de pago',
+                        l10n?.dePagoTitulo ?? 'de pago',
                         style: TextStyle(
                           color: amarilloOro,
                           fontSize: screenWidth * 0.070,
@@ -897,7 +946,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                             ),
                             SizedBox(width: screenWidth * 0.02),
                             Text(
-                              'VÍA TRANSFERENCIA',
+                              l10n?.viaTransferencia ?? 'VÍA TRANSFERENCIA',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: screenWidth * 0.035,
@@ -910,7 +959,8 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                       ),
                       SizedBox(height: usableHeight * 0.015),
                       Text(
-                        'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
+                        l10n?.aceptamosTransferenciasDesc ??
+                            'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: azulFondo.withValues(alpha: 0.8),
@@ -933,6 +983,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                         celesteCard: celesteCard,
                         blancoFondo: blancoFondo,
                         logoBanco: 'bhd_logo',
+                        l10n: l10n,
                       ),
                       SizedBox(height: usableHeight * 0.014),
                       _buildBancoCard(
@@ -949,6 +1000,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                         celesteCard: celesteCard,
                         blancoFondo: blancoFondo,
                         logoBanco: 'popular_logo',
+                        l10n: l10n,
                       ),
                       SizedBox(height: usableHeight * 0.014),
                       _buildBancoCard(
@@ -965,6 +1017,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                         celesteCard: celesteCard,
                         blancoFondo: blancoFondo,
                         logoBanco: 'banreservas_logo',
+                        l10n: l10n,
                       ),
                       SizedBox(height: usableHeight * 0.015),
                       Container(
@@ -999,7 +1052,8 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'TU PAGO ESTÁ SEGURO',
+                                    l10n?.tuPagoEstaSeguro ??
+                                        'TU PAGO ESTÁ SEGURO',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: screenWidth * 0.031,
@@ -1007,7 +1061,8 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                                     ),
                                   ),
                                   Text(
-                                    'Confianza, rapidez y seguridad en cada transacción.',
+                                    l10n?.tuPagoSeguroDesc ??
+                                        'Confianza, rapidez y seguridad en cada transacción.',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: screenWidth * 0.026,
@@ -1045,6 +1100,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     required Color grisBorde,
     required Color celesteCard,
     required Color blancoFondo,
+    AppLocalizations? l10n,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1124,6 +1180,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                 amarilloOro,
                 blancoFondo,
                 grisBorde,
+                l10n: l10n,
               ),
               child: Container(
                 padding: EdgeInsets.all(screenWidth * 0.025),

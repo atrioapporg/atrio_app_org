@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:atrio/modelos/versiculo_dia.dart';
 import 'package:atrio/servicios/versiculo_service.dart';
 
+import '../l10n/app_localizations.dart';
+
 class ModalVersiculoImagen extends StatefulWidget {
   final String rutaImagenBlanca;
   final VersiculoDia? versiculo;
@@ -55,6 +57,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final media = MediaQuery.of(context);
     final screenWidth = media.size.width;
     final screenHeight = media.size.height;
@@ -116,7 +119,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'No se pudo cargar el versículo.',
+                                l10n.noSePudoCargarVersiculo,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.black54,
@@ -129,6 +132,7 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                               ),
                               SizedBox(height: cardHeight * 0.01),
                               IconButton(
+                                tooltip: l10n.reintentar,
                                 icon: const Icon(
                                   Icons.refresh_rounded,
                                   color: Color(0xFF072B4F),
@@ -218,29 +222,33 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
                 Positioned(
                   top: cardHeight * 0.02,
                   right: cardWidth * 0.03,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: EdgeInsets.all(cardWidth * 0.02),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                  child: Semantics(
+                    label: l10n.cerrar,
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: EdgeInsets.all(cardWidth * 0.02),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 1,
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: cardWidth * 0.055,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: cardWidth * 0.055,
+                        ),
                       ),
                     ),
                   ),

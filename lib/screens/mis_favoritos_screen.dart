@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/atrio_database_helper.dart';
+import '../l10n/app_localizations.dart';
 
 // Asegúrate de importar tu pantalla de lectura
 
@@ -60,11 +61,14 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
     await _cargarFavoritos();
 
     if (mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Eliminado de favoritos'),
+        SnackBar(
+          content: Text(
+            l10n?.eliminadoDeFavoritos ?? 'Eliminado de favoritos',
+          ),
           backgroundColor: azulFondo,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -84,6 +88,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -124,7 +129,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
                     ),
                     SizedBox(width: screenWidth * 0.03),
                     Text(
-                      'Favoritos',
+                      l10n?.favoritos ?? 'Favoritos',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: screenWidth * 0.065,
@@ -157,7 +162,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
                             ),
                           )
                         : _favoritos.isEmpty
-                        ? _buildEmptyState(screenWidth, usableHeight)
+                        ? _buildEmptyState(screenWidth, usableHeight, l10n)
                         : ListView.separated(
                             physics: const BouncingScrollPhysics(),
                             padding: EdgeInsets.symmetric(
@@ -173,6 +178,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
                                 fav: fav,
                                 screenWidth: screenWidth,
                                 usableHeight: usableHeight,
+                                l10n: l10n,
                               );
                             },
                           ),
@@ -186,7 +192,11 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
     );
   }
 
-  Widget _buildEmptyState(double screenWidth, double usableHeight) {
+  Widget _buildEmptyState(
+    double screenWidth,
+    double usableHeight,
+    AppLocalizations? l10n,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
       child: Column(
@@ -199,7 +209,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
           ),
           SizedBox(height: usableHeight * 0.02),
           Text(
-            'Sin favoritos',
+            l10n?.sinFavoritos ?? 'Sin favoritos',
             style: TextStyle(
               color: azulFondo,
               fontSize: screenWidth * 0.05,
@@ -208,7 +218,8 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
           ),
           SizedBox(height: usableHeight * 0.01),
           Text(
-            'Toca el ícono de marcador en cualquier capítulo para guardarlo aquí y acceder rápidamente.',
+            l10n?.sinFavoritosDesc ??
+                'Toca el ícono de marcador en cualquier capítulo para guardarlo aquí y acceder rápidamente.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey.shade600,
@@ -225,6 +236,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
     required Map<String, dynamic> fav,
     required double screenWidth,
     required double usableHeight,
+    required AppLocalizations? l10n,
   }) {
     final String libro = fav['libro'] ?? '';
     final int capitulo = fav['capitulo'] ?? 1;
@@ -242,7 +254,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
             'nombre': libro,
             'capitulo': capitulo,
             'totalCapitulos': 150, // Pasa el total real si lo tienes a mano, o déjalo en genérico
-            'subtitulo': 'Desde Favoritos',
+            'subtitulo': l10n?.desdeFavoritos ?? 'Desde Favoritos',
           },
         );
         // Refresca al volver por si lo eliminó desde la lectura
@@ -287,7 +299,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
                   ),
                   SizedBox(height: usableHeight * 0.005),
                   Text(
-                    'Guardado el $fecha',
+                    l10n?.guardadoEl(fecha) ?? 'Guardado el $fecha',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: screenWidth * 0.032,

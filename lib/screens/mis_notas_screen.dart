@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/atrio_database_helper.dart';
+import '../l10n/app_localizations.dart';
 
 class MisNotasScreen extends StatefulWidget {
   static const routeName = 'mis_notas_screen';
@@ -45,6 +46,7 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
   }
 
   Future<void> _eliminarNota(int id) async {
+    final l10n = AppLocalizations.of(context);
     // Diálogo de confirmación antes de eliminar
     final bool confirmar =
         await showDialog(
@@ -54,20 +56,21 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            title: const Text(
-              'Eliminar nota',
-              style: TextStyle(color: azulFondo, fontWeight: FontWeight.bold),
+            title: Text(
+              l10n?.eliminarNotaTitulo ?? 'Eliminar nota',
+              style: const TextStyle(color: azulFondo, fontWeight: FontWeight.bold),
             ),
-            content: const Text(
-              '¿Estás seguro de que deseas eliminar esta nota de forma permanente?',
-              style: TextStyle(color: Colors.black87),
+            content: Text(
+              l10n?.seguroEliminarNota ??
+                  '¿Estás seguro de que deseas eliminar esta nota de forma permanente?',
+              style: const TextStyle(color: Colors.black87),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(color: azulFondo),
+                child: Text(
+                  l10n?.cancelar ?? 'Cancelar',
+                  style: const TextStyle(color: azulFondo),
                 ),
               ),
               ElevatedButton(
@@ -77,7 +80,7 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
                   elevation: 0,
                 ),
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Eliminar'),
+                child: Text(l10n?.eliminar ?? 'Eliminar'),
               ),
             ],
           ),
@@ -90,10 +93,13 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nota eliminada correctamente'),
+          SnackBar(
+            content: Text(
+              l10n?.notaEliminadaCorrectamente ??
+                  'Nota eliminada correctamente',
+            ),
             backgroundColor: azulFondo,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -215,6 +221,7 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -256,7 +263,7 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
                     ),
                     SizedBox(width: screenWidth * 0.03),
                     Text(
-                      'Mis Notas',
+                      l10n?.misNotas ?? 'Mis Notas',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: screenWidth * 0.065,
@@ -291,7 +298,7 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
                             ),
                           )
                         : _notas.isEmpty
-                        ? _buildEmptyState(screenWidth, usableHeight)
+                        ? _buildEmptyState(screenWidth, usableHeight, l10n)
                         : ListView.separated(
                             physics: const BouncingScrollPhysics(),
                             padding: EdgeInsets.symmetric(
@@ -320,7 +327,11 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
     );
   }
 
-  Widget _buildEmptyState(double screenWidth, double usableHeight) {
+  Widget _buildEmptyState(
+    double screenWidth,
+    double usableHeight,
+    AppLocalizations? l10n,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
       child: Column(
@@ -333,7 +344,7 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
           ),
           SizedBox(height: usableHeight * 0.02),
           Text(
-            'Aún no tienes notas',
+            l10n?.aunNoTienesNotas ?? 'Aún no tienes notas',
             style: TextStyle(
               color: azulFondo,
               fontSize: screenWidth * 0.05,
@@ -342,7 +353,8 @@ class _MisNotasScreenState extends State<MisNotasScreen> {
           ),
           SizedBox(height: usableHeight * 0.01),
           Text(
-            'Tus reflexiones y apuntes bíblicos aparecerán aquí. Abre cualquier capítulo y toca el ícono de Nota para empezar.',
+            l10n?.aunNoTienesNotasDesc ??
+                'Tus reflexiones y apuntes bíblicos aparecerán aquí. Abre cualquier capítulo y toca el ícono de Nota para empezar.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.grey.shade600,

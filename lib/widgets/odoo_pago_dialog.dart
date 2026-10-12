@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:atrio/l10n/app_localizations.dart';
 
 class OdooPagoDialog {
   static Future<void> mostrarConfirmacionPago({
@@ -8,6 +9,7 @@ class OdooPagoDialog {
     required String metodoPago,
     required VoidCallback onConfirmado,
   }) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -77,7 +79,7 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.015),
                     Text(
-                      'Confirmar Transacción',
+                      l10n?.confirmarTransaccion ?? 'Confirmar Transacción',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.055,
@@ -86,7 +88,8 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      'La transacción se validará mediante la pasarela segura de Odoo.',
+                      l10n?.transaccionValidaraOdoo ??
+                          'La transacción se validará mediante la pasarela segura de Odoo.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
@@ -113,7 +116,7 @@ class OdooPagoDialog {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Concepto',
+                                l10n?.concepto ?? 'Concepto',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: screenWidth * 0.033,
@@ -148,7 +151,7 @@ class OdooPagoDialog {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Total a procesar',
+                                l10n?.totalAProcesar ?? 'Total a procesar',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: screenWidth * 0.033,
@@ -199,7 +202,7 @@ class OdooPagoDialog {
                           });
                         },
                         child: Text(
-                          'Pagar y Validar',
+                          l10n?.pagarYValidar ?? 'Pagar y Validar',
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,
@@ -211,7 +214,7 @@ class OdooPagoDialog {
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       child: Text(
-                        'Cancelar',
+                        l10n?.cancelar ?? 'Cancelar',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: screenWidth * 0.035,
@@ -223,7 +226,7 @@ class OdooPagoDialog {
                     const CircularProgressIndicator(color: amarilloOro),
                     SizedBox(height: usableHeight * 0.03),
                     Text(
-                      'Validando con Odoo...',
+                      l10n?.validandoConOdoo ?? 'Validando con Odoo...',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.048,
@@ -232,7 +235,8 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      'Estamos registrando tu orden y confirmando el pago.',
+                      l10n?.registrandoOrdenConfirmandoPago ??
+                          'Estamos registrando tu orden y confirmando el pago.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
@@ -257,7 +261,7 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.015),
                     Text(
-                      '¡Aporte Exitoso!',
+                      l10n?.aporteExitoso ?? '¡Aporte Exitoso!',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.058,
@@ -266,7 +270,8 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      'Referencia Odoo: $ordenOdoo',
+                      l10n?.referenciaOdoo(ordenOdoo) ??
+                          'Referencia Odoo: $ordenOdoo',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: screenWidth * 0.032,
@@ -275,7 +280,8 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.01),
                     Text(
-                      'Tu contribución ha sido validada y el recibo digital fue enviado a tu correo.',
+                      l10n?.contribucionValidadaRecibo ??
+                          'Tu contribución ha sido validada y el recibo digital fue enviado a tu correo.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade700,
@@ -303,7 +309,7 @@ class OdooPagoDialog {
                           onConfirmado();
                         },
                         child: Text(
-                          'Finalizar',
+                          l10n?.finalizar ?? 'Finalizar',
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,

@@ -17,6 +17,7 @@ class ConfiguracionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
@@ -42,7 +43,7 @@ class ConfiguracionScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Ajustes de la App',
+              l10n.ajustesDeLaApp,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -50,7 +51,7 @@ class ConfiguracionScreen extends StatelessWidget {
               ),
             ),
             Text(
-              'Personaliza tu experiencia en ATRIO',
+              l10n.personalizaTuExperienciaAtrio,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -88,7 +89,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   // 1. Idioma y Región
                   _buildSectionHeader(
                     icon: Icons.language_rounded,
-                    title: 'Idioma y Región',
+                    title: l10n.idiomaYRegion,
                     screenWidth: screenWidth,
                   ),
                   _buildCardContainer(
@@ -137,7 +138,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   // 2. Apariencia y Tema
                   _buildSectionHeader(
                     icon: Icons.palette_outlined,
-                    title: 'Apariencia y Tema',
+                    title: l10n.aparienciaYTema,
                     screenWidth: screenWidth,
                   ),
                   _buildCardContainer(
@@ -149,7 +150,7 @@ class ConfiguracionScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Modo de visualización',
+                              l10n.modoDeVisualizacion,
                               style: TextStyle(
                                 color: azulFondo,
                                 fontWeight: FontWeight.bold,
@@ -161,7 +162,7 @@ class ConfiguracionScreen extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: _buildThemeOptionCard(
-                                    label: 'Claro',
+                                    label: l10n.temaClaro,
                                     icon: Icons.light_mode_rounded,
                                     isSelected: provider.temaModo == 'claro',
                                     onTap: () => provider.cambiarTema('claro'),
@@ -172,7 +173,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                 SizedBox(width: screenWidth * 0.025),
                                 Expanded(
                                   child: _buildThemeOptionCard(
-                                    label: 'Oscuro',
+                                    label: l10n.temaOscuro,
                                     icon: Icons.dark_mode_rounded,
                                     isSelected: provider.temaModo == 'oscuro',
                                     onTap: () => provider.cambiarTema('oscuro'),
@@ -183,7 +184,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                 SizedBox(width: screenWidth * 0.025),
                                 Expanded(
                                   child: _buildThemeOptionCard(
-                                    label: 'Sistema',
+                                    label: l10n.temaSistema,
                                     icon: Icons.settings_suggest_rounded,
                                     isSelected: provider.temaModo == 'sistema',
                                     onTap: () =>
@@ -231,7 +232,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Transición de Novedades',
+                                          l10n.transicionDeNovedades,
                                           style: TextStyle(
                                             color: azulFondo,
                                             fontWeight: FontWeight.bold,
@@ -239,7 +240,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                           ),
                                         ),
                                         Text(
-                                          'Banner principal (HeroBannerCard)',
+                                          l10n.bannerPrincipalHero,
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: screenWidth * 0.028,
@@ -261,7 +262,9 @@ class ConfiguracionScreen extends StatelessWidget {
                                     ),
                                   ),
                                   child: Text(
-                                    '${provider.tiempoTransicionBannerSegundos} seg',
+                                    l10n.segundosAbrev(
+                                      provider.tiempoTransicionBannerSegundos,
+                                    ),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -273,7 +276,7 @@ class ConfiguracionScreen extends StatelessWidget {
                             ),
                             SizedBox(height: usableHeight * 0.012),
                             Text(
-                              'Efecto de desvanecimiento suave entre versículo, palabra y cultos.',
+                              l10n.efectoDesvanecimientoBanner,
                               style: TextStyle(
                                 color: Colors.grey.shade700,
                                 fontSize: screenWidth * 0.030,
@@ -315,7 +318,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                   MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '3 seg',
+                                  l10n.segundosMinimo,
                                   style: TextStyle(
                                     color: Colors.grey.shade500,
                                     fontSize: screenWidth * 0.027,
@@ -323,7 +326,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '5 seg (Predeterminado)',
+                                  l10n.segundosPredeterminado,
                                   style: TextStyle(
                                     color: amarilloOro,
                                     fontSize: screenWidth * 0.027,
@@ -331,7 +334,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '10 seg',
+                                  l10n.segundosMaximo,
                                   style: TextStyle(
                                     color: Colors.grey.shade500,
                                     fontSize: screenWidth * 0.027,
@@ -350,15 +353,15 @@ class ConfiguracionScreen extends StatelessWidget {
                   // 3. Notificaciones y Devocional
                   _buildSectionHeader(
                     icon: Icons.notifications_active_outlined,
-                    title: 'Notificaciones y Recordatorios',
+                    title: l10n.notificacionesYRecordatorios,
                     screenWidth: screenWidth,
                   ),
                   _buildCardContainer(
                     screenWidth: screenWidth,
                     children: [
                       _buildSwitchTile(
-                        title: 'Versículo del día',
-                        subtitle: 'Recibe una porción bíblica cada mañana',
+                        title: l10n.versiculoDelDia,
+                        subtitle: l10n.recibePorcionBiblica,
                         value: provider.notifVersiculoDia,
                         onChanged: (val) =>
                             provider.toggleNotificacion('versiculo', val),
@@ -374,8 +377,8 @@ class ConfiguracionScreen extends StatelessWidget {
                       ],
                       const Divider(height: 1),
                       _buildSwitchTile(
-                        title: 'Palabra del día',
-                        subtitle: 'Reflexión y devocional diario para tu fe',
+                        title: l10n.palabraDelDia,
+                        subtitle: l10n.reflexionDevocionalDiario,
                         value: provider.notifPalabraDia,
                         onChanged: (val) =>
                             provider.toggleNotificacion('palabra', val),
@@ -383,9 +386,8 @@ class ConfiguracionScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _buildSwitchTile(
-                        title: 'Cultos en vivo',
-                        subtitle:
-                            'Alerta cuando comience una transmisión en directo',
+                        title: l10n.cultosEnVivo,
+                        subtitle: l10n.alertaTransmisionDirecto,
                         value: provider.notifCultosEnVivo,
                         onChanged: (val) =>
                             provider.toggleNotificacion('cultos', val),
@@ -393,9 +395,8 @@ class ConfiguracionScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _buildSwitchTile(
-                        title: 'Anuncios y eventos globales',
-                        subtitle:
-                            'Conferencias, conciertos y avisos de iglesias',
+                        title: l10n.anunciosEventosGlobales,
+                        subtitle: l10n.conferenciasConciertosAvisos,
                         value: provider.notifAnunciosEventos,
                         onChanged: (val) =>
                             provider.toggleNotificacion('anuncios', val),
@@ -408,7 +409,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   // 4. Lectura Bíblica
                   _buildSectionHeader(
                     icon: Icons.menu_book_rounded,
-                    title: 'Lectura de la Biblia',
+                    title: l10n.lecturaDeLaBiblia,
                     screenWidth: screenWidth,
                   ),
                   _buildCardContainer(
@@ -420,7 +421,7 @@ class ConfiguracionScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Versión predeterminada',
+                              l10n.versionPredeterminada,
                               style: TextStyle(
                                 color: azulFondo,
                                 fontWeight: FontWeight.bold,
@@ -454,7 +455,7 @@ class ConfiguracionScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Tamaño de texto en lectura',
+                                  l10n.tamanoTextoLectura,
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontWeight: FontWeight.bold,
@@ -498,7 +499,7 @@ class ConfiguracionScreen extends StatelessWidget {
                                 border: Border.all(color: grisBorde),
                               ),
                               child: Text(
-                                '«Lámpara es a mis pies tu palabra, y lumbrera a mi camino.» — Salmos 119:105',
+                                l10n.ejemploTextoBiblia,
                                 style: TextStyle(
                                   fontSize:
                                       screenWidth *
@@ -515,8 +516,8 @@ class ConfiguracionScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _buildSwitchTile(
-                        title: 'Mantener pantalla encendida',
-                        subtitle: 'Evita que el teléfono se bloquee mientras lees la Biblia',
+                        title: l10n.mantenerPantallaEncendida,
+                        subtitle: l10n.evitaBloqueoTelefonoBiblia,
                         value: provider.mantenerPantallaActiva,
                         onChanged: (val) =>
                             provider.toggleMantenerPantalla(val),
@@ -529,15 +530,15 @@ class ConfiguracionScreen extends StatelessWidget {
                   // 5. Audio y Emisoras
                   _buildSectionHeader(
                     icon: Icons.radio_rounded,
-                    title: 'Emisoras y Transmisiones',
+                    title: l10n.emisorasYTransmisiones,
                     screenWidth: screenWidth,
                   ),
                   _buildCardContainer(
                     screenWidth: screenWidth,
                     children: [
                       _buildSwitchTile(
-                        title: 'Reproducción automática',
-                        subtitle: 'Iniciar la radio al sintonizar la emisora',
+                        title: l10n.reproduccionAutomatica,
+                        subtitle: l10n.iniciarRadioAlSintonizar,
                         value: provider.reproduccionAutomaticaRadio,
                         onChanged: (val) => provider.toggleAutoplayRadio(val),
                         screenWidth: screenWidth,
@@ -546,8 +547,8 @@ class ConfiguracionScreen extends StatelessWidget {
                       _buildCalidadAudioTile(context, provider, screenWidth),
                       const Divider(height: 1),
                       _buildSwitchTile(
-                        title: 'Ahorro de datos (Solo Wi-Fi)',
-                        subtitle: 'Reproducir y descargar en alta calidad solo con Wi-Fi',
+                        title: l10n.ahorroDeDatosSoloWifi,
+                        subtitle: l10n.reproducirDescargarSoloWifi,
                         value: provider.soloDescargarConWifi,
                         onChanged: (val) => provider.toggleSoloWifi(val),
                         screenWidth: screenWidth,
@@ -559,7 +560,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   // 6. Almacenamiento y Caché
                   _buildSectionHeader(
                     icon: Icons.cleaning_services_rounded,
-                    title: 'Almacenamiento y Memoria',
+                    title: l10n.almacenamientoYMemoria,
                     screenWidth: screenWidth,
                   ),
                   _buildCardContainer(
@@ -579,7 +580,7 @@ class ConfiguracionScreen extends StatelessWidget {
                           ),
                         ),
                         title: Text(
-                          'Limpiar memoria caché',
+                          l10n.limpiarMemoriaCache,
                           style: TextStyle(
                             color: azulFondo,
                             fontWeight: FontWeight.bold,
@@ -587,7 +588,7 @@ class ConfiguracionScreen extends StatelessWidget {
                           ),
                         ),
                         subtitle: Text(
-                          'Imágenes y audios temporales (~18.4 MB)',
+                          l10n.imagenesAudiosTemporales,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: screenWidth * 0.03,
@@ -609,7 +610,7 @@ class ConfiguracionScreen extends StatelessWidget {
                             ),
                           ),
                           onPressed: () => _limpiarCache(context),
-                          child: const Text('Limpiar'),
+                          child: Text(l10n.limpiar),
                         ),
                       ),
                     ],
@@ -624,7 +625,7 @@ class ConfiguracionScreen extends StatelessWidget {
                       ),
                       icon: const Icon(Icons.restore_rounded),
                       label: Text(
-                        'Restablecer ajustes predeterminados',
+                        l10n.restablecerAjustesPredeterminados,
                         style: TextStyle(
                           fontSize: screenWidth * 0.035,
                           fontWeight: FontWeight.bold,
@@ -740,20 +741,21 @@ class ConfiguracionScreen extends StatelessWidget {
     AjustesProvider provider,
     double screenWidth,
   ) {
-    String idiomaNombre = 'Español (Latinoamérica)';
+    final l10n = AppLocalizations.of(context)!;
+    String idiomaNombre = l10n.idiomaEspanolLatino;
     String bandera = '🇩🇴';
 
     switch (provider.idiomaCodigo) {
       case 'en':
-        idiomaNombre = 'English (United States)';
+        idiomaNombre = l10n.idiomaInglesUSA;
         bandera = '🇺🇸';
         break;
       case 'pt':
-        idiomaNombre = 'Português (Brasil)';
+        idiomaNombre = l10n.idiomaPortuguesBrasil;
         bandera = '🇧🇷';
         break;
       case 'fr':
-        idiomaNombre = 'Français';
+        idiomaNombre = l10n.idiomaFrances;
         bandera = '🇫🇷';
         break;
     }
@@ -768,7 +770,7 @@ class ConfiguracionScreen extends StatelessWidget {
         child: Text(bandera, style: TextStyle(fontSize: screenWidth * 0.055)),
       ),
       title: Text(
-        AppLocalizations.of(context)?.idiomaPreferido ?? 'Idioma preferido',
+        l10n.idiomaPreferido,
         style: TextStyle(
           color: azulFondo,
           fontWeight: FontWeight.bold,
@@ -965,7 +967,7 @@ class ConfiguracionScreen extends StatelessWidget {
       {'codigo': 'fr', 'region': 'FR', 'nombre': 'Français', 'bandera': '🇫🇷'},
     ];
 
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     showModalBottomSheet(
       context: context,
@@ -990,7 +992,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   const Icon(Icons.translate_rounded, color: azulFondo),
                   SizedBox(width: screenWidth * 0.02),
                   Text(
-                    l10n?.seleccionarIdioma ?? 'Seleccionar Idioma',
+                    l10n.seleccionarIdioma,
                     style: TextStyle(
                       color: azulFondo,
                       fontWeight: FontWeight.bold,
@@ -1093,6 +1095,7 @@ class ConfiguracionScreen extends StatelessWidget {
     required AjustesProvider provider,
     required double screenWidth,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       leading: Container(
         padding: EdgeInsets.all(screenWidth * 0.02),
@@ -1107,7 +1110,7 @@ class ConfiguracionScreen extends StatelessWidget {
         ),
       ),
       title: Text(
-        'Hora del recordatorio',
+        l10n.horaDelRecordatorio,
         style: TextStyle(
           color: azulFondo,
           fontSize: screenWidth * 0.035,
@@ -1188,6 +1191,7 @@ class ConfiguracionScreen extends StatelessWidget {
     AjustesProvider provider,
     double screenWidth,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       leading: Container(
         padding: EdgeInsets.all(screenWidth * 0.02),
@@ -1202,7 +1206,7 @@ class ConfiguracionScreen extends StatelessWidget {
         ),
       ),
       title: Text(
-        'Calidad de audio streaming',
+        l10n.calidadAudioStreaming,
         style: TextStyle(
           color: azulFondo,
           fontWeight: FontWeight.w600,
@@ -1213,10 +1217,10 @@ class ConfiguracionScreen extends StatelessWidget {
         child: DropdownButton<String>(
           value: provider.calidadAudioStreaming,
           dropdownColor: Colors.white,
-          items: const [
-            DropdownMenuItem(value: 'baja', child: Text('Baja (64 kbps)')),
-            DropdownMenuItem(value: 'media', child: Text('Media (128 kbps)')),
-            DropdownMenuItem(value: 'alta', child: Text('Alta (256 kbps)')),
+          items: [
+            DropdownMenuItem(value: 'baja', child: Text(l10n.calidadAudioBaja)),
+            DropdownMenuItem(value: 'media', child: Text(l10n.calidadAudioMedia)),
+            DropdownMenuItem(value: 'alta', child: Text(l10n.calidadAudioAlta)),
           ],
           onChanged: (val) {
             if (val != null) provider.cambiarCalidadAudio(val);
@@ -1227,18 +1231,19 @@ class ConfiguracionScreen extends StatelessWidget {
   }
 
   void _limpiarCache(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text('¿Limpiar memoria caché?'),
-        content: const Text(
-          'Se eliminarán imágenes y archivos temporales para liberar almacenamiento. No se borrarán tus notas ni favoritos bíblicos.',
+        title: Text(l10n.limpiarCacheTitulo),
+        content: Text(
+          l10n.limpiarCacheMensaje,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelar),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1248,14 +1253,14 @@ class ConfiguracionScreen extends StatelessWidget {
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Memoria caché liberada con éxito'),
-                  backgroundColor: Color(0xFF2E7D32),
+                SnackBar(
+                  content: Text('✅ ${l10n.memoriaCacheLiberadaExito}'),
+                  backgroundColor: const Color(0xFF2E7D32),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
-            child: const Text('Limpiar ahora'),
+            child: Text(l10n.limpiarAhora),
           ),
         ],
       ),
@@ -1263,18 +1268,19 @@ class ConfiguracionScreen extends StatelessWidget {
   }
 
   void _confirmarRestablecer(BuildContext context, AjustesProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text('¿Restablecer configuración?'),
-        content: const Text(
-          'Todos los ajustes de la app volverán a sus valores iniciales recomendados.',
+        title: Text(l10n.restablecerConfiguracionTitulo),
+        content: Text(
+          l10n.restablecerConfiguracionMensaje,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            child: Text(l10n.cancelar),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1285,13 +1291,13 @@ class ConfiguracionScreen extends StatelessWidget {
               provider.restaurarValoresPredeterminados();
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ajustes restablecidos a valores de fábrica'),
+                SnackBar(
+                  content: Text(l10n.ajustesRestablecidosFabrica),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
-            child: const Text('Restablecer'),
+            child: Text(l10n.restablecer),
           ),
         ],
       ),

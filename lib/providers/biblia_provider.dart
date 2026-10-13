@@ -2,11 +2,7 @@ import 'package:atrio/servicios/bible_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum ModoLectura {
-  calido,
-  suave,
-  noche,
-}
+enum ModoLectura { calido, suave, noche }
 
 class BibliaProvider with ChangeNotifier {
   final BibleService _bibleService = BibleService();
@@ -20,12 +16,23 @@ class BibliaProvider with ChangeNotifier {
   double get fontScale => _fontScale;
   String get selectedFont => _selectedFont;
 
-  // Versiones disponibles en Bolls Life
-  final Map<String, String> _versionesDisponibles = {
+  // Versiones disponibles en Bolls Life categorizadas por idioma
+  static const Map<String, String> versionesEspanol = {
     'RV1960': 'Reina-Valera 1960',
-    'RV2000': 'Reina Valera 2000',
     'NVI': 'Nueva Versión Internacional',
+    'RV2000': 'Reina Valera 2000',
+  };
+
+  static const Map<String, String> versionesIngles = {
     'KJV': 'King James Version',
+    'WEB': 'World English Bible',
+    'ESV': 'English Standard Version',
+  };
+
+  // Versiones totales registradas
+  final Map<String, String> _versionesDisponibles = {
+    ...versionesEspanol,
+    ...versionesIngles,
   };
 
   String _versionActual = 'RV1960';
@@ -53,7 +60,13 @@ class BibliaProvider with ChangeNotifier {
   List<Map<String, dynamic>> get resultadosBusqueda => _resultadosBusqueda;
   String? get searchErrorMessage => _searchErrorMessage;
 
-  final Map<int, String> _nombresLibros = {
+  /// Retorna si una versión pertenece al conjunto de versiones en inglés
+  static bool esVersionIngles(String version) {
+    return versionesIngles.containsKey(version);
+  }
+
+  // Nombres de los libros en español (Canon protestante + deuterocanónicos KJV)
+  static const Map<int, String> _nombresLibrosEs = {
     1: 'Génesis',
     2: 'Éxodo',
     3: 'Levítico',
@@ -120,6 +133,94 @@ class BibliaProvider with ChangeNotifier {
     64: '3 Juan',
     65: 'Judas',
     66: 'Apocalipsis',
+    67: '1 Esdras',
+    68: 'Tobías',
+    69: 'Judit',
+    70: 'Sabiduría',
+    71: 'Eclesiástico',
+    72: 'Baruc',
+    73: 'Carta de Jeremías',
+    74: '1 Macabeos',
+    75: '2 Macabeos',
+  };
+
+  // Nombres de los libros en inglés (Canon protestante + deuterocanónicos KJV)
+  static const Map<int, String> _nombresLibrosEn = {
+    1: 'Genesis',
+    2: 'Exodus',
+    3: 'Leviticus',
+    4: 'Numbers',
+    5: 'Deuteronomy',
+    6: 'Joshua',
+    7: 'Judges',
+    8: 'Ruth',
+    9: '1 Samuel',
+    10: '2 Samuel',
+    11: '1 Kings',
+    12: '2 Kings',
+    13: '1 Chronicles',
+    14: '2 Chronicles',
+    15: 'Ezra',
+    16: 'Nehemiah',
+    17: 'Esther',
+    18: 'Job',
+    19: 'Psalms',
+    20: 'Proverbs',
+    21: 'Ecclesiastes',
+    22: 'Song of Solomon',
+    23: 'Isaiah',
+    24: 'Jeremiah',
+    25: 'Lamentations',
+    26: 'Ezekiel',
+    27: 'Daniel',
+    28: 'Hosea',
+    29: 'Joel',
+    30: 'Amos',
+    31: 'Obadiah',
+    32: 'Jonah',
+    33: 'Micah',
+    34: 'Nahum',
+    35: 'Habakkuk',
+    36: 'Zephaniah',
+    37: 'Haggai',
+    38: 'Zechariah',
+    39: 'Malachi',
+    40: 'Matthew',
+    41: 'Mark',
+    42: 'Luke',
+    43: 'John',
+    44: 'Acts',
+    45: 'Romans',
+    46: '1 Corinthians',
+    47: '2 Corinthians',
+    48: 'Galatians',
+    49: 'Ephesians',
+    50: 'Philippians',
+    51: 'Colossians',
+    52: '1 Thessalonians',
+    53: '2 Thessalonians',
+    54: '1 Timothy',
+    55: '2 Timothy',
+    56: 'Titus',
+    57: 'Philemon',
+    58: 'Hebrews',
+    59: 'James',
+    60: '1 Peter',
+    61: '2 Peter',
+    62: '1 John',
+    63: '2 Juan',
+    64: '3 Juan',
+    65: 'Jude',
+    66: 'Revelation',
+    67: '1 Esdras',
+    68: 'Tobit',
+    69: 'Judith',
+    70: 'Wisdom',
+    71: 'Sirach',
+    72: 'Baruch',
+    73: 'Epistle of Jeremiah',
+    74: '1 Maccabees',
+    75: '2 Maccabees',
   };
 
   BibliaProvider() {
@@ -165,6 +266,37 @@ class BibliaProvider with ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Sincroniza la versión bíblica activa según el idioma seleccionado por el usuario ('es' o 'en')
+  Future<void> sincronizarIdioma(
+    String idiomaCodigo, {
+    bool notificar = true,
+  }) async {
+    final bool esIngles = idiomaCodigo == 'en';
+    final bool actualEsIngles = esVersionIngles(_versionActual);
+
+    if (esIngles && !actualEsIngles) {
+      _versionActual = 'KJV';
+      if (notificar) {
+        notifyListeners();
+        await cargarVersiculoDelDia();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          cargarVersiculoDelDia();
+        });
+      }
+    } else if (!esIngles && actualEsIngles) {
+      _versionActual = 'RV1960';
+      if (notificar) {
+        notifyListeners();
+        await cargarVersiculoDelDia();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          cargarVersiculoDelDia();
+        });
+      }
+    }
+  }
+
   Future<void> cambiarVersion(String nuevaVersion) async {
     if (_versionActual == nuevaVersion) return;
     _versionActual = nuevaVersion;
@@ -172,23 +304,24 @@ class BibliaProvider with ChangeNotifier {
     await cargarVersiculoDelDia();
   }
 
-  Future<void> cargarVersiculoDelDia() async {
+  Future<void> cargarVersiculoDelDia({bool notificarInicio = true}) async {
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners();
+    if (notificarInicio) {
+      notifyListeners();
+    }
 
     try {
       final Map<String, dynamic> data = await _bibleService.versiculoDelDia(
         _versionActual,
       );
 
-      // Creamos una copia mutable y limpiamos el texto
       final Map<String, dynamic> versiculoLimpio = Map<String, dynamic>.from(
         data,
       );
 
       if (versiculoLimpio.containsKey('text')) {
-        versiculoLimpio['text'] = _limpiarTextoHtml(
+        versiculoLimpio['text'] = BibleService.limpiarTextoVerso(
           versiculoLimpio['text'] as String?,
         );
       }
@@ -202,43 +335,10 @@ class BibliaProvider with ChangeNotifier {
     }
   }
 
-  //
-  String _limpiarTextoHtml(String? texto) {
-    if (texto == null || texto.isEmpty) return '';
-
-    String resultado = texto;
-
-    // 1. Reemplazar saltos de línea HTML por saltos reales o espacios
-    resultado = resultado.replaceAll(
-      RegExp(r'<br\s*/?>', caseSensitive: false),
-      '\n',
-    );
-
-    // 2. Eliminar cualquier otra etiqueta HTML (ej: <i>, </i>, <b>, <span>, etc.)
-    resultado = resultado.replaceAll(RegExp(r'<[^>]*>'), '');
-
-    // 3. Decodificar entidades HTML comunes
-    resultado = resultado
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&apos;', "'")
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&nbsp;', ' ');
-
-    // 4. Limpiar espacios redundantes preservando saltos de línea limpios
-    resultado = resultado
-        .split('\n')
-        .map((linea) => linea.replaceAll(RegExp(r'\s+'), ' ').trim())
-        .where((linea) => linea.isNotEmpty)
-        .join('\n');
-
-    return resultado.trim();
-  }
-  //
-
-  Future<void> ejecutarBusqueda(String query) async {
+  /// Ejecuta una búsqueda bíblica tomando en cuenta el idioma actual del usuario.
+  /// Si el idioma es inglés ('en'), asegura una versión en inglés (KJV) y busca en inglés.
+  /// Si el idioma es español ('es'), asegura una versión en español (RV1960) y busca en español.
+  Future<void> ejecutarBusqueda(String query, {String? idiomaCodigo}) async {
     final queryLimpia = query.trim();
     if (queryLimpia.isEmpty) {
       limpiarBusqueda();
@@ -252,33 +352,84 @@ class BibliaProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _resultadosBusqueda = await _bibleService.buscar(_versionActual, queryLimpia);
+      // 1. Determinar idioma preferido del usuario
+      final String idiomaDestino = (idiomaCodigo == 'en') ? 'en' : 'es';
+
+      // 2. Alinear la versión bíblica activa al idioma actual si no coincide
+      if (idiomaDestino == 'en' && !esVersionIngles(_versionActual)) {
+        _versionActual = 'KJV';
+      } else if (idiomaDestino == 'es' && esVersionIngles(_versionActual)) {
+        _versionActual = 'RV1960';
+      }
+
+      // 3. Traducir la consulta si fue ingresada en otro idioma (ej: "necio" -> "fool" para inglés)
+      final String queryTraducida = await BibleService.traducirConsulta(
+        query: queryLimpia,
+        idiomaDestino: idiomaDestino,
+      );
+
+      // 4. Buscar en la versión correspondiente
+      List<Map<String, dynamic>> resultados = await _bibleService.buscar(
+        _versionActual,
+        queryTraducida,
+      );
+
+      // 5. Fallback con la consulta original si no hubo resultados y diferían
+      if (resultados.isEmpty &&
+          queryTraducida.toLowerCase() != queryLimpia.toLowerCase()) {
+        final resultadosOriginales = await _bibleService.buscar(
+          _versionActual,
+          queryLimpia,
+        );
+        if (resultadosOriginales.isNotEmpty) {
+          resultados = resultadosOriginales;
+        }
+      }
+
+      _resultadosBusqueda = resultados;
     } catch (e) {
-      _searchErrorMessage = 'No se pudo completar la búsqueda. Verifica tu conexión a internet.';
+      _searchErrorMessage =
+          'No se pudo completar la búsqueda. Verifica tu conexión a internet.';
     } finally {
       _isSearching = false;
       notifyListeners();
     }
   }
 
-  void limpiarBusqueda() {
+  void limpiarBusqueda({bool notificar = true}) {
     _resultadosBusqueda = [];
     _searchErrorMessage = null;
     _isSearching = false;
     _busquedaRealizada = false;
     _ultimaConsulta = '';
-    notifyListeners();
+    if (notificar) {
+      notifyListeners();
+    }
   }
 
-  String obtenerNombreLibro(int bookId) {
-    return _nombresLibros[bookId] ?? 'Libro $bookId';
-  }
-  //
+  /// Retorna el nombre del libro en el idioma indicado o según la versión activa
+  String obtenerNombreLibro(int bookId, {String? idiomaCodigo}) {
+    final bool enIngles = (idiomaCodigo != null)
+        ? (idiomaCodigo == 'en')
+        : esVersionIngles(_versionActual);
 
-  String obtenerReferenciaFormateada() {
+    if (enIngles) {
+      return _nombresLibrosEn[bookId] ??
+          _nombresLibrosEs[bookId] ??
+          'Book $bookId';
+    }
+    return _nombresLibrosEs[bookId] ??
+        _nombresLibrosEn[bookId] ??
+        'Libro $bookId';
+  }
+
+  String obtenerReferenciaFormateada({String? idiomaCodigo}) {
     if (_versiculoDelDia == null) return '';
     final int bookId = _versiculoDelDia!['book'];
-    final String bookName = obtenerNombreLibro(bookId);
+    final String bookName = obtenerNombreLibro(
+      bookId,
+      idiomaCodigo: idiomaCodigo,
+    );
     return '$bookName ${_versiculoDelDia!['chapter']}:${_versiculoDelDia!['verse']}';
   }
 }

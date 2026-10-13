@@ -745,19 +745,9 @@ class ConfiguracionScreen extends StatelessWidget {
     String idiomaNombre = l10n.idiomaEspanolLatino;
     String bandera = '🇩🇴';
 
-    switch (provider.idiomaCodigo) {
-      case 'en':
-        idiomaNombre = l10n.idiomaInglesUSA;
-        bandera = '🇺🇸';
-        break;
-      case 'pt':
-        idiomaNombre = l10n.idiomaPortuguesBrasil;
-        bandera = '🇧🇷';
-        break;
-      case 'fr':
-        idiomaNombre = l10n.idiomaFrances;
-        bandera = '🇫🇷';
-        break;
+    if (provider.idiomaCodigo == 'en') {
+      idiomaNombre = l10n.idiomaInglesUSA;
+      bandera = '🇺🇸';
     }
 
     return ListTile(
@@ -820,10 +810,6 @@ class ConfiguracionScreen extends StatelessWidget {
     switch (codigo) {
       case 'en':
         return 'English';
-      case 'pt':
-        return 'Português';
-      case 'fr':
-        return 'Français';
       case 'es':
       default:
         return 'Español';
@@ -955,19 +941,21 @@ class ConfiguracionScreen extends StatelessWidget {
     AjustesProvider provider,
     double screenWidth,
   ) {
-    final opciones = [
-      {'codigo': 'es', 'region': 'DO', 'nombre': 'Español', 'bandera': '🇩🇴'},
-      {'codigo': 'en', 'region': 'US', 'nombre': 'English', 'bandera': '🇺🇸'},
-      {
-        'codigo': 'pt',
-        'region': 'BR',
-        'nombre': 'Português',
-        'bandera': '🇧🇷',
-      },
-      {'codigo': 'fr', 'region': 'FR', 'nombre': 'Français', 'bandera': '🇫🇷'},
-    ];
-
     final l10n = AppLocalizations.of(context)!;
+    final opciones = [
+      {
+        'codigo': 'es',
+        'region': 'DO',
+        'nombre': l10n.idiomaEspanolLatino,
+        'bandera': '🇩🇴',
+      },
+      {
+        'codigo': 'en',
+        'region': 'US',
+        'nombre': l10n.idiomaInglesUSA,
+        'bandera': '🇺🇸',
+      },
+    ];
 
     showModalBottomSheet(
       context: context,

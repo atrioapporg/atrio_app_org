@@ -188,7 +188,7 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
       final version = provider.versionActual;
       final data = await _bibleService.obtenerCapitulo(
         version,
-        _libroNombre,
+        _libroId > 0 ? _libroId.toString() : _libroNombre,
         _capituloActual,
       );
       if (mounted) {
@@ -754,10 +754,9 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     );
     for (var verse in _versiculos) {
       final int numVerso = verse['verse'];
-      final String texto = (verse['text'] as String)
-          .replaceAll(RegExp(r'<[^>]*>'), '')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
+      final String texto = BibleService.limpiarTextoVerso(
+        verse['text'] as String?,
+      );
       buffer.writeln('$numVerso. $texto\n');
     }
     buffer.writeln('Compartido desde ATRIO App');
@@ -1318,9 +1317,8 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                               final verse = _versiculos[index];
                               final int numVerso = verse['verse'];
                               final String textoLimpio =
-                                  (verse['text'] as String).replaceAll(
-                                    RegExp(r'<[^>]*>'),
-                                    '',
+                                  BibleService.limpiarTextoVerso(
+                                    verse['text'] as String?,
                                   );
                               final baseFontSize =
                                   (screenWidth * 0.052) * fontScale;

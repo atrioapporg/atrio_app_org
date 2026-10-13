@@ -454,10 +454,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     switch (codigo) {
       case 'en':
         return 'English';
-      case 'pt':
-        return 'Português';
-      case 'fr':
-        return 'Français';
       case 'es':
       default:
         return 'Español';
@@ -469,19 +465,21 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     AjustesProvider provider,
     double screenWidth,
   ) {
-    final opciones = [
-      {'codigo': 'es', 'region': 'DO', 'nombre': 'Español', 'bandera': '🇩🇴'},
-      {'codigo': 'en', 'region': 'US', 'nombre': 'English', 'bandera': '🇺🇸'},
-      {
-        'codigo': 'pt',
-        'region': 'BR',
-        'nombre': 'Português',
-        'bandera': '🇧🇷',
-      },
-      {'codigo': 'fr', 'region': 'FR', 'nombre': 'Français', 'bandera': '🇫🇷'},
-    ];
-
     final l10n = AppLocalizations.of(context);
+    final opciones = [
+      {
+        'codigo': 'es',
+        'region': 'DO',
+        'nombre': l10n?.idiomaEspanolLatino ?? 'Español (Latinoamérica)',
+        'bandera': '🇩🇴',
+      },
+      {
+        'codigo': 'en',
+        'region': 'US',
+        'nombre': l10n?.idiomaInglesUSA ?? 'English (United States)',
+        'bandera': '🇺🇸',
+      },
+    ];
 
     showModalBottomSheet(
       context: context,
@@ -573,8 +571,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     FocusScope.of(context).unfocus();
 
     try {
+      final l10n = AppLocalizations.of(context);
       String email = 'usuario.google@gmail.com';
-      String nombre = 'Usuario Google';
+      String nombre = l10n?.usuarioGoogle ?? 'Usuario Google';
 
       // Intento de conexión nativa con Google Sign-In
       try {

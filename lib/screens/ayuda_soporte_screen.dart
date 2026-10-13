@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -644,7 +645,7 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                   child: _buildContactCard(
                     title: 'WhatsApp',
                     subtitle: l10n?.chatDirecto ?? 'Chat directo',
-                    icon: Icons.chat_bubble_outline_rounded,
+                    faIcon: FontAwesomeIcons.whatsapp,
                     colorIcon: const Color(0xFF25D366),
                     onTap: () => _abrirWhatsApp(colorHeader),
                     screenWidth: screenWidth,
@@ -817,7 +818,8 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
   Widget _buildContactCard({
     required String title,
     required String subtitle,
-    required IconData icon,
+    IconData? icon,
+    FaIconData? faIcon,
     required Color colorIcon,
     required VoidCallback onTap,
     required double screenWidth,
@@ -848,7 +850,11 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
               CircleAvatar(
                 radius: screenWidth * 0.05,
                 backgroundColor: colorIcon.withValues(alpha: 0.12),
-                child: Icon(icon, color: colorIcon, size: screenWidth * 0.055),
+                child: faIcon != null
+                    ? FaIcon(faIcon, color: colorIcon, size: screenWidth * 0.055)
+                    : (icon != null
+                        ? Icon(icon, color: colorIcon, size: screenWidth * 0.055)
+                        : const SizedBox.shrink()),
               ),
               SizedBox(width: screenWidth * 0.025),
               Expanded(

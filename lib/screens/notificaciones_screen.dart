@@ -83,13 +83,24 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    if (mounted) {
       setState(() {});
-    });
+    }
+  }
+
+  @override
+  void deactivate() {
+    ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+    super.deactivate();
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -132,11 +143,13 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   }
 
   void _marcarTodasComoLeidas() {
+    if (!mounted) return;
     setState(() {
       _notificaciones = _notificaciones
           .map((n) => n.copyWith(leida: true))
           .toList();
     });
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -152,6 +165,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   }
 
   void _marcarComoLeida(String id) {
+    if (!mounted) return;
     setState(() {
       _notificaciones = _notificaciones.map((n) {
         if (n.id == id) {
@@ -164,11 +178,13 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
   /// Borra una sola notificación con soporte para Deshacer
   void _eliminarNotificacion(NotificacionModel noti) {
+    if (!mounted) return;
     final int index = _notificaciones.indexWhere((n) => n.id == noti.id);
     setState(() {
       _notificaciones.removeWhere((n) => n.id == noti.id);
     });
 
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -183,6 +199,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
           label: l10n.deshacer,
           textColor: const Color(0xFFE5A023),
           onPressed: () {
+            if (!mounted) return;
             setState(() {
               if (index >= 0 && index <= _notificaciones.length) {
                 _notificaciones.insert(index, noti);
@@ -268,6 +285,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
   /// Borra todas las notificaciones con respaldo para Deshacer
   void _borrarTodas() {
+    if (!mounted) return;
     final List<NotificacionModel> respaldo = List<NotificacionModel>.from(
       _notificaciones,
     );
@@ -275,6 +293,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       _notificaciones.clear();
     });
 
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -289,6 +308,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
           label: l10n.deshacer,
           textColor: const Color(0xFFE5A023),
           onPressed: () {
+            if (!mounted) return;
             setState(() {
               _notificaciones = respaldo;
             });
@@ -300,10 +320,12 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
   /// Restaura los avisos ficticios temporales para pruebas
   void _restaurarAvisosEjemplo() {
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _notificaciones = _crearAvisosIniciales(l10n);
     });
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -519,9 +541,11 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
                                 return GestureDetector(
                                   onTap: () {
-                                    setState(() {
-                                      _selectedFilterIndex = index;
-                                    });
+                                    if (mounted) {
+                                      setState(() {
+                                        _selectedFilterIndex = index;
+                                      });
+                                    }
                                   },
                                   child: Container(
                                     padding: EdgeInsets.symmetric(

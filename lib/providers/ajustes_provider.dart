@@ -55,6 +55,14 @@ class AjustesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _ajustes = await AtrioDatabaseHelper.instance.getAjustes();
+      // Si el usuario tenía configurado un idioma previo ya no soportado, restablecer a 'es'
+      if (_ajustes.idiomaCodigo != 'es' && _ajustes.idiomaCodigo != 'en') {
+        _ajustes = _ajustes.copyWith(idiomaCodigo: 'es', paisRegion: 'DO');
+        await AtrioDatabaseHelper.instance
+            .actualizarAjusteCampo('idioma_codigo', 'es');
+        await AtrioDatabaseHelper.instance
+            .actualizarAjusteCampo('pais_region', 'DO');
+      }
     } catch (e) {
       debugPrint('[AJUSTES_PROVIDER] Error cargando ajustes: $e');
     } finally {
@@ -63,17 +71,18 @@ class AjustesProvider extends ChangeNotifier {
     }
   }
 
-  /// Cambia el idioma preferido (ej: 'es', 'en', 'pt', 'fr')
+  /// Cambia el idioma preferido ('es' para Castellano/Latinoamérica, 'en' para Inglés americano)
   Future<void> cambiarIdioma(String codigo, {String? region}) async {
-    final nuevaRegion = region ?? (codigo == 'es' ? 'DO' : 'US');
+    final codigoNormalizado = (codigo == 'en') ? 'en' : 'es';
+    final nuevaRegion = region ?? (codigoNormalizado == 'es' ? 'DO' : 'US');
     _ajustes = _ajustes.copyWith(
-      idiomaCodigo: codigo,
+      idiomaCodigo: codigoNormalizado,
       paisRegion: nuevaRegion,
     );
     notifyListeners();
 
     await AtrioDatabaseHelper.instance
-        .actualizarAjusteCampo('idioma_codigo', codigo);
+        .actualizarAjusteCampo('idioma_codigo', codigoNormalizado);
     await AtrioDatabaseHelper.instance
         .actualizarAjusteCampo('pais_region', nuevaRegion);
   }

@@ -384,72 +384,73 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   ) {
     return Column(
       children: [
-        Container(
+        SizedBox(
           width: screenWidth,
-          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              //SizedBox(height: usableHeight * 0.01),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Encabezado Superior (Logo Horizontal Atrio)
-                  SizedBox(
-                    height: usableHeight * 0.06,
-                    child: Center(
-                      child: Image.asset(
-                        'assets/images/logo_encabezado.png',
-                        height: usableHeight * 0.060,
-                        fit: BoxFit.contain,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Encabezado Superior (Logo Horizontal Atrio)
+                    SizedBox(
+                      height: usableHeight * 0.06,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/logo_encabezado.png',
+                          height: usableHeight * 0.060,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                  ),
-                  // Fin Encabezado Superior--------------------
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        NotificacionesScreen.routeName,
-                      );
-                    },
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: screenWidth * 0.095,
-                        ),
-                        Positioned(
-                          top: -2,
-                          right: -2,
-                          child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.008),
-                            decoration: BoxDecoration(
-                              color: amarilloOro,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: BoxConstraints(
-                              minWidth: screenWidth * 0.04,
-                              minHeight: screenWidth * 0.04,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                '3',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                    // Fin Encabezado Superior--------------------
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          NotificacionesScreen.routeName,
+                        );
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            Icons.notifications_none_rounded,
+                            color: Colors.white,
+                            size: screenWidth * 0.080,
+                          ),
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.008),
+                              decoration: BoxDecoration(
+                                color: amarilloOro,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: screenWidth * 0.04,
+                                minHeight: screenWidth * 0.04,
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '3',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               SizedBox(height: usableHeight * 0.010),
               // Botón interactivo: Nombre de la iglesia y cambio rápido de comunidad
@@ -469,109 +470,98 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                             ? _iglesiaLocal!.trim()
                             : sinIglesia);
 
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        await Navigator.pushNamed(
-                          context,
-                          TradicionCristianaScreen.routeName,
-                        );
-                        if (context.mounted) {
-                          context
-                              .read<IglesiaProvider>()
-                              .cargarIglesiaSeleccionada();
-                          _cargarDatosPerfil();
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.0060,
-                          vertical: usableHeight * 0.010,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(
-                            screenWidth * 0.035,
+                  return SizedBox(
+                    width: double.infinity,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          await Navigator.pushNamed(
+                            context,
+                            TradicionCristianaScreen.routeName,
+                          );
+                          if (context.mounted) {
+                            context
+                                .read<IglesiaProvider>()
+                                .cargarIglesiaSeleccionada();
+                            _cargarDatosPerfil();
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.05,
+                            vertical: usableHeight * 0.010,
                           ),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.22),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            border: Border(
+                              top: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.22),
+                              ),
+                              bottom: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.22),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(screenWidth * 0.022),
-                              decoration: BoxDecoration(
-                                color: amarilloOro.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(
-                                  screenWidth * 0.035,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          l10n?.miIglesia ?? 'Mi Iglesia',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: screenWidth * 0.027,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        SizedBox(width: screenWidth * 0.015),
+                                        Text(
+                                          l10n?.tocaParaCambiar ??
+                                              '· Toca para cambiar',
+                                          style: TextStyle(
+                                            color: amarilloOro,
+                                            fontSize: screenWidth * 0.026,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: usableHeight * 0.002),
+                                    Text(
+                                      nombreIglesia,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: screenWidth * 0.046,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Icon(
-                                Icons.church_rounded,
-                                color: amarilloOro,
-                                size: screenWidth * 0.055,
+                              SizedBox(width: screenWidth * 0.020),
+                              Container(
+                                padding: EdgeInsets.all(screenWidth * 0.016),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.swap_horiz_rounded,
+                                  color: Colors.white,
+                                  size: screenWidth * 0.046,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: screenWidth * 0.030),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        l10n?.miIglesia ?? 'Mi Iglesia',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: screenWidth * 0.027,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      SizedBox(width: screenWidth * 0.015),
-                                      Text(
-                                        l10n?.tocaParaCambiar ??
-                                            '· Toca para cambiar',
-                                        style: TextStyle(
-                                          color: amarilloOro,
-                                          fontSize: screenWidth * 0.026,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: usableHeight * 0.002),
-                                  Text(
-                                    nombreIglesia,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: screenWidth * 0.046,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: screenWidth * 0.020),
-                            Container(
-                              padding: EdgeInsets.all(screenWidth * 0.016),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.swap_horiz_rounded,
-                                color: Colors.white,
-                                size: screenWidth * 0.046,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

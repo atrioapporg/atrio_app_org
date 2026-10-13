@@ -1,3 +1,4 @@
+import 'package:atrio/screens/mis_notas_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,10 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Importación de las pantallas para obtener sus static const routeName
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import 'ayuda_soporte_screen.dart';
-import 'biblia_screen.dart';
 import 'mis_donaciones_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'notificaciones_screen.dart';
@@ -69,8 +70,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
       );
     }
 
-    // Escuchamos el estado reactivo de IglesiaProvider
+    // Escuchamos el estado reactivo de IglesiaProvider y AjustesProvider
     final iglesiaProvider = Provider.of<IglesiaProvider>(context);
+    final ajustesProvider = context.watch<AjustesProvider>();
 
     final l10n = AppLocalizations.of(context);
     final String sinIglesiaTexto =
@@ -115,6 +117,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               nombre: nombre,
               iglesia: iglesia,
               iniciales: inicial,
+              ajustesProvider: ajustesProvider,
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -147,7 +150,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         label:
                             l10n?.misNotasDeLaBiblia ??
                             'Mis notas de la Biblia',
-                        route: BibliaScreen.routeName,
+                        route: MisNotasScreen.routeName,
                       ),
                     ],
                   ),
@@ -517,14 +520,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required String nombre,
     required String iglesia,
     required String iniciales,
+    required AjustesProvider ajustesProvider,
   }) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: screenWidth,
       padding: EdgeInsets.fromLTRB(
         screenWidth * 0.05,
-        usableHeight * 0.02,
+        usableHeight * 0.015,
         screenWidth * 0.05,
-        usableHeight * 0.03,
+        usableHeight * 0.025,
       ),
       decoration: BoxDecoration(
         color: azulFondo,
@@ -533,72 +539,263 @@ class _PerfilScreenState extends State<PerfilScreen> {
           bottomRight: Radius.circular(screenWidth * 0.07),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: screenWidth * 0.09,
-            backgroundColor: amarilloOro,
-            child: Text(
-              iniciales,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: screenWidth * 0.08,
-                fontWeight: FontWeight.bold,
+          // Fila superior: Título Perfil + Selector de Idioma
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                l10n?.perfil ?? 'Perfil',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: screenWidth * 0.052,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3,
+                ),
               ),
-            ),
+              _buildBotonSelectorIdioma(
+                context: context,
+                provider: ajustesProvider,
+                screenWidth: screenWidth,
+                usableHeight: usableHeight,
+              ),
+            ],
           ),
-          SizedBox(width: screenWidth * 0.04),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nombre,
+          SizedBox(height: usableHeight * 0.018),
+
+          // Fila del Usuario (Avatar + Nombre e Iglesia + Botón Editar)
+          Row(
+            children: [
+              CircleAvatar(
+                radius: screenWidth * 0.09,
+                backgroundColor: amarilloOro,
+                child: Text(
+                  iniciales,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: screenWidth * 0.05,
+                    fontSize: screenWidth * 0.08,
                     fontWeight: FontWeight.bold,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: usableHeight * 0.005),
-                Row(
+              ),
+              SizedBox(width: screenWidth * 0.04),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.church_rounded,
-                      color: amarilloOro,
-                      size: screenWidth * 0.04,
-                    ),
-                    SizedBox(width: screenWidth * 0.015),
-                    Expanded(
-                      child: Text(
-                        iglesia,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: screenWidth * 0.033,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      nombre,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: usableHeight * 0.005),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.church_rounded,
+                          color: amarilloOro,
+                          size: screenWidth * 0.04,
+                        ),
+                        SizedBox(width: screenWidth * 0.015),
+                        Expanded(
+                          child: Text(
+                            iglesia,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: screenWidth * 0.033,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => _mostrarDialogoEditarDatos(
-              context,
-              screenWidth,
-              usableHeight,
-              iglesiaActual: iglesia,
-            ),
-            icon: Icon(
-              Icons.edit_outlined,
-              color: Colors.white,
-              size: screenWidth * 0.055,
-            ),
+              ),
+              IconButton(
+                onPressed: () => _mostrarDialogoEditarDatos(
+                  context,
+                  screenWidth,
+                  usableHeight,
+                  iglesiaActual: iglesia,
+                ),
+                icon: Icon(
+                  Icons.edit_outlined,
+                  color: Colors.white,
+                  size: screenWidth * 0.055,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ============================================================================
+  // GESTIÓN Y SELECTOR DE IDIOMA (flutter_localizations)
+  // ============================================================================
+  String _obtenerNombreIdioma(String codigo) {
+    switch (codigo) {
+      case 'en':
+        return 'English';
+      case 'es':
+      default:
+        return 'Español';
+    }
+  }
+
+  Widget _buildBotonSelectorIdioma({
+    required BuildContext context,
+    required AjustesProvider provider,
+    required double screenWidth,
+    required double usableHeight,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+        onTap: () => _mostrarSelectorIdioma(context, provider, screenWidth),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.025,
+            vertical: usableHeight * 0.006,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            border: Border.all(color: Colors.white38),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.language,
+                color: Colors.white,
+                size: screenWidth * 0.04,
+              ),
+              SizedBox(width: screenWidth * 0.015),
+              Text(
+                _obtenerNombreIdioma(provider.idiomaCodigo),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: screenWidth * 0.03,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.white,
+                size: screenWidth * 0.04,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarSelectorIdioma(
+    BuildContext context,
+    AjustesProvider provider,
+    double screenWidth,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final opciones = [
+      {
+        'codigo': 'es',
+        'region': 'DO',
+        'nombre': l10n?.idiomaEspanolLatino ?? 'Español (Latinoamérica)',
+        'bandera': '🇩🇴',
+      },
+      {
+        'codigo': 'en',
+        'region': 'US',
+        'nombre': l10n?.idiomaInglesUSA ?? 'English (United States)',
+        'bandera': '🇺🇸',
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: screenWidth * 0.04,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.translate_rounded, color: azulFondo),
+                  SizedBox(width: screenWidth * 0.02),
+                  Text(
+                    l10n?.seleccionarIdioma ?? 'Seleccionar Idioma',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.045,
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              ...opciones.map((opcion) {
+                final isSelected = provider.idiomaCodigo == opcion['codigo'];
+                return ListTile(
+                  leading: Text(
+                    opcion['bandera']!,
+                    style: TextStyle(fontSize: screenWidth * 0.06),
+                  ),
+                  title: Text(
+                    opcion['nombre']!,
+                    style: TextStyle(
+                      color: isSelected ? azulFondo : Colors.black87,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      fontSize: screenWidth * 0.038,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: amarilloOro,
+                        )
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  ),
+                  tileColor: isSelected
+                      ? azulFondo.withValues(alpha: 0.05)
+                      : Colors.transparent,
+                  onTap: () {
+                    provider.cambiarIdioma(
+                      opcion['codigo']!,
+                      region: opcion['region'],
+                    );
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
       ),
     );
   }

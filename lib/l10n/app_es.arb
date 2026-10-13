@@ -16,6 +16,10 @@
   "accesoRapidoSeguro": "Acceso Rápido y Seguro",
   "ingresaUnToque": "Ingresa en un solo toque",
   "continuarConGoogle": "Continuar con Google",
+  "usuarioGoogle": "Usuario Google",
+  "@usuarioGoogle": {
+    "description": "Nombre de usuario por defecto para inicio de sesión con Google"
+  },
   "continuarConApple": "Continuar con Apple",
   "explorarInvitado": "Explorar como invitado",
   "avisoPrivacidadOdoo": "Al continuar, vinculas tu cuenta de forma segura con el servidor eclesial de ATRIO en Odoo ERP.",
@@ -1040,8 +1044,6 @@
   "restablecer": "Restablecer",
   "idiomaEspanolLatino": "Español (Latinoamérica)",
   "idiomaInglesUSA": "English (United States)",
-  "idiomaPortuguesBrasil": "Português (Brasil)",
-  "idiomaFrances": "Français",
   "terminosYPrivacidad": "Términos y Privacidad",
   "politicaDePrivacidad": "Política de Privacidad",
   "politicaPrivacidadIntro": "Última actualización: {fecha}\n\nBienvenido a ATRIO (\"Vive tu Fe en comunidad\"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual.\n\nEsta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.",

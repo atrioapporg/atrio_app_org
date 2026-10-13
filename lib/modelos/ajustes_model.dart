@@ -1,7 +1,7 @@
 class AjustesModel {
   final int? id;
   // 1. Idioma y Región
-  final String idiomaCodigo; // 'es', 'en', 'pt', 'fr'
+  final String idiomaCodigo; // 'es' (Castellano/Latinoamérica), 'en' (Inglés americano)
   final String paisRegion; // 'DO', 'US', 'CO', etc.
 
   // 2. Apariencia y Tema

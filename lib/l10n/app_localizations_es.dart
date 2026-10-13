@@ -36,6 +36,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get continuarConGoogle => 'Continuar con Google';
 
   @override
+  String get usuarioGoogle => 'Usuario Google';
+
+  @override
   String get continuarConApple => 'Continuar con Apple';
 
   @override
@@ -2036,12 +2039,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get idiomaInglesUSA => 'English (United States)';
-
-  @override
-  String get idiomaPortuguesBrasil => 'Português (Brasil)';
-
-  @override
-  String get idiomaFrances => 'Français';
 
   @override
   String get politicaDePrivacidad => 'Política de Privacidad';

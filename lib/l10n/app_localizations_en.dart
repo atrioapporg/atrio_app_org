@@ -2146,4 +2146,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get entendidoAmen => 'Understood · Amen';
+
+  @override
+  String get upgraderTitulo => 'Update App?';
+
+  @override
+  String upgraderMensaje(
+    String appName,
+    String currentAppStoreVersion,
+    String currentInstalledVersion,
+  ) {
+    return 'A new version of $appName is available! Version $currentAppStoreVersion is now available-you have $currentInstalledVersion.';
+  }
+
+  @override
+  String get upgraderPregunta => 'Would you like to update it now?';
+
+  @override
+  String get upgraderNotasVersion => 'Release Notes';
+
+  @override
+  String get upgraderBotonActualizar => 'Update Now';
+
+  @override
+  String get upgraderBotonMasTarde => 'Later';
+
+  @override
+  String get upgraderBotonIgnorar => 'Ignore';
+
+  @override
+  String get busquedaPorRadio => 'By radius';
+
+  @override
+  String get busquedaNacional => 'National';
+
+  @override
+  String get cargandoMasIglesias => 'Loading more communities...';
+
+  @override
+  String get finDeResultados => 'You have reached the end of results';
+
+  @override
+  String get escribeAlMenos3Caracteres => 'Type at least 3 characters';
+
+  @override
+  String get cambiarPais => 'Change country';
+
+  @override
+  String get todoElPais => 'Across the country';
+
+  @override
+  String get iglesiasEnMapa => 'Churches on Map';
+
+  @override
+  String radioKmEnPais(String km, String pais) {
+    return 'Radius < $km km in $pais';
+  }
+
+  @override
+  String todoElPaisConBandera(String pais, String bandera) {
+    return 'All $pais $bandera';
+  }
+
+  @override
+  String enTodoPais(String pais) {
+    return 'Across $pais';
+  }
+
+  @override
+  String buscarEnPaisPlaceholder(String pais) {
+    return 'Search in $pais (e.g. Cathedral...)';
+  }
+
+  @override
+  String get buscarEnRadioPlaceholder =>
+      'Search church or denomination in radius...';
+
+  @override
+  String verMasPaginacion(String mostradas, String total) {
+    return 'See 15 more ($mostradas of $total)';
+  }
+
+  @override
+  String totalIglesiasEnMapa(String total) {
+    return '$total churches on map';
+  }
+
+  @override
+  String get tuPais => 'Your country';
+
+  @override
+  String busquedaExclusivaEn(String pais) {
+    return 'Exclusive search in: $pais';
+  }
 }

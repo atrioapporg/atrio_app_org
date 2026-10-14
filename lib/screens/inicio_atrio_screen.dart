@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:atrio/screens/emisoras_cristianas_screen.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:upgrader/upgrader.dart';
 
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
@@ -17,6 +19,7 @@ import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
 import 'perfil_screen.dart';
 import 'tradicion_cristiana_screen.dart';
+import '../servicios/atrio_upgrader_messages.dart';
 
 class InicioAtrioScreen extends StatefulWidget {
   static const routeName = 'inicio_atrio_screen';
@@ -91,11 +94,20 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   Timer? _anunciosTimer;
   late final PageController _anunciosPageController;
 
+  // Upgrader para notificaciones de actualización con estilo Cupertino e i18n
+  late final AtrioUpgraderMessages _upgraderMessages;
+  late final Upgrader _upgrader;
+
   @override
   void initState() {
     super.initState();
     _avisosPageController = PageController();
     _anunciosPageController = PageController();
+    _upgraderMessages = AtrioUpgraderMessages();
+    _upgrader = Upgrader(
+      messages: _upgraderMessages,
+      durationUntilAlertAgain: const Duration(days: 1),
+    );
     _cargarAnuncios();
     _cargarDatosPerfil();
   }
@@ -268,13 +280,14 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
-
+    // 0xFF072B4F
     const Color azulFondo = Color(0xFF072B4F); //
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFEFEFEF);
 
     final l10n = AppLocalizations.of(context);
+    _upgraderMessages.context = context;
 
     final List<Widget> vistasPrincipales = [
       _buildHomeView(
@@ -348,23 +361,34 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
             ),
           ],
         ),
-        body: SafeArea(
-          bottom: false,
-          child: SizedBox(
-            width: screenWidth,
-            child: NotificationListener<CambiarTabAtrioNotification>(
-              onNotification: (notification) {
-                setState(() {
-                  _currentNavIndex = notification.nuevoIndice;
-                });
-                if (notification.nuevoIndice == 0) {
-                  _cargarDatosPerfil();
-                }
-                return true;
-              },
-              child: IndexedStack(
-                index: _currentNavIndex,
-                children: vistasPrincipales,
+        body: CupertinoTheme(
+          data: CupertinoTheme.of(context).copyWith(primaryColor: azulFondo),
+          child: UpgradeAlert(
+            upgrader: _upgrader,
+            dialogStyle: UpgradeDialogStyle.cupertino,
+            showIgnore: true,
+            showLater: true,
+            showReleaseNotes: true,
+            barrierDismissible: false,
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox(
+                width: screenWidth,
+                child: NotificationListener<CambiarTabAtrioNotification>(
+                  onNotification: (notification) {
+                    setState(() {
+                      _currentNavIndex = notification.nuevoIndice;
+                    });
+                    if (notification.nuevoIndice == 0) {
+                      _cargarDatosPerfil();
+                    }
+                    return true;
+                  },
+                  child: IndexedStack(
+                    index: _currentNavIndex,
+                    children: vistasPrincipales,
+                  ),
+                ),
               ),
             ),
           ),
@@ -493,17 +517,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                             horizontal: screenWidth * 0.05,
                             vertical: usableHeight * 0.010,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            border: Border(
-                              top: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.22),
-                              ),
-                              bottom: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.22),
-                              ),
-                            ),
-                          ),
+
                           child: Row(
                             children: [
                               Expanded(

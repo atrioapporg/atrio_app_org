@@ -1007,5 +1007,108 @@
       }
     }
   },
-  "entendidoAmen": "Understood · Amen"
+  "entendidoAmen": "Understood · Amen",
+  "upgraderTitulo": "Update App?",
+  "upgraderMensaje": "A new version of {appName} is available! Version {currentAppStoreVersion} is now available-you have {currentInstalledVersion}.",
+  "@upgraderMensaje": {
+    "description": "Body of the update message for Upgrader",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      },
+      "currentAppStoreVersion": {
+        "type": "String"
+      },
+      "currentInstalledVersion": {
+        "type": "String"
+      }
+    }
+  },
+  "upgraderPregunta": "Would you like to update it now?",
+  "upgraderNotasVersion": "Release Notes",
+  "upgraderBotonActualizar": "Update Now",
+  "upgraderBotonMasTarde": "Later",
+  "upgraderBotonIgnorar": "Ignore",
+  "busquedaPorRadio": "By radius",
+  "busquedaNacional": "National",
+  "cargandoMasIglesias": "Loading more communities...",
+  "finDeResultados": "You have reached the end of results",
+  "escribeAlMenos3Caracteres": "Type at least 3 characters",
+  "cambiarPais": "Change country",
+  "todoElPais": "Across the country",
+  "iglesiasEnMapa": "Churches on Map",
+  "radioKmEnPais": "Radius < {km} km in {pais}",
+  "@radioKmEnPais": {
+    "description": "Radius search subtitle with country",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "todoElPaisConBandera": "All {pais} {bandera}",
+  "@todoElPaisConBandera": {
+    "description": "National search subtitle with flag",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      },
+      "bandera": {
+        "type": "String"
+      }
+    }
+  },
+  "enTodoPais": "Across {pais}",
+  "@enTodoPais": {
+    "description": "National search description",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarEnPaisPlaceholder": "Search in {pais} (e.g. Cathedral...)",
+  "@buscarEnPaisPlaceholder": {
+    "description": "National search placeholder with country",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarEnRadioPlaceholder": "Search church or denomination in radius...",
+  "verMasPaginacion": "See 15 more ({mostradas} of {total})",
+  "@verMasPaginacion": {
+    "description": "15-item map pagination button",
+    "placeholders": {
+      "mostradas": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "totalIglesiasEnMapa": "{total} churches on map",
+  "@totalIglesiasEnMapa": {
+    "description": "Counter of churches on map",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "tuPais": "Your country",
+  "busquedaExclusivaEn": "Exclusive search in: {pais}",
+  "@busquedaExclusivaEn": {
+    "description": "Label indicating search is locked to current country",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  }
 }

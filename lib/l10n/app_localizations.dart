@@ -3973,6 +3973,154 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Entendido · Amén'**
   String get entendidoAmen;
+
+  /// No description provided for @upgraderTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Actualizar la aplicación?'**
+  String get upgraderTitulo;
+
+  /// Cuerpo del mensaje de actualización para Upgrader
+  ///
+  /// In es, this message translates to:
+  /// **'¡Una nueva versión de {appName} está disponible! La versión {currentAppStoreVersion} ya está disponible, tienes la versión {currentInstalledVersion}.'**
+  String upgraderMensaje(
+    String appName,
+    String currentAppStoreVersion,
+    String currentInstalledVersion,
+  );
+
+  /// No description provided for @upgraderPregunta.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas actualizar ahora?'**
+  String get upgraderPregunta;
+
+  /// No description provided for @upgraderNotasVersion.
+  ///
+  /// In es, this message translates to:
+  /// **'Novedades de la versión'**
+  String get upgraderNotasVersion;
+
+  /// No description provided for @upgraderBotonActualizar.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizar'**
+  String get upgraderBotonActualizar;
+
+  /// No description provided for @upgraderBotonMasTarde.
+  ///
+  /// In es, this message translates to:
+  /// **'Más tarde'**
+  String get upgraderBotonMasTarde;
+
+  /// No description provided for @upgraderBotonIgnorar.
+  ///
+  /// In es, this message translates to:
+  /// **'Ignorar'**
+  String get upgraderBotonIgnorar;
+
+  /// No description provided for @busquedaPorRadio.
+  ///
+  /// In es, this message translates to:
+  /// **'Por radio'**
+  String get busquedaPorRadio;
+
+  /// No description provided for @busquedaNacional.
+  ///
+  /// In es, this message translates to:
+  /// **'Nacional'**
+  String get busquedaNacional;
+
+  /// No description provided for @cargandoMasIglesias.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando más comunidades...'**
+  String get cargandoMasIglesias;
+
+  /// No description provided for @finDeResultados.
+  ///
+  /// In es, this message translates to:
+  /// **'Has llegado al final de los resultados'**
+  String get finDeResultados;
+
+  /// No description provided for @escribeAlMenos3Caracteres.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe al menos 3 caracteres'**
+  String get escribeAlMenos3Caracteres;
+
+  /// No description provided for @cambiarPais.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar país'**
+  String get cambiarPais;
+
+  /// No description provided for @todoElPais.
+  ///
+  /// In es, this message translates to:
+  /// **'En todo el país'**
+  String get todoElPais;
+
+  /// No description provided for @iglesiasEnMapa.
+  ///
+  /// In es, this message translates to:
+  /// **'Iglesias en mapa'**
+  String get iglesiasEnMapa;
+
+  /// Subtítulo de búsqueda por radio con país
+  ///
+  /// In es, this message translates to:
+  /// **'Radio < {km} km en {pais}'**
+  String radioKmEnPais(String km, String pais);
+
+  /// Subtítulo de búsqueda nacional con bandera
+  ///
+  /// In es, this message translates to:
+  /// **'Todo {pais} {bandera}'**
+  String todoElPaisConBandera(String pais, String bandera);
+
+  /// Texto descriptivo de búsqueda nacional
+  ///
+  /// In es, this message translates to:
+  /// **'En todo {pais}'**
+  String enTodoPais(String pais);
+
+  /// Placeholder de búsqueda nacional por país
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar en {pais} (ej. Altagracia...)'**
+  String buscarEnPaisPlaceholder(String pais);
+
+  /// No description provided for @buscarEnRadioPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar templo o denominación en radio...'**
+  String get buscarEnRadioPlaceholder;
+
+  /// Botón de paginación de 15 en 15 en el mapa
+  ///
+  /// In es, this message translates to:
+  /// **'Ver 15 más ({mostradas} de {total})'**
+  String verMasPaginacion(String mostradas, String total);
+
+  /// Contador de iglesias renderizadas en el mapa
+  ///
+  /// In es, this message translates to:
+  /// **'{total} iglesias en mapa'**
+  String totalIglesiasEnMapa(String total);
+
+  /// No description provided for @tuPais.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu país'**
+  String get tuPais;
+
+  /// Etiqueta que indica que la búsqueda está bloqueada al país actual
+  ///
+  /// In es, this message translates to:
+  /// **'Búsqueda exclusiva en: {pais}'**
+  String busquedaExclusivaEn(String pais);
 }
 
 class _AppLocalizationsDelegate

@@ -1096,5 +1096,108 @@
       }
     }
   },
-  "entendidoAmen": "Entendido · Amén"
+  "entendidoAmen": "Entendido · Amén",
+  "upgraderTitulo": "¿Actualizar la aplicación?",
+  "upgraderMensaje": "¡Una nueva versión de {appName} está disponible! La versión {currentAppStoreVersion} ya está disponible, tienes la versión {currentInstalledVersion}.",
+  "@upgraderMensaje": {
+    "description": "Cuerpo del mensaje de actualización para Upgrader",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      },
+      "currentAppStoreVersion": {
+        "type": "String"
+      },
+      "currentInstalledVersion": {
+        "type": "String"
+      }
+    }
+  },
+  "upgraderPregunta": "¿Deseas actualizar ahora?",
+  "upgraderNotasVersion": "Novedades de la versión",
+  "upgraderBotonActualizar": "Actualizar",
+  "upgraderBotonMasTarde": "Más tarde",
+  "upgraderBotonIgnorar": "Ignorar",
+  "busquedaPorRadio": "Por radio",
+  "busquedaNacional": "Nacional",
+  "cargandoMasIglesias": "Cargando más comunidades...",
+  "finDeResultados": "Has llegado al final de los resultados",
+  "escribeAlMenos3Caracteres": "Escribe al menos 3 caracteres",
+  "cambiarPais": "Cambiar país",
+  "todoElPais": "En todo el país",
+  "iglesiasEnMapa": "Iglesias en mapa",
+  "radioKmEnPais": "Radio < {km} km en {pais}",
+  "@radioKmEnPais": {
+    "description": "Subtítulo de búsqueda por radio con país",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "todoElPaisConBandera": "Todo {pais} {bandera}",
+  "@todoElPaisConBandera": {
+    "description": "Subtítulo de búsqueda nacional con bandera",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      },
+      "bandera": {
+        "type": "String"
+      }
+    }
+  },
+  "enTodoPais": "En todo {pais}",
+  "@enTodoPais": {
+    "description": "Texto descriptivo de búsqueda nacional",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarEnPaisPlaceholder": "Buscar en {pais} (ej. Altagracia...)",
+  "@buscarEnPaisPlaceholder": {
+    "description": "Placeholder de búsqueda nacional por país",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "buscarEnRadioPlaceholder": "Buscar templo o denominación en radio...",
+  "verMasPaginacion": "Ver 15 más ({mostradas} de {total})",
+  "@verMasPaginacion": {
+    "description": "Botón de paginación de 15 en 15 en el mapa",
+    "placeholders": {
+      "mostradas": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "totalIglesiasEnMapa": "{total} iglesias en mapa",
+  "@totalIglesiasEnMapa": {
+    "description": "Contador de iglesias renderizadas en el mapa",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "tuPais": "Tu país",
+  "busquedaExclusivaEn": "Búsqueda exclusiva en: {pais}",
+  "@busquedaExclusivaEn": {
+    "description": "Etiqueta que indica que la búsqueda está bloqueada al país actual",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  }
 }

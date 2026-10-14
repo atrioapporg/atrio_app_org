@@ -1,184 +1,112 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
+import '../modelos/iglesia_explorar_model.dart';
+import '../providers/ajustes_provider.dart';
+import '../providers/explorar_provider.dart';
+import '../servicios/map_style_service.dart';
+
+/// Pantalla IglesiasEnMapaScreen: Visualización geográfica interactiva con
+/// persistencia en ambos modos (Radio 10/25/50 km vs. Nacional por país actual),
+/// paginación estricta de 15 en 15 (Lazy Loading en mapa), debounce de 500 ms y
+/// restricción estricta de fronteras sin cruzar hacia otros países.
 class IglesiasEnMapaScreen extends StatefulWidget {
   static const routeName = 'iglesias_en_mapa_screen';
   const IglesiasEnMapaScreen({super.key});
 
   @override
-  State createState() => _IglesiasEnMapaScreenState();
+  State<IglesiasEnMapaScreen> createState() => _IglesiasEnMapaScreenState();
 }
 
-class _IglesiasEnMapaScreenState extends State {
+class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool _estaBuscando = false;
-  bool _isInit = true;
-  bool _permisoUbicacionConcedido = false;
+  final FocusNode _searchFocusNode = FocusNode();
+
   GoogleMapController? _mapController;
-  Map<String, dynamic>? _iglesiaSeleccionada;
-  List<Map<String, dynamic>> _iglesiasData = [];
-  Position? _currentPosition;
+  IglesiaExplorarModel? _iglesiaSeleccionada;
+  bool _permisoUbicacionConcedido = false;
+  bool _isInit = true;
+  String? _mapDarkStyle;
 
-  final String _googleApiKey = "AIzaSyCwoPsfxubfarcNOomfPDeun9Lu-zj21Ec";
+  static const Color azulFondo = Color(0xFF072B4F);
+  static const Color amarilloOro = Color(0xFFE5A023);
+  static const Color blancoFondo = Color(0xFFFAF7F0);
+  static const Color grisBorde = Color(0xFFE5E5E5);
 
-  static const Map<String, List<String>> _terminosPorTradicion = {
-    'catolica': [
-      'Iglesia católica',
-      'Parroquia',
-      'Capilla',
-      'Catedral',
-      'Basílica',
-      'Santuario',
-      'Horarios de misa',
-      'Misa dominical',
-      'Virgen de la Altagracia',
-    ],
-    'evangelica': [
-      'Iglesia evangélica',
-      'Iglesia cristiana',
-      'Templo evangélico',
-      'Ministerio',
-      'Concilio',
-      'Culto',
-      'Iglesia de Dios',
-      'Asambleas de Dios',
-    ],
-    'pentecostal': [
-      'Iglesia pentecostal',
-      'Templo pentecostal',
-      'Asambleas de Dios',
-      'Iglesia de Dios',
-      'Culto pentecostal',
-      'Ministerio pentecostal',
-    ],
-    'bautista': [
-      'Iglesia bautista',
-      'Templo bautista',
-      'Iglesia bíblica',
-      'Comunidad bautista',
-    ],
-    'adventista': [
-      'Iglesia adventista',
-      'Adventista del Séptimo Día',
-      'Templo adventista',
-      'Iglesia ASD',
-    ],
-    'ortodoxa': ['Iglesia ortodoxa', 'Parroquia ortodoxa', 'Catedral ortodoxa'],
-    'no_denominacional': [
-      'Iglesia cristiana',
-      'Comunidad cristiana',
-      'Iglesia independiente',
-      'Ministerio cristiano',
-      'Centro cristiano',
-    ],
-    'otra': [
-      'Católica',
-      'Evangélica',
-      'Pentecostal',
-      'Bautista',
-      'Adventista',
-      'Ortodoxa',
-    ],
-  };
-
-  List<String> _sugerenciasBusqueda =
-      _terminosPorTradicion['otra'] ?? const ['Iglesia cristiana'];
+  final List<String> _filtrosKeys = [
+    'todos',
+    'catolica',
+    'evangelica',
+    'pentecostal',
+    'bautista',
+    'adventista',
+  ];
 
   static const CameraPosition _posicionInicial = CameraPosition(
     target: LatLng(18.4812, -69.9158),
-    zoom: 13.5,
+    zoom: 12.5,
   );
 
   @override
   void initState() {
     super.initState();
-    _verificarYPedirPermisosUbicacion();
-  }
-
-  Future _verificarYPedirPermisosUbicacion() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    try {
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
-
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+    MapStyleService.getDarkStyle().then((style) {
+      if (mounted) setState(() => _mapDarkStyle = style);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _verificarYPedirPermisosUbicacion();
       }
-      if (permission == LocationPermission.deniedForever) return;
-
-      setState(() {
-        _permisoUbicacionConcedido = true;
-      });
-
-      _currentPosition = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-
-      if (_mapController != null && _currentPosition != null) {
-        _mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-            13.5,
-          ),
-        );
-      }
-
-      if (_searchController.text.isNotEmpty) {
-        _buscarEnGooglePlaces(_searchController.text);
-      } else if (_sugerenciasBusqueda.isNotEmpty) {
-        _buscarEnGooglePlaces(_sugerenciasBusqueda.first);
-      }
-    } catch (e) {
-      debugPrint('Error al verificar permisos de ubicación: $e');
-    }
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {
+      final provider = context.read<ExplorarProvider>();
+      final ajustes = context.read<AjustesProvider>();
+
+      // Sincronizar país de residencia actual desde ajustes (no llama notifyListeners)
+      provider.sincronizarPais(ajustes.paisRegion);
+
+      // Si se pasa tradición como argumento de ruta, cambiar denominación tras el primer frame
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Map) {
-        final String rawId = (args['tradicionId'] ?? '')
-            .toString()
-            .toLowerCase();
-        final String rawTitulo = (args['tradicionTitulo'] ?? '')
-            .toString()
-            .toLowerCase();
-
-        if (rawId.contains('catolica') ||
-            rawTitulo.contains('católica') ||
-            rawTitulo.contains('catolica')) {
-          _sugerenciasBusqueda = _terminosPorTradicion['catolica']!;
-        } else if (rawId.contains('evangelica') ||
-            rawTitulo.contains('evangélica') ||
-            rawTitulo.contains('evangelica')) {
-          _sugerenciasBusqueda = _terminosPorTradicion['evangelica']!;
-        } else if (rawId.contains('ortodoxa') ||
-            rawTitulo.contains('ortodoxa')) {
-          _sugerenciasBusqueda = _terminosPorTradicion['ortodoxa']!;
-        } else if (rawId.contains('no_denominacional') ||
-            rawTitulo.contains('no denominacional')) {
-          _sugerenciasBusqueda = _terminosPorTradicion['no_denominacional']!;
-        } else {
-          _sugerenciasBusqueda = _terminosPorTradicion['otra']!;
+        final rawId = (args['tradicionId'] ?? '').toString().toLowerCase();
+        int? nuevaDenominacion;
+        if (rawId.contains('catolica')) {
+          nuevaDenominacion = 1;
+        } else if (rawId.contains('evangelica')) {
+          nuevaDenominacion = 2;
+        } else if (rawId.contains('pentecostal')) {
+          nuevaDenominacion = 3;
+        } else if (rawId.contains('bautista')) {
+          nuevaDenominacion = 4;
+        } else if (rawId.contains('adventista')) {
+          nuevaDenominacion = 5;
         }
 
-        if (_sugerenciasBusqueda.isNotEmpty && _searchController.text.isEmpty) {
-          _searchController.text = _sugerenciasBusqueda.first;
-          _buscarEnGooglePlaces(_sugerenciasBusqueda.first);
+        if (nuevaDenominacion != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.read<ExplorarProvider>().cambiarDenominacion(
+                nuevaDenominacion!,
+              );
+            }
+          });
         }
       }
+
+      // Sincronizar texto de búsqueda si ya existía en el provider
+      if (provider.textoBusqueda.isNotEmpty && _searchController.text.isEmpty) {
+        _searchController.text = provider.textoBusqueda;
+      }
+
       _isInit = false;
     }
   }
@@ -187,18 +115,138 @@ class _IglesiasEnMapaScreenState extends State {
   void dispose() {
     _mapController?.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  Future _abrirNavegacion(LatLng latLng, String nombre) async {
+  Future<void> _verificarYPedirPermisosUbicacion() async {
+    final provider = context.read<ExplorarProvider>();
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        provider.buscar(ignorarDebounce: true);
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          provider.buscar(ignorarDebounce: true);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        provider.buscar(ignorarDebounce: true);
+        return;
+      }
+
+      setState(() {
+        _permisoUbicacionConcedido = true;
+      });
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      provider.setUbicacion(pos);
+
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(pos.latitude, pos.longitude), 12.5),
+        );
+      }
+
+      // Si no hay resultados previos en memoria, realizar la búsqueda inicial
+      if (provider.iglesiasMostradas.isEmpty) {
+        await provider.buscar(ignorarDebounce: true);
+      }
+
+      _ajustarCamaraSegunResultados(
+        provider.iglesiasMostradas,
+        provider.modo,
+        provider.radioKm,
+        pos,
+      );
+    } catch (e) {
+      debugPrint('Error al verificar permisos de ubicación en mapa: $e');
+      if (provider.iglesiasMostradas.isEmpty) {
+        provider.buscar(ignorarDebounce: true);
+      }
+    }
+  }
+
+  /// Ajusta suavemente la cámara del mapa según el modo y las iglesias paginadas
+  void _ajustarCamaraSegunResultados(
+    List<IglesiaExplorarModel> iglesias,
+    ModoExploracion modo,
+    double radioKm,
+    Position? pos,
+  ) {
+    if (_mapController == null) return;
+
+    if (modo == ModoExploracion.radio && pos != null) {
+      double zoom = 12.2;
+      if (radioKm >= 50.0) {
+        zoom = 9.4;
+      } else if (radioKm >= 25.0) {
+        zoom = 10.6;
+      }
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(pos.latitude, pos.longitude), zoom),
+      );
+    } else {
+      // Modo Nacional: Encuadrar los límites (LatLngBounds) de las iglesias
+      final coords = iglesias
+          .where((i) => i.latLng != null)
+          .map((i) => i.latLng!)
+          .toList();
+
+      if (coords.isEmpty) return;
+
+      if (coords.length == 1) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(coords.first, 14.0),
+        );
+        return;
+      }
+
+      double minLat = coords.first.latitude;
+      double maxLat = coords.first.latitude;
+      double minLng = coords.first.longitude;
+      double maxLng = coords.first.longitude;
+
+      for (final c in coords) {
+        if (c.latitude < minLat) minLat = c.latitude;
+        if (c.latitude > maxLat) maxLat = c.latitude;
+        if (c.longitude < minLng) minLng = c.longitude;
+        if (c.longitude > maxLng) maxLng = c.longitude;
+      }
+
+      final bounds = LatLngBounds(
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
+      );
+
+      _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50.0));
+    }
+  }
+
+  Future<void> _abrirNavegacion(LatLng? latLng, String nombre) async {
+    if (latLng == null) return;
     final double lat = latLng.latitude;
     final double lng = latLng.longitude;
+
     final Uri uriNativa = Uri.parse(
       'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(nombre)})',
     );
     final Uri uriWeb = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     );
+
     try {
       if (await canLaunchUrl(uriNativa)) {
         await launchUrl(uriNativa, mode: LaunchMode.externalApplication);
@@ -206,8 +254,14 @@ class _IglesiasEnMapaScreenState extends State {
         await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
       } else {
         if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir la navegación.')),
+          SnackBar(
+            content: Text(
+              l10n?.noSePudoAbrirNavegacion ??
+                  'No se pudo abrir la navegación.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -215,164 +269,65 @@ class _IglesiasEnMapaScreenState extends State {
     }
   }
 
-  Future _buscarEnGooglePlaces(String query) async {
-    if (query.trim().isEmpty) return;
-    final lat = _currentPosition?.latitude ?? 18.4812;
-    final lng = _currentPosition?.longitude ?? -69.9158;
-
-    setState(() {
-      _estaBuscando = true;
-      _iglesiaSeleccionada = null;
-    });
-
-    FocusScope.of(context).unfocus();
-    final uri = Uri.parse('https://places.googleapis.com/v1/places:searchText');
-    final body = jsonEncode({
-      "textQuery": query,
-      "includedType": "church",
-      "languageCode": "es",
-      "locationBias": {
-        "circle": {
-          "center": {"latitude": lat, "longitude": lng},
-          "radius": 5000.0,
-        },
-      },
-    });
-
-    const fieldMask =
-        'places.id,places.displayName,places.formattedAddress,'
-        'places.location,places.rating,places.userRatingCount,places.currentOpeningHours.openNow';
-
-    try {
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': _googleApiKey,
-          'X-Goog-FieldMask': fieldMask,
-        },
-        body: body,
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map;
-        final List resultados = data['places'] ?? [];
-        final List<Map<String, dynamic>> nuevasIglesias = [];
-
-        for (var place in resultados) {
-          final location = place['location'];
-          if (location == null) continue;
-          final double placeLat = (location['latitude'] as num).toDouble();
-          final double placeLng = (location['longitude'] as num).toDouble();
-          double distanceInMeters = 0;
-
-          if (_currentPosition != null) {
-            distanceInMeters = Geolocator.distanceBetween(
-              lat,
-              lng,
-              placeLat,
-              placeLng,
-            );
-          }
-
-          if (_currentPosition == null || distanceInMeters <= 5000.0) {
-            final openingHours = place['currentOpeningHours'];
-            final isOpen = openingHours != null
-                ? openingHours['openNow'] as bool?
-                : true;
-
-            nuevasIglesias.add({
-              'id': place['id'],
-              'nombre': place['displayName']?['text'] ?? 'Sin nombre',
-              'denominacion':
-                  (place['formattedAddress'] as String?)?.split(',').first ??
-                  'Comunidad cristiana',
-              'rating': (place['rating'] ?? 0.0).toString(),
-              'resenas': (place['userRatingCount'] ?? 0).toString(),
-              'distanciaNum': distanceInMeters,
-              'distancia': _currentPosition != null
-                  ? 'A ${(distanceInMeters / 1000).toStringAsFixed(1)} km'
-                  : 'Ubicación aproximada',
-              'latLng': LatLng(placeLat, placeLng),
-              'abierto': isOpen ?? true,
-              'destacada': false,
-            });
-          }
-        }
-
-        nuevasIglesias.sort(
-          (a, b) => (a['distanciaNum'] as double).compareTo(
-            b['distanciaNum'] as double,
-          ),
-        );
-
-        if (mounted) {
-          setState(() {
-            _iglesiasData = nuevasIglesias;
-            _estaBuscando = false;
-          });
-
-          if (nuevasIglesias.isNotEmpty) {
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(
-                _currentPosition != null
-                    ? LatLng(lat, lng)
-                    : nuevasIglesias.first['latLng'],
-                13.5,
-              ),
-            );
-          } else {
-            _mostrarError('No hay resultados a menos de 5 km para "$query".');
-          }
-        }
-      } else {
-        _mostrarError('Error del servidor: ${response.statusCode}');
-      }
-    } catch (e) {
-      if (mounted) _mostrarError('Error de conexión. Verifica tu internet.');
+  String _getFiltroLabel(int index, AppLocalizations? l10n) {
+    switch (index) {
+      case 0:
+        return l10n?.todos ?? 'Todas';
+      case 1:
+        return l10n?.catolica ?? 'Católica';
+      case 2:
+        return l10n?.evangelica ?? 'Evangélica';
+      case 3:
+        return l10n?.pentecostal ?? 'Pentecostal';
+      case 4:
+        return l10n?.bautista ?? 'Bautista';
+      case 5:
+        return l10n?.adventista ?? 'Adventista';
+      default:
+        return '';
     }
   }
 
-  void _mostrarError(String mensaje) {
-    setState(() => _estaBuscando = false);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(mensaje)));
-  }
-
-  Set<Marker> _crearMarkers(Color amarilloOro) {
+  Set<Marker> _crearMarkers(List<IglesiaExplorarModel> iglesias) {
     return <Marker>{
-      for (final iglesia in _iglesiasData)
-        Marker(
-          markerId: MarkerId(iglesia['id']),
-          position: iglesia['latLng'],
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueAzure,
+      for (final iglesia in iglesias)
+        if (iglesia.latLng != null)
+          Marker(
+            markerId: MarkerId(
+              iglesia.id.isNotEmpty ? iglesia.id : iglesia.nombre,
+            ),
+            position: iglesia.latLng!,
+            infoWindow: InfoWindow(
+              title: iglesia.nombre,
+              snippet:
+                  '${iglesia.denominacion} · ${iglesia.distanciaKm > 0 ? '${iglesia.distanciaKm.toStringAsFixed(1)} km' : ''}',
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              _iglesiaSeleccionada?.id == iglesia.id
+                  ? BitmapDescriptor.hueOrange
+                  : BitmapDescriptor.hueAzure,
+            ),
+            onTap: () {
+              setState(() {
+                _iglesiaSeleccionada = iglesia;
+              });
+              _mapController?.animateCamera(
+                CameraUpdate.newLatLngZoom(iglesia.latLng!, 15.5),
+              );
+            },
           ),
-          onTap: () {
-            setState(() {
-              _iglesiaSeleccionada = iglesia;
-            });
-            _mapController?.animateCamera(
-              CameraUpdate.newLatLngZoom(iglesia['latLng'], 16.0),
-            );
-          },
-        ),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final safeAreaTop = MediaQuery.of(context).padding.top;
-    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
-    final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+    final l10n = AppLocalizations.of(context);
+    final size = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    final screenWidth = size.width;
+    final usableHeight = size.height - padding.top - padding.bottom;
 
-    const Color azulFondo = Color(0xFF072B4F);
-    const Color amarilloOro = Color(0xFFE5A023);
-    const Color blancoFondo = Color(0xFFFAF7F0);
-    const Color grisBorde = Color(0xFFE5E5E5);
+    final provider = context.watch<ExplorarProvider>();
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -380,19 +335,20 @@ class _IglesiasEnMapaScreenState extends State {
         bottom: false,
         child: SizedBox(
           width: screenWidth,
-          height: usableHeight + safeAreaBottom,
+          height: usableHeight + padding.bottom,
           child: Column(
             children: [
-              // Encabezado Superior Limpio y Modernizado
+              // 1. Encabezado Superior con controles de búsqueda y modo
               Container(
                 width: screenWidth,
                 padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.05,
-                  vertical: usableHeight * 0.014,
+                  horizontal: screenWidth * 0.045,
+                  vertical: usableHeight * 0.012,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Fila 1: Botón Volver circular + Título + Notificaciones
+                    // Fila 1: Botón Volver + Título + Insignia de país actual
                     Row(
                       children: [
                         GestureDetector(
@@ -412,265 +368,225 @@ class _IglesiasEnMapaScreenState extends State {
                         ),
                         SizedBox(width: screenWidth * 0.03),
                         Expanded(
-                          child: Text(
-                            'Iglesias en mapa',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: screenWidth * 0.056,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(screenWidth * 0.02),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.notifications_none_rounded,
-                                color: Colors.white,
-                                size: screenWidth * 0.058,
-                              ),
-                            ),
-                            Positioned(
-                              top: screenWidth * 0.015,
-                              right: screenWidth * 0.015,
-                              child: Container(
-                                width: screenWidth * 0.022,
-                                height: screenWidth * 0.022,
-                                decoration: const BoxDecoration(
-                                  color: amarilloOro,
-                                  shape: BoxShape.circle,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                l10n?.iglesiasEnMapa ?? 'Iglesias en mapa',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: screenWidth * 0.052,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
                                 ),
                               ),
+                              Text(
+                                provider.modo == ModoExploracion.radio
+                                    ? (l10n?.radioKmEnPais(
+                                            provider.radioKm.toInt().toString(),
+                                            provider.paisNombre,
+                                          ) ??
+                                          'Radio < ${provider.radioKm.toInt()} km en ${provider.paisNombre}')
+                                    : (l10n?.todoElPaisConBandera(
+                                            provider.paisNombre,
+                                            provider.paisBandera,
+                                          ) ??
+                                          'Todo ${provider.paisNombre} ${provider.paisBandera}'),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: screenWidth * 0.03,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Insignia fija del país actual
+                        Tooltip(
+                          message:
+                              l10n?.busquedaExclusivaEn(provider.paisNombre) ??
+                              'Búsqueda exclusiva en ${provider.paisNombre}',
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.025,
+                              vertical: usableHeight * 0.006,
                             ),
-                          ],
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.04,
+                              ),
+                              border: Border.all(
+                                color: amarilloOro.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  provider.paisBandera,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.038,
+                                  ),
+                                ),
+                                SizedBox(width: screenWidth * 0.01),
+                                Text(
+                                  provider.paisCodigo,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    SizedBox(height: usableHeight * 0.015),
+                    SizedBox(height: usableHeight * 0.012),
 
-                    // Fila 2: Buscador Autocomplete con sombra y bordes redondeados
-                    Container(
-                      height: usableHeight * 0.052,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.035,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Autocomplete<String>(
-                        optionsBuilder: (TextEditingValue textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return _sugerenciasBusqueda;
-                          }
-                          return _sugerenciasBusqueda.where((String item) {
-                            return item.toLowerCase().contains(
-                              textEditingValue.text.toLowerCase(),
-                            );
-                          });
-                        },
-                        onSelected: (String seleccion) {
-                          _searchController.text = seleccion;
-                          _buscarEnGooglePlaces(seleccion);
-                        },
-                        fieldViewBuilder:
-                            (
-                              BuildContext context,
-                              TextEditingController textEditingController,
-                              FocusNode focusNode,
-                              VoidCallback onFieldSubmitted,
-                            ) {
-                              if (_searchController.text.isNotEmpty &&
-                                  textEditingController.text.isEmpty) {
-                                textEditingController.text =
-                                    _searchController.text;
-                              }
-                              return TextField(
-                                controller: textEditingController,
-                                focusNode: focusNode,
-                                onSubmitted: (String value) {
-                                  onFieldSubmitted();
-                                  _searchController.text = value;
-                                  _buscarEnGooglePlaces(value);
-                                },
-                                style: TextStyle(
-                                  color: azulFondo,
-                                  fontSize: screenWidth * 0.037,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Buscar templo o denominación...',
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: screenWidth * 0.034,
-                                  ),
-                                  prefixIcon: _estaBuscando
-                                      ? Padding(
-                                          padding: const EdgeInsets.all(12.0),
-                                          child: CircularProgressIndicator(
-                                            color: azulFondo,
-                                            strokeWidth: 2.0,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.search_rounded,
-                                          color: azulFondo,
-                                          size: screenWidth * 0.055,
-                                        ),
-                                  suffixIcon:
-                                      textEditingController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: Icon(
-                                            Icons.cancel_rounded,
-                                            color: Colors.grey.shade400,
-                                            size: screenWidth * 0.048,
-                                          ),
-                                          onPressed: () {
-                                            textEditingController.clear();
-                                            _searchController.clear();
-                                            setState(() {});
-                                          },
-                                        )
-                                      : null,
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: usableHeight * 0.013,
-                                  ),
-                                ),
-                              );
-                            },
-                        optionsViewBuilder:
-                            (
-                              BuildContext context,
-                              AutocompleteOnSelected<String> onSelected,
-                              Iterable<String> options,
-                            ) {
-                              return Align(
-                                alignment: Alignment.topLeft,
-                                child: Material(
-                                  elevation: 4.0,
-                                  borderRadius: BorderRadius.circular(
-                                    screenWidth * 0.03,
-                                  ),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxHeight: usableHeight * 0.32,
-                                      maxWidth: screenWidth * 0.9,
-                                    ),
-                                    child: ListView.separated(
-                                      padding: EdgeInsets.zero,
-                                      shrinkWrap: true,
-                                      itemCount: options.length,
-                                      separatorBuilder: (context, index) =>
-                                          Divider(
-                                            height: 1,
-                                            color: Colors.grey.shade200,
-                                          ),
-                                      itemBuilder:
-                                          (BuildContext context, int index) {
-                                            final String option = options
-                                                .elementAt(index);
-                                            return InkWell(
-                                              onTap: () => onSelected(option),
-                                              child: Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      screenWidth * 0.04,
-                                                  vertical:
-                                                      usableHeight * 0.015,
-                                                ),
-                                                child: Text(
-                                                  option,
-                                                  style: TextStyle(
-                                                    color: azulFondo,
-                                                    fontSize:
-                                                        screenWidth * 0.035,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                      ),
+                    // Fila 2: Selector de Modo (Radio vs. Nacional)
+                    _buildModeSelector(
+                      provider,
+                      l10n,
+                      screenWidth,
+                      usableHeight,
                     ),
-                    SizedBox(height: usableHeight * 0.006),
+                    SizedBox(height: usableHeight * 0.01),
+
+                    // Fila 3: Buscador con Debounce de 500 ms
+                    _buildSearchBar(provider, l10n, screenWidth, usableHeight),
+                    SizedBox(height: usableHeight * 0.01),
+
+                    // Fila 4: Filtros de Denominación
+                    _buildDenominacionChips(
+                      provider,
+                      l10n,
+                      screenWidth,
+                      usableHeight,
+                    ),
                   ],
                 ),
               ),
 
-              // Contenedor del Mapa
+              // 2. Contenedor de Google Maps con capas de control y paginación
               Expanded(
                 child: Container(
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                      topLeft: Radius.circular(screenWidth * 0.075),
+                      topRight: Radius.circular(screenWidth * 0.075),
                     ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                      topLeft: Radius.circular(screenWidth * 0.075),
+                      topRight: Radius.circular(screenWidth * 0.075),
                     ),
                     child: Stack(
                       children: [
+                        // Mapa de Google Maps
                         GoogleMap(
+                          style: MapStyleService.esDeNoche(context)
+                              ? _mapDarkStyle
+                              : null,
                           initialCameraPosition: _posicionInicial,
                           myLocationEnabled: _permisoUbicacionConcedido,
-                          myLocationButtonEnabled: true,
+                          myLocationButtonEnabled: false,
                           zoomControlsEnabled: false,
                           mapToolbarEnabled: false,
-                          markers: _crearMarkers(amarilloOro),
+                          markers: _crearMarkers(
+                            provider.modo == ModoExploracion.radio
+                                ? provider.bufferResultados
+                                : provider.iglesiasMostradas,
+                          ),
                           onMapCreated: (GoogleMapController controller) {
                             _mapController = controller;
-                            if (_currentPosition != null) {
-                              _mapController?.animateCamera(
-                                CameraUpdate.newLatLngZoom(
-                                  LatLng(
-                                    _currentPosition!.latitude,
-                                    _currentPosition!.longitude,
-                                  ),
-                                  13.5,
-                                ),
+                            final iglesias =
+                                provider.modo == ModoExploracion.radio
+                                    ? provider.bufferResultados
+                                    : provider.iglesiasMostradas;
+                            if (iglesias.isNotEmpty) {
+                              _ajustarCamaraSegunResultados(
+                                iglesias,
+                                provider.modo,
+                                provider.radioKm,
+                                provider.currentPosition,
                               );
                             }
                           },
                           onTap: (_) {
                             setState(() => _iglesiaSeleccionada = null);
-                            FocusScope.of(context).unfocus();
+                            _searchFocusNode.unfocus();
                           },
                         ),
+
+                        // Botón flotante para recientes/centrar ubicación
+                        Positioned(
+                          right: screenWidth * 0.045,
+                          top: usableHeight * 0.02,
+                          child: Material(
+                            color: Colors.white,
+                            shape: const CircleBorder(),
+                            elevation: 4,
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () {
+                                if (provider.currentPosition != null &&
+                                    _mapController != null) {
+                                  _mapController!.animateCamera(
+                                    CameraUpdate.newLatLngZoom(
+                                      LatLng(
+                                        provider.currentPosition!.latitude,
+                                        provider.currentPosition!.longitude,
+                                      ),
+                                      14.0,
+                                    ),
+                                  );
+                                } else {
+                                  _verificarYPedirPermisosUbicacion();
+                                }
+                              },
+                              child: Padding(
+                                padding: EdgeInsets.all(screenWidth * 0.03),
+                                child: Icon(
+                                  Icons.my_location_rounded,
+                                  color: azulFondo,
+                                  size: screenWidth * 0.06,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Barra Flotante Superior: Contador e Indicador de Carga de 15 en 15
+                        Positioned(
+                          left: screenWidth * 0.045,
+                          top: usableHeight * 0.02,
+                          child: _buildFloatingPaginationChip(
+                            provider,
+                            screenWidth,
+                            usableHeight,
+                            l10n,
+                          ),
+                        ),
+
+                        // Tarjeta Inferior de Información de Iglesia Seleccionada
                         if (_iglesiaSeleccionada != null)
                           Positioned(
-                            left: screenWidth * 0.05,
-                            right: screenWidth * 0.05,
-                            bottom: usableHeight * 0.03 + safeAreaBottom,
+                            left: screenWidth * 0.045,
+                            right: screenWidth * 0.045,
+                            bottom: usableHeight * 0.03 + padding.bottom,
                             child: _buildChurchInfoCard(
-                              datos: _iglesiaSeleccionada!,
+                              iglesia: _iglesiaSeleccionada!,
                               screenWidth: screenWidth,
                               usableHeight: usableHeight,
-                              azulFondo: azulFondo,
-                              amarilloOro: amarilloOro,
-                              grisBorde: grisBorde,
+                              l10n: l10n,
                             ),
                           ),
                       ],
@@ -685,15 +601,399 @@ class _IglesiasEnMapaScreenState extends State {
     );
   }
 
+  /// Selector de Modo Dual (Radio vs. Nacional) + Selector de Radio
+  Widget _buildModeSelector(
+    ExplorarProvider provider,
+    AppLocalizations? l10n,
+    double screenWidth,
+    double usableHeight,
+  ) {
+    final esRadio = provider.modo == ModoExploracion.radio;
+
+    return Row(
+      children: [
+        // Botón modo radio
+        GestureDetector(
+          onTap: () {
+            provider.cambiarModo(ModoExploracion.radio);
+            _ajustarCamaraSegunResultados(
+              provider.iglesiasMostradas,
+              ModoExploracion.radio,
+              provider.radioKm,
+              provider.currentPosition,
+            );
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.03,
+              vertical: usableHeight * 0.007,
+            ),
+            decoration: BoxDecoration(
+              color: esRadio
+                  ? amarilloOro
+                  : Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.radar_rounded,
+                  color: esRadio ? azulFondo : Colors.white,
+                  size: screenWidth * 0.038,
+                ),
+                SizedBox(width: screenWidth * 0.01),
+                Text(
+                  l10n?.busquedaPorRadio ?? 'Radio',
+                  style: TextStyle(
+                    color: esRadio ? azulFondo : Colors.white,
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.02),
+
+        // Botón modo nacional
+        GestureDetector(
+          onTap: () {
+            provider.cambiarModo(ModoExploracion.nacional);
+            _ajustarCamaraSegunResultados(
+              provider.iglesiasMostradas,
+              ModoExploracion.nacional,
+              provider.radioKm,
+              provider.currentPosition,
+            );
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.03,
+              vertical: usableHeight * 0.007,
+            ),
+            decoration: BoxDecoration(
+              color: !esRadio
+                  ? amarilloOro
+                  : Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  provider.paisBandera,
+                  style: TextStyle(fontSize: screenWidth * 0.035),
+                ),
+                SizedBox(width: screenWidth * 0.01),
+                Text(
+                  l10n?.busquedaNacional ?? 'Nacional',
+                  style: TextStyle(
+                    color: !esRadio ? azulFondo : Colors.white,
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.02),
+
+        // Selector de Kilometraje cuando está en Modo Radio
+        if (esRadio)
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [10.0, 25.0, 50.0].map((km) {
+                final isSelected = provider.radioKm == km;
+                return Padding(
+                  padding: EdgeInsets.only(left: screenWidth * 0.015),
+                  child: GestureDetector(
+                    onTap: () {
+                      provider.cambiarRadio(km);
+                      _ajustarCamaraSegunResultados(
+                        provider.bufferResultados,
+                        ModoExploracion.radio,
+                        km,
+                        provider.currentPosition,
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.025,
+                        vertical: usableHeight * 0.005,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      ),
+                      child: Text(
+                        '${km.toInt()}k',
+                        style: TextStyle(
+                          color: isSelected ? azulFondo : Colors.white,
+                          fontSize: screenWidth * 0.028,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          )
+        else
+          Expanded(
+            child: Text(
+              l10n?.enTodoPais(provider.paisNombre) ??
+                  'En todo ${provider.paisNombre}',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: screenWidth * 0.028,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Buscador Material 3 con Debounce de 500 ms integrado
+  Widget _buildSearchBar(
+    ExplorarProvider provider,
+    AppLocalizations? l10n,
+    double screenWidth,
+    double usableHeight,
+  ) {
+    final hint = provider.modo == ModoExploracion.nacional
+        ? (l10n?.buscarEnPaisPlaceholder(provider.paisNombre) ??
+              'Buscar en ${provider.paisNombre} (ej. Altagracia...)')
+        : (l10n?.buscarEnRadioPlaceholder ??
+              'Buscar templo o denominación en radio...');
+
+    return Container(
+      height: usableHeight * 0.052,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        textInputAction: TextInputAction.search,
+        onChanged: (val) {
+          provider.onTextoBusquedaCambiado(val);
+        },
+        onSubmitted: (val) {
+          _searchFocusNode.unfocus();
+          provider.ejecutarBusquedaInmediata(val);
+        },
+        style: TextStyle(
+          color: azulFondo,
+          fontSize: screenWidth * 0.036,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
+            fontSize: screenWidth * 0.032,
+          ),
+          prefixIcon: provider.isLoading
+              ? Padding(
+                  padding: EdgeInsets.all(screenWidth * 0.025),
+                  child: const CircularProgressIndicator(
+                    color: azulFondo,
+                    strokeWidth: 2.0,
+                  ),
+                )
+              : Icon(
+                  Icons.search_rounded,
+                  color: azulFondo,
+                  size: screenWidth * 0.052,
+                ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.cancel_rounded,
+                    color: Colors.grey.shade400,
+                    size: screenWidth * 0.045,
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    provider.ejecutarBusquedaInmediata('');
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: usableHeight * 0.012),
+        ),
+      ),
+    );
+  }
+
+  /// Barra horizontal interactiva de denominaciones
+  Widget _buildDenominacionChips(
+    ExplorarProvider provider,
+    AppLocalizations? l10n,
+    double screenWidth,
+    double usableHeight,
+  ) {
+    return SizedBox(
+      height: usableHeight * 0.04,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _filtrosKeys.length,
+        separatorBuilder: (context, index) =>
+            SizedBox(width: screenWidth * 0.02),
+        itemBuilder: (context, index) {
+          final isSelected = provider.filtroDenominacionIndex == index;
+          final label = _getFiltroLabel(index, l10n);
+
+          return GestureDetector(
+            onTap: () {
+              provider.cambiarDenominacion(index);
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? amarilloOro
+                    : Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? azulFondo : Colors.white,
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Chip Flotante de Paginación de 15 en 15 y Carga Perezosa en Mapa
+  Widget _buildFloatingPaginationChip(
+    ExplorarProvider provider,
+    double screenWidth,
+    double usableHeight,
+    AppLocalizations? l10n,
+  ) {
+    final totalMostradas = provider.iglesiasMostradas.length;
+    final totalCargadas = provider.totalResultadosCargados;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: azulFondo,
+        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: provider.hasMoreData
+              ? () async {
+                  await provider.cargarSiguientePagina();
+                  _ajustarCamaraSegunResultados(
+                    provider.iglesiasMostradas,
+                    provider.modo,
+                    provider.radioKm,
+                    provider.currentPosition,
+                  );
+                }
+              : null,
+          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.035,
+              vertical: usableHeight * 0.008,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (provider.isLoadingMore)
+                  SizedBox(
+                    width: screenWidth * 0.038,
+                    height: screenWidth * 0.038,
+                    child: const CircularProgressIndicator(
+                      color: amarilloOro,
+                      strokeWidth: 2.0,
+                    ),
+                  )
+                else
+                  Icon(
+                    provider.hasMoreData
+                        ? Icons.add_location_alt_rounded
+                        : Icons.check_circle_outline_rounded,
+                    color: amarilloOro,
+                    size: screenWidth * 0.042,
+                  ),
+                SizedBox(width: screenWidth * 0.015),
+                Text(
+                  provider.modo == ModoExploracion.radio
+                      ? '${provider.bufferResultados.length} ${l10n?.iglesiasEnMapa ?? "iglesias en mapa"}'
+                      : (provider.hasMoreData
+                          ? (l10n?.verMasPaginacion(
+                                  totalMostradas.toString(),
+                                  totalCargadas.toString(),
+                                ) ??
+                              'Ver 15 más ($totalMostradas de $totalCargadas)')
+                          : (l10n?.totalIglesiasEnMapa(
+                                  totalMostradas.toString(),
+                                ) ??
+                              '$totalMostradas iglesias en mapa')),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.029,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Tarjeta flotante de información de la iglesia seleccionada
   Widget _buildChurchInfoCard({
-    required Map datos,
+    required IglesiaExplorarModel iglesia,
     required double screenWidth,
     required double usableHeight,
-    required Color azulFondo,
-    required Color amarilloOro,
-    required Color grisBorde,
+    required AppLocalizations? l10n,
   }) {
-    final bool estaAbierto = datos['abierto'] ?? false;
+    final distanciaStr = iglesia.distanciaKm > 0
+        ? (l10n?.aDistanciaKm(iglesia.distanciaKm.toStringAsFixed(1)) ??
+              'A ${iglesia.distanciaKm.toStringAsFixed(1)} km')
+        : '';
+
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: BoxDecoration(
@@ -701,9 +1001,9 @@ class _IglesiasEnMapaScreenState extends State {
         borderRadius: BorderRadius.circular(screenWidth * 0.045),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 15,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 6),
           ),
         ],
         border: Border.all(color: grisBorde),
@@ -717,10 +1017,12 @@ class _IglesiasEnMapaScreenState extends State {
             children: [
               Expanded(
                 child: Text(
-                  datos['denominacion'],
+                  iglesia.denominacion.isNotEmpty
+                      ? iglesia.denominacion
+                      : (l10n?.comunidadCristiana ?? 'Comunidad cristiana'),
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: screenWidth * 0.03,
+                    fontSize: screenWidth * 0.032,
                     fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -733,126 +1035,102 @@ class _IglesiasEnMapaScreenState extends State {
                     color: amarilloOro,
                     size: screenWidth * 0.04,
                   ),
-                  SizedBox(width: screenWidth * 0.01),
+                  SizedBox(width: screenWidth * 0.008),
                   Text(
-                    datos['rating'],
+                    iglesia.rating.toStringAsFixed(1),
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.032,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    ' (${datos['resenas']})',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: screenWidth * 0.028,
+                  if (iglesia.totalResenas > 0)
+                    Text(
+                      ' (${iglesia.totalResenas})',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: screenWidth * 0.028,
+                      ),
+                    ),
+                  SizedBox(width: screenWidth * 0.02),
+                  GestureDetector(
+                    onTap: () => setState(() => _iglesiaSeleccionada = null),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: Colors.grey.shade400,
+                      size: screenWidth * 0.05,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          SizedBox(height: usableHeight * 0.008),
+          SizedBox(height: usableHeight * 0.006),
           Text(
-            datos['nombre'],
+            iglesia.nombre.isNotEmpty
+                ? iglesia.nombre
+                : (l10n?.sinNombre ?? 'Sin nombre'),
             style: TextStyle(
               color: azulFondo,
-              fontSize: screenWidth * 0.05,
+              fontSize: screenWidth * 0.045,
               fontWeight: FontWeight.bold,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (iglesia.direccion.isNotEmpty) ...[
+            SizedBox(height: usableHeight * 0.004),
+            Text(
+              iglesia.direccion,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: screenWidth * 0.03,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           SizedBox(height: usableHeight * 0.01),
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.02,
-                  vertical: usableHeight * 0.003,
-                ),
-                decoration: BoxDecoration(
-                  color: estaAbierto
-                      ? const Color(0xFFE8F5E9)
-                      : const Color(0xFFFDECEA),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.01),
-                ),
-                child: Text(
-                  estaAbierto ? 'Abierto ahora' : 'Cerrado',
-                  style: TextStyle(
-                    color: estaAbierto
-                        ? const Color(0xFF2E7D32)
-                        : const Color(0xFFD32F2F),
-                    fontSize: screenWidth * 0.028,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.03),
-              Icon(
-                Icons.location_on,
-                color: Colors.grey.shade500,
-                size: screenWidth * 0.035,
-              ),
-              SizedBox(width: screenWidth * 0.01),
-              Text(
-                datos['distancia'],
-                style: TextStyle(
+              if (distanciaStr.isNotEmpty) ...[
+                Icon(
+                  Icons.near_me_outlined,
                   color: Colors.grey.shade600,
-                  fontSize: screenWidth * 0.032,
-                  fontWeight: FontWeight.w500,
+                  size: screenWidth * 0.034,
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: usableHeight * 0.02),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: azulFondo,
-                    side: const BorderSide(color: Color(0xFF072B4F)),
-                    padding: EdgeInsets.symmetric(
-                      vertical: usableHeight * 0.012,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: Text(
-                    'Ver ficha',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.034,
-                      fontWeight: FontWeight.bold,
-                    ),
+                SizedBox(width: screenWidth * 0.008),
+                Text(
+                  distanciaStr,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-              SizedBox(width: screenWidth * 0.03),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: amarilloOro,
-                    foregroundColor: azulFondo,
-                    elevation: 0,
-                    padding: EdgeInsets.symmetric(
-                      vertical: usableHeight * 0.012,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                    ),
+              ],
+              const Spacer(),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: amarilloOro,
+                  foregroundColor: azulFondo,
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.045,
+                    vertical: usableHeight * 0.01,
                   ),
-                  onPressed: () =>
-                      _abrirNavegacion(datos['latLng'], datos['nombre']),
-                  child: Text(
-                    'Cómo llegar',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.034,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  ),
+                ),
+                onPressed: () =>
+                    _abrirNavegacion(iglesia.latLng, iglesia.nombre),
+                icon: Icon(Icons.directions_rounded, size: screenWidth * 0.042),
+                label: Text(
+                  l10n?.comoLlegar ?? 'Cómo llegar',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.032,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),

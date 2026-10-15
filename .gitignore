@@ -1,31 +1,10 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ==============================================================================
+# ATRIO APP - .gitignore (Flutter, Android, iOS, Seguridad)
+# ==============================================================================
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# ------------------------------------------------------------------------------
+# 1. Flutter / Dart / Pub
+# ------------------------------------------------------------------------------
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -33,33 +12,125 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+**/doc/api/
+pubspec-overrides.yaml
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android / Firma y Seguridad (atrio)
+# ------------------------------------------------------------------------------
+# 2. Android
+# ------------------------------------------------------------------------------
+android/.gradle/
+.gradle/
+android/captures/
 android/key.properties
 android/local.properties
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ------------------------------------------------------------------------------
+# 3. iOS / macOS / CocoaPods
+# ------------------------------------------------------------------------------
+**/ios/Flutter/.last_build_id
+ios/.symlinks/
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/ephemeral/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+**/DerivedData/
+*.xcuserdatad/
+xcuserdata/
+
+# ------------------------------------------------------------------------------
+# 4. Binarios y Entregables Compilados (Evitar subir archivos gigantes)
+# ------------------------------------------------------------------------------
+*.apk
+*.aab
+*.aar
+*.ipa
+*.app
+*.flx
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# ------------------------------------------------------------------------------
+# 5. Ofuscación y Simbolización (Crashlytics / Sentry / ProGuard)
+# ------------------------------------------------------------------------------
+app.*.symbols
+app.*.map.json
+*.symbols
+*.map
+
+# ------------------------------------------------------------------------------
+# 6. Seguridad, Credenciales y Firmas (¡Crítico!)
+# ------------------------------------------------------------------------------
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Llaves de firma y certificados
 *.jks
 *.keystore
 *.p12
 *.pem
+*.key
+*.cer
+*.crt
 
-# Widget Preview related
+# Cuentas de servicio y credenciales en texto plano
+*service-account*.json
+*firebase-adminsdk*.json
+*credentials*.json
+*CREDENCIALES*
+*credenciales*
+*password*
+
+# ------------------------------------------------------------------------------
+# 7. IDEs, Editores y Herramientas Locales
+# ------------------------------------------------------------------------------
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Visual Studio Code (ignora configuración de usuario local)
+.vscode/
+
+# Antigravity & Herramientas de previsualización
+.antigravity/
 .widget_preview/
 
-# Antigravity & Backups locales
-.antigravity/
-*.rar
-*.zip
+# ------------------------------------------------------------------------------
+# 8. Archivos del Sistema Operativo y Varios
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# Variables de entorno y credenciales (Seguridad Odoo / OAuth)
-.env
-.env.*
-!.env.example
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux / Temporales
+*.class
+*.log
+*.pyc
+*.swp
+*~
+.history
+.atom/
+.build/
+.buildlog/
+.svn/
+.swiftpm/
+migrate_working_dir/

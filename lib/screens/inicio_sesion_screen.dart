@@ -56,7 +56,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     scopes: ['email', 'profile'],
     serverClientId: AppConfig.googleServerClientId.isNotEmpty
         ? AppConfig.googleServerClientId
-        : '249769938564-3nnofpi61o89njv84rt6agihftsdncvi.apps.googleusercontent.com',
+        : '641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com',
   );
 
   @override

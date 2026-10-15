@@ -19,13 +19,15 @@ institucionales y reemplazarlas en los archivos correspondientes del proyecto.
 
 
 2. GOOGLE CLOUD PLATFORM (GCP)
+atrioapporg@gmail.com
+Atrio13579@
 --------------------------------------------------------------------------------
 En la consola de Google Cloud (https://console.cloud.google.com), la empresa debe
 crear un proyecto institucional dedicado (ej. "atrio-production" o "atrio-mobile").
 
 2.1. Google Maps SDK & Google Places API
-- API Key actual (Personal):
-  AIzaSyCwoPsfxubfarcNOomfPDeun9Lu-zj21Ec
+- API Key actual (Corporativa GCP):
+  AIzaSyC7kmlFB-7oS0RX79q84t-e-zlAFI2xDkw
 
 - APIs de Google habilitadas requeridas en GCP:
   1. Maps SDK for Android (para visualización del mapa en Android)
@@ -45,8 +47,8 @@ crear un proyecto institucional dedicado (ej. "atrio-production" o "atrio-mobile
     - Para iOS: Bundle Identifier "com.atrio.atrioApp" (o el configurado en Xcode).
 
 2.2. Google Sign-In (OAuth 2.0 Client IDs)
-- Web Client ID actual (Personal):
-  249769938564-3nnofpi61o89njv84rt6agihftsdncvi.apps.googleusercontent.com
+- Web Client ID actual (Corporativo GCP):
+  641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com
 
 - Archivos donde se utiliza en el código:
   * lib/data/app_config.dart (AppConfig.googleServerClientId)

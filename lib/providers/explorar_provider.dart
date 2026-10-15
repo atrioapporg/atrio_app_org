@@ -34,7 +34,7 @@ class _CachedExplorarResult {
 /// Restricción estricta al país actual del usuario (ej. Colombia, República Dominicana, etc.),
 /// búsqueda dual (radio/nacional), paginación de 15 en 15 y mitigación de costos de API.
 class ExplorarProvider extends ChangeNotifier {
-  static const String _googleApiKey = "AIzaSyCwoPsfxubfarcNOomfPDeun9Lu-zj21Ec";
+  static const String _googleApiKey = "AIzaSyC7kmlFB-7oS0RX79q84t-e-zlAFI2xDkw";
   static const int itemsPerPage = 15;
 
   static const List<Color> _brandColors = [

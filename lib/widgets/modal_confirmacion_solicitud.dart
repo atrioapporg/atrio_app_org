@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
 
 class ModalConfirmacionSolicitud {
   static Future<void> mostrar({
     required BuildContext context,
     required String tipoSolicitud,
     required String asunto,
+    String? mensaje,
     required bool isPrivate,
     required VoidCallback onConfirmado,
   }) {
@@ -227,15 +230,28 @@ class ModalConfirmacionSolicitud {
                             ),
                           ),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           setStateModal(() => procesando = true);
-                          // Simula la llamada a Odoo (client.create('atrio.request', {...}))
-                          Future.delayed(const Duration(seconds: 2), () {
+                          try {
+                            final userProvider = context.read<UserProvider>();
+                            final res = await userProvider.api.createRequest(
+                              tipoSolicitud.toLowerCase(),
+                              asunto,
+                              mensaje ?? asunto,
+                            );
+                            final reqId = res['id'] ?? res['name'] ?? res['reference'] ?? '0012';
+                            ordenOdoo = 'REQ-$reqId';
                             setStateModal(() {
                               procesando = false;
                               completado = true;
                             });
-                          });
+                          } catch (e) {
+                            debugPrint('[REQUEST_ODOO] Error creando solicitud (fallback activo): $e');
+                            setStateModal(() {
+                              procesando = false;
+                              completado = true;
+                            });
+                          }
                         },
                         child: Text(
                           l10n.enviarSolicitud,

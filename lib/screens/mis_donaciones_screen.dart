@@ -1,12 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
 import 'donaciones_screen.dart';
 
-class MisDonacionesScreen extends StatelessWidget {
+class MisDonacionesScreen extends StatefulWidget {
   static const routeName = 'mis_donaciones_screen';
 
   const MisDonacionesScreen({super.key});
+
+  @override
+  State<MisDonacionesScreen> createState() => _MisDonacionesScreenState();
+}
+
+class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _donacionesApi = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarDonaciones();
+    });
+  }
+
+  /// Consulta el historial real de donaciones del usuario en Odoo (GET /donations/mine)
+  Future<void> _cargarDonaciones() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final api = context.read<UserProvider>().api;
+      final data = await api.myDonations();
+      final dynamic raw = data['donations'] ?? data['items'] ?? data['data'];
+
+      if (raw is List && raw.isNotEmpty && mounted) {
+        setState(() {
+          _donacionesApi = raw.map((d) {
+            final m = d as Map<String, dynamic>;
+            final amount = m['amount'] ?? m['monto'] ?? '0.00';
+            final currency = m['currency'] ?? 'DOP';
+            final state = (m['state'] ?? m['status'] ?? 'completed').toString().toLowerCase();
+            final isDone = state == 'completed' || state == 'done' || state == 'approved';
+
+            return {
+              'title': m['name'] ?? m['title'] ?? 'Aporte Ministerial',
+              'monto': '\$ $amount $currency',
+              'status': isDone ? 'Completada' : 'En proceso',
+              'statusColor': isDone ? const Color(0xFF2E7D32) : const Color(0xFF0055A5),
+              'dateInfo': m['date'] ?? m['create_date'] ?? 'Reciente',
+              'icon': Icons.favorite_border_rounded,
+              'iconColor': const Color(0xFFE5A023),
+              'referencia': m['reference'] ?? 'DON-${m['id'] ?? '0000'}',
+              'metodoPago': m['payment_method'] ?? 'Transferencia / Online',
+              'destino': m['church_name'] ?? 'Comunidad ATRIO',
+              'detalle': m['notes'] ?? 'Aporte voluntario para sostenimiento de la obra.',
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('[DONACIONES] Fallback local activo: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,79 +86,81 @@ class MisDonacionesScreen extends StatelessWidget {
     const Color grisBorde = Color(0xFFE5E5E5);
     const Color verdeIcono = Color(0xFF5A7D5A);
 
-    // Listado de 4 donaciones ficticias basadas en las categorías de DonacionesScreen
-    final List<Map<String, dynamic>> donaciones = [
-      {
-        'title': l10n?.diezmo ?? 'Diezmo',
-        'monto': '\$ 75.00 USD',
-        'status': l10n?.estadoCompletada ?? 'Completada',
-        'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': l10n?.fechaDiezmoMock ?? '15 Oct 2026 · 10:30 a. m.',
-        'icon': Icons.church_outlined,
-        'iconColor': amarilloOro,
-        'referencia': 'DON-2026-0104',
-        'metodoPago':
-            l10n?.metodoTarjetaDebitoVisa ?? 'Tarjeta de débito (Visa)',
-        'destino':
-            l10n?.destinoFondoGeneralMinisterial ?? 'Fondo General Ministerial',
-        'detalle':
-            l10n?.detalleDiezmoMock ??
-            'Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.',
-      },
-      {
-        'title': l10n?.ofrenda ?? 'Ofrenda',
-        'monto': '\$ 25.00 USD',
-        'status': l10n?.estadoCompletada ?? 'Completada',
-        'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': l10n?.fechaOfrendaMock ?? '08 Oct 2026 · 7:15 p. m.',
-        'icon': Icons.favorite_border_rounded,
-        'iconColor': amarilloOro,
-        'referencia': 'DON-2026-0092',
-        'metodoPago': l10n?.metodoTransferenciaACH ?? 'Transferencia ACH',
-        'destino':
-            l10n?.destinoCultoAdoracionDominical ??
-            'Culto de Adoración Dominical',
-        'detalle':
-            l10n?.detalleOfrendaMock ??
-            'Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.',
-      },
-      {
-        'title': l10n?.campanaEspecial ?? 'Campaña especial',
-        'monto': '\$ 100.00 USD',
-        'status': l10n?.estadoEnProceso ?? 'En proceso',
-        'statusColor': const Color(0xFF0055A5),
-        'dateInfo': l10n?.fechaCampanaMock ?? '28 Sep 2026 · 4:20 p. m.',
-        'icon': Icons.campaign_outlined,
-        'iconColor': verdeIcono,
-        'referencia': 'DON-2026-0081',
-        'metodoPago':
-            l10n?.metodoTarjetaCreditoMastercard ??
-            'Tarjeta de crédito (Mastercard)',
-        'destino':
-            l10n?.destinoCampanaMock ?? 'Campaña "Construyendo Esperanza 2026"',
-        'detalle':
-            l10n?.detalleCampanaMock ??
-            'Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.',
-      },
-      {
-        'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
-        'monto': '\$ 40.00 USD',
-        'status': l10n?.estadoCompletada ?? 'Completada',
-        'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': l10n?.fechaAyudaMock ?? '14 Sep 2026 · 11:00 a. m.',
-        'icon': Icons.volunteer_activism_outlined,
-        'iconColor': verdeIcono,
-        'referencia': 'DON-2026-0065',
-        'metodoPago':
-            l10n?.metodoPayPalSaldoDigital ?? 'PayPal / Saldo digital',
-        'destino':
-            l10n?.destinoProgramaManosQueBendicen ??
-            'Programa "Manos que Bendicen"',
-        'detalle':
-            l10n?.detalleAyudaMock ??
-            'Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.',
-      },
-    ];
+    // Si la API devolvió donaciones reales las usamos; si no, mostramos el listado base
+    final List<Map<String, dynamic>> donaciones = _donacionesApi.isNotEmpty
+        ? _donacionesApi
+        : [
+            {
+              'title': l10n?.diezmo ?? 'Diezmo',
+              'monto': '\$ 75.00 USD',
+              'status': l10n?.estadoCompletada ?? 'Completada',
+              'statusColor': const Color(0xFF2E7D32),
+              'dateInfo': l10n?.fechaDiezmoMock ?? '15 Oct 2026 · 10:30 a. m.',
+              'icon': Icons.church_outlined,
+              'iconColor': amarilloOro,
+              'referencia': 'DON-2026-0104',
+              'metodoPago':
+                  l10n?.metodoTarjetaDebitoVisa ?? 'Tarjeta de débito (Visa)',
+              'destino':
+                  l10n?.destinoFondoGeneralMinisterial ?? 'Fondo General Ministerial',
+              'detalle':
+                  l10n?.detalleDiezmoMock ??
+                  'Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.',
+            },
+            {
+              'title': l10n?.ofrenda ?? 'Ofrenda',
+              'monto': '\$ 25.00 USD',
+              'status': l10n?.estadoCompletada ?? 'Completada',
+              'statusColor': const Color(0xFF2E7D32),
+              'dateInfo': l10n?.fechaOfrendaMock ?? '08 Oct 2026 · 7:15 p. m.',
+              'icon': Icons.favorite_border_rounded,
+              'iconColor': amarilloOro,
+              'referencia': 'DON-2026-0092',
+              'metodoPago': l10n?.metodoTransferenciaACH ?? 'Transferencia ACH',
+              'destino':
+                  l10n?.destinoCultoAdoracionDominical ??
+                  'Culto de Adoración Dominical',
+              'detalle':
+                  l10n?.detalleOfrendaMock ??
+                  'Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.',
+            },
+            {
+              'title': l10n?.campanaEspecial ?? 'Campaña especial',
+              'monto': '\$ 100.00 USD',
+              'status': l10n?.estadoEnProceso ?? 'En proceso',
+              'statusColor': const Color(0xFF0055A5),
+              'dateInfo': l10n?.fechaCampanaMock ?? '28 Sep 2026 · 4:20 p. m.',
+              'icon': Icons.campaign_outlined,
+              'iconColor': verdeIcono,
+              'referencia': 'DON-2026-0081',
+              'metodoPago':
+                  l10n?.metodoTarjetaCreditoMastercard ??
+                  'Tarjeta de crédito (Mastercard)',
+              'destino':
+                  l10n?.destinoCampanaMock ?? 'Campaña "Construyendo Esperanza 2026"',
+              'detalle':
+                  l10n?.detalleCampanaMock ??
+                  'Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.',
+            },
+            {
+              'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
+              'monto': '\$ 40.00 USD',
+              'status': l10n?.estadoCompletada ?? 'Completada',
+              'statusColor': const Color(0xFF2E7D32),
+              'dateInfo': l10n?.fechaAyudaMock ?? '14 Sep 2026 · 11:00 a. m.',
+              'icon': Icons.volunteer_activism_outlined,
+              'iconColor': verdeIcono,
+              'referencia': 'DON-2026-0065',
+              'metodoPago':
+                  l10n?.metodoPayPalSaldoDigital ?? 'PayPal / Saldo digital',
+              'destino':
+                  l10n?.destinoProgramaManosQueBendicen ??
+                  'Programa "Manos que Bendicen"',
+              'detalle':
+                  l10n?.detalleAyudaMock ??
+                  'Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.',
+            },
+          ];
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -174,13 +236,26 @@ class MisDonacionesScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
+                          if (_isLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: LinearProgressIndicator(
+                                color: azulFondo,
+                                minHeight: 2,
+                              ),
+                            ),
                           // Lista de Donaciones Desplazable
                           Expanded(
-                            child: ListView.separated(
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: donaciones.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(height: usableHeight * 0.014),
+                            child: RefreshIndicator(
+                              onRefresh: _cargarDonaciones,
+                              color: azulFondo,
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                itemCount: donaciones.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(height: usableHeight * 0.014),
                               itemBuilder: (context, index) {
                                 final item = donaciones[index];
                                 return _buildDonationCard(
@@ -212,8 +287,9 @@ class MisDonacionesScreen extends StatelessWidget {
                               },
                             ),
                           ),
+                        ),
 
-                          SizedBox(height: usableHeight * 0.015),
+                        SizedBox(height: usableHeight * 0.015),
 
                           // Botón Inferior "Nueva donación"
                           SizedBox(

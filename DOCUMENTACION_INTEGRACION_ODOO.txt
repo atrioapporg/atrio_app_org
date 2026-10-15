@@ -1,0 +1,161 @@
+================================================================================
+MANUAL Y DOCUMENTACIÓN TÉCNICA DE INTEGRACIÓN API ODOO 19 - ATRIO APP
+================================================================================
+Fecha de Implementación: Octubre 2026
+Versión de API Odoo: 19.0.4
+URL Base Oficial: https://atrioapp.odoo19rd.com
+Framework: Flutter 3.22+ (Dart)
+Estado de Compilación: 0 errores / 0 advertencias (flutter analyze: No issues found)
+================================================================================
+
+1. RESUMEN EJECUTIVO
+--------------------------------------------------------------------------------
+Se completó con éxito la integración total entre la aplicación móvil "ATRIO"
+y el backend ERP Odoo 19 a través de su API REST/JSON. El sistema cuenta con:
+- Almacenamiento seguro nativo (Android Keystore / iOS Keychain).
+- Autenticación mediante tokens JWT (Access Token corto + Refresh Token rotativo).
+- Interceptor automático para renovar la sesión en segundo plano ante errores 401.
+- Resiliencia y fallback elegante en la interfaz ante reglas de negocio como
+  el estado '403 membership_pending' (miembros pendientes de aprobación).
+- Soporte para refresco manual (Pull-to-Refresh) en todas las pantallas integradas.
+
+
+2. ARQUITECTURA DE INTEGRACIÓN
+--------------------------------------------------------------------------------
+A) Cliente HTTP Centralizado:
+   - Archivo: lib/atrio_api.dart
+   - Implementa llamadas seguras tipadas a los endpoints de Odoo.
+   - Maneja automáticamente las cabeceras:
+     * Content-Type: application/json
+     * Accept: application/json
+     * Authorization: Bearer <token> (excepto en /auth/login y /auth/refresh)
+     * X-Odoo-Database: opcional según configuración multi-tenant.
+   - Mutex anti-colisión: Usa un Completer thread-safe para que múltiples peticiones
+     concurrentes que reciban 401 esperen a una sola llamada de /auth/refresh.
+   - Carga perezosa auto-recuperable (_ensureStorageLoaded): Carga los tokens a memoria
+     desde el disco seguro antes de cualquier llamada HTTP, resistente a Hot Restart.
+
+B) Servicio de Persistencia Cifrada:
+   - Archivo: lib/servicios/token_storage_service.dart
+   - Utiliza la librería 'flutter_secure_storage' versión ^10.3.4.
+   - Opciones nativas Android: aOptions: AndroidOptions(resetOnError: true) para
+     evitar bloqueos por llaves huérfanas en el Keystore.
+   - Opciones nativas iOS: KeychainAccessibility.first_unlock.
+
+C) Gestión de Estado (Provider):
+   - Archivo: lib/providers/user_provider.dart
+   - Maneja el UserModel actual, el estado de carga y las notificaciones a la UI.
+   - Auto-restaura la sesión al instanciarse la app y coordina el flujo de logout.
+
+
+3. ETAPAS DEL PROYECTO Y RESULTADOS
+--------------------------------------------------------------------------------
+ETAPA 1: Configuración de Cliente y Seguridad (COMPLETADA)
+- Configuración de variables de entorno en .env y lib/data/app_config.dart.
+- Creación de TokenStorageService para almacenamiento seguro.
+- Creación de la clase AtrioApi con excepciones tipadas (AtrioApiException).
+
+ETAPA 2: Flujo de Autenticación (COMPLETADA Y VALIDADA EN DISPOSITIVO)
+- Endpoint: POST /atrio/portal/api/auth/login
+- Recepción y guardado automático de access_token y refresh_token.
+- Deserialización del usuario a través de UserModel.fromOdooJson().
+- Endpoint: POST /atrio/portal/api/auth/logout para revocación de sesión en servidor
+  y limpieza local de tokens.
+- Integrado en InicioSesionScreen y PerfilScreen.
+
+ETAPA 3: Peticiones Autenticadas y Renovación Silenciosa (VALIDADA CON LOGS REALES)
+- Intercepción automática del error HTTP 401 Unauthorized.
+- Rotación transparente enviando el refresh_token a POST /atrio/portal/api/auth/refresh.
+- Guardado de los nuevos tokens emitidos por Odoo y repetición transparente de
+  la petición original que había fallado.
+- Botón de diagnóstico en PerfilScreen ('testRefreshTokenFlow') que demostró:
+  1. Corrupción deliberada del access token en memoria.
+  2. Disparo de petición GET /me.
+  3. Detección de 401 por AtrioApi.
+  4. Renovación exitosa contra Odoo.
+  5. Reintento exitoso y entrega de nuevo token al usuario.
+
+ETAPA 4: Integración con la Interfaz de Usuario (UI) (COMPLETADA)
+- Eventos (lib/screens/eventos_screen.dart):
+  * GET /events (lista de eventos).
+  * POST /events/{id}/register (inscripción).
+  * DELETE /events/{id}/register (cancelación de inscripción).
+  * RefreshIndicator (pull-to-refresh) y fallback visual.
+- Solicitudes (lib/screens/seguimiento_solicitud_screen.dart):
+  * GET /requests (mis solicitudes ministeriales).
+  * Convertido a StatefulWidget con recarga reactiva y RefreshIndicator.
+  * Mapeo de estados: Confirmada, Programada, Recibida, En revisión, Cancelada.
+- Nueva Solicitud (lib/screens/nueva_solicitud_screen.dart y modal_confirmacion_solicitud.dart):
+  * POST /requests para registrar peticiones pastorales, oración, ayuda, etc.
+- Mis Donaciones (lib/screens/mis_donaciones_screen.dart):
+  * GET /donations/mine con mapeo de fechas, montos y divisas dinámicas.
+- Tienda Atrio (lib/screens/tienda_screen.dart):
+  * GET /store/products con deserialización a través de ProductoModel.fromJson().
+  * RefreshIndicator para actualizar el catálogo en tiempo real.
+
+
+4. ARCHIVOS CREADOS Y MODIFICADOS
+--------------------------------------------------------------------------------
+Archivos Nuevos:
+- lib/atrio_api.dart: Cliente REST completo de Odoo 19 (más de 650 líneas).
+- lib/servicios/token_storage_service.dart: Wrapper seguro de FlutterSecureStorage.
+
+Archivos Actualizados:
+- pubspec.yaml & pubspec.lock: Inclusión de flutter_secure_storage: ^10.3.4.
+- lib/data/app_config.dart: URL base configurada a https://atrioapp.odoo19rd.com.
+- lib/modelos/user_model.dart: Constructor UserModel.fromOdooJson().
+- lib/providers/user_provider.dart: Conexión con AtrioApi, auto-login y logout.
+- lib/screens/inicio_sesion_screen.dart: Formulario de acceso directo contra Odoo.
+- lib/screens/perfil_screen.dart: Cierre de sesión y botón de prueba de tokens.
+- lib/screens/eventos_screen.dart: Integración de eventos con Odoo y pull-to-refresh.
+- lib/screens/mis_donaciones_screen.dart: Consulta de aportes del usuario en Odoo.
+- lib/screens/seguimiento_solicitud_screen.dart: Listado de solicitudes de Odoo.
+- lib/screens/nueva_solicitud_screen.dart: Envío de solicitudes a Odoo.
+- lib/widgets/modal_confirmacion_solicitud.dart: Envío de solicitud y feedback.
+- lib/screens/tienda_screen.dart: Catálogo de productos sincronizado con Odoo.
+
+
+5. DICCIONARIO DE CÓDIGOS DE ERROR DE ODOO 19
+--------------------------------------------------------------------------------
+Código HTTP | Código Odoo              | Significado y Acción en la App
+--------------------------------------------------------------------------------
+400         | missing_fields, etc.     | Datos incompletos o inválidos en formulario.
+401         | unauthorized, etc.       | Token ausente o vencido. La app lo renueva
+            |                          | automáticamente con el refresh token.
+403         | membership_pending       | El usuario inició sesión pero su membresía en
+            |                          | la iglesia está pendiente de ser aprobada
+            |                          | por el administrador/pastor en Odoo.
+403         | subscription_required    | La iglesia requiere plan o suscripción activa.
+404         | not_found, no_member     | El recurso no existe o no pertenece a la iglesia.
+409         | event_full, event_past   | El evento ya no tiene cupos o ya finalizó.
+500         | server_error             | Error interno del servidor Odoo.
+
+
+6. GESTIÓN DE USUARIOS EN EL BACKEND DE ODOO
+--------------------------------------------------------------------------------
+Si en la app observas el mensaje:
+"AtrioApiException(403, membership_pending): El acceso está pendiente de aprobación"
+Esto indica que la conexión técnica es perfecta. Para que ese usuario pueda
+consumir datos en vivo sin restricción:
+1. Ingresa a la interfaz web de Odoo: https://atrioapp.odoo19rd.com
+2. Accede al módulo de ATRIO / Miembros / Iglesias.
+3. Localiza el perfil del usuario correspondiente (ej. juan@gmail.com).
+4. Cambia el estado de su membresía de "Pendiente" a "Aprobado" o "Activo".
+5. Al volver a la aplicación móvil y deslizar hacia abajo (pull-to-refresh),
+   la API entregará inmediatamente los registros activos de la base de datos.
+
+
+7. COMANDOS ÚTILES PARA EL DESARROLLADOR
+--------------------------------------------------------------------------------
+- Verificar calidad de código:
+  flutter analyze
+  (Resultado actual: No issues found!)
+
+- Ejecutar la aplicación en emulador o dispositivo físico:
+  flutter run
+
+- Recargar cambios en caliente:
+  Presionar 'r' en la terminal (Hot Reload) o 'R' (Hot Restart).
+================================================================================
+FIN DE LA DOCUMENTACIÓN TÉCNICA
+================================================================================

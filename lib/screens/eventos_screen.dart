@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../atrio_api.dart';
+import '../providers/user_provider.dart';
 import '../l10n/app_localizations.dart';
 
 import '../modelos/evento_model.dart';
@@ -47,8 +50,10 @@ class _EventosScreenState extends State<EventosScreen> {
     }
   }
 
-  // Evento destacado (preparado con campos Odoo 19 módulo event.event)
-  final EventoModel _featuredEvent = EventoModel(
+  bool _isLoadingEvents = false;
+
+  // Evento destacado (con fallback inicial local)
+  EventoModel _featuredEvent = EventoModel(
     id: '1',
     titulo: 'Conferencia de Liderazgo y Fe 2026',
     organizador: 'Pastor Carlos Gómez & Invitados',
@@ -68,8 +73,8 @@ class _EventosScreenState extends State<EventosScreen> {
     fallbackTextColor: '0xFFE5A023',
   );
 
-  // Catálogo inicial de 4 eventos (total 5 eventos ficticios con el destacado)
-  late final List<EventoModel> _eventsList = [
+  // Catálogo inicial de 4 eventos (total 5 eventos con el destacado)
+  List<EventoModel> _eventsList = [
     EventoModel(
       id: '2',
       titulo: 'Noche de Adoración Íntima',
@@ -150,6 +155,116 @@ class _EventosScreenState extends State<EventosScreen> {
     _searchController.addListener(() {
       setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarEventosOdoo();
+    });
+  }
+
+  /// Consulta los eventos de la iglesia del usuario en Odoo (GET /events)
+  Future<void> _cargarEventosOdoo() async {
+    if (!mounted) return;
+    setState(() => _isLoadingEvents = true);
+
+    try {
+      final userProvider = context.read<UserProvider>();
+      final data = await userProvider.api.events(limit: 50);
+
+      final dynamic raw = data['events'] ?? data['items'] ?? data['data'];
+      if (raw is List && raw.isNotEmpty) {
+        final List<EventoModel> loaded = raw
+            .map((e) => EventoModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        if (mounted) {
+          setState(() {
+            _eventsList = loaded;
+            _featuredEvent = _eventsList.firstWhere(
+              (e) => e.esDestacado,
+              orElse: () => _eventsList.first,
+            );
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[EVENTOS] Odoo fallback activo: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingEvents = false);
+      }
+    }
+  }
+
+  /// Inscribe o cancela asistencia a un evento en Odoo (POST/DELETE /events/{id}/register)
+  Future<void> _cambiarInscripcion(EventoModel evento) async {
+    final userProvider = context.read<UserProvider>();
+    final eventId = int.tryParse(evento.id);
+
+    if (eventId == null) {
+      // Manejo local para eventos demo/fallback
+      setState(() {
+        final idx = _eventsList.indexWhere((e) => e.id == evento.id);
+        if (idx != -1) {
+          final act = _eventsList[idx];
+          _eventsList[idx] = EventoModel(
+            id: act.id,
+            titulo: act.titulo,
+            organizador: act.organizador,
+            imagenUrl: act.imagenUrl,
+            categoria: act.categoria,
+            fecha: act.fecha,
+            hora: act.hora,
+            lugar: act.lugar,
+            dia: act.dia,
+            mes: act.mes,
+            descripcion: act.descripcion,
+            cupoMaximo: act.cupoMaximo,
+            cupoReservado: act.estaInscrito ? act.cupoReservado - 1 : act.cupoReservado + 1,
+            estaInscrito: !act.estaInscrito,
+            esDestacado: act.esDestacado,
+          );
+        }
+      });
+      return;
+    }
+
+    try {
+      if (evento.estaInscrito) {
+        await userProvider.api.unregisterFromEvent(eventId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Inscripción cancelada para "${evento.titulo}".'),
+            backgroundColor: const Color(0xFF072B4F),
+          ),
+        );
+      } else {
+        await userProvider.api.registerToEvent(eventId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('¡Inscripción confirmada para "${evento.titulo}"!'),
+            backgroundColor: const Color(0xFF1B5E20),
+          ),
+        );
+      }
+      await _cargarEventosOdoo();
+    } on AtrioApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al procesar inscripción: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
   }
 
   @override
@@ -301,18 +416,31 @@ class _EventosScreenState extends State<EventosScreen> {
                       topLeft: Radius.circular(screenWidth * 0.08),
                       topRight: Radius.circular(screenWidth * 0.08),
                     ),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: usableHeight * 0.02,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Banner Hero: Evento Destacado
-                          _buildFeaturedEventHero(
-                            evento: _featuredEvent,
+                    child: RefreshIndicator(
+                      onRefresh: _cargarEventosOdoo,
+                      color: azulFondo,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: usableHeight * 0.02,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_isLoadingEvents)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 8),
+                                child: LinearProgressIndicator(
+                                  color: azulFondo,
+                                  minHeight: 2,
+                                ),
+                              ),
+                            // Banner Hero: Evento Destacado
+                            _buildFeaturedEventHero(
+                              evento: _featuredEvent,
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
                             azulFondo: azulFondo,
@@ -552,6 +680,7 @@ class _EventosScreenState extends State<EventosScreen> {
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),
@@ -1537,18 +1666,9 @@ class _EventosScreenState extends State<EventosScreen> {
                           ),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(modalContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              l10n?.inscripcionConfirmada(evento.titulo) ??
-                                  'Inscripción confirmada para "${evento.titulo}". ¡Te esperamos!',
-                            ),
-                            backgroundColor: azulFondo,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                        await _cambiarInscripcion(evento);
                       },
                       icon: Icon(
                         Icons.check_circle_outline_rounded,

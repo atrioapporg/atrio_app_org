@@ -36,6 +36,7 @@ dependencies:
   google_fonts: ^9.0.0
   csv: ^8.0.0
   upgrader: ^13.5.0
+  flutter_secure_storage: ^10.3.4
 
 dev_dependencies:
   flutter_test:

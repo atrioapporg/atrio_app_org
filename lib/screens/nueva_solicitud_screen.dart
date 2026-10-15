@@ -438,6 +438,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                           _selectedTipoSolicitud ??
                                               (l10n?.general ?? 'General'),
                                       asunto: _asuntoController.text.trim(),
+                                      mensaje: _descripcionController.text.trim(),
                                       isPrivate: _isPrivate,
                                       onConfirmado: () {
                                         Navigator.pop(context);

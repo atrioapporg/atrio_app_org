@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../modelos/producto_model.dart';
+import '../providers/user_provider.dart';
 
 class TiendaScreen extends StatefulWidget {
   static const routeName = 'tienda_screen';
@@ -17,6 +19,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
   int _selectedCategoryIndex = 0;
   int _selectedDeliveryOption = 0;
   int _cartItemCount = 2;
+  bool _isLoadingProducts = false;
 
   final List<String> _categories = ['Todos', 'Biblias', 'Libros', 'Regalos'];
 
@@ -36,7 +39,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
   }
 
   // Catálogo inicial de 5 productos reales (preparado para Odoo 19)
-  late final List<ProductoModel> _productsList = [
+  final List<ProductoModel> _productsList = [
     ProductoModel(
       id: '1',
       nombre: 'Biblia de Estudio LBLA',
@@ -108,6 +111,37 @@ class _TiendaScreenState extends State<TiendaScreen> {
     _searchController.addListener(() {
       setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarProductosOdoo();
+    });
+  }
+
+  /// Carga los productos reales desde el catálogo de la tienda en Odoo (GET /store/products)
+  Future<void> _cargarProductosOdoo() async {
+    if (!mounted) return;
+    setState(() => _isLoadingProducts = true);
+
+    try {
+      final api = context.read<UserProvider>().api;
+      final data = await api.storeProducts(limit: 50);
+      final dynamic raw = data['products'] ?? data['items'] ?? data['data'];
+
+      if (raw is List && raw.isNotEmpty && mounted) {
+        final List<ProductoModel> loaded = raw
+            .map((p) => ProductoModel.fromJson(p as Map<String, dynamic>))
+            .toList();
+
+        setState(() {
+          _productsList
+            ..clear()
+            ..addAll(loaded);
+        });
+      }
+    } catch (e) {
+      debugPrint('[TIENDA] Fallback catálogo local activo: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingProducts = false);
+    }
   }
 
   @override
@@ -321,15 +355,28 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       topLeft: Radius.circular(screenWidth * 0.08),
                       topRight: Radius.circular(screenWidth * 0.08),
                     ),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: usableHeight * 0.02,
-                      ),
-                      child: Column(
+                    child: RefreshIndicator(
+                      onRefresh: _cargarProductosOdoo,
+                      color: amarilloOro,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: usableHeight * 0.02,
+                        ),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_isLoadingProducts)
+                            Padding(
+                              padding: EdgeInsets.only(bottom: usableHeight * 0.01),
+                              child: const LinearProgressIndicator(
+                                color: amarilloOro,
+                                backgroundColor: Colors.transparent,
+                              ),
+                            ),
                           // Filtros de categoría en pastillas (Pills)
                           SizedBox(
                             height: usableHeight * 0.045,
@@ -559,6 +606,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),

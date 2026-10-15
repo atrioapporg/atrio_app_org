@@ -7,12 +7,12 @@
 class AppConfig {
   static const String odooBaseUrl = String.fromEnvironment(
     'ODOO_BASE_URL',
-    defaultValue: 'https://staging-erp.atrio.org',
+    defaultValue: 'https://atrioapp.odoo19rd.com',
   );
 
   static const String odooDatabase = String.fromEnvironment(
     'ODOO_DATABASE',
-    defaultValue: 'atrio_staging',
+    defaultValue: '',
   );
 
   static const String odooSocialAuthEndpoint = String.fromEnvironment(

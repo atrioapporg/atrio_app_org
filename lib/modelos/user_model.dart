@@ -40,6 +40,38 @@ class UserModel {
       ),
     );
   }
+
+  /// Constructor factory adaptado a la respuesta de Odoo (login y endpoint /me).
+  factory UserModel.fromOdooJson(Map<String, dynamic> odooData) {
+    final user = (odooData['user'] as Map<String, dynamic>?) ?? {};
+    final member = (odooData['member'] as Map<String, dynamic>?) ?? {};
+    final church = (odooData['church'] as Map<String, dynamic>?) ?? {};
+
+    final id = (user['id'] ?? member['id'] ?? 0) as int;
+    final nombre = (user['name'] ?? member['name'] ?? 'Usuario') as String;
+    final email = (user['email'] ?? user['login'] ?? member['email'] ?? '') as String;
+    final telefono = (member['phone'] ?? user['phone']) as String?;
+    final iglesiaActual = (church['name'] ?? church['public_name'] ?? 'Iglesia Atrio') as String;
+    final fechaRegistro = (user['create_date'] ?? DateTime.now().toIso8601String()) as String;
+
+    final avatarIniciales = nombre.trim().isNotEmpty
+        ? nombre.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+        : 'U';
+
+    final statsMap = odooData['estadisticas'] as Map<String, dynamic>? ?? {};
+
+    return UserModel(
+      id: id,
+      nombre: nombre,
+      email: email,
+      telefono: telefono,
+      iglesiaActual: iglesiaActual,
+      fechaRegistro: fechaRegistro,
+      avatarIniciales: avatarIniciales,
+      esMiembroVerificado: user['role'] == 'member' || member.isNotEmpty,
+      estadisticas: UserStats.fromJson(statsMap),
+    );
+  }
 }
 
 // Sub-modelo para las estadísticas de actividad

@@ -1,11 +1,103 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
 
-class SeguimientoSolicitudScreen extends StatelessWidget {
+class SeguimientoSolicitudScreen extends StatefulWidget {
   static const routeName = 'seguimiento_solicitud_screen';
 
   const SeguimientoSolicitudScreen({super.key});
+
+  @override
+  State<SeguimientoSolicitudScreen> createState() => _SeguimientoSolicitudScreenState();
+}
+
+class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen> {
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _solicitudesApi = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarSolicitudes();
+    });
+  }
+
+  /// Consulta las solicitudes del usuario en Odoo (GET /requests)
+  Future<void> _cargarSolicitudes() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final api = context.read<UserProvider>().api;
+      final data = await api.requests();
+      final dynamic raw = data['requests'] ?? data['items'] ?? data['data'];
+
+      if (raw is List && raw.isNotEmpty && mounted) {
+        setState(() {
+          _solicitudesApi = raw.map((r) {
+            final m = r as Map<String, dynamic>;
+            final state = (m['state'] ?? m['status'] ?? 'draft').toString().toLowerCase();
+            final type = (m['type'] ?? m['request_type'] ?? '').toString().toLowerCase();
+
+            // Determinar color y texto de estado
+            Color statusColor = const Color(0xFFE5A023);
+            String statusText = 'En revisión';
+            if (state == 'done' || state == 'completed' || state == 'confirmed' || state == 'approved') {
+              statusColor = const Color(0xFF2E7D32);
+              statusText = 'Confirmada';
+            } else if (state == 'pending' || state == 'draft' || state == 'received') {
+              statusColor = const Color(0xFF0055A5);
+              statusText = 'Recibida';
+            } else if (state == 'in_progress' || state == 'scheduled') {
+              statusColor = const Color(0xFFE5A023);
+              statusText = 'Programada';
+            } else if (state == 'cancelled' || state == 'rejected') {
+              statusColor = const Color(0xFFC62828);
+              statusText = 'Cancelada';
+            }
+
+            // Icono y color según tipo
+            IconData icon = Icons.assignment_outlined;
+            Color iconColor = const Color(0xFF0055A5);
+            if (type.contains('pastoral')) {
+              icon = Icons.church_outlined;
+              iconColor = const Color(0xFF0055A5);
+            } else if (type.contains('oracion') || type.contains('prayer')) {
+              icon = Icons.pan_tool_alt_outlined;
+              iconColor = const Color(0xFF7A8B43);
+            } else if (type.contains('comunitaria') || type.contains('social')) {
+              icon = Icons.groups_outlined;
+              iconColor = const Color(0xFF072B4F);
+            } else if (type.contains('familiar') || type.contains('family')) {
+              icon = Icons.family_restroom_rounded;
+              iconColor = const Color(0xFF072B4F);
+            } else if (type.contains('enfermo') || type.contains('salud')) {
+              icon = Icons.favorite_border_rounded;
+              iconColor = const Color(0xFF7A8B43);
+            }
+
+            return {
+              'title': m['title'] ?? m['name'] ?? 'Solicitud Ministerial',
+              'status': m['status_label'] ?? statusText,
+              'statusColor': statusColor,
+              'dateInfo': m['date'] ?? m['create_date'] ?? 'Reciente',
+              'icon': icon,
+              'iconColor': iconColor,
+              'referencia': m['reference'] ?? 'REQ-${m['id'] ?? '0000'}',
+              'detalle': m['message'] ?? m['description'] ?? 'Solicitud registrada y asignada.',
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('[SOLICITUDES] Fallback local activo: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +117,7 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
     const Color grisBorde = Color(0xFFE5E5E5);
 
     // Listado de 5 solicitudes de relleno (mock) según los tipos de solicitud disponibles
-    final List<Map<String, dynamic>> solicitudes = [
+    final List<Map<String, dynamic>> solicitudesMock = [
       {
         'title': l10n?.orientacionPastoral ?? 'Orientación pastoral',
         'status': l10n?.estadoProgramada ?? 'Programada',
@@ -87,6 +179,8 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
             'Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.',
       },
     ];
+
+    final solicitudes = _solicitudesApi.isNotEmpty ? _solicitudesApi : solicitudesMock;
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -164,41 +258,55 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
+                          if (_isLoading)
+                            Padding(
+                              padding: EdgeInsets.only(bottom: usableHeight * 0.01),
+                              child: const LinearProgressIndicator(
+                                color: amarilloOro,
+                                backgroundColor: Colors.transparent,
+                              ),
+                            ),
                           // Lista de Solicitudes Desplazable
                           Expanded(
-                            child: ListView.separated(
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: solicitudes.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(height: usableHeight * 0.014),
-                              itemBuilder: (context, index) {
-                                final item = solicitudes[index];
-                                return _buildRequestCard(
-                                  title: item['title'] as String,
-                                  status: item['status'] as String,
-                                  statusColor: item['statusColor'] as Color,
-                                  dateInfo: item['dateInfo'] as String?,
-                                  icon: item['icon'] as IconData,
-                                  iconColor: item['iconColor'] as Color,
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  azulFondo: azulFondo,
-                                  grisBorde: grisBorde,
-                                  onTap: () {
-                                    _mostrarDetalleSolicitud(
-                                      context: context,
-                                      item: item,
-                                      screenWidth: screenWidth,
-                                      usableHeight: usableHeight,
-                                      azulFondo: azulFondo,
-                                      blancoFondo: blancoFondo,
-                                      grisBorde: grisBorde,
-                                      amarilloOro: amarilloOro,
-                                      l10n: l10n,
-                                    );
-                                  },
-                                );
-                              },
+                            child: RefreshIndicator(
+                              onRefresh: _cargarSolicitudes,
+                              color: amarilloOro,
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                itemCount: solicitudes.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(height: usableHeight * 0.014),
+                                itemBuilder: (context, index) {
+                                  final item = solicitudes[index];
+                                  return _buildRequestCard(
+                                    title: item['title'] as String,
+                                    status: item['status'] as String,
+                                    statusColor: item['statusColor'] as Color,
+                                    dateInfo: item['dateInfo'] as String?,
+                                    icon: item['icon'] as IconData,
+                                    iconColor: item['iconColor'] as Color,
+                                    screenWidth: screenWidth,
+                                    usableHeight: usableHeight,
+                                    azulFondo: azulFondo,
+                                    grisBorde: grisBorde,
+                                    onTap: () {
+                                      _mostrarDetalleSolicitud(
+                                        context: context,
+                                        item: item,
+                                        screenWidth: screenWidth,
+                                        usableHeight: usableHeight,
+                                        azulFondo: azulFondo,
+                                        blancoFondo: blancoFondo,
+                                        grisBorde: grisBorde,
+                                        amarilloOro: amarilloOro,
+                                        l10n: l10n,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ),
                           ),
 
@@ -219,11 +327,12 @@ class SeguimientoSolicitudScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              onPressed: () {
-                                Navigator.pushNamed(
+                              onPressed: () async {
+                                await Navigator.pushNamed(
                                   context,
                                   'tipos_solicitud_screen',
                                 );
+                                _cargarSolicitudes();
                               },
                               child: Text(
                                 l10n?.nuevaSolicitud ?? 'Nueva solicitud',

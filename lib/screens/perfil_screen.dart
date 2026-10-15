@@ -214,6 +214,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     usableHeight: usableHeight,
                     items: [
                       _MenuItemData(
+                        icon: Icons.sync_lock_rounded,
+                        label: 'Probar renovación de token (401)',
+                        route: null,
+                        onCustomTap: () => _probarRenovacionToken(context),
+                      ),
+                      _MenuItemData(
                         icon: Icons.help_outline_rounded,
                         label: l10n?.ayudaYSoporte ?? 'Ayuda y soporte',
                         route: AyudaSoporteScreen.routeName,
@@ -934,17 +940,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
           TextButton(
             onPressed: () async {
+              final userProvider = Provider.of<UserProvider>(
+                context,
+                listen: false,
+              );
               Navigator.pop(ctx);
               try {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('isLoggedIn', false);
               } catch (_) {}
+              await userProvider.logout();
               if (context.mounted) {
-                // Conservamos el llamado a UserProvider SOLO para el limpiado de sesión
-                Provider.of<UserProvider>(
-                  context,
-                  listen: false,
-                ).clearSession();
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   InicioSesionScreen.routeName,
@@ -960,6 +966,121 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ],
       ),
     );
+  }
+
+  /// Herramienta interactiva para verificar en vivo la recuperación ante error 401 y refresh de Odoo
+  Future<void> _probarRenovacionToken(BuildContext context) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (!userProvider.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes tener una sesión activa para probar la renovación de tokens.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Modal de carga mientras se ejecuta el test
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text(
+                  'Probando ciclo 401 -> Refresh -> 200...',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Corrompiendo token y verificando rescate con Odoo ERP.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final res = await userProvider.testRefreshTokenFlow();
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar loader
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 28),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '¡Renovación Exitosa!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '${res['message']}\n\n'
+            'Detalles técnicos:\n'
+            '• Se corrompió el Bearer Token en memoria.\n'
+            '• Odoo respondió con HTTP 401 Unauthorized.\n'
+            '• El interceptor envió el refresh_token a /auth/refresh.\n'
+            '• Odoo emitió un nuevo token y la petición se completó sin desconectar al usuario.',
+            style: const TextStyle(fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF072B4F),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); // Cerrar loader
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 28),
+              const SizedBox(width: 10),
+              const Text('Fallo en Renovación'),
+            ],
+          ),
+          content: Text(
+            'No se pudo renovar la sesión: $e',
+            style: const TextStyle(fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   /// Diálogo y flujo para eliminar cuenta de forma permanente
@@ -1034,10 +1155,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
               // 2. Limpiar estado en memoria de UserProvider
               if (context.mounted) {
-                Provider.of<UserProvider>(
+                await Provider.of<UserProvider>(
                   context,
                   listen: false,
-                ).clearSession();
+                ).logout();
               }
 
               // 3. Redirigir a la pantalla de Inicio de Sesión

@@ -13,18 +13,18 @@ import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
+import 'crear_cuenta_screen.dart';
 import 'inicio_atrio_screen.dart';
+import 'recuperar_clave_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 
 /// ==============================================================================
 /// PANTALLA DE ACCESO ATRIO (INICIO DE SESIÓN / REGISTRO)
 /// ==============================================================================
 /// Arquitectura:
-/// - Exclusivamente Social Login (Google Sign-In y Sign in with Apple).
-/// - Flujo de 1 solo toque (Login & Sign-Up unificados).
-/// - Compatible con Odoo 19 (Controlador Social Login / OpenID Connect).
-/// - Cumple con Apple App Store Guideline 4.8 (Sign in with Apple) y 5.1.1(v)
-///   (Solicitud / Ejecución de eliminación de cuenta).
+/// - Autenticación REST oficial con Odoo 19 (POST /auth/login y refresh).
+/// - Social Login (Google Sign-In y Sign in with Apple).
+/// - Almacenamiento seguro de tokens (flutter_secure_storage).
 /// ==============================================================================
 class InicioSesionScreen extends StatefulWidget {
   static const routeName = 'inicio_sesion_screen';
@@ -47,8 +47,14 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // Estados de carga independientes para feedback visual responsivo
   bool _isLoadingGoogle = false;
   bool _isLoadingApple = false;
+  bool _isLoadingCredentials = false;
 
-  bool get _isProcessing => _isLoadingGoogle || _isLoadingApple;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  bool get _isProcessing =>
+      _isLoadingGoogle || _isLoadingApple || _isLoadingCredentials;
 
   // Instancia de GoogleSignIn (temporalmente con serverClientId de prueba hasta tener credenciales oficiales de Odoo)
   // TODO: Reemplazar serverClientId temporal por credenciales oficiales de ATRIO cuando estén disponibles
@@ -64,6 +70,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
+        final userProvider = context.read<UserProvider>();
+        final bool autoLogueado = await userProvider.tryAutoLogin();
+        if (autoLogueado && mounted) {
+          await _redirigirUsuarioPostLogin();
+          return;
+        }
+
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
         if (isLoggedIn && mounted) {
@@ -73,6 +86,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         debugPrint('[AUTH] Error verificando sesión inicial: $e');
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -255,8 +275,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
                           // Título de la sección
                           Text(
-                            l10n?.accesoRapidoSeguro ??
-                                'Acceso Rápido y Seguro',
+                            'Iniciar Sesión',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.065,
@@ -267,15 +286,172 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                           SizedBox(height: usableHeight * 0.008),
 
                           Text(
-                            l10n?.ingresaUnToque ?? 'Ingresa en un solo toque',
+                            'Ingresa con tu cuenta de ATRIO',
                             style: TextStyle(
                               color: textoGris,
-                              fontSize: screenWidth * 0.045,
+                              fontSize: screenWidth * 0.040,
                               height: 1.35,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          SizedBox(height: usableHeight * 0.035),
+                          SizedBox(height: usableHeight * 0.025),
+
+                          // ===================================================
+                          // FORMULARIO DE ACCESO (ODOO API REST)
+                          // ===================================================
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                              border: Border.all(color: grisBorde),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            padding: EdgeInsets.all(screenWidth * 0.045),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Campo Correo / Login
+                                TextField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: 'Correo electrónico o usuario',
+                                    hintText: 'ej. juan@gmail.com',
+                                    prefixIcon: const Icon(Icons.email_outlined, color: azulFondo),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                      borderSide: const BorderSide(color: grisBorde),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                      borderSide: const BorderSide(color: grisBorde),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                      borderSide: const BorderSide(color: azulFondo, width: 1.5),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.035,
+                                      vertical: usableHeight * 0.015,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: usableHeight * 0.018),
+
+                                // Campo Contraseña
+                                TextField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.done,
+                                  onSubmitted: (_) => _isProcessing ? null : _iniciarSesionCredenciales(),
+                                  decoration: InputDecoration(
+                                    labelText: 'Contraseña',
+                                    prefixIcon: const Icon(Icons.lock_outline, color: azulFondo),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                        color: textoGris,
+                                      ),
+                                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                      borderSide: const BorderSide(color: grisBorde),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                      borderSide: const BorderSide(color: grisBorde),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                      borderSide: const BorderSide(color: azulFondo, width: 1.5),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.035,
+                                      vertical: usableHeight * 0.015,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: usableHeight * 0.008),
+
+                                // Olvidé contraseña
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: _isProcessing
+                                        ? null
+                                        : () => Navigator.pushNamed(context, RecuperarClaveScreen.routeName),
+                                    child: Text(
+                                      '¿Olvidaste tu contraseña?',
+                                      style: TextStyle(
+                                        color: azulLink,
+                                        fontSize: screenWidth * 0.034,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: usableHeight * 0.01),
+
+                                // Botón Iniciar Sesión Odoo
+                                ElevatedButton(
+                                  onPressed: _isProcessing ? null : _iniciarSesionCredenciales,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: azulFondo,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: usableHeight * 0.018),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                    ),
+                                    elevation: 2,
+                                  ),
+                                  child: _isLoadingCredentials
+                                      ? SizedBox(
+                                          height: screenWidth * 0.05,
+                                          width: screenWidth * 0.05,
+                                          child: const CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        )
+                                      : Text(
+                                          'Iniciar Sesión',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.045,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: usableHeight * 0.025),
+
+                          // Separador "o continúa con"
+                          Row(
+                            children: [
+                              const Expanded(child: Divider(color: grisBorde)),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+                                child: Text(
+                                  'o accede con',
+                                  style: TextStyle(
+                                    color: textoGris,
+                                    fontSize: screenWidth * 0.035,
+                                  ),
+                                ),
+                              ),
+                              const Expanded(child: Divider(color: grisBorde)),
+                            ],
+                          ),
+                          SizedBox(height: usableHeight * 0.025),
 
                           // ===================================================
                           // BOTÓN 1: CONTINUAR CON GOOGLE
@@ -328,7 +504,38 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                                     _iniciarSesionApple();
                                   },
                           ),
-                          SizedBox(height: usableHeight * 0.030),
+                          SizedBox(height: usableHeight * 0.025),
+
+                          // Enlace a Registro
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '¿No tienes una cuenta? ',
+                                style: TextStyle(
+                                  color: textoGris,
+                                  fontSize: screenWidth * 0.038,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _isProcessing
+                                    ? null
+                                    : () => Navigator.pushNamed(
+                                          context,
+                                          CrearCuentaScreen.routeName,
+                                        ),
+                                child: Text(
+                                  'Regístrate',
+                                  style: TextStyle(
+                                    color: amarilloOro,
+                                    fontSize: screenWidth * 0.038,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: usableHeight * 0.015),
 
                           // ===================================================
                           // ACCESO INVITADO / EXPLORAR
@@ -560,11 +767,78 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   }
 
   // ============================================================================
-  // TODO: INTEGRACIÓN DEFINITIVA CON ODOO 19
-  // Cambiar esta implementación temporal cuando se tengan las credenciales, APIs
-  // y endpoints definitivos de los dueños del código de ATRIO.
-  // Actualmente simula un login exitoso vía cuenta de Google persistiendo en
-  // SharedPreferences, AtrioDatabaseHelper y UserProvider.
+  // AUTENTICACIÓN CON CREDENCIALES (ODOO 19 REST API - POST /auth/login)
+  // ============================================================================
+  Future<void> _iniciarSesionCredenciales() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _mostrarMensajeError('Por favor ingresa tu correo y contraseña');
+      return;
+    }
+
+    setState(() => _isLoadingCredentials = true);
+    FocusScope.of(context).unfocus();
+
+    try {
+      final userProvider = context.read<UserProvider>();
+      final ok = await userProvider.login(
+        email,
+        password,
+        deviceName: 'App Atrio Flutter',
+      );
+
+      if (!mounted) return;
+
+      if (ok) {
+        // Guardar también en la base de datos local SQLite para soporte offline
+        try {
+          final user = userProvider.currentUser;
+          if (user != null) {
+            await AtrioDatabaseHelper.instance.guardarUsuario({
+              'email': user.email,
+              'nombre': user.nombre,
+              'celular': user.telefono ?? '',
+              'iglesia_nombre': user.iglesiaActual,
+              'creado_en': DateTime.now().toIso8601String(),
+            });
+          }
+        } catch (e) {
+          debugPrint('[AUTH] Advertencia guardando en SQLite local: $e');
+        }
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '¡Bienvenido ${userProvider.currentUser?.nombre ?? ""}!',
+            ),
+            backgroundColor: const Color(0xFF1B5E20),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        await _redirigirUsuarioPostLogin();
+      } else {
+        _mostrarMensajeError(
+          userProvider.errorMessage ?? 'Usuario o contraseña incorrectos.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _mostrarMensajeError('Error de conexión al servidor: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingCredentials = false);
+      }
+    }
+  }
+
+  // ============================================================================
+  // SOCIAL LOGIN (GOOGLE SIGN-IN)
   // ============================================================================
   Future<void> _iniciarSesionGoogle() async {
     setState(() => _isLoadingGoogle = true);

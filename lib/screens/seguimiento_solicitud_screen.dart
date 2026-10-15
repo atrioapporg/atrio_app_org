@@ -45,16 +45,33 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
             // Determinar color y texto de estado
             Color statusColor = const Color(0xFFE5A023);
             String statusText = 'En revisión';
-            if (state == 'done' || state == 'completed' || state == 'confirmed' || state == 'approved') {
+            if (state == 'done' ||
+                state == 'completed' ||
+                state == 'confirmed' ||
+                state == 'approved' ||
+                state == 'resuelta' ||
+                state == 'atendida' ||
+                state == 'respondida') {
               statusColor = const Color(0xFF2E7D32);
-              statusText = 'Confirmada';
-            } else if (state == 'pending' || state == 'draft' || state == 'received') {
+              statusText = state == 'respondida' ? 'Respondida' : 'Completada';
+            } else if (state == 'pending' ||
+                state == 'draft' ||
+                state == 'received' ||
+                state == 'nueva' ||
+                state == 'new' ||
+                state == 'recibida') {
               statusColor = const Color(0xFF0055A5);
               statusText = 'Recibida';
-            } else if (state == 'in_progress' || state == 'scheduled') {
+            } else if (state == 'in_progress' ||
+                state == 'scheduled' ||
+                state == 'proceso' ||
+                state == 'en_proceso') {
               statusColor = const Color(0xFFE5A023);
-              statusText = 'Programada';
-            } else if (state == 'cancelled' || state == 'rejected') {
+              statusText = 'En proceso';
+            } else if (state == 'cancelled' ||
+                state == 'canceled' ||
+                state == 'rejected' ||
+                state == 'cancelada') {
               statusColor = const Color(0xFFC62828);
               statusText = 'Cancelada';
             }
@@ -62,13 +79,13 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
             // Icono y color según tipo
             IconData icon = Icons.assignment_outlined;
             Color iconColor = const Color(0xFF0055A5);
-            if (type.contains('pastoral')) {
+            if (type.contains('pastoral') || type.contains('consej')) {
               icon = Icons.church_outlined;
               iconColor = const Color(0xFF0055A5);
             } else if (type.contains('oracion') || type.contains('prayer')) {
               icon = Icons.pan_tool_alt_outlined;
               iconColor = const Color(0xFF7A8B43);
-            } else if (type.contains('comunitaria') || type.contains('social')) {
+            } else if (type.contains('comunitaria') || type.contains('social') || type.contains('ayuda')) {
               icon = Icons.groups_outlined;
               iconColor = const Color(0xFF072B4F);
             } else if (type.contains('familiar') || type.contains('family')) {
@@ -77,17 +94,27 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
             } else if (type.contains('enfermo') || type.contains('salud')) {
               icon = Icons.favorite_border_rounded;
               iconColor = const Color(0xFF7A8B43);
+            } else if (type.contains('info')) {
+              icon = Icons.info_outline_rounded;
+              iconColor = const Color(0xFF0055A5);
+            }
+
+            final rawDate = m['created_at'] ?? m['date'] ?? m['create_date'];
+            String dateFormatted = 'Reciente';
+            if (rawDate != null) {
+              dateFormatted = rawDate.toString().split('T').first;
             }
 
             return {
               'title': m['title'] ?? m['name'] ?? 'Solicitud Ministerial',
               'status': m['status_label'] ?? statusText,
               'statusColor': statusColor,
-              'dateInfo': m['date'] ?? m['create_date'] ?? 'Reciente',
+              'dateInfo': dateFormatted,
               'icon': icon,
               'iconColor': iconColor,
               'referencia': m['reference'] ?? 'REQ-${m['id'] ?? '0000'}',
               'detalle': m['message'] ?? m['description'] ?? 'Solicitud registrada y asignada.',
+              'respuesta': m['response'] ?? m['pastoral_notes'] ?? m['admin_notes'],
             };
           }).toList();
         });
@@ -615,6 +642,47 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                         height: 1.35,
                       ),
                     ),
+                    if (item['respuesta'] != null &&
+                        item['respuesta'].toString().trim().isNotEmpty) ...[
+                      Divider(height: usableHeight * 0.025, color: grisBorde),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.mark_chat_read_rounded,
+                            size: screenWidth * 0.042,
+                            color: const Color(0xFF2E7D32),
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Text(
+                            'Respuesta pastoral:',
+                            style: TextStyle(
+                              color: const Color(0xFF2E7D32),
+                              fontSize: screenWidth * 0.032,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: usableHeight * 0.008),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(screenWidth * 0.03),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.025),
+                          border: Border.all(color: const Color(0xFFA5D6A7)),
+                        ),
+                        child: Text(
+                          item['respuesta'].toString(),
+                          style: TextStyle(
+                            color: const Color(0xFF1B5E20),
+                            fontSize: screenWidth * 0.034,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -867,7 +867,9 @@ class _EventosScreenState extends State<EventosScreen> {
                     height: usableHeight * 0.042,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: amarilloOro,
+                        backgroundColor: evento.estaInscrito
+                            ? const Color(0xFFC62828)
+                            : amarilloOro,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -878,7 +880,9 @@ class _EventosScreenState extends State<EventosScreen> {
                       ),
                       onPressed: onTap,
                       child: Text(
-                        l10n?.inscribirmeAhora ?? 'Inscribirme ahora',
+                        evento.estaInscrito
+                            ? 'Cancelar inscripción'
+                            : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,
                           fontWeight: FontWeight.bold,
@@ -1654,7 +1658,9 @@ class _EventosScreenState extends State<EventosScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: amarilloOro,
+                        backgroundColor: evento.estaInscrito
+                            ? const Color(0xFFC62828)
+                            : amarilloOro,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: EdgeInsets.symmetric(
@@ -1671,12 +1677,14 @@ class _EventosScreenState extends State<EventosScreen> {
                         await _cambiarInscripcion(evento);
                       },
                       icon: Icon(
-                        Icons.check_circle_outline_rounded,
+                        evento.estaInscrito
+                            ? Icons.cancel_outlined
+                            : Icons.check_circle_outline_rounded,
                         size: screenWidth * 0.045,
                       ),
                       label: Text(
                         evento.estaInscrito
-                            ? (l10n?.yaEstasInscrito ?? 'Ya estás inscrito')
+                            ? 'Cancelar inscripción'
                             : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,

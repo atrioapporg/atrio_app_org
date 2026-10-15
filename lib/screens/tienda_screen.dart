@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../atrio_api.dart';
 import '../l10n/app_localizations.dart';
+import '../modelos/carrito_model.dart';
 import '../modelos/producto_model.dart';
 import '../providers/user_provider.dart';
 
@@ -18,10 +20,20 @@ class _TiendaScreenState extends State<TiendaScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedCategoryIndex = 0;
   int _selectedDeliveryOption = 0;
-  int _cartItemCount = 2;
   bool _isLoadingProducts = false;
 
-  final List<String> _categories = ['Todos', 'Biblias', 'Libros', 'Regalos'];
+  /// Carrito real sincronizado con Odoo (GET/POST/PUT/DELETE /store/cart*).
+  CarritoModel _carrito = CarritoModel.vacio;
+  bool _procesandoCarrito = false;
+
+  /// Indica si el catálogo mostrado proviene de Odoo (y no del respaldo local).
+  /// Solo los productos de Odoo pueden enviarse al carrito del servidor.
+  bool _catalogoDesdeOdoo = false;
+
+  int get _cartItemCount => _carrito.cantidadArticulos;
+
+  /// 'Todos' + categorías públicas de Odoo (GET /store/categories).
+  List<String> _categories = ['Todos', 'Biblias', 'Libros', 'Regalos'];
 
   String _getLocalizedCategory(String category, AppLocalizations? l10n) {
     switch (category.toLowerCase()) {
@@ -112,8 +124,18 @@ class _TiendaScreenState extends State<TiendaScreen> {
       setState(() {});
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarProductosOdoo();
+      _sincronizarTienda();
     });
+  }
+
+  /// Sincroniza catálogo, categorías y carrito con Odoo en paralelo.
+  /// Se usa al abrir la pantalla y en el pull-to-refresh.
+  Future<void> _sincronizarTienda() async {
+    await Future.wait([
+      _cargarProductosOdoo(),
+      _cargarCategoriasOdoo(),
+      _cargarCarrito(),
+    ]);
   }
 
   /// Carga los productos reales desde el catálogo de la tienda en Odoo (GET /store/products)
@@ -135,6 +157,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
           _productsList
             ..clear()
             ..addAll(loaded);
+          _catalogoDesdeOdoo = true;
         });
       }
     } catch (e) {
@@ -142,6 +165,575 @@ class _TiendaScreenState extends State<TiendaScreen> {
     } finally {
       if (mounted) setState(() => _isLoadingProducts = false);
     }
+  }
+
+  /// Carga las categorías públicas de la tienda (GET /store/categories)
+  Future<void> _cargarCategoriasOdoo() async {
+    try {
+      final api = context.read<UserProvider>().api;
+      final data = await api.storeCategories();
+      final raw = data['categories'];
+      if (raw is List && raw.isNotEmpty && mounted) {
+        final nombres = raw
+            .whereType<Map<String, dynamic>>()
+            .map((c) => (c['name'] ?? '').toString())
+            .where((n) => n.isNotEmpty)
+            .toList();
+        setState(() {
+          _categories = ['Todos', ...nombres];
+          if (_selectedCategoryIndex >= _categories.length) {
+            _selectedCategoryIndex = 0;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[TIENDA] Categorías locales activas: $e');
+    }
+  }
+
+  /// Obtiene el carrito actual del usuario desde Odoo (GET /store/cart)
+  Future<void> _cargarCarrito() async {
+    try {
+      final api = context.read<UserProvider>().api;
+      final data = await api.cart();
+      if (mounted) {
+        setState(() => _carrito = CarritoModel.fromResponse(data));
+      }
+    } catch (e) {
+      debugPrint('[CARRITO] No se pudo obtener el carrito: $e');
+    }
+  }
+
+  /// Ejecuta una operación de carrito contra Odoo, actualiza el estado con el
+  /// carrito devuelto por el servidor y muestra errores tipados de la API.
+  /// Retorna true si la operación fue exitosa.
+  Future<bool> _operarCarrito(
+    Future<Map<String, dynamic>> Function(AtrioApi api) operacion,
+  ) async {
+    if (_procesandoCarrito) return false;
+    final api = context.read<UserProvider>().api;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _procesandoCarrito = true);
+    try {
+      final data = await operacion(api);
+      if (!mounted) return false;
+      setState(() => _carrito = CarritoModel.fromResponse(data));
+      return true;
+    } on AtrioApiException catch (e) {
+      debugPrint('[CARRITO] $e');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return false;
+    } catch (e) {
+      debugPrint('[CARRITO] Error inesperado: $e');
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('No se pudo conectar con la tienda. Intenta de nuevo.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return false;
+    } finally {
+      if (mounted) setState(() => _procesandoCarrito = false);
+    }
+  }
+
+  /// Agrega un producto al carrito de Odoo (POST /store/cart/items)
+  Future<void> _agregarAlCarrito(ProductoModel producto) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final productId = int.tryParse(producto.id);
+
+    if (!_catalogoDesdeOdoo || productId == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'El catálogo no está sincronizado con la tienda. Desliza hacia abajo para actualizar.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final ok = await _operarCarrito((api) => api.addToCart(productId));
+    if (ok && mounted) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.productoAgregadoAlCarrito(producto.nombre) ??
+                '¡"${producto.nombre}" agregado al carrito!',
+          ),
+          backgroundColor: const Color(0xFF072B4F),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// Modifica la cantidad de un producto en el carrito (PUT /store/cart/items/:id)
+  Future<void> _modificarCantidad(int productId, int nuevaCantidad) async {
+    if (nuevaCantidad <= 0) {
+      await _eliminarDelCarrito(productId);
+    } else {
+      await _operarCarrito((api) => api.updateCartItem(productId, nuevaCantidad));
+    }
+  }
+
+  /// Elimina un producto del carrito (DELETE /store/cart/items/:id)
+  Future<void> _eliminarDelCarrito(int productId) async {
+    await _operarCarrito((api) => api.removeFromCart(productId));
+  }
+
+  /// Vacía todo el carrito (DELETE /store/cart)
+  Future<void> _vaciarCarrito() async {
+    await _operarCarrito((api) => api.clearCart());
+  }
+
+  /// Confirma el pedido en Odoo (POST /store/checkout)
+  Future<void> _confirmarPedido(BuildContext modalContext) async {
+    if (_carrito.estaVacio) return;
+    final api = context.read<UserProvider>().api;
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmar = await showDialog<bool>(
+      context: modalContext,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirmar Pedido'),
+        content: Text(
+          '¿Deseas confirmar la compra de ${_carrito.cantidadArticulos} artículo(s) por un total de ${_carrito.formatear(_carrito.total)}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF072B4F),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirmar Pedido'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    setState(() => _procesandoCarrito = true);
+    try {
+      final res = await api.checkout({
+        'delivery_method': _selectedDeliveryOption == 0 ? 'delivery' : 'pickup',
+      });
+
+      if (modalContext.mounted) {
+        Navigator.pop(modalContext);
+      }
+
+      setState(() {
+        _carrito = CarritoModel.vacio;
+      });
+
+      if (!mounted) return;
+
+      final order = res['order'] as Map<String, dynamic>?;
+      final ref = order?['name'] ?? res['reference'] ?? 'S00000';
+      final estado = order?['status_label'] ?? 'Pago en verificación';
+      final total = order?['amount_total'] != null
+          ? 'RD\$${order!['amount_total']}'
+          : _carrito.formatear(_carrito.total);
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          icon: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 56),
+          title: Text(
+            '¡Pedido $ref Registrado!',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Tu orden se ha generado en Odoo exitosamente.'),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAF7F0),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE5E5E5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('• Referencia Odoo: $ref', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('• Estado: $estado'),
+                    const SizedBox(height: 4),
+                    Text('• Total: $total', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF072B4F))),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Modalidad: ${_selectedDeliveryOption == 0 ? "Envío a domicilio" : "Retiro en iglesia"}',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.',
+                style: TextStyle(fontSize: 12, color: Colors.black87),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF072B4F),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
+    } on AtrioApiException catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error al procesar el pedido: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _procesandoCarrito = false);
+    }
+  }
+
+  /// Despliega el modal interactivo del Carrito de Compras
+  void _mostrarCarritoModal(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              constraints: BoxConstraints(maxHeight: usableHeight * 0.85),
+              decoration: BoxDecoration(
+                color: blancoFondo,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(screenWidth * 0.06),
+                  topRight: Radius.circular(screenWidth * 0.06),
+                ),
+              ),
+              padding: EdgeInsets.only(
+                left: screenWidth * 0.05,
+                right: screenWidth * 0.05,
+                top: usableHeight * 0.018,
+                bottom: MediaQuery.of(modalContext).padding.bottom + usableHeight * 0.02,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Barra superior
+                  Center(
+                    child: Container(
+                      width: screenWidth * 0.12,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: usableHeight * 0.015),
+
+                  // Cabecera: Título e ícono
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.shopping_cart_rounded, color: azulFondo, size: screenWidth * 0.06),
+                          SizedBox(width: screenWidth * 0.02),
+                          Text(
+                            'Carrito de Compras',
+                            style: TextStyle(
+                              color: azulFondo,
+                              fontSize: screenWidth * 0.046,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (!_carrito.estaVacio)
+                        TextButton.icon(
+                          onPressed: _procesandoCarrito
+                              ? null
+                              : () async {
+                                  await _vaciarCarrito();
+                                  setModalState(() {});
+                                },
+                          icon: const Icon(Icons.delete_sweep_outlined, size: 18, color: Colors.red),
+                          label: const Text(
+                            'Vaciar',
+                            style: TextStyle(color: Colors.red, fontSize: 13),
+                          ),
+                        )
+                      else
+                        IconButton(
+                          onPressed: () => Navigator.pop(modalContext),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                    ],
+                  ),
+                  const Divider(),
+
+                  if (_procesandoCarrito)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: LinearProgressIndicator(color: amarilloOro, backgroundColor: Colors.transparent),
+                    ),
+
+                  // Si el carrito está vacío
+                  if (_carrito.estaVacio) ...[
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: usableHeight * 0.06),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.remove_shopping_cart_outlined,
+                              size: screenWidth * 0.18,
+                              color: Colors.grey.shade400,
+                            ),
+                            SizedBox(height: usableHeight * 0.015),
+                            Text(
+                              'Tu carrito está vacío',
+                              style: TextStyle(
+                                color: azulFondo,
+                                fontSize: screenWidth * 0.042,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.008),
+                            Text(
+                              'Explora nuestro catálogo y agrega tus productos favoritos.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: screenWidth * 0.032,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // Lista de artículos
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _carrito.lineas.length,
+                        separatorBuilder: (_, index) => const Divider(height: 1),
+                        itemBuilder: (ctx, idx) {
+                          final item = _carrito.lineas[idx];
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: usableHeight * 0.01),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: screenWidth * 0.12,
+                                  height: screenWidth * 0.12,
+                                  decoration: BoxDecoration(
+                                    color: azulFondo.withValues(alpha: 0.07),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.shopping_bag_outlined,
+                                    color: azulFondo,
+                                    size: screenWidth * 0.06,
+                                  ),
+                                ),
+                                SizedBox(width: screenWidth * 0.03),
+
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.nombre,
+                                        style: TextStyle(
+                                          color: azulFondo,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: screenWidth * 0.034,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: usableHeight * 0.003),
+                                      Text(
+                                        '${_carrito.simboloMoneda}${item.precioUnitario.toStringAsFixed(0)} c/u',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: screenWidth * 0.028,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                Row(
+                                  children: [
+                                    InkWell(
+                                      onTap: _procesandoCarrito
+                                          ? null
+                                          : () async {
+                                              await _modificarCantidad(
+                                                item.productoId,
+                                                item.cantidad - 1,
+                                              );
+                                              setModalState(() {});
+                                            },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade200,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.remove, size: 16),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      child: Text(
+                                        '${item.cantidad}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: screenWidth * 0.034,
+                                        ),
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: _procesandoCarrito
+                                          ? null
+                                          : () async {
+                                              await _modificarCantidad(
+                                                item.productoId,
+                                                item.cantidad + 1,
+                                              );
+                                              setModalState(() {});
+                                            },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: amarilloOro,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.add, size: 16, color: Colors.white),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(width: screenWidth * 0.02),
+
+                                Text(
+                                  '${_carrito.simboloMoneda}${item.subtotal.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.034,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const Divider(),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total a pagar:',
+                          style: TextStyle(
+                            color: azulFondo,
+                            fontSize: screenWidth * 0.04,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _carrito.formatear(_carrito.total),
+                          style: TextStyle(
+                            color: amarilloOro,
+                            fontSize: screenWidth * 0.048,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: usableHeight * 0.015),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: usableHeight * 0.052,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: amarilloOro,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                          ),
+                        ),
+                        onPressed: _procesandoCarrito ? null : () => _confirmarPedido(modalContext),
+                        icon: const Icon(Icons.check_circle_outline_rounded),
+                        label: Text(
+                          'Confirmar Pedido · ${_carrito.formatear(_carrito.total)}',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.036,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -206,20 +798,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n?.carritoCantidadProductos(
-                                        _cartItemCount.toString(),
-                                      ) ??
-                                      'Tienes $_cartItemCount productos en tu carrito de compras',
-                                ),
-                                backgroundColor: azulFondo,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
+                          onTap: () => _mostrarCarritoModal(context),
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -717,6 +1296,45 @@ class _TiendaScreenState extends State<TiendaScreen> {
     );
   }
 
+  IconData _getCategoryIcon(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'biblias':
+        return Icons.menu_book_rounded;
+      case 'libros':
+        return Icons.auto_stories_rounded;
+      case 'música':
+      case 'musica':
+        return Icons.headphones_rounded;
+      case 'artículos de fe':
+      case 'articulos de fe':
+        return Icons.church_rounded;
+      case 'regalos':
+        return Icons.card_giftcard_rounded;
+      case 'ropa y accesorios':
+        return Icons.checkroom_rounded;
+      case 'papelería':
+      case 'papeleria':
+        return Icons.edit_note_rounded;
+      case 'paquetes':
+        return Icons.inventory_2_rounded;
+      default:
+        return Icons.shopping_bag_outlined;
+    }
+  }
+
+  Widget _buildFallbackProductIcon(String categoria, double iconSize) {
+    return Container(
+      color: const Color(0xFFF2ECE4),
+      child: Center(
+        child: Icon(
+          _getCategoryIcon(categoria),
+          size: iconSize,
+          color: const Color(0xFF6E5642),
+        ),
+      ),
+    );
+  }
+
   // Componente: Tarjeta de Producto con Fotografía Real y Shimmer
   Widget _buildProductCard({
     required ProductoModel producto,
@@ -757,26 +1375,30 @@ class _TiendaScreenState extends State<TiendaScreen> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      producto.imageUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return _ShimmerPlaceholder(
-                          width: double.infinity,
-                          height: double.infinity,
-                          borderRadius: 0,
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFFF2ECE4),
-                        child: Icon(
-                          Icons.shopping_bag_outlined,
-                          size: screenWidth * 0.12,
-                          color: const Color(0xFF6E5642),
-                        ),
+                    if (producto.imageUrl.isNotEmpty &&
+                        producto.imageUrl.startsWith('http'))
+                      Image.network(
+                        producto.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return _ShimmerPlaceholder(
+                            width: double.infinity,
+                            height: double.infinity,
+                            borderRadius: 0,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildFallbackProductIcon(
+                              producto.categoria,
+                              screenWidth * 0.12,
+                            ),
+                      )
+                    else
+                      _buildFallbackProductIcon(
+                        producto.categoria,
+                        screenWidth * 0.12,
                       ),
-                    ),
                     // Botón flotante de favorito
                     Positioned(
                       top: usableHeight * 0.01,
@@ -970,27 +1592,29 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           borderRadius: BorderRadius.circular(
                             screenWidth * 0.03,
                           ),
-                          child: Image.network(
-                            producto.imageUrl,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return _ShimmerPlaceholder(
-                                width: screenWidth * 0.30,
-                                height: usableHeight * 0.18,
-                                borderRadius: screenWidth * 0.03,
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                                  color: const Color(0xFFF2ECE4),
-                                  child: const Icon(
-                                    Icons.shopping_bag_outlined,
-                                    size: 36,
-                                    color: Color(0xFF6E5642),
-                                  ),
+                          child: (producto.imageUrl.isNotEmpty &&
+                                  producto.imageUrl.startsWith('http'))
+                              ? Image.network(
+                                  producto.imageUrl,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return _ShimmerPlaceholder(
+                                      width: screenWidth * 0.30,
+                                      height: usableHeight * 0.18,
+                                      borderRadius: screenWidth * 0.03,
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildFallbackProductIcon(
+                                        producto.categoria,
+                                        screenWidth * 0.10,
+                                      ),
+                                )
+                              : _buildFallbackProductIcon(
+                                  producto.categoria,
+                                  screenWidth * 0.10,
                                 ),
-                          ),
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.045),
@@ -1127,21 +1751,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       ),
                       onPressed: () {
                         Navigator.pop(modalContext);
-                        setState(() {
-                          _cartItemCount += 1;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              l10n?.productoAgregadoAlCarrito(
-                                    producto.nombre,
-                                  ) ??
-                                  '¡"${producto.nombre}" agregado al carrito!',
-                            ),
-                            backgroundColor: azulFondo,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                        _agregarAlCarrito(producto);
                       },
                       icon: Icon(
                         Icons.add_shopping_cart_rounded,

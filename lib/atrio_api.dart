@@ -67,7 +67,9 @@ class AtrioApi {
 
   /// Asegura que los tokens del almacenamiento seguro hayan sido leídos en memoria antes de cualquier petición.
   Future<void> _ensureStorageLoaded() async {
-    if (!_storageInitialized && (token == null || refreshToken == null) && storageService != null) {
+    if (!_storageInitialized &&
+        (token == null || refreshToken == null) &&
+        storageService != null) {
       await initFromStorage();
     }
   }
@@ -415,16 +417,66 @@ class AtrioApi {
   /// Listar solicitudes propias.
   Future<Map<String, dynamic>> requests() => _send('GET', '/requests');
 
+  /// Normaliza el tipo de solicitud a uno de los 4 valores requeridos por la API de Odoo:
+  /// 'oracion', 'ayuda', 'informacion', 'consejeria'.
+  static String normalizeRequestType(String? input) {
+    if (input == null || input.trim().isEmpty) return 'informacion';
+    final lower = input
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .trim();
+
+    if (lower.contains('oracion') ||
+        lower.contains('rez') ||
+        lower.contains('prayer')) {
+      return 'oracion';
+    }
+    if (lower.contains('consej') ||
+        lower.contains('pastor') ||
+        lower.contains('familiar') ||
+        lower.contains('counsel')) {
+      return 'consejeria';
+    }
+    if (lower.contains('ayuda') ||
+        lower.contains('enferm') ||
+        lower.contains('comunit') ||
+        lower.contains('help') ||
+        lower.contains('social')) {
+      return 'ayuda';
+    }
+    if (lower.contains('info') ||
+        lower.contains('consulta') ||
+        lower.contains('duda') ||
+        lower.contains('otro') ||
+        lower.contains('otra') ||
+        lower.contains('other')) {
+      return 'informacion';
+    }
+
+    const valid = {'oracion', 'ayuda', 'informacion', 'consejeria'};
+    if (valid.contains(lower)) return lower;
+
+    return 'informacion';
+  }
+
   /// Crea una solicitud (pastoral, oración, información, etc.).
   Future<Map<String, dynamic>> createRequest(
     String type,
     String title,
     String message,
-  ) => _send(
-    'POST',
-    '/requests',
-    body: {'type': type, 'title': title, 'message': message},
-  );
+  ) {
+    final normalizedType = normalizeRequestType(type);
+    return _send(
+      'POST',
+      '/requests',
+      body: {'type': normalizedType, 'title': title, 'message': message},
+    );
+  }
 
   // ===========================================================================
   // 7. TIENDA ATRIO

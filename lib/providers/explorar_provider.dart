@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
+import '../data/app_config.dart';
 import '../modelos/iglesia_explorar_model.dart';
 
 /// Modo de exploración
@@ -34,7 +35,7 @@ class _CachedExplorarResult {
 /// Restricción estricta al país actual del usuario (ej. Colombia, República Dominicana, etc.),
 /// búsqueda dual (radio/nacional), paginación de 15 en 15 y mitigación de costos de API.
 class ExplorarProvider extends ChangeNotifier {
-  static const String _googleApiKey = "AIzaSyC7kmlFB-7oS0RX79q84t-e-zlAFI2xDkw";
+  static String get _googleApiKey => AppConfig.googleMapsApiKey;
   static const int itemsPerPage = 15;
 
   static const List<Color> _brandColors = [

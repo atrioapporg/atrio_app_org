@@ -35,6 +35,11 @@ class AppConfig {
     defaultValue: 'org.atrio.app.signin',
   );
 
+  static const String googleMapsApiKey = String.fromEnvironment(
+    'GOOGLE_MAPS_API_KEY',
+    defaultValue: '',
+  );
+
   static const String appEnvironment = String.fromEnvironment(
     'APP_ENVIRONMENT',
     defaultValue: 'development',

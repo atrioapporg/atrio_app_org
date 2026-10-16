@@ -89,6 +89,13 @@ app.*.map.json
 *CREDENCIALES*
 *credenciales*
 *password*
+*secret*
+*SECRET*
+*api_key*
+*API_KEY*
+*INVENTARIO*
+*inventario*
+*.token
 
 # ------------------------------------------------------------------------------
 # 7. IDEs, Editores y Herramientas Locales

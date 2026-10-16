@@ -4,6 +4,24 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+val envProperties = java.util.Properties()
+val envFile = rootProject.file("../.env")
+if (envFile.exists()) {
+    envFile.inputStream().use { envProperties.load(it) }
+}
+
+val mapsApiKey = localProperties.getProperty("MAPS_API_KEY")
+    ?: envProperties.getProperty("GOOGLE_MAPS_API_KEY")
+    ?: System.getenv("MAPS_API_KEY")
+    ?: System.getenv("GOOGLE_MAPS_API_KEY")
+    ?: ""
+
 android {
     namespace = "com.example.atrio"
     compileSdk = flutter.compileSdkVersion
@@ -27,6 +45,9 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Inyección segura de la API Key de Google Maps para AndroidManifest.xml
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {

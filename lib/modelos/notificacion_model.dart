@@ -53,21 +53,21 @@ class NotificacionModel {
     );
   }
 
-  /// Deserialización flexible preparada para Odoo 19 (mail.message / church.announcement)
+  /// Deserialización flexible adaptada a la API de Odoo 19 (/notifications y atrio.notification)
   factory NotificacionModel.fromJson(Map<String, dynamic> json) =>
       NotificacionModel(
         id: json['id']?.toString() ?? '',
-        titulo: json['subject'] ?? json['titulo'] ?? json['name'] ?? '',
-        resumen: json['summary'] ?? json['resumen'] ?? '',
-        cuerpo: json['body'] ?? json['cuerpo'] ?? json['description'] ?? '',
-        fecha: json['date'] ?? json['fecha'] ?? '',
+        titulo: json['title'] ?? json['subject'] ?? json['titulo'] ?? json['name'] ?? '',
+        resumen: json['summary'] ?? json['message'] ?? json['resumen'] ?? '',
+        cuerpo: json['message'] ?? json['body'] ?? json['cuerpo'] ?? json['description'] ?? '',
+        fecha: json['send_date'] ?? json['sent_date'] ?? json['date'] ?? json['fecha'] ?? '',
         hora: json['time'] ?? json['hora'] ?? '',
         categoria:
             json['category'] ?? json['categoria'] ?? json['type'] ?? 'General',
-        remitente: json['author'] ?? json['remitente'] ?? 'Iglesia ATRIO',
+        remitente: json['author'] ?? json['church_name'] ?? json['remitente'] ?? 'Iglesia ATRIO',
         leida: json['is_read'] ?? json['leida'] ?? false,
         esUrgente: json['is_urgent'] ?? json['es_urgente'] ?? false,
-        iconCode: json['icon'] ?? 'notifications',
+        iconCode: json['icon_type'] ?? json['icon'] ?? 'notifications',
       );
 
   Map<String, dynamic> toJson() => {

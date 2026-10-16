@@ -20,6 +20,8 @@ pubspec-overrides.yaml
 # ------------------------------------------------------------------------------
 android/.gradle/
 .gradle/
+android/build/
+android/app/build/
 android/captures/
 android/key.properties
 android/local.properties

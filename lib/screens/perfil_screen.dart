@@ -11,6 +11,7 @@ import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import 'ayuda_soporte_screen.dart';
 import 'mis_donaciones_screen.dart';
+import 'mis_pedidos_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'notificaciones_screen.dart';
 import 'seguimiento_solicitud_screen.dart';
@@ -144,6 +145,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         icon: Icons.favorite_border_rounded,
                         label: l10n?.misDonaciones ?? 'Mis donaciones',
                         route: MisDonacionesScreen.routeName,
+                      ),
+                      _MenuItemData(
+                        icon: Icons.receipt_long_outlined,
+                        label: l10n?.misPedidos ?? 'Mis pedidos',
+                        route: MisPedidosScreen.routeName,
                       ),
                       _MenuItemData(
                         icon: Icons.menu_book_outlined,

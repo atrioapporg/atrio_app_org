@@ -64,6 +64,7 @@ import 'package:atrio/screens/lectura_capitulo_screen.dart';
 import 'package:atrio/screens/detalle_libro_biblia_screen.dart';
 import 'package:atrio/screens/libros_de_biblia.dart';
 import 'package:atrio/screens/tienda_screen.dart';
+import 'package:atrio/screens/mis_pedidos_screen.dart';
 import 'package:atrio/screens/libros_screen.dart';
 import 'package:atrio/screens/videos_transmisiones_screen.dart';
 
@@ -210,6 +211,7 @@ class MyApp extends StatelessWidget {
     DetalleLibroBibliaScreen.routeName: (_) => const DetalleLibroBibliaScreen(),
     LibrosDeBibliaScreen.routeName: (_) => const LibrosDeBibliaScreen(),
     TiendaScreen.routeName: (_) => const TiendaScreen(),
+    MisPedidosScreen.routeName: (_) => const MisPedidosScreen(),
     LibrosScreen.routeName: (_) => const LibrosScreen(),
     // EmisorasCristianasScreen
     EmisorasCristianasScreen.routeName: (_) => const EmisorasCristianasScreen(),

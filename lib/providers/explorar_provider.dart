@@ -62,6 +62,23 @@ class ExplorarProvider extends ChangeNotifier {
     'ES': 'España',
   };
 
+  static const Map<String, String> paisesNombresEn = {
+    'DO': 'Dominican Republic',
+    'CO': 'Colombia',
+    'MX': 'Mexico',
+    'VE': 'Venezuela',
+    'US': 'United States',
+    'PR': 'Puerto Rico',
+    'GT': 'Guatemala',
+    'CR': 'Costa Rica',
+    'PA': 'Panama',
+    'AR': 'Argentina',
+    'CL': 'Chile',
+    'PE': 'Peru',
+    'EC': 'Ecuador',
+    'ES': 'Spain',
+  };
+
   static const Map<String, String> paisesBanderas = {
     'DO': '🇩🇴',
     'CO': '🇨🇴',
@@ -106,8 +123,19 @@ class ExplorarProvider extends ChangeNotifier {
   ModoExploracion get modo => _modo;
   double get radioKm => _radioKm;
   String get paisCodigo => _paisCodigo;
-  String get paisNombre =>
-      paisesNombres[_paisCodigo.toUpperCase()] ?? 'República Dominicana';
+  String get paisNombre => getPaisNombre();
+
+  /// Obtiene el nombre del país localizado según el código de idioma ('es' o 'en')
+  String getPaisNombre([String? codigoIdioma]) {
+    final codigo = _paisCodigo.toUpperCase();
+    if (codigoIdioma != null && codigoIdioma.toLowerCase().startsWith('en')) {
+      return paisesNombresEn[codigo] ??
+          paisesNombres[codigo] ??
+          'Dominican Republic';
+    }
+    return paisesNombres[codigo] ?? 'República Dominicana';
+  }
+
   String get paisBandera => paisesBanderas[_paisCodigo.toUpperCase()] ?? '🌎';
   int get filtroDenominacionIndex => _filtroDenominacionIndex;
   String get textoBusqueda => _textoBusqueda;
@@ -201,6 +229,50 @@ class ExplorarProvider extends ChangeNotifier {
     buscar(ignorarDebounce: true);
   }
 
+  /// Normaliza texto para búsqueda insensible a mayúsculas, minúsculas y tildes
+  static String normalizarTexto(String texto) {
+    return texto
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ü', 'u')
+        .replaceAll('ñ', 'n')
+        .trim();
+  }
+
+  /// Verifica si el nombre de la iglesia contiene estrictamente el término buscado
+  static bool contieneTerminoEnNombre(
+    String nombreIglesia,
+    String terminoBuscado,
+  ) {
+    final termino = normalizarTexto(terminoBuscado);
+    if (termino.isEmpty) return true;
+
+    final nombre = normalizarTexto(nombreIglesia);
+    if (nombre.contains(termino)) return true;
+
+    // Si el término contiene varias palabras (ej. "monte sion"), verificar que todas estén presentes
+    final palabras =
+        termino.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (palabras.length > 1 && palabras.every((p) => nombre.contains(p))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Restablece la búsqueda al estado base: borra término, asegura modo radio
+  /// y carga todas las iglesias en el rango de acción del usuario (10, 25 o 50 km).
+  void limpiarBusqueda() {
+    _debounceTimer?.cancel();
+    _textoBusqueda = '';
+    _modo = ModoExploracion.radio;
+    buscar(ignorarDebounce: true);
+  }
+
   /// Maneja el cambio de texto con Debounce de 500 ms y longitud mínima de 3 caracteres
   void onTextoBusquedaCambiado(String nuevoTexto) {
     _textoBusqueda = nuevoTexto;
@@ -208,8 +280,9 @@ class ExplorarProvider extends ChangeNotifier {
 
     final textoLimpio = nuevoTexto.trim();
 
+    // Si el usuario borra o limpia la barra de búsqueda, restablecer al rango de acción normal
     if (textoLimpio.isEmpty) {
-      buscar(ignorarDebounce: true);
+      limpiarBusqueda();
       return;
     }
 
@@ -223,11 +296,16 @@ class ExplorarProvider extends ChangeNotifier {
     });
   }
 
-  /// Ejecuta la búsqueda de inmediato
+  /// Ejecuta la búsqueda de inmediato con el término dado o restablece si está vacío
   void ejecutarBusquedaInmediata(String texto) {
     _debounceTimer?.cancel();
-    _textoBusqueda = texto;
-    buscar(ignorarDebounce: true);
+    final textoLimpio = texto.trim();
+    if (textoLimpio.isEmpty) {
+      limpiarBusqueda();
+    } else {
+      _textoBusqueda = texto;
+      buscar(ignorarDebounce: true);
+    }
   }
 
   /// Resuelve la clave de consulta para la API de Google Places, vinculándola estrictamente al país
@@ -271,13 +349,14 @@ class ExplorarProvider extends ChangeNotifier {
       partes.add(paisNombre);
       return partes.join(' ');
     } else {
-      // Modo Radio: Búsqueda local reforzada con el país actual
-      final partes = <String>['iglesia'];
-      if (terminoDenominacion.isNotEmpty) {
-        partes.add(terminoDenominacion);
-      }
+      // Modo Radio: Búsqueda local reforzada con el país actual (priorizando el término de búsqueda)
+      final partes = <String>[];
       if (texto.isNotEmpty) {
         partes.add(texto);
+      }
+      partes.add('iglesia');
+      if (terminoDenominacion.isNotEmpty) {
+        partes.add(terminoDenominacion);
       }
       partes.add(paisNombre);
       return partes.join(' ');
@@ -510,6 +589,7 @@ class ExplorarProvider extends ChangeNotifier {
 
       final List<IglesiaExplorarModel> iglesiasObtenidas = [];
       int colorIdx = 0;
+      final String terminoFiltro = _textoBusqueda.trim();
 
       for (var place in rawPlaces) {
         final formattedAddress = place['formattedAddress'] as String? ?? '';
@@ -524,6 +604,14 @@ class ExplorarProvider extends ChangeNotifier {
           _currentPosition,
           _brandColors[colorIdx % _brandColors.length],
         );
+
+        // FILTRO ESTRICTO POR NOMBRE:
+        // Si el usuario especificó un término de búsqueda (ej. "lima"),
+        // deben aparecer única y exclusivamente las iglesias que contengan dicho término en su nombre.
+        if (terminoFiltro.isNotEmpty &&
+            !contieneTerminoEnNombre(iglesia.nombre, terminoFiltro)) {
+          continue;
+        }
 
         // En modo radio, verificar además que no supere el radio seleccionado en km (+ 1.5 km de tolerancia)
         if (_modo == ModoExploracion.radio) {
@@ -659,6 +747,7 @@ class ExplorarProvider extends ChangeNotifier {
 
           int colorIdx = _bufferResultados.length;
           final List<IglesiaExplorarModel> nuevasIglesias = [];
+          final String terminoFiltro = _textoBusqueda.trim();
 
           for (var place in nuevos) {
             final formattedAddress = place['formattedAddress'] as String? ?? '';
@@ -673,6 +762,12 @@ class ExplorarProvider extends ChangeNotifier {
               _currentPosition,
               _brandColors[colorIdx % _brandColors.length],
             );
+
+            // FILTRO ESTRICTO POR NOMBRE
+            if (terminoFiltro.isNotEmpty &&
+                !contieneTerminoEnNombre(iglesia.nombre, terminoFiltro)) {
+              continue;
+            }
 
             if (_modo == ModoExploracion.radio) {
               if (iglesia.distanciaKm <= _radioKm) {

@@ -1,7 +1,7 @@
 name: atrio
 description: "Vive tu Fe en comunidad"
 publish_to: "none"
-version: 0.1.0+10
+version: 0.1.0+11
 
 environment:
   sdk: ^3.13.0
@@ -37,6 +37,7 @@ dependencies:
   csv: ^8.0.0
   upgrader: ^13.5.0
   flutter_secure_storage: ^10.3.4
+  image_picker: ^1.2.4
 
 dev_dependencies:
   flutter_test:

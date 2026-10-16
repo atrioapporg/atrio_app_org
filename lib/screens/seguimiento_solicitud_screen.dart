@@ -65,7 +65,8 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
             } else if (state == 'in_progress' ||
                 state == 'scheduled' ||
                 state == 'proceso' ||
-                state == 'en_proceso') {
+                state == 'en_proceso' ||
+                state == 'en_progreso') {
               statusColor = const Color(0xFFE5A023);
               statusText = 'En proceso';
             } else if (state == 'cancelled' ||

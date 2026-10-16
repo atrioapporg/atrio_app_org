@@ -10,8 +10,10 @@ import 'package:upgrader/upgrader.dart';
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/anuncio_model.dart';
+import '../modelos/post_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
+import '../providers/user_provider.dart';
 import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
 import 'explorar_screen.dart';
@@ -94,6 +96,11 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   Timer? _anunciosTimer;
   late final PageController _anunciosPageController;
 
+  // Estado de publicaciones de la iglesia (Odoo 19 GET /posts)
+  List<PostModel> _posts = [];
+  bool _cargandoPosts = false;
+  int _notificacionesSinLeer = 0;
+
   // Upgrader para notificaciones de actualización con estilo Cupertino e i18n
   late final AtrioUpgraderMessages _upgraderMessages;
   late final Upgrader _upgrader;
@@ -109,7 +116,46 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       durationUntilAlertAgain: const Duration(days: 1),
     );
     _cargarAnuncios();
+    _cargarPosts();
+    _cargarNotificacionesContador();
     _cargarDatosPerfil();
+  }
+
+  Future<void> _cargarPosts() async {
+    if (mounted) setState(() => _cargandoPosts = true);
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final res = await userProvider.api.posts(limit: 10);
+      final listRaw = res['posts'] as List? ?? [];
+      final parsed = listRaw
+          .map((e) => PostModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      if (mounted) {
+        setState(() {
+          _posts = parsed;
+          _cargandoPosts = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _cargandoPosts = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _cargarNotificacionesContador() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final res = await userProvider.api.notifications();
+      final listRaw = res['notifications'] as List? ?? [];
+      if (mounted) {
+        setState(() {
+          _notificacionesSinLeer = listRaw.length;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _cargarAnuncios() async {
@@ -458,10 +504,10 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                 minWidth: screenWidth * 0.04,
                                 minHeight: screenWidth * 0.04,
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
-                                  '3',
-                                  style: TextStyle(
+                                  '${_notificacionesSinLeer > 0 ? _notificacionesSinLeer : 3}',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -602,48 +648,71 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 topLeft: Radius.circular(screenWidth * 0.08),
                 topRight: Radius.circular(screenWidth * 0.08),
               ),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.0210,
-                  vertical: usableHeight * 0.012,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Consumer<AjustesProvider>(
-                      builder: (context, ajustesProv, _) => HeroBannerCard(
-                        heightFactor: 0.195,
-                        duracionTransicionSegundos:
-                            ajustesProv.tiempoTransicionBannerSegundos,
+              child: RefreshIndicator(
+                color: amarilloOro,
+                backgroundColor: Colors.white,
+                onRefresh: () async {
+                  await Future.wait([
+                    _cargarAnuncios(),
+                    _cargarPosts(),
+                    _cargarNotificacionesContador(),
+                    _cargarDatosPerfil(),
+                  ]);
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.0210,
+                    vertical: usableHeight * 0.012,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Consumer<AjustesProvider>(
+                        builder: (context, ajustesProv, _) => HeroBannerCard(
+                          heightFactor: 0.195,
+                          duracionTransicionSegundos:
+                              ajustesProv.tiempoTransicionBannerSegundos,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: usableHeight * 0.015),
-                    _buildNoticeBar(
-                      screenWidth: screenWidth,
-                      usableHeight: usableHeight,
-                      azulFondo: azulFondo,
-                      l10n: l10n,
-                    ),
-                    SizedBox(height: usableHeight * 0.012),
-                    _buildActionGrid(
-                      screenWidth,
-                      usableHeight,
-                      azulFondo,
-                      grisBorde,
-                      l10n,
-                    ),
-                    SizedBox(height: usableHeight * 0.02),
-                    _buildAnnouncementsSection(
-                      screenWidth,
-                      usableHeight,
-                      azulFondo,
-                      amarilloOro,
-                      grisBorde,
-                      l10n,
-                    ),
-                    SizedBox(height: usableHeight * 0.02),
-                  ],
+                      SizedBox(height: usableHeight * 0.015),
+                      _buildNoticeBar(
+                        screenWidth: screenWidth,
+                        usableHeight: usableHeight,
+                        azulFondo: azulFondo,
+                        l10n: l10n,
+                      ),
+                      SizedBox(height: usableHeight * 0.012),
+                      _buildActionGrid(
+                        screenWidth,
+                        usableHeight,
+                        azulFondo,
+                        grisBorde,
+                        l10n,
+                      ),
+                      SizedBox(height: usableHeight * 0.02),
+                      _buildAnnouncementsSection(
+                        screenWidth,
+                        usableHeight,
+                        azulFondo,
+                        amarilloOro,
+                        grisBorde,
+                        l10n,
+                      ),
+                      SizedBox(height: usableHeight * 0.02),
+                      _buildPostsSection(
+                        screenWidth,
+                        usableHeight,
+                        azulFondo,
+                        amarilloOro,
+                        grisBorde,
+                        l10n,
+                      ),
+                      SizedBox(height: usableHeight * 0.03),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1429,6 +1498,437 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPostsSection(
+    double screenWidth,
+    double usableHeight,
+    Color azulFondo,
+    Color amarilloOro,
+    Color grisBorde,
+    AppLocalizations? l10n,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Encabezado de la sección
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.018),
+                    decoration: BoxDecoration(
+                      color: azulFondo.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.newspaper_rounded,
+                      color: azulFondo,
+                      size: screenWidth * 0.05,
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.025),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n?.publicacionesIglesia ?? 'Publicaciones de la iglesia',
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.042,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        l10n?.novedadesComunidad ??
+                            'Novedades y noticias de tu comunidad',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: screenWidth * 0.028,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (_posts.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: amarilloOro.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_posts.length}',
+                    style: TextStyle(
+                      color: const Color(0xFF9E6500),
+                      fontSize: screenWidth * 0.03,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(height: usableHeight * 0.015),
+
+        // Contenido de las publicaciones
+        if (_cargandoPosts && _posts.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: usableHeight * 0.03),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.035),
+              border: Border.all(color: grisBorde),
+            ),
+            child: Column(
+              children: [
+                CircularProgressIndicator(color: amarilloOro),
+                SizedBox(height: usableHeight * 0.015),
+                Text(
+                  l10n?.cargandoPublicaciones ?? 'Cargando publicaciones...',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: screenWidth * 0.034,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (_posts.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.04,
+              vertical: usableHeight * 0.025,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.035),
+              border: Border.all(color: grisBorde),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.article_outlined,
+                  color: Colors.grey.shade400,
+                  size: screenWidth * 0.08,
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                Expanded(
+                  child: Text(
+                    l10n?.sinPublicacionesRecientes ??
+                        'No hay publicaciones recientes de tu comunidad.',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: screenWidth * 0.034,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _posts.length,
+            separatorBuilder: (context, index) =>
+                SizedBox(height: usableHeight * 0.014),
+            itemBuilder: (context, index) {
+              final post = _posts[index];
+              return _buildPostCardItem(
+                post: post,
+                screenWidth: screenWidth,
+                usableHeight: usableHeight,
+                azulFondo: azulFondo,
+                amarilloOro: amarilloOro,
+                grisBorde: grisBorde,
+                l10n: l10n,
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPostCardItem({
+    required PostModel post,
+    required double screenWidth,
+    required double usableHeight,
+    required Color azulFondo,
+    required Color amarilloOro,
+    required Color grisBorde,
+    required AppLocalizations? l10n,
+  }) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final String? fullImageUrl = post.imageUrl.isNotEmpty
+        ? userProvider.api.imageUrl(post.imageUrl)
+        : null;
+
+    return GestureDetector(
+      onTap: () => _mostrarDetallePublicacion(context, post, l10n, fullImageUrl),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          border: Border.all(color: grisBorde),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (fullImageUrl != null)
+              SizedBox(
+                height: usableHeight * 0.16,
+                width: double.infinity,
+                child: Image.network(
+                  fullImageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: azulFondo.withValues(alpha: 0.08),
+                    child: Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: azulFondo.withValues(alpha: 0.4),
+                        size: screenWidth * 0.1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.all(screenWidth * 0.035),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0055A5).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          post.audience == 'todos' ? 'Comunidad' : post.audience,
+                          style: TextStyle(
+                            color: const Color(0xFF0055A5),
+                            fontSize: screenWidth * 0.026,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (post.publishDate.isNotEmpty)
+                        Text(
+                          post.publishDate.split('T').first,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: screenWidth * 0.028,
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: usableHeight * 0.008),
+                  Text(
+                    post.title,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.040,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (post.plainContent.isNotEmpty) ...[
+                    SizedBox(height: usableHeight * 0.005),
+                    Text(
+                      post.plainContent,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: screenWidth * 0.032,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  SizedBox(height: usableHeight * 0.01),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        l10n?.verPublicacion ?? 'Ver publicación',
+                        style: TextStyle(
+                          color: amarilloOro,
+                          fontSize: screenWidth * 0.032,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.01),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: amarilloOro,
+                        size: screenWidth * 0.036,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarDetallePublicacion(
+    BuildContext context,
+    PostModel post,
+    AppLocalizations? l10n,
+    String? fullImageUrl,
+  ) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    const Color azulFondo = Color(0xFF072B4F);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
+        ),
+      ),
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(maxHeight: usableHeight * 0.85),
+          padding: EdgeInsets.fromLTRB(
+            screenWidth * 0.05,
+            usableHeight * 0.02,
+            screenWidth * 0.05,
+            usableHeight * 0.02 + safeAreaBottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (fullImageUrl != null) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.035,
+                          ),
+                          child: Image.network(
+                            fullImageUrl,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                        SizedBox(height: usableHeight * 0.02),
+                      ],
+                      if (post.publishDate.isNotEmpty)
+                        Text(
+                          post.publishDate.split('T').first,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: screenWidth * 0.030,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      SizedBox(height: usableHeight * 0.005),
+                      Text(
+                        post.title,
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.052,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Divider(height: usableHeight * 0.03),
+                      Text(
+                        post.plainContent,
+                        style: TextStyle(
+                          color: Colors.grey.shade800,
+                          fontSize: screenWidth * 0.038,
+                          height: 1.5,
+                        ),
+                      ),
+                      SizedBox(height: usableHeight * 0.03),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: double.infinity,
+                height: usableHeight * 0.056,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azulFondo,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        screenWidth * 0.03,
+                      ),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    l10n?.cerrarPublicacion ?? 'Cerrar',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

@@ -4121,6 +4121,480 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Búsqueda exclusiva en: {pais}'**
   String busquedaExclusivaEn(String pais);
+
+  /// No description provided for @misPedidos.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis pedidos'**
+  String get misPedidos;
+
+  /// No description provided for @historialComprasTienda.
+  ///
+  /// In es, this message translates to:
+  /// **'Historial de compras en la Tienda Atrio'**
+  String get historialComprasTienda;
+
+  /// No description provided for @pedidosActivos.
+  ///
+  /// In es, this message translates to:
+  /// **'Activos'**
+  String get pedidosActivos;
+
+  /// Pestaña de pedidos activos con conteo
+  ///
+  /// In es, this message translates to:
+  /// **'Activos ({count})'**
+  String pedidosActivosConConteo(int count);
+
+  /// No description provided for @pedidosHistorial.
+  ///
+  /// In es, this message translates to:
+  /// **'Historial'**
+  String get pedidosHistorial;
+
+  /// Pestaña de historial de pedidos con conteo
+  ///
+  /// In es, this message translates to:
+  /// **'Historial ({count})'**
+  String pedidosHistorialConConteo(int count);
+
+  /// No description provided for @explorarTienda.
+  ///
+  /// In es, this message translates to:
+  /// **'Explorar Tienda'**
+  String get explorarTienda;
+
+  /// No description provided for @noTienesPedidosActivos.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes pedidos activos'**
+  String get noTienesPedidosActivos;
+
+  /// No description provided for @noTienesPedidosAnteriores.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes pedidos anteriores'**
+  String get noTienesPedidosAnteriores;
+
+  /// No description provided for @pedidosActivosDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.'**
+  String get pedidosActivosDesc;
+
+  /// No description provided for @pedidosAnterioresDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuando tus pedidos sean completados o entregados, podrás consultarlos en este historial.'**
+  String get pedidosAnterioresDesc;
+
+  /// Título de tarjeta de pedido con su número
+  ///
+  /// In es, this message translates to:
+  /// **'Pedido {nombre}'**
+  String pedidoItemTitulo(String nombre);
+
+  /// No description provided for @detalleDeOrden.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle de Orden'**
+  String get detalleDeOrden;
+
+  /// No description provided for @referenciaOdooColon.
+  ///
+  /// In es, this message translates to:
+  /// **'Referencia Odoo:'**
+  String get referenciaOdooColon;
+
+  /// No description provided for @fechaDelPedido.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha del pedido:'**
+  String get fechaDelPedido;
+
+  /// No description provided for @totalAPagar.
+  ///
+  /// In es, this message translates to:
+  /// **'Total a pagar:'**
+  String get totalAPagar;
+
+  /// No description provided for @articulosIncluidos.
+  ///
+  /// In es, this message translates to:
+  /// **'Artículos incluidos:'**
+  String get articulosIncluidos;
+
+  /// Cantidad de unidades de un producto
+  ///
+  /// In es, this message translates to:
+  /// **'{cantidad} ud(s).'**
+  String unidadesProducto(int cantidad);
+
+  /// No description provided for @verMisPedidos.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver Mis Pedidos'**
+  String get verMisPedidos;
+
+  /// No description provided for @estadoPagoEnVerificacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Pago en verificación'**
+  String get estadoPagoEnVerificacion;
+
+  /// No description provided for @estadoPedidoConfirmado.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmado'**
+  String get estadoPedidoConfirmado;
+
+  /// No description provided for @estadoPedidoCompletado.
+  ///
+  /// In es, this message translates to:
+  /// **'Completado'**
+  String get estadoPedidoCompletado;
+
+  /// No description provided for @estadoPedidoCancelado.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelado'**
+  String get estadoPedidoCancelado;
+
+  /// No description provided for @estadoPedidoBorrador.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrador'**
+  String get estadoPedidoBorrador;
+
+  /// No description provided for @estadoPedidoEnviado.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviado'**
+  String get estadoPedidoEnviado;
+
+  /// No description provided for @registroTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro'**
+  String get registroTitulo;
+
+  /// No description provided for @creaTuCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu cuenta'**
+  String get creaTuCuenta;
+
+  /// No description provided for @creaTuCuentaSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Únete a una comunidad para vivir y compartir tu fe.'**
+  String get creaTuCuentaSubtitulo;
+
+  /// No description provided for @escribeTuNombre.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe tu nombre'**
+  String get escribeTuNombre;
+
+  /// No description provided for @numeroTelefonoLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Número de teléfono'**
+  String get numeroTelefonoLabel;
+
+  /// No description provided for @contrasenaLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get contrasenaLabel;
+
+  /// No description provided for @confirmarContrasenaLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar contraseña'**
+  String get confirmarContrasenaLabel;
+
+  /// No description provided for @aceptoLos.
+  ///
+  /// In es, this message translates to:
+  /// **'Acepto los '**
+  String get aceptoLos;
+
+  /// No description provided for @yLa.
+  ///
+  /// In es, this message translates to:
+  /// **' y la '**
+  String get yLa;
+
+  /// No description provided for @crearCuentaBoton.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get crearCuentaBoton;
+
+  /// No description provided for @yaTienesCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Ya tienes una cuenta? '**
+  String get yaTienesCuenta;
+
+  /// No description provided for @iniciarSesionEnlace.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get iniciarSesionEnlace;
+
+  /// No description provided for @errorNombreRequerido.
+  ///
+  /// In es, this message translates to:
+  /// **'Por favor ingresa tu nombre completo.'**
+  String get errorNombreRequerido;
+
+  /// No description provided for @errorCorreoValido.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un correo electrónico válido.'**
+  String get errorCorreoValido;
+
+  /// No description provided for @errorTelefonoRequerido.
+  ///
+  /// In es, this message translates to:
+  /// **'Por favor ingresa tu número de teléfono.'**
+  String get errorTelefonoRequerido;
+
+  /// No description provided for @errorContrasenaMinima.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña debe tener al menos 6 caracteres.'**
+  String get errorContrasenaMinima;
+
+  /// No description provided for @errorContrasenasNoCoinciden.
+  ///
+  /// In es, this message translates to:
+  /// **'Las contraseñas no coinciden.'**
+  String get errorContrasenasNoCoinciden;
+
+  /// No description provided for @errorAceptarTerminos.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes aceptar los Términos de uso y la Política de privacidad.'**
+  String get errorAceptarTerminos;
+
+  /// No description provided for @registroExitosoTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Cuenta Registrada!'**
+  String get registroExitosoTitulo;
+
+  /// No description provided for @registroExitosoMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.'**
+  String get registroExitosoMensaje;
+
+  /// No description provided for @iniciarSesionAhora.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión ahora'**
+  String get iniciarSesionAhora;
+
+  /// No description provided for @comprobanteTransferencia.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprobante de transferencia'**
+  String get comprobanteTransferencia;
+
+  /// No description provided for @adjuntarComprobante.
+  ///
+  /// In es, this message translates to:
+  /// **'Adjuntar comprobante'**
+  String get adjuntarComprobante;
+
+  /// No description provided for @cambiarComprobante.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar comprobante'**
+  String get cambiarComprobante;
+
+  /// No description provided for @comprobanteAdjuntado.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprobante adjuntado con éxito'**
+  String get comprobanteAdjuntado;
+
+  /// No description provided for @subirComprobanteDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Adjunta una foto o captura del comprobante bancario para validar tu aporte rápidamente.'**
+  String get subirComprobanteDesc;
+
+  /// No description provided for @tomarFoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar foto'**
+  String get tomarFoto;
+
+  /// No description provided for @galeria.
+  ///
+  /// In es, this message translates to:
+  /// **'Galería de fotos'**
+  String get galeria;
+
+  /// No description provided for @eliminarComprobante.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar comprobante'**
+  String get eliminarComprobante;
+
+  /// No description provided for @redirigiendoPaypal.
+  ///
+  /// In es, this message translates to:
+  /// **'Redirigiendo a la pasarela segura de PayPal...'**
+  String get redirigiendoPaypal;
+
+  /// No description provided for @donacionPendienteVerificacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu donación ha sido registrada en Odoo y está pendiente de verificación contable.'**
+  String get donacionPendienteVerificacion;
+
+  /// Mensaje de error al procesar la donación
+  ///
+  /// In es, this message translates to:
+  /// **'Ocurrió un error al procesar la donación: {error}'**
+  String errorProcesarDonacion(String error);
+
+  /// No description provided for @publicacionesIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicaciones de la iglesia'**
+  String get publicacionesIglesia;
+
+  /// No description provided for @sinPublicacionesRecientes.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay publicaciones recientes de tu comunidad.'**
+  String get sinPublicacionesRecientes;
+
+  /// No description provided for @verPublicacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver publicación'**
+  String get verPublicacion;
+
+  /// No description provided for @cerrarPublicacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar'**
+  String get cerrarPublicacion;
+
+  /// No description provided for @novedadesComunidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Novedades y noticias de tu comunidad eclesial'**
+  String get novedadesComunidad;
+
+  /// No description provided for @sinNotificaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes notificaciones en este momento'**
+  String get sinNotificaciones;
+
+  /// No description provided for @sinNotificacionesDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí verás los avisos y comunicados que tu iglesia envíe a la congregación.'**
+  String get sinNotificacionesDesc;
+
+  /// No description provided for @cargandoPublicaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando publicaciones...'**
+  String get cargandoPublicaciones;
+
+  /// No description provided for @cargandoNotificaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando notificaciones...'**
+  String get cargandoNotificaciones;
+
+  /// No description provided for @publicidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicidad'**
+  String get publicidad;
+
+  /// No description provided for @verMas.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver más'**
+  String get verMas;
+
+  /// Subtítulo del encabezado para búsqueda nacional
+  ///
+  /// In es, this message translates to:
+  /// **'Búsqueda en todo {pais} {bandera}'**
+  String busquedaEnTodoPaisConBandera(String pais, String bandera);
+
+  /// No description provided for @comunidadesCristianasCercanas.
+  ///
+  /// In es, this message translates to:
+  /// **'Comunidades cristianas cercanas'**
+  String get comunidadesCristianasCercanas;
+
+  /// No description provided for @radioEtiqueta.
+  ///
+  /// In es, this message translates to:
+  /// **'Radio:'**
+  String get radioEtiqueta;
+
+  /// No description provided for @exploraTemplosSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Explora templos, rutas y detalles en vivo'**
+  String get exploraTemplosSubtitulo;
+
+  /// Conteo de elementos mostrados sobre el total
+  ///
+  /// In es, this message translates to:
+  /// **'{mostradas} de {total}'**
+  String conteoResultadosDeTotal(String mostradas, String total);
+
+  /// Indicador de radio en kilometros
+  ///
+  /// In es, this message translates to:
+  /// **'Radio < {km} km'**
+  String radioMenorQueKm(String km);
+
+  /// Mensaje de estado vacío cuando se filtra por término
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron iglesias con \"{termino}\" en su nombre.'**
+  String noSeEncontraronIglesiasConTermino(String termino);
+
+  /// Mensaje de estado vacío en búsqueda por radio
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron iglesias a menos de {km} km en {pais}.'**
+  String noSeEncontraronIglesiasRadioEnPais(String km, String pais);
+
+  /// Mensaje de estado vacío en país
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron iglesias en {pais}.'**
+  String noSeEncontraronIglesiasEnPais(String pais);
+
+  /// No description provided for @noSePudieronCargarIglesias.
+  ///
+  /// In es, this message translates to:
+  /// **'😕 No se pudieron cargar las iglesias.\nRevisa tu conexión a internet e inténtalo de nuevo.'**
+  String get noSePudieronCargarIglesias;
+
+  /// No description provided for @localizandoComunidades.
+  ///
+  /// In es, this message translates to:
+  /// **'Localizando comunidades cristianas...'**
+  String get localizandoComunidades;
 }
 
 class _AppLocalizationsDelegate

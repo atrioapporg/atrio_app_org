@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../modelos/carrito_model.dart';
 import '../modelos/producto_model.dart';
 import '../providers/user_provider.dart';
+import 'mis_pedidos_screen.dart';
 
 class TiendaScreen extends StatefulWidget {
   static const routeName = 'tienda_screen';
@@ -298,6 +299,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     if (_carrito.estaVacio) return;
     final api = context.read<UserProvider>().api;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
 
     final confirmar = await showDialog<bool>(
       context: modalContext,
@@ -395,6 +397,13 @@ class _TiendaScreenState extends State<TiendaScreen> {
             ],
           ),
           actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, MisPedidosScreen.routeName);
+              },
+              child: Text(l10n?.verMisPedidos ?? 'Ver Mis Pedidos'),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF072B4F),
@@ -793,10 +802,29 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: usableHeight * 0.01),
-                    // Fila superior: Carrito con badge dinámico
+                    // Fila superior: Mis Pedidos + Carrito con badge dinámico
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              MisPedidosScreen.routeName,
+                            );
+                          },
+                          child: Tooltip(
+                            message: l10n?.misPedidos ?? 'Mis Pedidos',
+                            child: Padding(
+                              padding: EdgeInsets.only(right: screenWidth * 0.04),
+                              child: Icon(
+                                Icons.receipt_long_outlined,
+                                color: Colors.white,
+                                size: screenWidth * 0.075,
+                              ),
+                            ),
+                          ),
+                        ),
                         GestureDetector(
                           onTap: () => _mostrarCarritoModal(context),
                           child: Stack(

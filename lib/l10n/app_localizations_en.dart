@@ -2239,4 +2239,276 @@ class AppLocalizationsEn extends AppLocalizations {
   String busquedaExclusivaEn(String pais) {
     return 'Exclusive search in: $pais';
   }
+
+  @override
+  String get misPedidos => 'My Orders';
+
+  @override
+  String get historialComprasTienda => 'Purchase history in the Atrio Store';
+
+  @override
+  String get pedidosActivos => 'Active';
+
+  @override
+  String pedidosActivosConConteo(int count) {
+    return 'Active ($count)';
+  }
+
+  @override
+  String get pedidosHistorial => 'History';
+
+  @override
+  String pedidosHistorialConConteo(int count) {
+    return 'History ($count)';
+  }
+
+  @override
+  String get explorarTienda => 'Explore Store';
+
+  @override
+  String get noTienesPedidosActivos => 'You have no active orders';
+
+  @override
+  String get noTienesPedidosAnteriores => 'You have no previous orders';
+
+  @override
+  String get pedidosActivosDesc =>
+      'Your recent purchases from the ATRIO store will appear here so you can track delivery.';
+
+  @override
+  String get pedidosAnterioresDesc =>
+      'When your orders are completed or delivered, you will be able to check them in this history.';
+
+  @override
+  String pedidoItemTitulo(String nombre) {
+    return 'Order $nombre';
+  }
+
+  @override
+  String get detalleDeOrden => 'Order Details';
+
+  @override
+  String get referenciaOdooColon => 'Odoo Reference:';
+
+  @override
+  String get fechaDelPedido => 'Order date:';
+
+  @override
+  String get totalAPagar => 'Total amount:';
+
+  @override
+  String get articulosIncluidos => 'Included items:';
+
+  @override
+  String unidadesProducto(int cantidad) {
+    return '$cantidad unit(s).';
+  }
+
+  @override
+  String get verMisPedidos => 'View My Orders';
+
+  @override
+  String get estadoPagoEnVerificacion => 'Payment in verification';
+
+  @override
+  String get estadoPedidoConfirmado => 'Confirmed';
+
+  @override
+  String get estadoPedidoCompletado => 'Completed';
+
+  @override
+  String get estadoPedidoCancelado => 'Cancelled';
+
+  @override
+  String get estadoPedidoBorrador => 'Draft';
+
+  @override
+  String get estadoPedidoEnviado => 'Sent';
+
+  @override
+  String get registroTitulo => 'Register';
+
+  @override
+  String get creaTuCuenta => 'Create your account';
+
+  @override
+  String get creaTuCuentaSubtitulo =>
+      'Join a community to live and share your faith.';
+
+  @override
+  String get escribeTuNombre => 'Enter your full name';
+
+  @override
+  String get numeroTelefonoLabel => 'Phone number';
+
+  @override
+  String get contrasenaLabel => 'Password';
+
+  @override
+  String get confirmarContrasenaLabel => 'Confirm password';
+
+  @override
+  String get aceptoLos => 'I accept the ';
+
+  @override
+  String get yLa => ' and the ';
+
+  @override
+  String get crearCuentaBoton => 'Create account';
+
+  @override
+  String get yaTienesCuenta => 'Already have an account? ';
+
+  @override
+  String get iniciarSesionEnlace => 'Log in';
+
+  @override
+  String get errorNombreRequerido => 'Please enter your full name.';
+
+  @override
+  String get errorCorreoValido => 'Please enter a valid email address.';
+
+  @override
+  String get errorTelefonoRequerido => 'Please enter your phone number.';
+
+  @override
+  String get errorContrasenaMinima =>
+      'Password must be at least 6 characters long.';
+
+  @override
+  String get errorContrasenasNoCoinciden => 'Passwords do not match.';
+
+  @override
+  String get errorAceptarTerminos =>
+      'You must accept the Terms of Use and Privacy Policy.';
+
+  @override
+  String get registroExitosoTitulo => 'Account Registered!';
+
+  @override
+  String get registroExitosoMensaje =>
+      'Your account has been created successfully in Odoo. The church administrator will validate your membership.';
+
+  @override
+  String get iniciarSesionAhora => 'Log in now';
+
+  @override
+  String get comprobanteTransferencia => 'Transfer receipt';
+
+  @override
+  String get adjuntarComprobante => 'Attach receipt';
+
+  @override
+  String get cambiarComprobante => 'Change receipt';
+
+  @override
+  String get comprobanteAdjuntado => 'Receipt attached successfully';
+
+  @override
+  String get subirComprobanteDesc =>
+      'Attach a photo or screenshot of your bank receipt to validate your contribution quickly.';
+
+  @override
+  String get tomarFoto => 'Take photo';
+
+  @override
+  String get galeria => 'Photo gallery';
+
+  @override
+  String get eliminarComprobante => 'Remove receipt';
+
+  @override
+  String get redirigiendoPaypal => 'Redirecting to secure PayPal gateway...';
+
+  @override
+  String get donacionPendienteVerificacion =>
+      'Your donation has been recorded in Odoo and is pending accounting verification.';
+
+  @override
+  String errorProcesarDonacion(String error) {
+    return 'An error occurred while processing donation: $error';
+  }
+
+  @override
+  String get publicacionesIglesia => 'Church Publications';
+
+  @override
+  String get sinPublicacionesRecientes =>
+      'There are no recent publications from your community.';
+
+  @override
+  String get verPublicacion => 'View publication';
+
+  @override
+  String get cerrarPublicacion => 'Close';
+
+  @override
+  String get novedadesComunidad =>
+      'News and updates from your church community';
+
+  @override
+  String get sinNotificaciones => 'You have no notifications at this time';
+
+  @override
+  String get sinNotificacionesDesc =>
+      'Here you will see announcements sent by your church to the congregation.';
+
+  @override
+  String get cargandoPublicaciones => 'Loading publications...';
+
+  @override
+  String get cargandoNotificaciones => 'Loading notifications...';
+
+  @override
+  String get publicidad => 'Sponsored';
+
+  @override
+  String get verMas => 'See more';
+
+  @override
+  String busquedaEnTodoPaisConBandera(String pais, String bandera) {
+    return 'Search across $pais $bandera';
+  }
+
+  @override
+  String get comunidadesCristianasCercanas => 'Nearby Christian communities';
+
+  @override
+  String get radioEtiqueta => 'Radius:';
+
+  @override
+  String get exploraTemplosSubtitulo =>
+      'Explore churches, routes and live details';
+
+  @override
+  String conteoResultadosDeTotal(String mostradas, String total) {
+    return '$mostradas of $total';
+  }
+
+  @override
+  String radioMenorQueKm(String km) {
+    return 'Radius < $km km';
+  }
+
+  @override
+  String noSeEncontraronIglesiasConTermino(String termino) {
+    return 'No churches found with \"$termino\" in their name.';
+  }
+
+  @override
+  String noSeEncontraronIglesiasRadioEnPais(String km, String pais) {
+    return 'No churches found within $km km in $pais.';
+  }
+
+  @override
+  String noSeEncontraronIglesiasEnPais(String pais) {
+    return 'No churches found in $pais.';
+  }
+
+  @override
+  String get noSePudieronCargarIglesias =>
+      '😕 Could not load churches.\nCheck your internet connection and try again.';
+
+  @override
+  String get localizandoComunidades => 'Locating Christian communities...';
 }

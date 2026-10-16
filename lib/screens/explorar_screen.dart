@@ -44,6 +44,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _searchController.addListener(_onSearchTextChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _inicializarExploracion();
@@ -51,10 +52,17 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     });
   }
 
+  void _onSearchTextChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -361,10 +369,18 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final idioma = Localizations.localeOf(context).languageCode;
+    final paisNombre = provider.getPaisNombre(idioma);
     final esNacional = provider.modo == ModoExploracion.nacional;
     final subtitulo = esNacional
-        ? 'Búsqueda en todo ${provider.paisNombre} ${provider.paisBandera}'
-        : (l10n?.encuentraTuFeEn10Km ?? 'Comunidades cristianas cercanas');
+        ? (l10n?.busquedaEnTodoPaisConBandera(
+                paisNombre,
+                provider.paisBandera,
+              ) ??
+            'Búsqueda en todo $paisNombre ${provider.paisBandera}')
+        : (l10n?.encuentraTuFeEn10Km ??
+            l10n?.comunidadesCristianasCercanas ??
+            'Comunidades cristianas cercanas');
 
     return Container(
       width: screenWidth,
@@ -459,6 +475,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final idioma = Localizations.localeOf(context).languageCode;
+    final paisNombre = provider.getPaisNombre(idioma);
     final esRadio = provider.modo == ModoExploracion.radio;
 
     return Column(
@@ -557,7 +575,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
           Row(
             children: [
               Text(
-                'Radio:',
+                l10n?.radioEtiqueta ?? 'Radio:',
                 style: TextStyle(
                   color: azulFondo,
                   fontSize: screenWidth * 0.033,
@@ -622,7 +640,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 SizedBox(width: screenWidth * 0.02),
                 Expanded(
                   child: Text(
-                    'Búsqueda exclusiva en: ${provider.paisNombre}',
+                    l10n?.busquedaExclusivaEn(paisNombre) ??
+                        'Búsqueda exclusiva en: $paisNombre',
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.032,
@@ -650,7 +669,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                       ),
                       SizedBox(width: screenWidth * 0.01),
                       Text(
-                        'Tu país',
+                        l10n?.tuPais ?? 'Tu país',
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.026,
@@ -675,8 +694,11 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final idioma = Localizations.localeOf(context).languageCode;
+    final paisNombre = provider.getPaisNombre(idioma);
     final hint = provider.modo == ModoExploracion.nacional
-        ? 'Buscar en ${provider.paisNombre} (ej. Altagracia...)'
+        ? (l10n?.buscarEnPaisPlaceholder(paisNombre) ??
+            'Buscar en $paisNombre...')
         : (l10n?.buscarIglesiasPlaceholder ??
             'Ej. Iglesia cristiana, Bautista...');
 
@@ -724,7 +746,12 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   },
                   onSubmitted: (val) {
                     _searchFocusNode.unfocus();
-                    provider.ejecutarBusquedaInmediata(val);
+                    final texto = val.trim();
+                    if (texto.isEmpty) {
+                      provider.limpiarBusqueda();
+                    } else {
+                      provider.ejecutarBusquedaInmediata(texto);
+                    }
                   },
                   style: TextStyle(
                     color: azulFondo,
@@ -750,7 +777,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 GestureDetector(
                   onTap: () {
                     _searchController.clear();
-                    provider.ejecutarBusquedaInmediata('');
+                    _searchFocusNode.unfocus();
+                    provider.limpiarBusqueda();
                   },
                   child: Padding(
                     padding: EdgeInsets.all(screenWidth * 0.01),
@@ -768,9 +796,12 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 child: InkWell(
                   onTap: () {
                     _searchFocusNode.unfocus();
-                    provider.ejecutarBusquedaInmediata(
-                      _searchController.text,
-                    );
+                    final texto = _searchController.text.trim();
+                    if (texto.isEmpty) {
+                      provider.limpiarBusqueda();
+                    } else {
+                      provider.ejecutarBusquedaInmediata(texto);
+                    }
                   },
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                   child: Padding(
@@ -966,7 +997,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     ),
                     SizedBox(height: usableHeight * 0.003),
                     Text(
-                      'Explora templos, rutas y detalles en vivo',
+                      l10n?.exploraTemplosSubtitulo ??
+                          'Explora templos, rutas y detalles en vivo',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: screenWidth * 0.03,
@@ -1002,6 +1034,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final idioma = Localizations.localeOf(context).languageCode;
+    final paisNombre = provider.getPaisNombre(idioma);
     final totalMostradas = provider.iglesiasMostradas.length;
     final totalCargadas = provider.totalResultadosCargados;
 
@@ -1032,7 +1066,11 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 ),
                 child: Text(
                   totalCargadas > totalMostradas
-                      ? '$totalMostradas de $totalCargadas'
+                      ? (l10n?.conteoResultadosDeTotal(
+                              '$totalMostradas',
+                              '$totalCargadas',
+                            ) ??
+                          '$totalMostradas de $totalCargadas')
                       : '$totalMostradas',
                   style: TextStyle(
                     color: azulFondo,
@@ -1047,8 +1085,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         if (!provider.isLoading && totalMostradas > 0)
           Text(
             provider.modo == ModoExploracion.radio
-                ? 'Radio < ${provider.radioKm.toInt()} km'
-                : provider.paisNombre,
+                ? (l10n?.radioMenorQueKm(provider.radioKm.toInt().toString()) ??
+                    'Radio < ${provider.radioKm.toInt()} km')
+                : paisNombre,
             style: TextStyle(
               color: Colors.grey.shade600,
               fontSize: screenWidth * 0.03,
@@ -1308,7 +1347,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
             ),
             SizedBox(height: usableHeight * 0.025),
             Text(
-              l10n?.obteniendoUbicacionEspera ??
+              l10n?.localizandoComunidades ??
+                  l10n?.obteniendoUbicacionEspera ??
                   'Localizando comunidades cristianas...',
               style: TextStyle(
                 color: azulFondo,
@@ -1330,6 +1370,10 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final mensajeError = provider.errorMessage != null
+        ? (l10n?.noSePudieronCargarIglesias ?? provider.errorMessage!)
+        : '';
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(screenWidth * 0.08),
@@ -1350,7 +1394,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
             ),
             SizedBox(height: usableHeight * 0.02),
             Text(
-              provider.errorMessage ?? '',
+              mensajeError,
               style: TextStyle(
                 color: Colors.red.shade700,
                 fontSize: screenWidth * 0.036,
@@ -1398,9 +1442,23 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     double screenWidth,
     double usableHeight,
   ) {
-    final mensaje = provider.modo == ModoExploracion.radio
-        ? 'No se encontraron iglesias a menos de ${provider.radioKm.toInt()} km en ${provider.paisNombre}.'
-        : 'No se encontraron iglesias en ${provider.paisNombre} con ese término.';
+    final idioma = Localizations.localeOf(context).languageCode;
+    final paisNombre = provider.getPaisNombre(idioma);
+    final textoBusqueda = provider.textoBusqueda.trim();
+    final String mensaje;
+    if (textoBusqueda.isNotEmpty) {
+      mensaje = l10n?.noSeEncontraronIglesiasConTermino(textoBusqueda) ??
+          'No se encontraron iglesias con "$textoBusqueda" en su nombre.';
+    } else if (provider.modo == ModoExploracion.radio) {
+      mensaje = l10n?.noSeEncontraronIglesiasRadioEnPais(
+            provider.radioKm.toInt().toString(),
+            paisNombre,
+          ) ??
+          'No se encontraron iglesias a menos de ${provider.radioKm.toInt()} km en $paisNombre.';
+    } else {
+      mensaje = l10n?.noSeEncontraronIglesiasEnPais(paisNombre) ??
+          'No se encontraron iglesias en $paisNombre.';
+    }
 
     return Center(
       child: Padding(
@@ -1446,7 +1504,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               onPressed: () {
                 _searchController.clear();
                 provider.cambiarDenominacion(0);
-                provider.ejecutarBusquedaInmediata('');
+                provider.limpiarBusqueda();
               },
               icon: Icon(Icons.restore_rounded, size: screenWidth * 0.045),
               label: Text(

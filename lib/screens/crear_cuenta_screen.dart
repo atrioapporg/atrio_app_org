@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../atrio_api.dart';
+import '../l10n/app_localizations.dart';
+import '../providers/ajustes_provider.dart';
+import '../providers/iglesia_provider.dart';
+import '../providers/user_provider.dart';
+import 'inicio_atrio_screen.dart';
+import 'inicio_sesion_screen.dart';
+import 'terminos_privacidad_screen.dart';
 
 class CrearCuentaScreen extends StatefulWidget {
   static const routeName = 'crear_cuenta_screen';
   const CrearCuentaScreen({super.key});
 
   @override
-  State createState() => _CrearCuentaScreenState();
+  State<CrearCuentaScreen> createState() => _CrearCuentaScreenState();
 }
 
-class _CrearCuentaScreenState extends State {
+class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _telefonoController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -29,20 +41,316 @@ class _CrearCuentaScreenState extends State {
     super.dispose();
   }
 
+  void _mostrarSelectorIdioma(
+    BuildContext context,
+    AjustesProvider provider,
+    double screenWidth,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final opciones = [
+      {
+        'codigo': 'es',
+        'region': 'DO',
+        'nombre': l10n?.idiomaEspanolLatino ?? 'Español (Latinoamérica)',
+        'bandera': '🇩🇴',
+      },
+      {
+        'codigo': 'en',
+        'region': 'US',
+        'nombre': l10n?.idiomaInglesUSA ?? 'English (United States)',
+        'bandera': '🇺🇸',
+      },
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: screenWidth * 0.04,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.language_rounded,
+                    color: const Color(0xFF072B4F),
+                    size: screenWidth * 0.06,
+                  ),
+                  SizedBox(width: screenWidth * 0.025),
+                  Text(
+                    l10n?.seleccionarIdioma ?? 'Seleccionar idioma',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.044,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF072B4F),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: screenWidth * 0.03),
+              ...opciones.map((op) {
+                final esSeleccionado =
+                    provider.locale.languageCode == op['codigo'];
+                return ListTile(
+                  leading: Text(
+                    op['bandera']!,
+                    style: TextStyle(fontSize: screenWidth * 0.06),
+                  ),
+                  title: Text(
+                    op['nombre']!,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: esSeleccionado
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: esSeleccionado
+                          ? const Color(0xFF072B4F)
+                          : Colors.black87,
+                    ),
+                  ),
+                  trailing: esSeleccionado
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          color: const Color(0xFFE5A023),
+                          size: screenWidth * 0.055,
+                        )
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  ),
+                  tileColor: esSeleccionado
+                      ? const Color(0xFF072B4F).withValues(alpha: 0.06)
+                      : null,
+                  onTap: () {
+                    provider.cambiarIdioma(
+                      op['codigo']!,
+                      region: op['region'],
+                    );
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _ejecutarRegistro() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final nombre = _nombreController.text.trim();
+    final correo = _correoController.text.trim();
+    final telefono = _telefonoController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    // 1. Validaciones
+    if (nombre.isEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorNombreRequerido ?? 'Por favor ingresa tu nombre completo.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (correo.isEmpty || !emailRegExp.hasMatch(correo)) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorCorreoValido ?? 'Ingresa un correo electrónico válido.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    if (telefono.isEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorTelefonoRequerido ??
+                'Por favor ingresa tu número de teléfono.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorContrasenaMinima ??
+                'La contraseña debe tener al menos 6 caracteres.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorContrasenasNoCoinciden ??
+                'Las contraseñas no coinciden.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    if (!_acceptTerms) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorAceptarTerminos ??
+                'Debes aceptar los Términos de uso y la Política de privacidad.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+
+    // 2. Determinar iglesia vinculada
+    final iglesiaProvider = context.read<IglesiaProvider>();
+    final int churchId = iglesiaProvider.iglesiaActual?.id ?? 1;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userProvider = context.read<UserProvider>();
+      final res = await userProvider.api.registerMember({
+        'name': nombre,
+        'email': correo,
+        'phone': telefono,
+        'password': password,
+        'church_id': churchId,
+      });
+
+      if (!mounted) return;
+
+      final success = res['success'] == true;
+      if (success) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            icon: const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF2E7D32),
+              size: 56,
+            ),
+            title: Text(
+              l10n?.registroExitosoTitulo ?? '¡Cuenta Registrada!',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              l10n?.registroExitosoMensaje ??
+                  'Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.',
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF072B4F),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  // Iniciar sesión automáticamente
+                  final loginOk =
+                      await userProvider.login(correo, password);
+                  if (!mounted) return;
+                  if (loginOk) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      InicioAtrioScreen.routeName,
+                      (route) => false,
+                    );
+                  } else {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      InicioSesionScreen.routeName,
+                    );
+                  }
+                },
+                child: Text(
+                  l10n?.iniciarSesionAhora ?? 'Iniciar sesión ahora',
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } on AtrioApiException catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorConexionInternet ??
+                'Error de conexión. Verifica tu internet.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 1. Obtención de métricas dinámicas relativas (Flutter 3.22+)
+    final l10n = AppLocalizations.of(context);
+    final ajustesProvider = context.watch<AjustesProvider>();
+
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
-    // Paleta de diseño Atrio
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE5E5E5);
+
+    final langCode =
+        ajustesProvider.locale.languageCode.toUpperCase();
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -82,7 +390,7 @@ class _CrearCuentaScreenState extends State {
                     // Título en el encabezado
                     Expanded(
                       child: Text(
-                        'Registro',
+                        l10n?.registroTitulo ?? 'Registro',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.058,
@@ -92,41 +400,49 @@ class _CrearCuentaScreenState extends State {
                       ),
                     ),
                     // Selector de Idioma estilizado
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.028,
-                        vertical: usableHeight * 0.007,
+                    GestureDetector(
+                      onTap: () => _mostrarSelectorIdioma(
+                        context,
+                        ajustesProvider,
+                        screenWidth,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.028,
+                          vertical: usableHeight * 0.007,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.language_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.042,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.04),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
                           ),
-                          SizedBox(width: screenWidth * 0.015),
-                          Text(
-                            'ES',
-                            style: TextStyle(
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.language_rounded,
                               color: Colors.white,
-                              fontSize: screenWidth * 0.032,
-                              fontWeight: FontWeight.bold,
+                              size: screenWidth * 0.042,
                             ),
-                          ),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white70,
-                            size: screenWidth * 0.04,
-                          ),
-                        ],
+                            SizedBox(width: screenWidth * 0.015),
+                            Text(
+                              langCode,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.032,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Colors.white70,
+                              size: screenWidth * 0.04,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -160,7 +476,7 @@ class _CrearCuentaScreenState extends State {
                         children: [
                           // Título y Subtítulo
                           Text(
-                            'Crea tu cuenta',
+                            l10n?.creaTuCuenta ?? 'Crea tu cuenta',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.068,
@@ -169,7 +485,8 @@ class _CrearCuentaScreenState extends State {
                           ),
                           SizedBox(height: usableHeight * 0.004),
                           Text(
-                            'Únete a una comunidad para vivir y compartir tu fe.',
+                            l10n?.creaTuCuentaSubtitulo ??
+                                'Únete a una comunidad para vivir y compartir tu fe.',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: screenWidth * 0.034,
@@ -179,14 +496,15 @@ class _CrearCuentaScreenState extends State {
 
                           // 1. Campo Nombre completo
                           _buildFieldLabel(
-                            'Nombre completo',
+                            l10n?.nombreCompleto ?? 'Nombre completo',
                             screenWidth,
                             azulFondo,
                           ),
                           SizedBox(height: usableHeight * 0.006),
                           _buildInputField(
                             controller: _nombreController,
-                            hintText: 'Escribe tu nombre',
+                            hintText: l10n?.escribeTuNombre ??
+                                'Escribe tu nombre',
                             prefixIcon: Icons.person_outline_rounded,
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
@@ -197,7 +515,7 @@ class _CrearCuentaScreenState extends State {
 
                           // 2. Campo Correo electrónico
                           _buildFieldLabel(
-                            'Correo electrónico',
+                            l10n?.correoElectronico ?? 'Correo electrónico',
                             screenWidth,
                             azulFondo,
                           ),
@@ -216,7 +534,7 @@ class _CrearCuentaScreenState extends State {
 
                           // 3. Campo Número de teléfono
                           _buildFieldLabel(
-                            'Número de teléfono',
+                            l10n?.numeroTelefonoLabel ?? 'Número de teléfono',
                             screenWidth,
                             azulFondo,
                           ),
@@ -235,7 +553,7 @@ class _CrearCuentaScreenState extends State {
 
                           // 4. Campo Contraseña
                           _buildFieldLabel(
-                            'Contraseña',
+                            l10n?.contrasenaLabel ?? 'Contraseña',
                             screenWidth,
                             azulFondo,
                           ),
@@ -260,7 +578,8 @@ class _CrearCuentaScreenState extends State {
 
                           // 5. Campo Confirmar contraseña
                           _buildFieldLabel(
-                            'Confirmar contraseña',
+                            l10n?.confirmarContrasenaLabel ??
+                                'Confirmar contraseña',
                             screenWidth,
                             azulFondo,
                           ),
@@ -313,43 +632,58 @@ class _CrearCuentaScreenState extends State {
                               SizedBox(width: screenWidth * 0.025),
                               Expanded(
                                 child: Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  crossAxisAlignment:
+                                      WrapCrossAlignment.center,
                                   children: [
                                     Text(
-                                      'Acepto los ',
+                                      l10n?.aceptoLos ?? 'Acepto los ',
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                         fontSize: screenWidth * 0.03,
                                       ),
                                     ),
                                     GestureDetector(
-                                      onTap: () {},
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          TerminosPrivacidadScreen.routeName,
+                                        );
+                                      },
                                       child: Text(
-                                        'Términos de uso',
+                                        l10n?.terminosDeUso ??
+                                            'Términos de uso',
                                         style: TextStyle(
                                           color: const Color(0xFF0055A5),
                                           fontSize: screenWidth * 0.03,
                                           fontWeight: FontWeight.bold,
-                                          decoration: TextDecoration.underline,
+                                          decoration:
+                                              TextDecoration.underline,
                                         ),
                                       ),
                                     ),
                                     Text(
-                                      ' y la ',
+                                      l10n?.yLa ?? ' y la ',
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                         fontSize: screenWidth * 0.03,
                                       ),
                                     ),
                                     GestureDetector(
-                                      onTap: () {},
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          TerminosPrivacidadScreen.routeName,
+                                        );
+                                      },
                                       child: Text(
-                                        'Política de privacidad',
+                                        l10n?.politicaDePrivacidad ??
+                                            'Política de privacidad',
                                         style: TextStyle(
                                           color: const Color(0xFF0055A5),
                                           fontSize: screenWidth * 0.03,
                                           fontWeight: FontWeight.bold,
-                                          decoration: TextDecoration.underline,
+                                          decoration:
+                                              TextDecoration.underline,
                                         ),
                                       ),
                                     ),
@@ -360,7 +694,7 @@ class _CrearCuentaScreenState extends State {
                           ),
                           SizedBox(height: usableHeight * 0.025),
 
-                          // 7. Botón Crear cuenta
+                          // 7. Botón Crear cuenta con indicador de carga
                           SizedBox(
                             width: double.infinity,
                             height: usableHeight * 0.058,
@@ -375,19 +709,25 @@ class _CrearCuentaScreenState extends State {
                                   ),
                                 ),
                               ),
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  'tradicion_cristiana_screen',
-                                );
-                              },
-                              child: Text(
-                                'Crear cuenta',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.050,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              onPressed:
+                                  _isLoading ? null : _ejecutarRegistro,
+                              child: _isLoading
+                                  ? SizedBox(
+                                      width: screenWidth * 0.05,
+                                      height: screenWidth * 0.05,
+                                      child: const CircularProgressIndicator(
+                                        color: azulFondo,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      l10n?.crearCuentaBoton ??
+                                          'Crear cuenta',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.050,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                           SizedBox(height: usableHeight * 0.02),
@@ -398,7 +738,8 @@ class _CrearCuentaScreenState extends State {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  '¿Ya tienes una cuenta? ',
+                                  l10n?.yaTienesCuenta ??
+                                      '¿Ya tienes una cuenta? ',
                                   style: TextStyle(
                                     color: Colors.grey.shade700,
                                     fontSize: screenWidth * 0.032,
@@ -408,11 +749,12 @@ class _CrearCuentaScreenState extends State {
                                   onTap: () {
                                     Navigator.pushReplacementNamed(
                                       context,
-                                      'inicio_sesion_screen',
+                                      InicioSesionScreen.routeName,
                                     );
                                   },
                                   child: Text(
-                                    'Iniciar sesión',
+                                    l10n?.iniciarSesionEnlace ??
+                                        'Iniciar sesión',
                                     style: TextStyle(
                                       color: const Color(0xFF0055A5),
                                       fontSize: screenWidth * 0.032,
@@ -439,7 +781,11 @@ class _CrearCuentaScreenState extends State {
   }
 
   // Label para los campos
-  Widget _buildFieldLabel(String text, double screenWidth, Color azulFondo) {
+  Widget _buildFieldLabel(
+    String text,
+    double screenWidth,
+    Color azulFondo,
+  ) {
     return Text(
       text,
       style: TextStyle(
@@ -500,7 +846,8 @@ class _CrearCuentaScreenState extends State {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: usableHeight * 0.014),
+          contentPadding:
+              EdgeInsets.symmetric(vertical: usableHeight * 0.014),
         ),
       ),
     );

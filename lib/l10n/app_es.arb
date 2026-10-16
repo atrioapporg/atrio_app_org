@@ -1199,5 +1199,182 @@
         "type": "String"
       }
     }
-  }
+  },
+  "misPedidos": "Mis pedidos",
+  "historialComprasTienda": "Historial de compras en la Tienda Atrio",
+  "pedidosActivos": "Activos",
+  "pedidosActivosConConteo": "Activos ({count})",
+  "@pedidosActivosConConteo": {
+    "description": "Pestaña de pedidos activos con conteo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pedidosHistorial": "Historial",
+  "pedidosHistorialConConteo": "Historial ({count})",
+  "@pedidosHistorialConConteo": {
+    "description": "Pestaña de historial de pedidos con conteo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorarTienda": "Explorar Tienda",
+  "noTienesPedidosActivos": "No tienes pedidos activos",
+  "noTienesPedidosAnteriores": "No tienes pedidos anteriores",
+  "pedidosActivosDesc": "Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.",
+  "pedidosAnterioresDesc": "Cuando tus pedidos sean completados o entregados, podrás consultarlos en este historial.",
+  "pedidoItemTitulo": "Pedido {nombre}",
+  "@pedidoItemTitulo": {
+    "description": "Título de tarjeta de pedido con su número",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "detalleDeOrden": "Detalle de Orden",
+  "referenciaOdooColon": "Referencia Odoo:",
+  "fechaDelPedido": "Fecha del pedido:",
+  "totalAPagar": "Total a pagar:",
+  "articulosIncluidos": "Artículos incluidos:",
+  "unidadesProducto": "{cantidad} ud(s).",
+  "@unidadesProducto": {
+    "description": "Cantidad de unidades de un producto",
+    "placeholders": {
+      "cantidad": {
+        "type": "int"
+      }
+    }
+  },
+  "verMisPedidos": "Ver Mis Pedidos",
+  "estadoPagoEnVerificacion": "Pago en verificación",
+  "estadoPedidoConfirmado": "Confirmado",
+  "estadoPedidoCompletado": "Completado",
+  "estadoPedidoCancelado": "Cancelado",
+  "estadoPedidoBorrador": "Borrador",
+  "estadoPedidoEnviado": "Enviado",
+  "registroTitulo": "Registro",
+  "creaTuCuenta": "Crea tu cuenta",
+  "creaTuCuentaSubtitulo": "Únete a una comunidad para vivir y compartir tu fe.",
+  "escribeTuNombre": "Escribe tu nombre",
+  "numeroTelefonoLabel": "Número de teléfono",
+  "contrasenaLabel": "Contraseña",
+  "confirmarContrasenaLabel": "Confirmar contraseña",
+  "aceptoLos": "Acepto los ",
+  "yLa": " y la ",
+  "crearCuentaBoton": "Crear cuenta",
+  "yaTienesCuenta": "¿Ya tienes una cuenta? ",
+  "iniciarSesionEnlace": "Iniciar sesión",
+  "errorNombreRequerido": "Por favor ingresa tu nombre completo.",
+  "errorCorreoValido": "Ingresa un correo electrónico válido.",
+  "errorTelefonoRequerido": "Por favor ingresa tu número de teléfono.",
+  "errorContrasenaMinima": "La contraseña debe tener al menos 6 caracteres.",
+  "errorContrasenasNoCoinciden": "Las contraseñas no coinciden.",
+  "errorAceptarTerminos": "Debes aceptar los Términos de uso y la Política de privacidad.",
+  "registroExitosoTitulo": "¡Cuenta Registrada!",
+  "registroExitosoMensaje": "Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.",
+  "iniciarSesionAhora": "Iniciar sesión ahora",
+  "comprobanteTransferencia": "Comprobante de transferencia",
+  "adjuntarComprobante": "Adjuntar comprobante",
+  "cambiarComprobante": "Cambiar comprobante",
+  "comprobanteAdjuntado": "Comprobante adjuntado con éxito",
+  "subirComprobanteDesc": "Adjunta una foto o captura del comprobante bancario para validar tu aporte rápidamente.",
+  "tomarFoto": "Tomar foto",
+  "galeria": "Galería de fotos",
+  "eliminarComprobante": "Quitar comprobante",
+  "redirigiendoPaypal": "Redirigiendo a la pasarela segura de PayPal...",
+  "reintentar": "Reintentar",
+  "donacionPendienteVerificacion": "Tu donación ha sido registrada en Odoo y está pendiente de verificación contable.",
+  "errorProcesarDonacion": "Ocurrió un error al procesar la donación: {error}",
+  "@errorProcesarDonacion": {
+    "description": "Mensaje de error al procesar la donación",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicacionesIglesia": "Publicaciones de la iglesia",
+  "sinPublicacionesRecientes": "No hay publicaciones recientes de tu comunidad.",
+  "verPublicacion": "Ver publicación",
+  "cerrarPublicacion": "Cerrar",
+  "novedadesComunidad": "Novedades y noticias de tu comunidad eclesial",
+  "sinNotificaciones": "No tienes notificaciones en este momento",
+  "sinNotificacionesDesc": "Aquí verás los avisos y comunicados que tu iglesia envíe a la congregación.",
+  "cargandoPublicaciones": "Cargando publicaciones...",
+  "cargandoNotificaciones": "Cargando notificaciones...",
+  "publicidad": "Publicidad",
+  "verMas": "Ver más",
+  "busquedaEnTodoPaisConBandera": "Búsqueda en todo {pais} {bandera}",
+  "@busquedaEnTodoPaisConBandera": {
+    "description": "Subtítulo del encabezado para búsqueda nacional",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      },
+      "bandera": {
+        "type": "String"
+      }
+    }
+  },
+  "comunidadesCristianasCercanas": "Comunidades cristianas cercanas",
+  "radioEtiqueta": "Radio:",
+  "exploraTemplosSubtitulo": "Explora templos, rutas y detalles en vivo",
+  "conteoResultadosDeTotal": "{mostradas} de {total}",
+  "@conteoResultadosDeTotal": {
+    "description": "Conteo de elementos mostrados sobre el total",
+    "placeholders": {
+      "mostradas": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "radioMenorQueKm": "Radio < {km} km",
+  "@radioMenorQueKm": {
+    "description": "Indicador de radio en kilometros",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasConTermino": "No se encontraron iglesias con \"{termino}\" en su nombre.",
+  "@noSeEncontraronIglesiasConTermino": {
+    "description": "Mensaje de estado vacío cuando se filtra por término",
+    "placeholders": {
+      "termino": {
+        "type": "String"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasRadioEnPais": "No se encontraron iglesias a menos de {km} km en {pais}.",
+  "@noSeEncontraronIglesiasRadioEnPais": {
+    "description": "Mensaje de estado vacío en búsqueda por radio",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasEnPais": "No se encontraron iglesias en {pais}.",
+  "@noSeEncontraronIglesiasEnPais": {
+    "description": "Mensaje de estado vacío en país",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "noSePudieronCargarIglesias": "😕 No se pudieron cargar las iglesias.\nRevisa tu conexión a internet e inténtalo de nuevo.",
+  "localizandoComunidades": "Localizando comunidades cristianas..."
 }

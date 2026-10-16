@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:atrio/l10n/app_localizations.dart';
+import 'package:atrio/providers/user_provider.dart';
 import '../modelos/notificacion_model.dart';
 
 class NotificacionesScreen extends StatefulWidget {
@@ -16,6 +18,8 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedFilterIndex = 0;
   bool _isInit = true;
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _sponsored = [];
 
   late List<NotificacionModel> _notificaciones;
 
@@ -26,6 +30,43 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       _isInit = false;
       final l10n = AppLocalizations.of(context)!;
       _notificaciones = _crearAvisosIniciales(l10n);
+      _cargarNotificaciones();
+    }
+  }
+
+  Future<void> _cargarNotificaciones({bool silent = false}) async {
+    if (!silent && mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final res = await userProvider.api.notifications();
+      final notisRaw = res['notifications'] as List? ?? [];
+      final sponsoredRaw = res['sponsored'] as List? ?? [];
+
+      final List<NotificacionModel> parsed = notisRaw
+          .map((e) => NotificacionModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          if (parsed.isNotEmpty) {
+            _notificaciones = parsed;
+          }
+          _sponsored = sponsoredRaw
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -495,6 +536,14 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                       ),
                     ),
                     SizedBox(height: usableHeight * 0.015),
+                    if (_isLoading) ...[
+                      LinearProgressIndicator(
+                        color: amarilloOro,
+                        backgroundColor: azulFondo.withValues(alpha: 0.2),
+                        minHeight: 3,
+                      ),
+                      SizedBox(height: usableHeight * 0.010),
+                    ],
                   ],
                 ),
               ),
@@ -515,15 +564,21 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                       topLeft: Radius.circular(screenWidth * 0.08),
                       topRight: Radius.circular(screenWidth * 0.08),
                     ),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: usableHeight * 0.02,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                    child: RefreshIndicator(
+                      color: amarilloOro,
+                      backgroundColor: Colors.white,
+                      onRefresh: () => _cargarNotificaciones(silent: true),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: usableHeight * 0.02,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           // Pastillas de Filtro con mayor tamaño táctil y tipográfico
                           SizedBox(
                             height: usableHeight * 0.052,
@@ -790,6 +845,101 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                 );
                               },
                             ),
+                          if (_sponsored.isNotEmpty) ...[
+                            SizedBox(height: usableHeight * 0.02),
+                            ..._sponsored.map((ad) {
+                              final title = ad['title'] as String? ?? '';
+                              final msg = ad['message'] as String? ?? '';
+                              final advertiser = ad['advertiser'] as String? ?? '';
+
+                              return Container(
+                                margin: EdgeInsets.only(bottom: usableHeight * 0.015),
+                                padding: EdgeInsets.all(screenWidth * 0.035),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF9E6),
+                                  borderRadius: BorderRadius.circular(screenWidth * 0.035),
+                                  border: Border.all(
+                                    color: amarilloOro.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.all(screenWidth * 0.02),
+                                      decoration: BoxDecoration(
+                                        color: amarilloOro.withValues(alpha: 0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.campaign_rounded,
+                                        color: const Color(0xFF9E6500),
+                                        size: screenWidth * 0.055,
+                                      ),
+                                    ),
+                                    SizedBox(width: screenWidth * 0.03),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: amarilloOro.withValues(alpha: 0.3),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  l10n.publicidad,
+                                                  style: TextStyle(
+                                                    color: const Color(0xFF9E6500),
+                                                    fontSize: screenWidth * 0.026,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (advertiser.isNotEmpty)
+                                                Text(
+                                                  advertiser,
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                    fontSize: screenWidth * 0.028,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          SizedBox(height: usableHeight * 0.005),
+                                          Text(
+                                            title,
+                                            style: TextStyle(
+                                              color: azulFondo,
+                                              fontSize: screenWidth * 0.040,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (msg.isNotEmpty) ...[
+                                            SizedBox(height: usableHeight * 0.003),
+                                            Text(
+                                              msg,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade800,
+                                                fontSize: screenWidth * 0.034,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
                           SizedBox(height: usableHeight * 0.03),
                         ],
                       ),
@@ -797,6 +947,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),

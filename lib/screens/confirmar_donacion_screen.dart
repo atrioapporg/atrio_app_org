@@ -1,15 +1,128 @@
-import 'package:atrio/widgets/odoo_pago_dialog.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
+import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/widgets/odoo_pago_dialog.dart';
 
-class ConfirmarDonacionScreen extends StatelessWidget {
+class ConfirmarDonacionScreen extends StatefulWidget {
   static const routeName = 'confirmar_donacion_screen';
   const ConfirmarDonacionScreen({super.key});
 
   @override
+  State<ConfirmarDonacionScreen> createState() =>
+      _ConfirmarDonacionScreenState();
+}
+
+class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
+  XFile? _comprobanteFile;
+  String? _receiptBase64;
+  String? _receiptFilename;
+
+  Future<void> _seleccionarComprobante(
+    ImageSource source,
+    AppLocalizations? l10n,
+  ) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _comprobanteFile = image;
+          _receiptFilename = image.name;
+          _receiptBase64 = base64Encode(bytes);
+        });
+      }
+    } catch (e) {
+      debugPrint('[ConfirmarDonacionScreen] Error seleccionando imagen: $e');
+    }
+  }
+
+  void _mostrarOpcionesImagen(BuildContext context, AppLocalizations? l10n) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    const Color azulFondo = Color(0xFF072B4F);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.05),
+        ),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: screenWidth * 0.04,
+              horizontal: screenWidth * 0.05,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: screenWidth * 0.1,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                SizedBox(height: screenWidth * 0.04),
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: azulFondo,
+                  ),
+                  title: Text(
+                    l10n?.tomarFoto ?? 'Tomar foto',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontWeight: FontWeight.w600,
+                      fontSize: screenWidth * 0.04,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _seleccionarComprobante(ImageSource.camera, l10n);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library_rounded,
+                    color: azulFondo,
+                  ),
+                  title: Text(
+                    l10n?.galeria ?? 'Galería de fotos',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontWeight: FontWeight.w600,
+                      fontSize: screenWidth * 0.04,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _seleccionarComprobante(ImageSource.gallery, l10n);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // 1. Recepción dinámica de datos desde RealizarAporteScreen
+    // 1. Recepción dinámica de datos desde RealizarAporteScreen o AportarAProyectoScreen
     final Map donacionData =
         (ModalRoute.of(context)?.settings.arguments as Map?) ??
         {
@@ -20,11 +133,13 @@ class ConfirmarDonacionScreen extends StatelessWidget {
           'metodoPago': 'Visa •••• 1234',
         };
 
-    final String comunidad = donacionData['comunidad'];
-    final String concepto = donacionData['concepto'];
-    final String monto = donacionData['monto'];
-    final String frecuencia = donacionData['frecuencia'];
-    final String metodoPago = donacionData['metodoPago'];
+    final String comunidad = donacionData['comunidad'] ?? 'Comunidad';
+    final String concepto = donacionData['concepto'] ?? (l10n?.ofrenda ?? 'Ofrenda');
+    final String monto = donacionData['monto'] ?? 'RD\$ 0.00';
+    final String frecuencia =
+        donacionData['frecuencia'] ?? (l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez');
+    final String metodoPago = donacionData['metodoPago'] ?? 'Transferencia';
+    final bool esPaypal = metodoPago.toLowerCase().contains('paypal');
 
     // 2. Métricas relativas dinámicas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -39,6 +154,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE8ECEF);
     const Color textoGris = Color(0xFF6C757D);
+    const Color verdeExito = Color(0xFF2E7D32);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -323,7 +439,9 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        Icons.credit_card_rounded,
+                                        esPaypal
+                                            ? Icons.account_balance_wallet_rounded
+                                            : Icons.credit_card_rounded,
                                         color: azulFondo,
                                         size: screenWidth * 0.05,
                                       ),
@@ -345,6 +463,140 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                               ],
                             ),
                           ),
+
+                          // Sección para adjuntar comprobante (si es Transferencia u otro método no-Paypal)
+                          if (!esPaypal) ...[
+                            SizedBox(height: usableHeight * 0.02),
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.04,
+                                ),
+                                border: Border.all(
+                                  color: _comprobanteFile != null
+                                      ? verdeExito
+                                      : grisBorde,
+                                  width: _comprobanteFile != null ? 1.5 : 1,
+                                ),
+                              ),
+                              padding: EdgeInsets.all(screenWidth * 0.04),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        _comprobanteFile != null
+                                            ? Icons.check_circle_rounded
+                                            : Icons.receipt_long_rounded,
+                                        color: _comprobanteFile != null
+                                            ? verdeExito
+                                            : azulFondo,
+                                        size: screenWidth * 0.055,
+                                      ),
+                                      SizedBox(width: screenWidth * 0.025),
+                                      Expanded(
+                                        child: Text(
+                                          l10n?.comprobanteTransferencia ??
+                                              'Comprobante de transferencia',
+                                          style: TextStyle(
+                                            color: azulFondo,
+                                            fontSize: screenWidth * 0.04,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: usableHeight * 0.01),
+                                  Text(
+                                    _comprobanteFile != null
+                                        ? (_receiptFilename ??
+                                            (l10n?.comprobanteAdjuntado ??
+                                                'Comprobante adjuntado con éxito'))
+                                        : (l10n?.subirComprobanteDesc ??
+                                            'Adjunta una foto o captura del comprobante bancario para validar tu aporte rápidamente.'),
+                                    style: TextStyle(
+                                      color: _comprobanteFile != null
+                                          ? verdeExito
+                                          : textoGris,
+                                      fontSize: screenWidth * 0.032,
+                                      fontWeight: _comprobanteFile != null
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  SizedBox(height: usableHeight * 0.015),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: azulFondo,
+                                            side: BorderSide(
+                                              color: azulFondo.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    screenWidth * 0.025,
+                                                  ),
+                                            ),
+                                          ),
+                                          onPressed: () =>
+                                              _mostrarOpcionesImagen(
+                                                context,
+                                                l10n,
+                                              ),
+                                          icon: Icon(
+                                            _comprobanteFile != null
+                                                ? Icons.refresh_rounded
+                                                : Icons.camera_alt_outlined,
+                                            size: screenWidth * 0.045,
+                                          ),
+                                          label: Text(
+                                            _comprobanteFile != null
+                                                ? (l10n?.cambiarComprobante ??
+                                                    'Cambiar comprobante')
+                                                : (l10n?.adjuntarComprobante ??
+                                                    'Adjuntar comprobante'),
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.032,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (_comprobanteFile != null) ...[
+                                        SizedBox(width: screenWidth * 0.02),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: Color(0xFFD32F2F),
+                                          ),
+                                          tooltip:
+                                              l10n?.eliminarComprobante ??
+                                              'Quitar comprobante',
+                                          onPressed: () {
+                                            setState(() {
+                                              _comprobanteFile = null;
+                                              _receiptBase64 = null;
+                                              _receiptFilename = null;
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
                           SizedBox(height: usableHeight * 0.03),
                           // Escudo de Seguridad
                           Icon(
@@ -389,11 +641,26 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
+                                final userProvider = Provider.of<UserProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                final user = userProvider.currentUser;
+
                                 OdooPagoDialog.mostrarConfirmacionPago(
                                   context: context,
                                   concepto: '$concepto ($comunidad)',
                                   monto: monto,
                                   metodoPago: metodoPago,
+                                  receiptBase64: _receiptBase64,
+                                  receiptFilename: _receiptFilename,
+                                  mensajeApoyo:
+                                      donacionData['mensajeApoyo'] as String?,
+                                  esAnonimo:
+                                      donacionData['esAnonimo'] as bool? ??
+                                      false,
+                                  donorName: user?.nombre,
+                                  donorEmail: user?.email,
                                   onConfirmado: () {
                                     Navigator.popUntil(
                                       context,

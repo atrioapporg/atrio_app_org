@@ -1110,5 +1110,182 @@
         "type": "String"
       }
     }
-  }
+  },
+  "misPedidos": "My Orders",
+  "historialComprasTienda": "Purchase history in the Atrio Store",
+  "pedidosActivos": "Active",
+  "pedidosActivosConConteo": "Active ({count})",
+  "@pedidosActivosConConteo": {
+    "description": "Active orders tab with count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pedidosHistorial": "History",
+  "pedidosHistorialConConteo": "History ({count})",
+  "@pedidosHistorialConConteo": {
+    "description": "Past orders history tab with count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorarTienda": "Explore Store",
+  "noTienesPedidosActivos": "You have no active orders",
+  "noTienesPedidosAnteriores": "You have no previous orders",
+  "pedidosActivosDesc": "Your recent purchases from the ATRIO store will appear here so you can track delivery.",
+  "pedidosAnterioresDesc": "When your orders are completed or delivered, you will be able to check them in this history.",
+  "pedidoItemTitulo": "Order {nombre}",
+  "@pedidoItemTitulo": {
+    "description": "Order card title with its reference",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "detalleDeOrden": "Order Details",
+  "referenciaOdooColon": "Odoo Reference:",
+  "fechaDelPedido": "Order date:",
+  "totalAPagar": "Total amount:",
+  "articulosIncluidos": "Included items:",
+  "unidadesProducto": "{cantidad} unit(s).",
+  "@unidadesProducto": {
+    "description": "Quantity of units of a product",
+    "placeholders": {
+      "cantidad": {
+        "type": "int"
+      }
+    }
+  },
+  "verMisPedidos": "View My Orders",
+  "estadoPagoEnVerificacion": "Payment in verification",
+  "estadoPedidoConfirmado": "Confirmed",
+  "estadoPedidoCompletado": "Completed",
+  "estadoPedidoCancelado": "Cancelled",
+  "estadoPedidoBorrador": "Draft",
+  "estadoPedidoEnviado": "Sent",
+  "registroTitulo": "Register",
+  "creaTuCuenta": "Create your account",
+  "creaTuCuentaSubtitulo": "Join a community to live and share your faith.",
+  "escribeTuNombre": "Enter your full name",
+  "numeroTelefonoLabel": "Phone number",
+  "contrasenaLabel": "Password",
+  "confirmarContrasenaLabel": "Confirm password",
+  "aceptoLos": "I accept the ",
+  "yLa": " and the ",
+  "crearCuentaBoton": "Create account",
+  "yaTienesCuenta": "Already have an account? ",
+  "iniciarSesionEnlace": "Log in",
+  "errorNombreRequerido": "Please enter your full name.",
+  "errorCorreoValido": "Please enter a valid email address.",
+  "errorTelefonoRequerido": "Please enter your phone number.",
+  "errorContrasenaMinima": "Password must be at least 6 characters long.",
+  "errorContrasenasNoCoinciden": "Passwords do not match.",
+  "errorAceptarTerminos": "You must accept the Terms of Use and Privacy Policy.",
+  "registroExitosoTitulo": "Account Registered!",
+  "registroExitosoMensaje": "Your account has been created successfully in Odoo. The church administrator will validate your membership.",
+  "iniciarSesionAhora": "Log in now",
+  "comprobanteTransferencia": "Transfer receipt",
+  "adjuntarComprobante": "Attach receipt",
+  "cambiarComprobante": "Change receipt",
+  "comprobanteAdjuntado": "Receipt attached successfully",
+  "subirComprobanteDesc": "Attach a photo or screenshot of your bank receipt to validate your contribution quickly.",
+  "tomarFoto": "Take photo",
+  "galeria": "Photo gallery",
+  "eliminarComprobante": "Remove receipt",
+  "redirigiendoPaypal": "Redirecting to secure PayPal gateway...",
+  "reintentar": "Retry",
+  "donacionPendienteVerificacion": "Your donation has been recorded in Odoo and is pending accounting verification.",
+  "errorProcesarDonacion": "An error occurred while processing donation: {error}",
+  "@errorProcesarDonacion": {
+    "description": "Error message when processing donation",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicacionesIglesia": "Church Publications",
+  "sinPublicacionesRecientes": "There are no recent publications from your community.",
+  "verPublicacion": "View publication",
+  "cerrarPublicacion": "Close",
+  "novedadesComunidad": "News and updates from your church community",
+  "sinNotificaciones": "You have no notifications at this time",
+  "sinNotificacionesDesc": "Here you will see announcements sent by your church to the congregation.",
+  "cargandoPublicaciones": "Loading publications...",
+  "cargandoNotificaciones": "Loading notifications...",
+  "publicidad": "Sponsored",
+  "verMas": "See more",
+  "busquedaEnTodoPaisConBandera": "Search across {pais} {bandera}",
+  "@busquedaEnTodoPaisConBandera": {
+    "description": "Header subtitle for national search",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      },
+      "bandera": {
+        "type": "String"
+      }
+    }
+  },
+  "comunidadesCristianasCercanas": "Nearby Christian communities",
+  "radioEtiqueta": "Radius:",
+  "exploraTemplosSubtitulo": "Explore churches, routes and live details",
+  "conteoResultadosDeTotal": "{mostradas} of {total}",
+  "@conteoResultadosDeTotal": {
+    "description": "Count of items displayed out of total",
+    "placeholders": {
+      "mostradas": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "radioMenorQueKm": "Radius < {km} km",
+  "@radioMenorQueKm": {
+    "description": "Radius indicator in kilometers",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasConTermino": "No churches found with \"{termino}\" in their name.",
+  "@noSeEncontraronIglesiasConTermino": {
+    "description": "Empty state message when searching by term",
+    "placeholders": {
+      "termino": {
+        "type": "String"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasRadioEnPais": "No churches found within {km} km in {pais}.",
+  "@noSeEncontraronIglesiasRadioEnPais": {
+    "description": "Empty state message in radius search",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "noSeEncontraronIglesiasEnPais": "No churches found in {pais}.",
+  "@noSeEncontraronIglesiasEnPais": {
+    "description": "Empty state message in country search",
+    "placeholders": {
+      "pais": {
+        "type": "String"
+      }
+    }
+  },
+  "noSePudieronCargarIglesias": "😕 Could not load churches.\nCheck your internet connection and try again.",
+  "localizandoComunidades": "Locating Christian communities..."
 }

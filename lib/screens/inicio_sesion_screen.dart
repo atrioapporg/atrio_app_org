@@ -1501,8 +1501,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   if (imageAsset != null)
                     Image.asset(
                       imageAsset,
-                      width: screenWidth * 0.140,
-                      height: screenWidth * 0.140,
+                      width: screenWidth * 0.065,
+                      height: screenWidth * 0.065,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => Icon(
                         Icons.account_circle,
@@ -1515,13 +1515,18 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   else if (iconData != null)
                     Icon(iconData, color: textColor, size: screenWidth * 0.055),
                   SizedBox(width: screenWidth * 0.03),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: screenWidth * 0.055,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: screenWidth * 0.042,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
                   ),
                 ],

@@ -130,6 +130,7 @@ class AtrioDatabaseHelper {
         solo_descargar_con_wifi INTEGER DEFAULT 1,
         tiempo_cierre_modal_versiculo INTEGER DEFAULT 4,
         tiempo_transicion_banner INTEGER DEFAULT 5,
+        tiempo_cooldown_notificaciones INTEGER DEFAULT 3,
         actualizado_en TEXT
       )
     ''');
@@ -227,6 +228,13 @@ class AtrioDatabaseHelper {
     try {
       await db.execute(
         'ALTER TABLE $tableAjustes ADD COLUMN tiempo_transicion_banner INTEGER DEFAULT 5',
+      );
+    } catch (_) {}
+
+    // Asegurar columna tiempo_cooldown_notificaciones en caso de base de datos existente
+    try {
+      await db.execute(
+        'ALTER TABLE $tableAjustes ADD COLUMN tiempo_cooldown_notificaciones INTEGER DEFAULT 3',
       );
     } catch (_) {}
   }

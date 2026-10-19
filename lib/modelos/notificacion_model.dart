@@ -10,6 +10,7 @@ class NotificacionModel {
   final bool leida;
   final bool esUrgente;
   final String iconCode;
+  final String? imageUrl;
 
   NotificacionModel({
     required this.id,
@@ -23,6 +24,7 @@ class NotificacionModel {
     this.leida = false,
     this.esUrgente = false,
     this.iconCode = 'notifications',
+    this.imageUrl,
   });
 
   NotificacionModel copyWith({
@@ -37,6 +39,7 @@ class NotificacionModel {
     bool? leida,
     bool? esUrgente,
     String? iconCode,
+    String? imageUrl,
   }) {
     return NotificacionModel(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class NotificacionModel {
       leida: leida ?? this.leida,
       esUrgente: esUrgente ?? this.esUrgente,
       iconCode: iconCode ?? this.iconCode,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -68,6 +72,7 @@ class NotificacionModel {
         leida: json['is_read'] ?? json['leida'] ?? false,
         esUrgente: json['is_urgent'] ?? json['es_urgente'] ?? false,
         iconCode: json['icon_type'] ?? json['icon'] ?? 'notifications',
+        imageUrl: json['image_url'] ?? json['imagen_url'] ?? json['image'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -82,5 +87,6 @@ class NotificacionModel {
         'is_read': leida,
         'is_urgent': esUrgente,
         'icon': iconCode,
+        'image_url': imageUrl,
       };
 }

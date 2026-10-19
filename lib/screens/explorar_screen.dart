@@ -156,7 +156,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n?.noSePudoAbrirNavegacion ?? 'No se pudo abrir la navegación.',
+              l10n?.noSePudoAbrirNavegacion ??
+                  'No se pudo abrir la navegación.',
             ),
           ),
         );
@@ -321,7 +322,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                           usableHeight * 0.03,
                         ),
                         sliver: SliverList.builder(
-                          itemCount: provider.iglesiasMostradas.length +
+                          itemCount:
+                              provider.iglesiasMostradas.length +
                               (provider.isLoadingMore || provider.hasMoreData
                                   ? 1
                                   : 0),
@@ -377,10 +379,10 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 paisNombre,
                 provider.paisBandera,
               ) ??
-            'Búsqueda en todo $paisNombre ${provider.paisBandera}')
+              'Búsqueda en todo $paisNombre ${provider.paisBandera}')
         : (l10n?.encuentraTuFeEn10Km ??
-            l10n?.comunidadesCristianasCercanas ??
-            'Comunidades cristianas cercanas');
+              l10n?.comunidadesCristianasCercanas ??
+              'Comunidades cristianas cercanas');
 
     return Container(
       width: screenWidth,
@@ -435,9 +437,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(screenWidth * 0.06),
-                  border: Border.all(
-                    color: amarilloOro.withValues(alpha: 0.4),
-                  ),
+                  border: Border.all(color: amarilloOro.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -503,9 +503,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: esRadio ? azulFondo : Colors.transparent,
-                      borderRadius: BorderRadius.circular(
-                        screenWidth * 0.028,
-                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.028),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -539,9 +537,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: !esRadio ? azulFondo : Colors.transparent,
-                      borderRadius: BorderRadius.circular(
-                        screenWidth * 0.028,
-                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.028),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -698,9 +694,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     final paisNombre = provider.getPaisNombre(idioma);
     final hint = provider.modo == ModoExploracion.nacional
         ? (l10n?.buscarEnPaisPlaceholder(paisNombre) ??
-            'Buscar en $paisNombre...')
+              'Buscar en $paisNombre...')
         : (l10n?.buscarIglesiasPlaceholder ??
-            'Ej. Iglesia cristiana, Bautista...');
+              'Ej. Iglesia cristiana, Bautista...');
 
     final texto = _searchController.text.trim();
     final advertenciaMinCaracteres = texto.isNotEmpty && texto.length < 3;
@@ -873,9 +869,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
               decoration: BoxDecoration(
                 color: isSelected ? azulFondo : Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.05),
@@ -913,8 +907,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                       style: TextStyle(
                         color: isSelected ? Colors.white : azulFondo,
                         fontSize: screenWidth * 0.033,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w600,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
                       ),
                     ),
                   ],
@@ -937,10 +932,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => Navigator.pushNamed(
-          context,
-          IglesiasEnMapaScreen.routeName,
-        ),
+        onTap: () =>
+            Navigator.pushNamed(context, IglesiasEnMapaScreen.routeName),
         borderRadius: BorderRadius.circular(screenWidth * 0.045),
         child: Ink(
           width: screenWidth,
@@ -968,9 +961,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: amarilloOro.withValues(alpha: 0.5),
-                  ),
+                  border: Border.all(color: amarilloOro.withValues(alpha: 0.5)),
                 ),
                 child: Center(
                   child: Icon(
@@ -1042,51 +1033,58 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n?.comunidadesSugeridas ?? 'Comunidades sugeridas',
-              style: TextStyle(
-                color: azulFondo,
-                fontSize: screenWidth * 0.045,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (!provider.isLoading && totalMostradas > 0) ...[
-              SizedBox(width: screenWidth * 0.02),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.022,
-                  vertical: usableHeight * 0.003,
-                ),
-                decoration: BoxDecoration(
-                  color: azulFondo.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                ),
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
                 child: Text(
-                  totalCargadas > totalMostradas
-                      ? (l10n?.conteoResultadosDeTotal(
-                              '$totalMostradas',
-                              '$totalCargadas',
-                            ) ??
-                          '$totalMostradas de $totalCargadas')
-                      : '$totalMostradas',
+                  l10n?.comunidadesSugeridas ?? 'Sugeridas',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: azulFondo,
-                    fontSize: screenWidth * 0.03,
+                    fontSize: screenWidth * 0.042,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
+              if (!provider.isLoading && totalMostradas > 0) ...[
+                SizedBox(width: screenWidth * 0.02),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.022,
+                    vertical: usableHeight * 0.003,
+                  ),
+                  decoration: BoxDecoration(
+                    color: azulFondo.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  ),
+                  child: Text(
+                    totalCargadas > totalMostradas
+                        ? (l10n?.conteoResultadosDeTotal(
+                                '$totalMostradas',
+                                '$totalCargadas',
+                              ) ??
+                              '$totalMostradas de $totalCargadas')
+                        : '$totalMostradas',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.03,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-        if (!provider.isLoading && totalMostradas > 0)
+        if (!provider.isLoading && totalMostradas > 0) ...[
+          SizedBox(width: screenWidth * 0.02),
           Text(
             provider.modo == ModoExploracion.radio
                 ? (l10n?.radioMenorQueKm(provider.radioKm.toInt().toString()) ??
-                    'Radio < ${provider.radioKm.toInt()} km')
+                      'Radio < ${provider.radioKm.toInt()} km')
                 : paisNombre,
             style: TextStyle(
               color: Colors.grey.shade600,
@@ -1094,6 +1092,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
+        ],
       ],
     );
   }
@@ -1108,7 +1107,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
   }) {
     final String distanciaStr = iglesia.distanciaKm > 0
         ? (l10n?.aDistanciaKm(iglesia.distanciaKm.toStringAsFixed(1)) ??
-            'A ${iglesia.distanciaKm.toStringAsFixed(1)} km')
+              'A ${iglesia.distanciaKm.toStringAsFixed(1)} km')
         : '';
 
     return Container(
@@ -1416,10 +1415,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 ),
               ),
-              onPressed: () => provider.buscar(
-                ignorarDebounce: true,
-                forzarRecarga: true,
-              ),
+              onPressed: () =>
+                  provider.buscar(ignorarDebounce: true, forzarRecarga: true),
               icon: Icon(Icons.refresh_rounded, size: screenWidth * 0.045),
               label: Text(
                 l10n?.reintentar ?? 'Reintentar',
@@ -1447,16 +1444,19 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     final textoBusqueda = provider.textoBusqueda.trim();
     final String mensaje;
     if (textoBusqueda.isNotEmpty) {
-      mensaje = l10n?.noSeEncontraronIglesiasConTermino(textoBusqueda) ??
+      mensaje =
+          l10n?.noSeEncontraronIglesiasConTermino(textoBusqueda) ??
           'No se encontraron iglesias con "$textoBusqueda" en su nombre.';
     } else if (provider.modo == ModoExploracion.radio) {
-      mensaje = l10n?.noSeEncontraronIglesiasRadioEnPais(
+      mensaje =
+          l10n?.noSeEncontraronIglesiasRadioEnPais(
             provider.radioKm.toInt().toString(),
             paisNombre,
           ) ??
           'No se encontraron iglesias a menos de ${provider.radioKm.toInt()} km en $paisNombre.';
     } else {
-      mensaje = l10n?.noSeEncontraronIglesiasEnPais(paisNombre) ??
+      mensaje =
+          l10n?.noSeEncontraronIglesiasEnPais(paisNombre) ??
           'No se encontraron iglesias en $paisNombre.';
     }
 

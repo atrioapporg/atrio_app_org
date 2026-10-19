@@ -233,7 +233,9 @@ class _TiendaScreenState extends State<TiendaScreen> {
       debugPrint('[CARRITO] Error inesperado: $e');
       messenger.showSnackBar(
         SnackBar(
-          content: const Text('No se pudo conectar con la tienda. Intenta de nuevo.'),
+          content: const Text(
+            'No se pudo conectar con la tienda. Intenta de nuevo.',
+          ),
           backgroundColor: Colors.red.shade700,
         ),
       );
@@ -280,7 +282,9 @@ class _TiendaScreenState extends State<TiendaScreen> {
     if (nuevaCantidad <= 0) {
       await _eliminarDelCarrito(productId);
     } else {
-      await _operarCarrito((api) => api.updateCartItem(productId, nuevaCantidad));
+      await _operarCarrito(
+        (api) => api.updateCartItem(productId, nuevaCantidad),
+      );
     }
   }
 
@@ -354,8 +358,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          icon: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: const Icon(
+            Icons.check_circle_rounded,
+            color: Colors.green,
+            size: 56,
+          ),
           title: Text(
             '¡Pedido $ref Registrado!',
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -377,11 +387,20 @@ class _TiendaScreenState extends State<TiendaScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('• Referencia Odoo: $ref', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      '• Referencia Odoo: $ref',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 4),
                     Text('• Estado: $estado'),
                     const SizedBox(height: 4),
-                    Text('• Total: $total', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF072B4F))),
+                    Text(
+                      '• Total: $total',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF072B4F),
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       '• Modalidad: ${_selectedDeliveryOption == 0 ? "Envío a domicilio" : "Retiro en iglesia"}',
@@ -464,7 +483,9 @@ class _TiendaScreenState extends State<TiendaScreen> {
                 left: screenWidth * 0.05,
                 right: screenWidth * 0.05,
                 top: usableHeight * 0.018,
-                bottom: MediaQuery.of(modalContext).padding.bottom + usableHeight * 0.02,
+                bottom:
+                    MediaQuery.of(modalContext).padding.bottom +
+                    usableHeight * 0.02,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -489,7 +510,11 @@ class _TiendaScreenState extends State<TiendaScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.shopping_cart_rounded, color: azulFondo, size: screenWidth * 0.06),
+                          Icon(
+                            Icons.shopping_cart_rounded,
+                            color: azulFondo,
+                            size: screenWidth * 0.075,
+                          ),
                           SizedBox(width: screenWidth * 0.02),
                           Text(
                             'Carrito de Compras',
@@ -509,7 +534,11 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                   await _vaciarCarrito();
                                   setModalState(() {});
                                 },
-                          icon: const Icon(Icons.delete_sweep_outlined, size: 18, color: Colors.red),
+                          icon: const Icon(
+                            Icons.delete_sweep_outlined,
+                            size: 18,
+                            color: Colors.red,
+                          ),
                           label: const Text(
                             'Vaciar',
                             style: TextStyle(color: Colors.red, fontSize: 13),
@@ -527,13 +556,18 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   if (_procesandoCarrito)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: LinearProgressIndicator(color: amarilloOro, backgroundColor: Colors.transparent),
+                      child: LinearProgressIndicator(
+                        color: amarilloOro,
+                        backgroundColor: Colors.transparent,
+                      ),
                     ),
 
                   // Si el carrito está vacío
                   if (_carrito.estaVacio) ...[
                     Padding(
-                      padding: EdgeInsets.symmetric(vertical: usableHeight * 0.06),
+                      padding: EdgeInsets.symmetric(
+                        vertical: usableHeight * 0.06,
+                      ),
                       child: Center(
                         child: Column(
                           children: [
@@ -570,11 +604,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: _carrito.lineas.length,
-                        separatorBuilder: (_, index) => const Divider(height: 1),
+                        separatorBuilder: (_, index) =>
+                            const Divider(height: 1),
                         itemBuilder: (ctx, idx) {
                           final item = _carrito.lineas[idx];
                           return Padding(
-                            padding: EdgeInsets.symmetric(vertical: usableHeight * 0.01),
+                            padding: EdgeInsets.symmetric(
+                              vertical: usableHeight * 0.01,
+                            ),
                             child: Row(
                               children: [
                                 Container(
@@ -594,7 +631,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
 
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item.nombre,
@@ -636,11 +674,16 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                           color: Colors.grey.shade200,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.remove, size: 16),
+                                        child: const Icon(
+                                          Icons.remove,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
                                       child: Text(
                                         '${item.cantidad}',
                                         style: TextStyle(
@@ -665,7 +708,11 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                           color: amarilloOro,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.add, size: 16, color: Colors.white),
+                                        child: const Icon(
+                                          Icons.add,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -721,10 +768,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.025,
+                            ),
                           ),
                         ),
-                        onPressed: _procesandoCarrito ? null : () => _confirmarPedido(modalContext),
+                        onPressed: _procesandoCarrito
+                            ? null
+                            : () => _confirmarPedido(modalContext),
                         icon: const Icon(Icons.check_circle_outline_rounded),
                         label: Text(
                           'Confirmar Pedido · ${_carrito.formatear(_carrito.total)}',
@@ -802,10 +853,41 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: usableHeight * 0.01),
-                    // Fila superior: Mis Pedidos + Carrito con badge dinámico
+                    // Fila superior: Botón de retroceso + Título + Mis Pedidos + Carrito con badge dinámico
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Tooltip(
+                            message: l10n?.volver ?? 'Volver',
+                            child: Container(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.07,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.03),
+                        Expanded(
+                          child: Text(
+                            l10n?.tienda ?? 'Tienda',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.068,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.pushNamed(
@@ -813,18 +895,42 @@ class _TiendaScreenState extends State<TiendaScreen> {
                               MisPedidosScreen.routeName,
                             );
                           },
-                          child: Tooltip(
-                            message: l10n?.misPedidos ?? 'Mis Pedidos',
-                            child: Padding(
-                              padding: EdgeInsets.only(right: screenWidth * 0.04),
-                              child: Icon(
-                                Icons.receipt_long_outlined,
-                                color: Colors.white,
-                                size: screenWidth * 0.075,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.028,
+                              vertical: usableHeight * 0.007,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.04,
                               ),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_outlined,
+                                  color: Colors.white,
+                                  size: screenWidth * 0.055,
+                                ),
+                                SizedBox(width: screenWidth * 0.015),
+                                Text(
+                                  l10n?.misPedidos ?? 'Mis Pedidos',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: screenWidth * 0.040,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                        SizedBox(width: screenWidth * 0.03),
                         GestureDetector(
                           onTap: () => _mostrarCarritoModal(context),
                           child: Stack(
@@ -833,7 +939,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                               Icon(
                                 Icons.shopping_cart_outlined,
                                 color: Colors.white,
-                                size: screenWidth * 0.075,
+                                size: screenWidth * 0.095,
                               ),
                               Positioned(
                                 top: -4,
@@ -865,40 +971,6 @@ class _TiendaScreenState extends State<TiendaScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: usableHeight * 0.012),
-
-                    // Título de la pantalla con botón de retroceso (Back <-)
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Tooltip(
-                            message: l10n?.volver ?? 'Volver',
-                            child: Container(
-                              padding: EdgeInsets.all(screenWidth * 0.02),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.chevron_left_rounded,
-                                color: Colors.white,
-                                size: screenWidth * 0.07,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: screenWidth * 0.03),
-                        Text(
-                          l10n?.tienda ?? 'Tienda',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.068,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
                     SizedBox(height: usableHeight * 0.015),
 
                     // Buscador reactivo de productos
@@ -911,7 +983,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: l10n?.buscarProductosPlaceholder ??
+                          hintText:
+                              l10n?.buscarProductosPlaceholder ??
                               'Buscar biblias, libros o regalos...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
@@ -974,246 +1047,250 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           vertical: usableHeight * 0.02,
                         ),
                         child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isLoadingProducts)
-                            Padding(
-                              padding: EdgeInsets.only(bottom: usableHeight * 0.01),
-                              child: const LinearProgressIndicator(
-                                color: amarilloOro,
-                                backgroundColor: Colors.transparent,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_isLoadingProducts)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: usableHeight * 0.01,
+                                ),
+                                child: const LinearProgressIndicator(
+                                  color: amarilloOro,
+                                  backgroundColor: Colors.transparent,
+                                ),
                               ),
-                            ),
-                          // Filtros de categoría en pastillas (Pills)
-                          SizedBox(
-                            height: usableHeight * 0.045,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: _categories.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(width: screenWidth * 0.025),
-                              itemBuilder: (context, index) {
-                                final isSelected =
-                                    _selectedCategoryIndex == index;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategoryIndex = index;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: screenWidth * 0.05,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? azulFondo
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(
-                                        screenWidth * 0.03,
+                            // Filtros de categoría en pastillas (Pills)
+                            SizedBox(
+                              height: usableHeight * 0.045,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: _categories.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(width: screenWidth * 0.025),
+                                itemBuilder: (context, index) {
+                                  final isSelected =
+                                      _selectedCategoryIndex == index;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategoryIndex = index;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.05,
                                       ),
-                                      border: Border.all(
+                                      decoration: BoxDecoration(
                                         color: isSelected
                                             ? azulFondo
-                                            : grisBorde,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        _getLocalizedCategory(
-                                          _categories[index],
-                                          l10n,
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.03,
                                         ),
-                                        style: TextStyle(
+                                        border: Border.all(
                                           color: isSelected
-                                              ? Colors.white
-                                              : azulFondo,
-                                          fontSize: screenWidth * 0.034,
-                                          fontWeight: FontWeight.bold,
+                                              ? azulFondo
+                                              : grisBorde,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          _getLocalizedCategory(
+                                            _categories[index],
+                                            l10n,
+                                          ),
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : azulFondo,
+                                            fontSize: screenWidth * 0.034,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                                  );
+                                },
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.02),
+
+                            // Banner Hero Promocional interactivo
+                            _buildPromoBanner(
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              amarilloOro: amarilloOro,
+                              l10n: l10n,
+                              onTap: () {
+                                _showProductDetailsModal(
+                                  context,
+                                  _productsList.first,
                                 );
                               },
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
+                            SizedBox(height: usableHeight * 0.025),
 
-                          // Banner Hero Promocional interactivo
-                          _buildPromoBanner(
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            amarilloOro: amarilloOro,
-                            l10n: l10n,
-                            onTap: () {
-                              _showProductDetailsModal(
-                                context,
-                                _productsList.first,
-                              );
-                            },
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // Encabezado de Productos destacados
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                l10n?.catalogoDeProductos ??
-                                    'Catálogo de productos',
-                                style: TextStyle(
-                                  color: azulFondo,
-                                  fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (_selectedCategoryIndex != 0)
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategoryIndex = 0;
-                                    });
-                                  },
-                                  child: Text(
-                                    l10n?.verTodos ?? 'Ver todos',
-                                    style: TextStyle(
-                                      color: amarilloOro,
-                                      fontSize: screenWidth * 0.034,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            // Encabezado de Productos destacados
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  l10n?.catalogoDeProductos ??
+                                      'Catálogo de productos',
+                                  style: TextStyle(
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.015),
-
-                          // Grid / Lista de Productos con imágenes reales
-                          _filteredProducts.isEmpty
-                              ? Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: usableHeight * 0.04,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.search_off_rounded,
-                                          color: Colors.grey.shade500,
-                                          size: screenWidth * 0.05,
-                                        ),
-                                        SizedBox(width: screenWidth * 0.02),
-                                        Text(
-                                          l10n?.noSeEncontraronProductosCategoria ??
-                                              'No se encontraron productos en esta categoría',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: screenWidth * 0.03,
-                                          ),
-                                        ),
-                                      ],
+                                if (_selectedCategoryIndex != 0)
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategoryIndex = 0;
+                                      });
+                                    },
+                                    child: Text(
+                                      l10n?.verTodos ?? 'Ver todos',
+                                      style: TextStyle(
+                                        color: amarilloOro,
+                                        fontSize: screenWidth * 0.034,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                )
-                              : GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _filteredProducts.length,
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        mainAxisSpacing: usableHeight * 0.018,
-                                        crossAxisSpacing: screenWidth * 0.03,
-                                        childAspectRatio: 0.72,
-                                      ),
-                                  itemBuilder: (context, index) {
-                                    final item = _filteredProducts[index];
-                                    return _buildProductCard(
-                                      producto: item,
-                                      screenWidth: screenWidth,
-                                      usableHeight: usableHeight,
-                                      azulFondo: azulFondo,
-                                      grisBorde: grisBorde,
-                                      amarilloOro: amarilloOro,
-                                      l10n: l10n,
-                                      onTap: () => _showProductDetailsModal(
-                                        context,
-                                        item,
-                                      ),
-                                      onFavoriteTap: () {
-                                        setState(() {
-                                          item.esFavorito = !item.esFavorito;
-                                        });
-                                      },
-                                    );
-                                  },
-                                ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // Título "Entrega o retiro"
-                          Text(
-                            l10n?.entregaORetiro ?? 'Entrega o retiro',
-                            style: TextStyle(
-                              color: azulFondo,
-                              fontSize: screenWidth * 0.045,
-                              fontWeight: FontWeight.bold,
+                              ],
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.015),
+                            SizedBox(height: usableHeight * 0.015),
 
-                          // Opciones de Entrega y Retiro
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildDeliveryOption(
-                                  title: l10n?.envioADomicilio ??
-                                      'Envío a domicilio',
-                                  icon: Icons.local_shipping_outlined,
-                                  isSelected: _selectedDeliveryOption == 0,
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  azulFondo: azulFondo,
-                                  amarilloOro: amarilloOro,
-                                  grisBorde: grisBorde,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedDeliveryOption = 0;
-                                    });
-                                  },
-                                ),
+                            // Grid / Lista de Productos con imágenes reales
+                            _filteredProducts.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: usableHeight * 0.04,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.search_off_rounded,
+                                            color: Colors.grey.shade500,
+                                            size: screenWidth * 0.05,
+                                          ),
+                                          SizedBox(width: screenWidth * 0.02),
+                                          Text(
+                                            l10n?.noSeEncontraronProductosCategoria ?? 'No se encontraron productos en esta categoría',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: screenWidth * 0.03,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: _filteredProducts.length,
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          mainAxisSpacing: usableHeight * 0.018,
+                                          crossAxisSpacing: screenWidth * 0.03,
+                                          childAspectRatio: 0.72,
+                                        ),
+                                    itemBuilder: (context, index) {
+                                      final item = _filteredProducts[index];
+                                      return _buildProductCard(
+                                        producto: item,
+                                        screenWidth: screenWidth,
+                                        usableHeight: usableHeight,
+                                        azulFondo: azulFondo,
+                                        grisBorde: grisBorde,
+                                        amarilloOro: amarilloOro,
+                                        l10n: l10n,
+                                        onTap: () => _showProductDetailsModal(
+                                          context,
+                                          item,
+                                        ),
+                                        onFavoriteTap: () {
+                                          setState(() {
+                                            item.esFavorito = !item.esFavorito;
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
+                            SizedBox(height: usableHeight * 0.025),
+
+                            // Título "Entrega o retiro"
+                            Text(
+                              l10n?.entregaORetiro ?? 'Entrega o retiro',
+                              style: TextStyle(
+                                color: azulFondo,
+                                fontSize: screenWidth * 0.045,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(width: screenWidth * 0.03),
-                              Expanded(
-                                child: _buildDeliveryOption(
-                                  title: l10n?.retiroEnIglesia ??
-                                      'Retiro en iglesia',
-                                  icon: Icons.church_outlined,
-                                  isSelected: _selectedDeliveryOption == 1,
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  azulFondo: azulFondo,
-                                  amarilloOro: amarilloOro,
-                                  grisBorde: grisBorde,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedDeliveryOption = 1;
-                                    });
-                                  },
+                            ),
+                            SizedBox(height: usableHeight * 0.015),
+
+                            // Opciones de Entrega y Retiro
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildDeliveryOption(
+                                    title:
+                                        l10n?.envioADomicilio ??
+                                        'Envío a domicilio',
+                                    icon: Icons.local_shipping_outlined,
+                                    isSelected: _selectedDeliveryOption == 0,
+                                    screenWidth: screenWidth,
+                                    usableHeight: usableHeight,
+                                    azulFondo: azulFondo,
+                                    amarilloOro: amarilloOro,
+                                    grisBorde: grisBorde,
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedDeliveryOption = 0;
+                                      });
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
-                        ],
+                                SizedBox(width: screenWidth * 0.03),
+                                Expanded(
+                                  child: _buildDeliveryOption(
+                                    title:
+                                        l10n?.retiroEnIglesia ??
+                                        'Retiro en iglesia',
+                                    icon: Icons.church_outlined,
+                                    isSelected: _selectedDeliveryOption == 1,
+                                    screenWidth: screenWidth,
+                                    usableHeight: usableHeight,
+                                    azulFondo: azulFondo,
+                                    amarilloOro: amarilloOro,
+                                    grisBorde: grisBorde,
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedDeliveryOption = 1;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: usableHeight * 0.02),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),
@@ -1620,7 +1697,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           borderRadius: BorderRadius.circular(
                             screenWidth * 0.03,
                           ),
-                          child: (producto.imageUrl.isNotEmpty &&
+                          child:
+                              (producto.imageUrl.isNotEmpty &&
                                   producto.imageUrl.startsWith('http'))
                               ? Image.network(
                                   producto.imageUrl,

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/modelos/user_model.dart';
+import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 
 /// Provider central para la gestión del usuario autenticado,
@@ -44,6 +45,8 @@ class UserProvider extends ChangeNotifier {
         final meData = await _api.me();
         _currentUser = UserModel.fromOdooJson(meData);
         notifyListeners();
+        // Sincronizar token del dispositivo con Odoo en segundo plano
+        DeviceNotificationService.instance.registerDeviceWithBackend(_api);
       }
     } catch (e) {
       debugPrint('[UserProvider] Restauración pasiva de sesión: $e');
@@ -92,6 +95,9 @@ class UserProvider extends ChangeNotifier {
       await prefs.setString('user_email', _currentUser!.email);
       await prefs.setString('user_name', _currentUser!.nombre);
 
+      // Registrar dispositivo en Odoo para recibir notificaciones push
+      DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -124,6 +130,9 @@ class UserProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
 
+      // Sincronizar token del dispositivo con Odoo
+      DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -139,6 +148,8 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Desregistrar dispositivo de Odoo para no recibir alertas de otra cuenta
+      await DeviceNotificationService.instance.unregisterDeviceFromBackend(_api);
       await _api.logout();
     } catch (e) {
       debugPrint('[UserProvider] Error al revocar token en servidor: $e');

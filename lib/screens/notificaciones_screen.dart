@@ -967,6 +967,211 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     required VoidCallback onDelete,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final bool tieneImagen = noti.imageUrl != null && noti.imageUrl!.isNotEmpty;
+    final String? fullImageUrl = tieneImagen
+        ? userProvider.api.imageUrl(noti.imageUrl!)
+        : null;
+
+    if (tieneImagen && fullImageUrl != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: noti.leida ? Colors.white : const Color(0xFFF0F5FA),
+            borderRadius: BorderRadius.circular(screenWidth * 0.035),
+            border: Border.all(
+              color: noti.leida ? grisBorde : azulFondo.withValues(alpha: 0.25),
+              width: noti.leida ? 1.0 : 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(screenWidth * 0.035),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Imagen superior destacada
+                Image.network(
+                  fullImageUrl,
+                  width: double.infinity,
+                  height: usableHeight * 0.17,
+                  fit: BoxFit.cover,
+                  headers: userProvider.api.imageHeaders,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  loadingBuilder: (ctx, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      height: usableHeight * 0.17,
+                      color: azulFondo.withValues(alpha: 0.05),
+                      child: Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: amarilloOro,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Padding(
+                  padding: EdgeInsets.all(screenWidth * 0.038),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cabecera: Categoría, Estado Urgente, Punto no leída y Eliminar
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.024,
+                              vertical: usableHeight * 0.003,
+                            ),
+                            decoration: BoxDecoration(
+                              color: noti.esUrgente
+                                  ? amarilloOro.withValues(alpha: 0.20)
+                                  : azulFondo.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.015,
+                              ),
+                            ),
+                            child: Text(
+                              noti.categoria.toUpperCase(),
+                              style: TextStyle(
+                                color: noti.esUrgente
+                                    ? const Color(0xFF9E6500)
+                                    : azulFondo,
+                                fontSize: screenWidth * 0.028,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                          if (!noti.leida) ...[
+                            SizedBox(width: screenWidth * 0.02),
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: amarilloOro,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          Text(
+                            '${noti.fecha} · ${noti.hora}',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: screenWidth * 0.029,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(width: screenWidth * 0.015),
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.grey.shade500,
+                              size: screenWidth * 0.054,
+                            ),
+                            tooltip: l10n.eliminarAviso,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: onDelete,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: usableHeight * 0.008),
+
+                      // Título
+                      Text(
+                        noti.titulo,
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.044,
+                          fontWeight: FontWeight.bold,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: usableHeight * 0.006),
+
+                      // Resumen
+                      Text(
+                        noti.resumen,
+                        style: TextStyle(
+                          color: Colors.grey.shade800,
+                          fontSize: screenWidth * 0.035,
+                          height: 1.35,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: usableHeight * 0.012),
+
+                      // Emisor y enlace "Ver detalle"
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_rounded,
+                            size: screenWidth * 0.036,
+                            color: Colors.grey.shade600,
+                          ),
+                          SizedBox(width: screenWidth * 0.015),
+                          Expanded(
+                            child: Text(
+                              noti.remitente,
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: screenWidth * 0.030,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Ver detalle',
+                                style: TextStyle(
+                                  color: const Color(0xFF9E6500),
+                                  fontSize: screenWidth * 0.030,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: const Color(0xFF9E6500),
+                                size: screenWidth * 0.040,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -1221,6 +1426,43 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                 ],
               ),
               SizedBox(height: usableHeight * 0.014),
+
+              // Imagen destacada si existe (estilo modal Odoo / comunicado)
+              if (noti.imageUrl != null && noti.imageUrl!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.035),
+                  child: Image.network(
+                    Provider.of<UserProvider>(context, listen: false)
+                        .api
+                        .imageUrl(noti.imageUrl!),
+                    width: double.infinity,
+                    height: usableHeight * 0.22,
+                    fit: BoxFit.cover,
+                    headers: Provider.of<UserProvider>(context, listen: false)
+                        .api
+                        .imageHeaders,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                    loadingBuilder: (ctx, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        height: usableHeight * 0.22,
+                        decoration: BoxDecoration(
+                          color: azulFondo.withValues(alpha: 0.06),
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.035),
+                        ),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: amarilloOro,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(height: usableHeight * 0.016),
+              ],
 
               // Título ampliado
               Text(

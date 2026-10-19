@@ -402,6 +402,112 @@ class ConfiguracionScreen extends StatelessWidget {
                             provider.toggleNotificacion('anuncios', val),
                         screenWidth: screenWidth,
                       ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: EdgeInsets.all(screenWidth * 0.038),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Verificación de comunicados (Cooldown)',
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: screenWidth * 0.037,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: amarilloOro.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '${provider.tiempoCooldownNotificacionesMinutos} min',
+                                    style: const TextStyle(
+                                      color: Color(0xFF9E6500),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: usableHeight * 0.006),
+                            Text(
+                              'Tiempo mínimo de espera entre revisiones automáticas al cambiar de pantalla. Protege la batería y optimiza datos móviles.',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: screenWidth * 0.030,
+                                height: 1.35,
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.010),
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: azulFondo,
+                                inactiveTrackColor: grisBorde,
+                                thumbColor: amarilloOro,
+                                overlayColor: amarilloOro.withValues(alpha: 0.2),
+                                trackHeight: 4,
+                              ),
+                              child: Slider(
+                                value: provider
+                                    .tiempoCooldownNotificacionesMinutos
+                                    .toDouble(),
+                                min: 2.0,
+                                max: 5.0,
+                                divisions: 3,
+                                label:
+                                    '${provider.tiempoCooldownNotificacionesMinutos} min',
+                                onChanged: (val) {
+                                  provider.cambiarTiempoCooldownNotificaciones(
+                                    val.round(),
+                                  );
+                                },
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '2 min (Rápido)',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: screenWidth * 0.027,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '3 min (Recomendado)',
+                                  style: TextStyle(
+                                    color: amarilloOro,
+                                    fontSize: screenWidth * 0.027,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '5 min (Ahorro)',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: screenWidth * 0.027,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),

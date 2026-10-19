@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:upgrader/upgrader.dart';
 
 import '../data/atrio_database_helper.dart';
@@ -100,6 +101,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   List<PostModel> _posts = [];
   bool _cargandoPosts = false;
   int _notificacionesSinLeer = 0;
+  DateTime? _ultimoChequeoNotificaciones;
 
   // Upgrader para notificaciones de actualización con estilo Cupertino e i18n
   late final AtrioUpgraderMessages _upgraderMessages;
@@ -118,6 +120,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     _cargarAnuncios();
     _cargarPosts();
     _cargarNotificacionesContador();
+    _ultimoChequeoNotificaciones = DateTime.now();
     _cargarDatosPerfil();
   }
 
@@ -145,7 +148,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     }
   }
 
-  Future<void> _cargarNotificacionesContador() async {
+  Future<void> _cargarNotificacionesContador({
+    bool verificarEmergente = true,
+  }) async {
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final res = await userProvider.api.notifications();
@@ -155,7 +160,295 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
           _notificacionesSinLeer = listRaw.length;
         });
       }
+
+      if (verificarEmergente && listRaw.isNotEmpty && mounted) {
+        await _verificarYMostrarNotificacionEmergente(listRaw);
+      }
     } catch (_) {}
+  }
+
+  /// Chequea notificaciones con tiempo de cooldown configurable (2 a 5 minutos)
+  Future<void> _chequearNotificacionesConCooldown({
+    bool verificarEmergente = false,
+  }) async {
+    final ahora = DateTime.now();
+    int cooldownMinutos = 3;
+    try {
+      final ajustes = Provider.of<AjustesProvider>(context, listen: false);
+      cooldownMinutos = ajustes.tiempoCooldownNotificacionesMinutos.clamp(2, 5);
+    } catch (_) {}
+
+    if (_ultimoChequeoNotificaciones != null) {
+      final diferenciaMinutos =
+          ahora.difference(_ultimoChequeoNotificaciones!).inMinutes;
+      if (diferenciaMinutos < cooldownMinutos) {
+        // Aún en tiempo de cooldown: no saturamos la red ni el servidor
+        return;
+      }
+    }
+
+    _ultimoChequeoNotificaciones = ahora;
+    await _cargarNotificacionesContador(
+      verificarEmergente: verificarEmergente,
+    );
+  }
+
+  /// Verifica si la notificación más reciente aún no ha sido mostrada como modal emergente
+  Future<void> _verificarYMostrarNotificacionEmergente(List listRaw) async {
+    try {
+      final masReciente = Map<String, dynamic>.from(listRaw.first);
+      final notiId = masReciente['id']?.toString();
+      if (notiId == null || notiId.isEmpty) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      const String prefKey = 'atrio_last_seen_popup_notification_id';
+      final String? lastSeenId = prefs.getString(prefKey);
+
+      // Si es una notificación nueva que aún no se ha mostrado en modal emergente
+      if (lastSeenId != notiId && mounted) {
+        // Registramos inmediatamente el ID para evitar disparos duplicados
+        await prefs.setString(prefKey, notiId);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _mostrarModalNotificacionEmergente(masReciente);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ [InicioAtrioScreen] Error verificando notificación emergente: $e');
+    }
+  }
+
+  /// Modal emergente para avisos y notificaciones creadas desde Odoo (/atrio/manage)
+  void _mostrarModalNotificacionEmergente(Map<String, dynamic> noti) {
+    if (!mounted) return;
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+
+    final String titulo = noti['title']?.toString() ??
+        noti['subject']?.toString() ??
+        noti['name']?.toString() ??
+        'Nuevo Comunicado';
+    final String mensaje = noti['message']?.toString() ??
+        noti['body']?.toString() ??
+        noti['summary']?.toString() ??
+        '';
+    final String? imagePath = noti['image_url']?.toString();
+    final String remitente = noti['church_name']?.toString() ??
+        noti['author']?.toString() ??
+        'Comunidad ATRIO';
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
+        ? userProvider.api.imageUrl(imagePath)
+        : null;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.05,
+          vertical: screenHeight * 0.04,
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.circular(screenWidth * 0.05),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(screenWidth * 0.05),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Cabecera superior con gradiente sutil y botón de cierre
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.045,
+                    vertical: 14,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: azulFondo,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: amarilloOro.withValues(alpha: 0.25),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.campaign_rounded,
+                          color: amarilloOro,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'NUEVO COMUNICADO',
+                              style: TextStyle(
+                                color: amarilloOro,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            Text(
+                              remitente,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white70,
+                          size: 22,
+                        ),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'Cerrar',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Contenido del Modal (Imagen opcional + Título + Mensaje)
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(screenWidth * 0.05),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (fullImageUrl != null) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              fullImageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 160,
+                              headers: userProvider.api.imageHeaders,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                        Text(
+                          titulo,
+                          style: const TextStyle(
+                            color: azulFondo,
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            height: 1.25,
+                          ),
+                        ),
+                        if (mensaje.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            mensaje,
+                            style: TextStyle(
+                              color: Colors.grey.shade800,
+                              fontSize: 14.5,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Botones de acción inferiores
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    screenWidth * 0.045,
+                    0,
+                    screenWidth * 0.045,
+                    16,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: azulFondo, width: 1.3),
+                            foregroundColor: azulFondo,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () {
+                            Navigator.of(dialogCtx).pop();
+                            Navigator.pushNamed(
+                              context,
+                              NotificacionesScreen.routeName,
+                            );
+                          },
+                          child: const Text(
+                            'Ver todas',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: azulFondo,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () => Navigator.of(dialogCtx).pop(),
+                          child: const Text(
+                            'Entendido',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _cargarAnuncios() async {
@@ -374,10 +667,15 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
             setState(() {
               _currentNavIndex = index;
             });
-            // Si el usuario vuelve a la pantalla de Inicio desde Perfil, refrescamos los datos
+            // Si el usuario vuelve a la pantalla de Inicio desde Perfil u otras pestañas, refrescamos los datos
             if (index == 0) {
               _cargarDatosPerfil();
             }
+            // Chequeo saludable de notificaciones con cooldown configurable (2-5 min).
+            // Solo levanta el modal emergente si el usuario está en la pestaña de Inicio.
+            _chequearNotificacionesConCooldown(
+              verificarEmergente: index == 0,
+            );
           },
           destinations: [
             NavigationDestination(
@@ -924,15 +1222,18 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 ),
                 SizedBox(width: screenWidth * 0.025),
                 Expanded(
-                  child: Text(
-                    item['title'],
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: azulFondo,
-                      fontSize: screenWidth * 0.045,
-                      height: 1.15,
-                      fontWeight: FontWeight.bold,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      item['title'],
+                      maxLines: 2,
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.040,
+                        height: 1.15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

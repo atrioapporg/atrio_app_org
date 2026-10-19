@@ -44,6 +44,8 @@ class AjustesProvider extends ChangeNotifier {
   bool get soloDescargarConWifi => _ajustes.soloDescargarConWifi;
   int get tiempoTransicionBannerSegundos =>
       _ajustes.tiempoTransicionBannerSegundos;
+  int get tiempoCooldownNotificacionesMinutos =>
+      _ajustes.tiempoCooldownNotificacionesMinutos;
 
   AjustesProvider() {
     cargarAjustes();
@@ -194,6 +196,16 @@ class AjustesProvider extends ChangeNotifier {
 
     await AtrioDatabaseHelper.instance
         .actualizarAjusteCampo('tiempo_transicion_banner', segValidos);
+  }
+
+  /// Ajusta el tiempo de cooldown para chequear notificaciones en el navbar (2 a 5 minutos)
+  Future<void> cambiarTiempoCooldownNotificaciones(int minutos) async {
+    final minValidos = minutos.clamp(2, 5);
+    _ajustes = _ajustes.copyWith(tiempoCooldownNotificacionesMinutos: minValidos);
+    notifyListeners();
+
+    await AtrioDatabaseHelper.instance
+        .actualizarAjusteCampo('tiempo_cooldown_notificaciones', minValidos);
   }
 
   /// Restaura todas las configuraciones a sus valores predeterminados de fábrica

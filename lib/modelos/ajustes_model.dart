@@ -30,7 +30,10 @@ class AjustesModel {
   // 7. Transición del Banner Principal (HeroBannerCard)
   final int tiempoTransicionBannerSegundos; // 3 a 10 seg (por defecto 5)
 
-  // 8. Auditoría
+  // 8. Frecuencia de verificación de notificaciones (Cooldown en cambio de pestañas)
+  final int tiempoCooldownNotificacionesMinutos; // 2 a 5 min (por defecto 3)
+
+  // 9. Auditoría
   final String? actualizadoEn;
 
   const AjustesModel({
@@ -51,6 +54,7 @@ class AjustesModel {
     this.soloDescargarConWifi = true,
     this.tiempoCierreModalVersiculoSegundos = 4,
     this.tiempoTransicionBannerSegundos = 5,
+    this.tiempoCooldownNotificacionesMinutos = 3,
     this.actualizadoEn,
   });
 
@@ -86,6 +90,8 @@ class AjustesModel {
           map['tiempo_cierre_modal_versiculo'] as int? ?? 4,
       tiempoTransicionBannerSegundos:
           map['tiempo_transicion_banner'] as int? ?? 5,
+      tiempoCooldownNotificacionesMinutos:
+          (map['tiempo_cooldown_notificaciones'] as int?)?.clamp(2, 5) ?? 3,
       actualizadoEn: map['actualizado_en'] as String?,
     );
   }
@@ -110,6 +116,7 @@ class AjustesModel {
       'solo_descargar_con_wifi': soloDescargarConWifi ? 1 : 0,
       'tiempo_cierre_modal_versiculo': tiempoCierreModalVersiculoSegundos,
       'tiempo_transicion_banner': tiempoTransicionBannerSegundos,
+      'tiempo_cooldown_notificaciones': tiempoCooldownNotificacionesMinutos,
       'actualizado_en': actualizadoEn ?? DateTime.now().toIso8601String(),
     };
   }
@@ -133,6 +140,7 @@ class AjustesModel {
     bool? soloDescargarConWifi,
     int? tiempoCierreModalVersiculoSegundos,
     int? tiempoTransicionBannerSegundos,
+    int? tiempoCooldownNotificacionesMinutos,
     String? actualizadoEn,
   }) {
     return AjustesModel(
@@ -165,6 +173,9 @@ class AjustesModel {
       tiempoTransicionBannerSegundos:
           tiempoTransicionBannerSegundos ??
               this.tiempoTransicionBannerSegundos,
+      tiempoCooldownNotificacionesMinutos:
+          tiempoCooldownNotificacionesMinutos ??
+              this.tiempoCooldownNotificacionesMinutos,
       actualizadoEn: actualizadoEn ?? this.actualizadoEn,
     );
   }

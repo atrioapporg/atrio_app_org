@@ -114,8 +114,8 @@ Future<void> main() async {
   final String rutaInicial = !introVista
       ? IntroEncuentraScreen.routeName
       : (isLoggedIn
-          ? InicioAtrioScreen.routeName
-          : InicioSesionScreen.routeName);
+            ? InicioAtrioScreen.routeName
+            : InicioSesionScreen.routeName);
 
   //
   // Iniciar monitoreo de internet en toda la app
@@ -163,6 +163,18 @@ class MyApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       routes: _routes,
       initialRoute: initialRoute,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: mediaQuery.textScaler.clamp(
+              minScaleFactor: 0.80,
+              maxScaleFactor: 0.95,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 

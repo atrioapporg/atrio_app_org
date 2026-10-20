@@ -9,6 +9,10 @@ import 'package:flutter/services.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:feedback/feedback.dart';
+import 'package:atrio/theme/atrio_feedback_theme.dart';
+import 'package:atrio/widgets/atrio_better_feedback.dart';
+import 'package:atrio/widgets/atrio_feedback_form.dart';
 
 // Paquetes - Google Maps
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
@@ -148,6 +152,11 @@ class AppState extends StatelessWidget {
 }
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   final String initialRoute;
   const MyApp({super.key, required this.initialRoute});
 
@@ -155,26 +164,41 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final ajustes = context.watch<AjustesProvider>();
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'ATRIO',
-      locale: ajustes.locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      routes: _routes,
-      initialRoute: initialRoute,
-      builder: (context, child) {
-        final mediaQuery = MediaQuery.of(context);
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            textScaler: mediaQuery.textScaler.clamp(
-              minScaleFactor: 0.80,
-              maxScaleFactor: 0.95,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
+    return AtrioBetterFeedback(
+      theme: AtrioFeedbackTheme.theme,
+      feedbackBuilder: (context, onSubmit, scrollController) {
+        return AtrioFeedbackForm(
+          onSubmit: onSubmit,
+          scrollController: scrollController,
         );
       },
+      localizationsDelegates: [
+        GlobalFeedbackLocalizationsDelegate(),
+      ],
+      localeOverride: ajustes.locale,
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        debugShowCheckedModeBanner: false,
+        title: 'ATRIO',
+        locale: ajustes.locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routes: _routes,
+        initialRoute: initialRoute,
+        builder: (context, child) {
+          final mediaQuery = MediaQuery.of(context);
+          return MediaQuery(
+            data: mediaQuery.copyWith(
+              textScaler: mediaQuery.textScaler.clamp(
+                minScaleFactor: 0.80,
+                maxScaleFactor: 0.95,
+              ),
+            ),
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
+      ),
     );
   }
 

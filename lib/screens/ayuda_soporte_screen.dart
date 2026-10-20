@@ -4,8 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:feedback/feedback.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/biblia_provider.dart';
+import '../utils/feedback_handler.dart';
 
 class AyudaSoporteScreen extends StatefulWidget {
   static const routeName = 'ayuda_soporte_screen';
@@ -678,6 +680,28 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                 ),
               ],
             ),
+            SizedBox(height: screenHeight * 0.015),
+
+            // Tarjeta de Retroalimentación con Captura de Pantalla
+            _buildFeedbackBannerCard(
+              screenWidth: screenWidth,
+              screenHeight: screenHeight,
+              colorTarjeta: colorTarjeta,
+              colorBorde: colorBorde,
+              colorAcento: colorAcento,
+              colorTextoPrincipal: colorTextoPrincipal,
+              colorTextoSecundario: colorTextoSecundario,
+              fontScale: fontScale,
+              selectedFont: selectedFont,
+              onTap: () {
+                BetterFeedback.of(context).show((UserFeedback feedback) {
+                  try {
+                    BetterFeedback.of(context).hide();
+                  } catch (_) {}
+                  FeedbackHandler.procesarFeedback(feedback);
+                });
+              },
+            ),
             SizedBox(height: screenHeight * 0.03),
 
             // Preguntas Frecuentes
@@ -886,6 +910,91 @@ class _AyudaSoporteScreenState extends State<AyudaSoporteScreen> {
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeedbackBannerCard({
+    required double screenWidth,
+    required double screenHeight,
+    required Color colorTarjeta,
+    required Color colorBorde,
+    required Color colorAcento,
+    required Color colorTextoPrincipal,
+    required Color colorTextoSecundario,
+    required double fontScale,
+    required String selectedFont,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: colorTarjeta,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          color: colorAcento.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.04,
+            vertical: screenHeight * 0.016,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.025),
+                decoration: BoxDecoration(
+                  color: colorAcento.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.rate_review_rounded,
+                  color: colorAcento,
+                  size: screenWidth * 0.065,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.035),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reportar con captura de pantalla',
+                      style: _getFontStyle(
+                        TextStyle(
+                          color: colorTextoPrincipal,
+                          fontSize: (screenWidth * 0.036) * fontScale,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        selectedFont,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Dibuja y envíanos sugerencias o errores técnicos.',
+                      style: _getFontStyle(
+                        TextStyle(
+                          color: colorTextoSecundario,
+                          fontSize: (screenWidth * 0.029) * fontScale,
+                        ),
+                        selectedFont,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: colorAcento,
+                size: screenWidth * 0.04,
               ),
             ],
           ),

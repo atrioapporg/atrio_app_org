@@ -138,7 +138,8 @@ class AtrioApi {
       request.body = jsonEncode(body);
     }
 
-    final streamedResponse = await request.send();
+    final streamedResponse =
+        await request.send().timeout(const Duration(seconds: 15));
     final response = await http.Response.fromStream(streamedResponse);
 
     Map<String, dynamic> data = {};

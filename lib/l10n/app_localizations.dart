@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @deseasSalirAtrio.
   ///
   /// In es, this message translates to:
-  /// **'¿Deseas salir de atrio?'**
+  /// **'¿Deseas salir de Atrio?'**
   String get deseasSalirAtrio;
 
   /// No description provided for @presionaSalirCerrar.
@@ -3203,7 +3203,7 @@ abstract class AppLocalizations {
   /// No description provided for @descripcionRegistroIglesia.
   ///
   /// In es, this message translates to:
-  /// **'Te has registrado correctamente en esta iglesia a través de atrio.'**
+  /// **'Te has registrado correctamente en esta iglesia a través de Atrio.'**
   String get descripcionRegistroIglesia;
 
   /// No description provided for @filtroTodas.

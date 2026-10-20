@@ -568,6 +568,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   }
 
   void _mostrarDialogoSalida(BuildContext context) {
+    if (!context.mounted) return;
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,

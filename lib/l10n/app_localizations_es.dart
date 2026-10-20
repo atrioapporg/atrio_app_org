@@ -127,7 +127,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get cerrar => 'Cerrar';
 
   @override
-  String get deseasSalirAtrio => '¿Deseas salir de atrio?';
+  String get deseasSalirAtrio => '¿Deseas salir de Atrio?';
 
   @override
   String get presionaSalirCerrar =>
@@ -1731,7 +1731,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get descripcionRegistroIglesia =>
-      'Te has registrado correctamente en esta iglesia a través de atrio.';
+      'Te has registrado correctamente en esta iglesia a través de Atrio.';
 
   @override
   String get filtroTodas => 'Todas';

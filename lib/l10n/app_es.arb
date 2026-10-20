@@ -49,7 +49,7 @@
   "guardar": "Guardar",
   "cancelar": "Cancelar",
   "cerrar": "Cerrar",
-  "deseasSalirAtrio": "¿Deseas salir de atrio?",
+  "deseasSalirAtrio": "¿Deseas salir de Atrio?",
   "presionaSalirCerrar": "Presiona \"Salir\" para cerrar la aplicación.",
   "salir": "Salir",
   "iglesia": "Iglesia",
@@ -918,7 +918,7 @@
   "diaMiercoles": "Miércoles",
   "estudioBiblico730pm": "7:30 p. m. · Estudio Bíblico",
   "bienvenidoNuevaComunidad": "¡Bienvenido a tu nueva comunidad!",
-  "descripcionRegistroIglesia": "Te has registrado correctamente en esta iglesia a través de atrio.",
+  "descripcionRegistroIglesia": "Te has registrado correctamente en esta iglesia a través de Atrio.",
   "filtroTodas": "Todas",
   "filtroNoLeidas": "No leídas",
   "categoriaServicios": "Servicios",
@@ -1050,7 +1050,9 @@
   "@politicaPrivacidadIntro": {
     "description": "Introducción de la política de privacidad",
     "placeholders": {
-      "fecha": { "type": "String" }
+      "fecha": {
+        "type": "String"
+      }
     }
   },
   "seccionInfoQueRecopilamos": "1. Información que recopilamos",

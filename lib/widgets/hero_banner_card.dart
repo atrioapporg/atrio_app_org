@@ -85,6 +85,7 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
   // Estado del versículo del día obtenido por servicio
   VersiculoDia? _versiculoCargado;
   final VersiculoService _versiculoService = VersiculoService();
+  String? _ultimoIdioma;
 
   @override
   void initState() {
@@ -100,6 +101,11 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_esModoDinamico) {
+      final idiomaActual = Localizations.maybeLocaleOf(context)?.languageCode ?? 'es';
+      if (_ultimoIdioma != null && _ultimoIdioma != idiomaActual) {
+        _cargarVersiculo(idioma: idiomaActual);
+      }
+      _ultimoIdioma = idiomaActual;
       _iniciarAutoPlay();
     }
   }
@@ -127,13 +133,13 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
     }
   }
 
-  Future<void> _cargarVersiculo() async {
+  Future<void> _cargarVersiculo({String? idioma}) async {
     if (widget.versiculoDelDia != null) {
       _versiculoCargado = widget.versiculoDelDia;
       return;
     }
     try {
-      final v = await _versiculoService.obtenerVersiculoDelDia();
+      final v = await _versiculoService.obtenerVersiculoDelDia(idioma: idioma);
       if (mounted) {
         setState(() {
           _versiculoCargado = v;
@@ -141,11 +147,19 @@ class _HeroBannerCardState extends State<HeroBannerCard> {
       }
     } catch (_) {
       if (mounted) {
+        final bool esEn = (idioma ?? '').toLowerCase().startsWith('en');
         setState(() {
-          _versiculoCargado = VersiculoDia(
-            texto: 'Mira que te mando que te esfuerces y seas valiente; no temas ni desmayes.',
-            referencia: 'Josué 1:9',
-          );
+          _versiculoCargado = esEn
+              ? VersiculoDia(
+                  texto:
+                      'Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged.',
+                  referencia: 'Joshua 1:9',
+                )
+              : VersiculoDia(
+                  texto:
+                      'Mira que te mando que te esfuerces y seas valiente; no temas ni desmayes.',
+                  referencia: 'Josué 1:9',
+                );
         });
       }
     }

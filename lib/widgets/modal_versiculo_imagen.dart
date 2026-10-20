@@ -39,20 +39,38 @@ class _ModalVersiculoImagenState extends State<ModalVersiculoImagen> {
   final VersiculoService _versiculoService = VersiculoService();
   late Future<VersiculoDia> _versiculoFuture;
 
+  String? _ultimoIdioma;
+
   @override
   void initState() {
     super.initState();
     if (widget.versiculo != null) {
       _versiculoFuture = Future.value(widget.versiculo!);
     } else {
-      _cargarVersiculo();
+      _versiculoFuture = _versiculoService.obtenerVersiculoDelDia();
     }
   }
 
-  void _cargarVersiculo() {
-    setState(() {
-      _versiculoFuture = _versiculoService.obtenerVersiculoDelDia();
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.versiculo == null) {
+      final idiomaActual =
+          Localizations.maybeLocaleOf(context)?.languageCode ?? 'es';
+      if (_ultimoIdioma != null && _ultimoIdioma != idiomaActual) {
+        _cargarVersiculo(idioma: idiomaActual);
+      }
+      _ultimoIdioma = idiomaActual;
+    }
+  }
+
+  void _cargarVersiculo({String? idioma}) {
+    if (mounted) {
+      setState(() {
+        _versiculoFuture =
+            _versiculoService.obtenerVersiculoDelDia(idioma: idioma);
+      });
+    }
   }
 
   @override

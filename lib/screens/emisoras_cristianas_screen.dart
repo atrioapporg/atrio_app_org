@@ -74,7 +74,8 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
 
   static String _obtenerNombrePais(String codigo, [AppLocalizations? l10n]) {
     final String codigoUpper = codigo.toUpperCase().trim();
-    if (codigoUpper == 'TODOS') return l10n?.todosLosPaises ?? 'Todos los países';
+    if (codigoUpper == 'TODOS')
+      return l10n?.todosLosPaises ?? 'Todos los países';
     if (codigoUpper == 'OTROS') return l10n?.otrosPaises ?? 'Otros países';
     if (_nombresPaises.containsKey(codigoUpper)) {
       return _nombresPaises[codigoUpper]!;
@@ -85,9 +86,9 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     return codigoUpper;
   }
 
-  // Hoja: "emisoras_cristianas" (gid: 1021727370)
+  // Hoja: "emisoras" (gviz directo sin redirecciones 307)
   static const String _sheetUrl =
-      'https://docs.google.com/spreadsheets/d/12VyJ9cWJrpqWq1J3uot4I1h9g57pcHhcMYgv4G07pEE/export?format=csv&gid=1021727370';
+      'https://docs.google.com/spreadsheets/d/1t0UqJ50KhUiNRh0bCvfyi6Z7nF83eJYdji98nUw6SuU/gviz/tq?tqx=out:csv&sheet=emisoras';
 
   // URLs verificadas y corregidas para emisoras que tenían enlaces rotos
   static const Map<String, String> _correccionesUrlsEmisoras = <String, String>{
@@ -218,7 +219,9 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
 
   void _manejarRetroceso() {
     _detenerReproduccion();
-    if (Navigator.canPop(context)) {
+    if (ModalRoute.of(context)?.settings.name == 'inicio_atrio_screen') {
+      const CambiarTabAtrioNotification(0).dispatch(context);
+    } else if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
       // Si estamos en la pestaña Radio de la pantalla principal, volver a la pestaña de Inicio (Tab 0)
@@ -379,10 +382,16 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     List<Map<String, dynamic>> resultado = <Map<String, dynamic>>[];
 
     try {
-      debugPrint('[RADIO_LOG] Descargando desde Google Sheets con GID...');
+      debugPrint('[RADIO_LOG] Descargando desde Google Sheets...');
       final response = await http
-          .get(Uri.parse(_sheetUrl))
-          .timeout(const Duration(seconds: 15));
+          .get(
+            Uri.parse(_sheetUrl),
+            headers: const {
+              'Accept': 'text/csv, text/plain, */*',
+              'User-Agent': 'AtrioApp/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final String csvString = utf8.decode(
@@ -1270,7 +1279,8 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                   fontSize: screenWidth * 0.04,
                 ),
                 decoration: InputDecoration(
-                  hintText: l10n?.buscarEmisorasPlaceholder ??
+                  hintText:
+                      l10n?.buscarEmisorasPlaceholder ??
                       'Buscar por nombre, denominación, ciudad...',
                   hintStyle: TextStyle(
                     color: Colors.grey.shade500,
@@ -1469,20 +1479,22 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
         iconoVacio = Icons.favorite_border_rounded;
         if (_paisSeleccionado != 'TODOS') {
           final String nombrePais = _obtenerNombrePais(_paisSeleccionado, l10n);
-          mensajeVacio = l10n?.sinFavoritasEnPais(nombrePais) ??
+          mensajeVacio =
+              l10n?.sinFavoritasEnPais(nombrePais) ??
               'No tienes emisoras favoritas guardadas en $nombrePais.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
         } else {
-          mensajeVacio = l10n?.sinFavoritasAun ??
-              'No tienes emisoras favoritas guardadas todavía.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
+          mensajeVacio = l10n?.sinFavoritasAun ?? 'No tienes emisoras favoritas guardadas todavía.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
         }
       } else if (_filtroBusqueda.isNotEmpty) {
         iconoVacio = Icons.search_off_rounded;
-        mensajeVacio = l10n?.noEmisorasCoincidencia(_filtroBusqueda) ??
+        mensajeVacio =
+            l10n?.noEmisorasCoincidencia(_filtroBusqueda) ??
             'No se encontraron emisoras que coincidan con "$_filtroBusqueda".';
       } else {
         iconoVacio = Icons.radio_outlined;
         final String nombrePais = _obtenerNombrePais(_paisSeleccionado, l10n);
-        mensajeVacio = l10n?.noEmisorasDisponiblesPais(nombrePais) ??
+        mensajeVacio =
+            l10n?.noEmisorasDisponiblesPais(nombrePais) ??
             'No se encontraron emisoras disponibles para $nombrePais.';
       }
 
@@ -1575,8 +1587,8 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     double safeAreaBottom,
     AppLocalizations? l10n,
   ) {
-    final String nombre =
-        (emisora['name'] ?? (l10n?.emisora ?? 'Emisora')).toString();
+    final String nombre = (emisora['name'] ?? (l10n?.emisora ?? 'Emisora'))
+        .toString();
     final String denominacion = (emisora['denomination'] ?? 'Cristiana')
         .toString();
     final String frecuencia = (emisora['frequency'] ?? 'Online').toString();
@@ -1641,10 +1653,13 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
                   _isBuffering
                       ? (l10n?.sintonizandoAudio ?? 'Sintonizando audio...')
                       : denominacion.isNotEmpty && denominacion != 'Cristiana'
-                      ? (l10n?.enVivoConDenominacion(denominacion, frecuencia) ??
-                          'En vivo · $denominacion ($frecuencia)')
+                      ? (l10n?.enVivoConDenominacion(
+                              denominacion,
+                              frecuencia,
+                            ) ??
+                            'En vivo · $denominacion ($frecuencia)')
                       : (l10n?.enVivoFrecuencia(frecuencia) ??
-                          'En vivo · $frecuencia'),
+                            'En vivo · $frecuencia'),
                   style: TextStyle(
                     color: _isBuffering ? amarilloOro : Colors.grey.shade700,
                     fontSize: screenWidth * 0.03,
@@ -1711,10 +1726,11 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     final Map<String, dynamic>? actual = _emisoraActual;
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (didPop) return;
-        _manejarRetroceso();
+        if (didPop) {
+          _detenerReproduccion();
+        }
       },
       child: Scaffold(
         backgroundColor: azulFondo,

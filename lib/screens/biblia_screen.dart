@@ -35,6 +35,7 @@ class _BibliaScreenState extends State {
   int _totalFavoritos = 0;
 
   late BibliaProvider _bibliaProvider;
+  String? _ultimoIdioma;
 
   @override
   void didChangeDependencies() {
@@ -44,6 +45,13 @@ class _BibliaScreenState extends State {
       context,
       listen: false,
     );
+
+    final idiomaActual = ajustesProvider.idiomaCodigo;
+    if (_ultimoIdioma != null && _ultimoIdioma != idiomaActual) {
+      _cargarVersiculo(idioma: idiomaActual);
+    }
+    _ultimoIdioma = idiomaActual;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _bibliaProvider.sincronizarIdioma(
@@ -55,7 +63,7 @@ class _BibliaScreenState extends State {
   @override
   void initState() {
     super.initState();
-    _cargarVersiculo();
+    _versiculoFuture = _versiculoService.obtenerVersiculoDelDia();
     _cargarConteoLocal();
     _cargarUltimaLectura();
   }
@@ -71,10 +79,12 @@ class _BibliaScreenState extends State {
     }
   }
 
-  void _cargarVersiculo() {
-    setState(() {
-      _versiculoFuture = _versiculoService.obtenerVersiculoDelDia();
-    });
+  void _cargarVersiculo({String? idioma}) {
+    if (mounted) {
+      setState(() {
+        _versiculoFuture = _versiculoService.obtenerVersiculoDelDia(idioma: idioma);
+      });
+    }
   }
 
   Future _cargarConteoLocal() async {

@@ -93,7 +93,9 @@ class DeviceNotificationService {
         '📡 [DeviceNotificationService] Registrando dispositivo en Odoo: $payload',
       );
 
-      final res = await api.registerDevice(payload);
+      final res = await api
+          .registerDevice(payload)
+          .timeout(const Duration(seconds: 8));
       debugPrint(
         '✅ [DeviceNotificationService] Dispositivo registrado exitosamente: $res',
       );

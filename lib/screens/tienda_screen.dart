@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../modelos/carrito_model.dart';
 import '../modelos/producto_model.dart';
 import '../providers/user_provider.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 import 'mis_pedidos_screen.dart';
 
 class TiendaScreen extends StatefulWidget {
@@ -249,6 +250,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
   Future<void> _agregarAlCarrito(ProductoModel producto) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+
+    if (!ModalRestriccionDonacion.verificarAutenticacion(
+      context: context,
+      mensaje: l10n?.tiendaRequiereSesion,
+    )) {
+      return;
+    }
+
     final productId = int.tryParse(producto.id);
 
     if (!_catalogoDesdeOdoo || productId == null) {
@@ -455,6 +464,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
 
   /// Despliega el modal interactivo del Carrito de Compras
   void _mostrarCarritoModal(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (!ModalRestriccionDonacion.verificarAutenticacion(
+      context: context,
+      mensaje: l10n?.tiendaRequiereSesion,
+    )) {
+      return;
+    }
+
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
@@ -890,6 +907,12 @@ class _TiendaScreenState extends State<TiendaScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
+                            if (!ModalRestriccionDonacion.verificarAutenticacion(
+                              context: context,
+                              mensaje: l10n?.sesionRequeridaGenerica,
+                            )) {
+                              return;
+                            }
                             Navigator.pushNamed(
                               context,
                               MisPedidosScreen.routeName,

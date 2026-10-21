@@ -1,4 +1,5 @@
 import 'package:atrio/screens/confirmar_donacion_screen.dart';
+import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -499,6 +500,9 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                   ),
                 ),
                 onPressed: () {
+                  if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+                    return;
+                  }
                   Navigator.pushNamed(
                     context,
                     ConfirmarDonacionScreen.routeName,

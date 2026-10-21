@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:atrio/atrio_api.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 
 class OdooPagoDialog {
   static Future<void> mostrarConfirmacionPago({
@@ -35,6 +37,9 @@ class OdooPagoDialog {
     const Color rojoError = Color(0xFFD32F2F);
 
     final bool esPaypal = metodoPago.toLowerCase().contains('paypal');
+    if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+      return Future.value();
+    }
 
     return showModalBottomSheet(
       context: context,
@@ -237,6 +242,18 @@ class OdooPagoDialog {
                           ),
                         ),
                         onPressed: () async {
+                          final userProvider = Provider.of<UserProvider>(
+                            context,
+                            listen: false,
+                          );
+                          if (!userProvider.canDonate) {
+                            Navigator.of(modalContext).pop();
+                            ModalRestriccionDonacion.verificarYMostrar(
+                              context: context,
+                            );
+                            return;
+                          }
+
                           setStateModal(() {
                             procesando = true;
                             error = false;
@@ -244,10 +261,6 @@ class OdooPagoDialog {
                           });
 
                           try {
-                            final userProvider = Provider.of<UserProvider>(
-                              context,
-                              listen: false,
-                            );
                             final user = userProvider.currentUser;
 
                             final effectiveName =
@@ -350,12 +363,15 @@ class OdooPagoDialog {
                               });
                             }
                           } catch (e) {
+                            String msg =
+                                e.toString().replaceFirst('Exception: ', '');
+                            if (e is AtrioApiException) {
+                              msg = e.message;
+                            }
                             setStateModal(() {
                               procesando = false;
                               error = true;
-                              errorMessage = e
-                                  .toString()
-                                  .replaceFirst('Exception: ', '');
+                              errorMessage = msg;
                             });
                           }
                         },

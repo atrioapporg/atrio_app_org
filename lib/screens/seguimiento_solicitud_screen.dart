@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
+import '../widgets/modal_restriccion_donacion.dart';
+import 'inicio_sesion_screen.dart';
 
 class SeguimientoSolicitudScreen extends StatefulWidget {
   static const routeName = 'seguimiento_solicitud_screen';
@@ -28,10 +30,21 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
   /// Consulta las solicitudes del usuario en Odoo (GET /requests)
   Future<void> _cargarSolicitudes() async {
     if (!mounted) return;
+    final userProvider = context.read<UserProvider>();
+    if (!userProvider.isAuthenticated) {
+      if (mounted) {
+        setState(() {
+          _solicitudesApi = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final api = context.read<UserProvider>().api;
+      final api = userProvider.api;
       final data = await api.requests();
       final dynamic raw = data['requests'] ?? data['items'] ?? data['data'];
 
@@ -144,71 +157,14 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE5E5E5);
 
-    // Listado de 5 solicitudes de relleno (mock) según los tipos de solicitud disponibles
-    final List<Map<String, dynamic>> solicitudesMock = [
-      {
-        'title': l10n?.orientacionPastoral ?? 'Orientación pastoral',
-        'status': l10n?.estadoProgramada ?? 'Programada',
-        'statusColor': amarilloOro,
-        'dateInfo': l10n?.fechaMartesHora ?? 'Martes · 4:00 p. m.',
-        'icon': Icons.church_outlined,
-        'iconColor': const Color(0xFF0055A5),
-        'referencia': 'REQ-2026-0041',
-        'detalle':
-            l10n?.detalleOrientacionPastoral ??
-            'Cita de acompañamiento espiritual y orientación pastoral presencial con el pastor titular.',
-      },
-      {
-        'title': l10n?.peticionDeOracion ?? 'Petición de oración',
-        'status': l10n?.estadoRecibida ?? 'Recibida',
-        'statusColor': const Color(0xFF0055A5),
-        'dateInfo': null,
-        'icon': Icons.pan_tool_alt_outlined,
-        'iconColor': const Color(0xFF7A8B43),
-        'referencia': 'REQ-2026-0038',
-        'detalle':
-            l10n?.detallePeticionOracion ??
-            'Petición de intercesión por pronta recuperación de salud y bienestar familiar en el culto de oración.',
-      },
-      {
-        'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
-        'status': l10n?.estadoEnRevision ?? 'En revisión',
-        'statusColor': amarilloOro,
-        'dateInfo': null,
-        'icon': Icons.groups_outlined,
-        'iconColor': azulFondo,
-        'referencia': 'REQ-2026-0035',
-        'detalle':
-            l10n?.detalleAyudaComunitaria ??
-            'Solicitud de canasta de alimentos básicos y apoyo solidario para una familia en situación de necesidad.',
-      },
-      {
-        'title': l10n?.consejeriaFamiliar ?? 'Consejería familiar',
-        'status': l10n?.estadoConfirmada ?? 'Confirmada',
-        'statusColor': const Color(0xFF2E7D32),
-        'dateInfo': l10n?.fechaJuevesHora ?? 'Jueves · 5:30 p. m.',
-        'icon': Icons.family_restroom_rounded,
-        'iconColor': azulFondo,
-        'referencia': 'REQ-2026-0029',
-        'detalle':
-            l10n?.detalleConsejeriaFamiliar ??
-            'Sesión de consejería familiar y diálogo guiado por el equipo ministerial de la iglesia.',
-      },
-      {
-        'title': l10n?.visitaAEnfermos ?? 'Visita a enfermos',
-        'status': l10n?.estadoEnProceso ?? 'En proceso',
-        'statusColor': const Color(0xFF0055A5),
-        'dateInfo': l10n?.fechaViernesHora ?? 'Viernes · 10:00 a. m.',
-        'icon': Icons.favorite_border_rounded,
-        'iconColor': const Color(0xFF7A8B43),
-        'referencia': 'REQ-2026-0022',
-        'detalle':
-            l10n?.detalleVisitaEnfermos ??
-            'Visita domiciliaria del equipo de visitación pastoral para ministración y oración por sanidad.',
-      },
-    ];
-
-    final solicitudes = _solicitudesApi.isNotEmpty ? _solicitudesApi : solicitudesMock;
+    // En modo invitado NO se muestran solicitudes de prueba ni datos de otros usuarios
+    final userProvider = context.watch<UserProvider>();
+    final bool esInvitado = !userProvider.isAuthenticated;
+    final List<Map<String, dynamic>> solicitudes = esInvitado
+        ? const []
+        : (_solicitudesApi.isNotEmpty
+            ? _solicitudesApi
+            : const []);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -294,48 +250,145 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                 backgroundColor: Colors.transparent,
                               ),
                             ),
-                          // Lista de Solicitudes Desplazable
+                          // Lista de Solicitudes Desplazable o Estado Vacío
                           Expanded(
-                            child: RefreshIndicator(
-                              onRefresh: _cargarSolicitudes,
-                              color: amarilloOro,
-                              child: ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(
-                                  parent: BouncingScrollPhysics(),
-                                ),
-                                itemCount: solicitudes.length,
-                                separatorBuilder: (context, index) =>
-                                    SizedBox(height: usableHeight * 0.014),
-                                itemBuilder: (context, index) {
-                                  final item = solicitudes[index];
-                                  return _buildRequestCard(
-                                    title: item['title'] as String,
-                                    status: item['status'] as String,
-                                    statusColor: item['statusColor'] as Color,
-                                    dateInfo: item['dateInfo'] as String?,
-                                    icon: item['icon'] as IconData,
-                                    iconColor: item['iconColor'] as Color,
-                                    screenWidth: screenWidth,
-                                    usableHeight: usableHeight,
-                                    azulFondo: azulFondo,
-                                    grisBorde: grisBorde,
-                                    onTap: () {
-                                      _mostrarDetalleSolicitud(
-                                        context: context,
-                                        item: item,
-                                        screenWidth: screenWidth,
-                                        usableHeight: usableHeight,
-                                        azulFondo: azulFondo,
-                                        blancoFondo: blancoFondo,
-                                        grisBorde: grisBorde,
-                                        amarilloOro: amarilloOro,
-                                        l10n: l10n,
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
+                            child: solicitudes.isEmpty
+                                ? Center(
+                                    child: SingleChildScrollView(
+                                      physics: const AlwaysScrollableScrollPhysics(
+                                        parent: BouncingScrollPhysics(),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.06,
+                                          vertical: usableHeight * 0.02,
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: screenWidth * 0.18,
+                                              height: screenWidth * 0.18,
+                                              decoration: BoxDecoration(
+                                                color: azulFondo.withValues(alpha: 0.08),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                esInvitado
+                                                    ? Icons.account_circle_outlined
+                                                    : Icons.inbox_outlined,
+                                                color: azulFondo,
+                                                size: screenWidth * 0.09,
+                                              ),
+                                            ),
+                                            SizedBox(height: usableHeight * 0.02),
+                                            Text(
+                                              esInvitado
+                                                  ? (l10n?.modoInvitado ?? 'Modo invitado')
+                                                  : (l10n?.sinSolicitudesRegistradas ??
+                                                      'No tienes solicitudes registradas'),
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: azulFondo,
+                                                fontSize: screenWidth * 0.045,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            SizedBox(height: usableHeight * 0.01),
+                                            Text(
+                                              esInvitado
+                                                  ? (l10n?.solicitudesInvitadoDesc ??
+                                                      'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.')
+                                                  : (l10n?.sinSolicitudesRegistradas ??
+                                                      'Tus peticiones pastorales aparecerán aquí.'),
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: screenWidth * 0.034,
+                                                height: 1.35,
+                                              ),
+                                            ),
+                                            if (esInvitado) ...[
+                                              SizedBox(height: usableHeight * 0.025),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.pushNamed(
+                                                    context,
+                                                    InicioSesionScreen.routeName,
+                                                  );
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: amarilloOro,
+                                                  foregroundColor: azulFondo,
+                                                  elevation: 0,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.06,
+                                                    vertical: usableHeight * 0.014,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(
+                                                      screenWidth * 0.03,
+                                                    ),
+                                                  ),
+                                                ),
+                                                icon: Icon(
+                                                  Icons.login_rounded,
+                                                  size: screenWidth * 0.045,
+                                                ),
+                                                label: Text(
+                                                  l10n?.iniciarSesion ?? 'Iniciar sesión',
+                                                  style: TextStyle(
+                                                    fontSize: screenWidth * 0.038,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : RefreshIndicator(
+                                    onRefresh: _cargarSolicitudes,
+                                    color: amarilloOro,
+                                    child: ListView.separated(
+                                      physics: const AlwaysScrollableScrollPhysics(
+                                        parent: BouncingScrollPhysics(),
+                                      ),
+                                      itemCount: solicitudes.length,
+                                      separatorBuilder: (context, index) =>
+                                          SizedBox(height: usableHeight * 0.014),
+                                      itemBuilder: (context, index) {
+                                        final item = solicitudes[index];
+                                        return _buildRequestCard(
+                                          title: item['title'] as String,
+                                          status: item['status'] as String,
+                                          statusColor: item['statusColor'] as Color,
+                                          dateInfo: item['dateInfo'] as String?,
+                                          icon: item['icon'] as IconData,
+                                          iconColor: item['iconColor'] as Color,
+                                          screenWidth: screenWidth,
+                                          usableHeight: usableHeight,
+                                          azulFondo: azulFondo,
+                                          grisBorde: grisBorde,
+                                          onTap: () {
+                                            _mostrarDetalleSolicitud(
+                                              context: context,
+                                              item: item,
+                                              screenWidth: screenWidth,
+                                              usableHeight: usableHeight,
+                                              azulFondo: azulFondo,
+                                              blancoFondo: blancoFondo,
+                                              grisBorde: grisBorde,
+                                              amarilloOro: amarilloOro,
+                                              l10n: l10n,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
                           ),
 
                           SizedBox(height: usableHeight * 0.015),
@@ -356,6 +409,12 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                 ),
                               ),
                               onPressed: () async {
+                                if (!ModalRestriccionDonacion.verificarAutenticacion(
+                                  context: context,
+                                  mensaje: l10n?.solicitudRequiereSesion,
+                                )) {
+                                  return;
+                                }
                                 await Navigator.pushNamed(
                                   context,
                                   'tipos_solicitud_screen',

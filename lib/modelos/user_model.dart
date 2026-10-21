@@ -1,12 +1,20 @@
+import 'auth_permissions.dart';
+
+export 'auth_permissions.dart';
+
 class UserModel {
   final int id;
   final String nombre;
   final String email;
   final String? telefono;
   final String iglesiaActual;
+  final int? iglesiaId;
   final String fechaRegistro;
   final String avatarIniciales;
   final bool esMiembroVerificado;
+  final UserRole role;
+  final Set<String> permissions;
+  final bool isReadOnly;
 
   // Objeto anidado de estadísticas
   final UserStats estadisticas;
@@ -17,46 +25,144 @@ class UserModel {
     required this.email,
     this.telefono,
     required this.iglesiaActual,
+    this.iglesiaId,
     required this.fechaRegistro,
     required this.avatarIniciales,
     required this.esMiembroVerificado,
-    required this.estadisticas,
+    this.role = UserRole.user,
+    this.permissions = const {},
+    this.isReadOnly = false,
+    this.estadisticas = const UserStats(),
   });
 
-  // Constructor factory para convertir el Map (JSON) a nuestro objeto Dart
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  /// Verifica si el usuario cuenta con un permiso específico en su arreglo activo.
+  bool hasPermission(String permission) => permissions.contains(permission);
+
+  /// Indica si el usuario es administrador de su congregación local.
+  bool get isChurchAdmin => role == UserRole.churchAdmin;
+
+  /// Indica si el usuario es superadministrador global de la plataforma ATRIO.
+  bool get isPlatformAdmin => role == UserRole.platformAdmin;
+
+  /// Indica si el usuario cuenta con estatus de miembro regular o líder.
+  bool get isMember => role == UserRole.member || role == UserRole.churchAdmin;
+
+  /// Indica si el usuario puede realizar operaciones de escritura según rol y bandera read_only.
+  bool get canWrite =>
+      !isReadOnly && (role == UserRole.churchAdmin || role == UserRole.member);
+
+  /// Indica si el usuario cuenta con una congregación asignada válida.
+  bool get hasChurchAssigned => iglesiaId != null && iglesiaId! > 0;
+
+
+  UserModel copyWith({
+    int? id,
+    String? nombre,
+    String? email,
+    String? telefono,
+    String? iglesiaActual,
+    int? iglesiaId,
+    String? fechaRegistro,
+    String? avatarIniciales,
+    bool? esMiembroVerificado,
+    UserRole? role,
+    Set<String>? permissions,
+    bool? isReadOnly,
+    UserStats? estadisticas,
+  }) {
     return UserModel(
-      id: json['id'] as int,
-      nombre: json['nombre'] as String,
-      email: json['email'] as String,
-      telefono: json['telefono'] as String?,
-      iglesiaActual: json['iglesia_actual'] as String,
-      fechaRegistro: json['fecha_registro'] as String,
-      avatarIniciales: json['avatar_iniciales'] as String,
-      esMiembroVerificado: json['es_miembro_verificado'] as bool,
-      // Mapeo del objeto anidado
-      estadisticas: UserStats.fromJson(
-        json['estadisticas'] as Map<String, dynamic>,
-      ),
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      email: email ?? this.email,
+      telefono: telefono ?? this.telefono,
+      iglesiaActual: iglesiaActual ?? this.iglesiaActual,
+      iglesiaId: iglesiaId ?? this.iglesiaId,
+      fechaRegistro: fechaRegistro ?? this.fechaRegistro,
+      avatarIniciales: avatarIniciales ?? this.avatarIniciales,
+      esMiembroVerificado: esMiembroVerificado ?? this.esMiembroVerificado,
+      role: role ?? this.role,
+      permissions: permissions ?? this.permissions,
+      isReadOnly: isReadOnly ?? this.isReadOnly,
+      estadisticas: estadisticas ?? this.estadisticas,
     );
   }
 
-  /// Constructor factory adaptado a la respuesta de Odoo (login y endpoint /me).
+  // Constructor factory para convertir el Map (JSON) a nuestro objeto Dart
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rawRole = json['role'] as String?;
+    final rawPerms = json['permissions'] as List<dynamic>?;
+    final permsSet = rawPerms?.map((e) => e.toString()).toSet() ?? const {};
+
+    return UserModel(
+      id: json['id'] as int? ?? 0,
+      nombre: json['nombre'] as String? ?? 'Usuario',
+      email: json['email'] as String? ?? '',
+      telefono: json['telefono'] as String?,
+      iglesiaActual: json['iglesia_actual'] as String? ?? 'Iglesia Atrio',
+      iglesiaId: json['iglesia_id'] as int?,
+      fechaRegistro: json['fecha_registro'] as String? ?? '',
+      avatarIniciales: json['avatar_iniciales'] as String? ?? 'U',
+      esMiembroVerificado: json['es_miembro_verificado'] as bool? ?? false,
+      role: UserRole.fromString(rawRole),
+      permissions: permsSet,
+      isReadOnly: (json['is_read_only'] ?? json['read_only']) as bool? ?? false,
+      estadisticas: json['estadisticas'] is Map<String, dynamic>
+          ? UserStats.fromJson(json['estadisticas'] as Map<String, dynamic>)
+          : UserStats(solicitudesActivas: 0, donacionesMes: 0, notasBiblia: 0),
+    );
+  }
+
+  /// Constructor factory adaptado a la respuesta de Odoo 19 (login y endpoint /me).
   factory UserModel.fromOdooJson(Map<String, dynamic> odooData) {
     final user = (odooData['user'] as Map<String, dynamic>?) ?? {};
     final member = (odooData['member'] as Map<String, dynamic>?) ?? {};
     final church = (odooData['church'] as Map<String, dynamic>?) ?? {};
 
-    final id = (user['id'] ?? member['id'] ?? 0) as int;
-    final nombre = (user['name'] ?? member['name'] ?? 'Usuario') as String;
-    final email = (user['email'] ?? user['login'] ?? member['email'] ?? '') as String;
-    final telefono = (member['phone'] ?? user['phone']) as String?;
-    final iglesiaActual = (church['name'] ?? church['public_name'] ?? 'Iglesia Atrio') as String;
-    final fechaRegistro = (user['create_date'] ?? DateTime.now().toIso8601String()) as String;
+    final id = (user['id'] ?? member['id'] ?? odooData['id'] ?? 0) as int;
+    final nombre =
+        (user['name'] ?? member['name'] ?? odooData['name'] ?? 'Usuario') as String;
+    final email = (user['email'] ??
+        user['login'] ??
+        member['email'] ??
+        odooData['email'] ??
+        '') as String;
+    final telefono = (member['phone'] ?? user['phone'] ?? odooData['phone']) as String?;
+    final iglesiaActual = (church['name'] ??
+        church['public_name'] ??
+        odooData['church_name'] ??
+        'Iglesia Atrio') as String;
+    final iglesiaId = (church['id'] ??
+        user['church_id'] ??
+        user['iglesia_id'] ??
+        odooData['church_id'] ??
+        odooData['iglesia_id']) as int?;
+    final fechaRegistro =
+        (user['create_date'] ?? DateTime.now().toIso8601String()) as String;
 
     final avatarIniciales = nombre.trim().isNotEmpty
-        ? nombre.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+        ? nombre
+            .trim()
+            .split(' ')
+            .map((e) => e.isNotEmpty ? e[0] : '')
+            .take(2)
+            .join()
+            .toUpperCase()
         : 'U';
+
+    // Parseo de Rol, Permisos y Modo de solo lectura
+    final rawRole =
+        (odooData['role'] ?? user['role'] ?? member['role'] ?? 'user') as String?;
+    final role = UserRole.fromString(rawRole);
+
+    final rawPerms =
+        (odooData['permissions'] ?? user['permissions'] ?? []) as List<dynamic>?;
+    final permissions = rawPerms?.map((e) => e.toString()).toSet() ?? <String>{};
+
+    final isReadOnly =
+        (odooData['read_only'] ?? user['read_only'] ?? false) as bool;
+
+    final isMemberVerified =
+        role == UserRole.member || role == UserRole.churchAdmin || member.isNotEmpty;
 
     final statsMap = odooData['estadisticas'] as Map<String, dynamic>? ?? {};
 
@@ -66,11 +172,39 @@ class UserModel {
       email: email,
       telefono: telefono,
       iglesiaActual: iglesiaActual,
+      iglesiaId: iglesiaId,
       fechaRegistro: fechaRegistro,
       avatarIniciales: avatarIniciales,
-      esMiembroVerificado: user['role'] == 'member' || member.isNotEmpty,
+      esMiembroVerificado: isMemberVerified,
+      role: role,
+      permissions: permissions,
+      isReadOnly: isReadOnly,
       estadisticas: UserStats.fromJson(statsMap),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nombre': nombre,
+      'email': email,
+      'telefono': telefono,
+      'iglesia_actual': iglesiaActual,
+      'iglesia_id': iglesiaId,
+      'church_id': iglesiaId,
+      'fecha_registro': fechaRegistro,
+      'avatar_iniciales': avatarIniciales,
+      'es_miembro_verificado': esMiembroVerificado,
+      'role': role.toOdooString(),
+      'permissions': permissions.toList(),
+      'read_only': isReadOnly,
+      'is_read_only': isReadOnly,
+      'estadisticas': {
+        'solicitudes_activas': estadisticas.solicitudesActivas,
+        'donaciones_mes': estadisticas.donacionesMes,
+        'notas_biblia': estadisticas.notasBiblia,
+      },
+    };
   }
 }
 
@@ -80,10 +214,10 @@ class UserStats {
   final int donacionesMes;
   final int notasBiblia;
 
-  UserStats({
-    required this.solicitudesActivas,
-    required this.donacionesMes,
-    required this.notasBiblia,
+  const UserStats({
+    this.solicitudesActivas = 0,
+    this.donacionesMes = 0,
+    this.notasBiblia = 0,
   });
 
   factory UserStats.fromJson(Map<String, dynamic> json) {

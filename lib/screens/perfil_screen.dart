@@ -6,9 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Importación de las pantallas para obtener sus static const routeName
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
+import '../modelos/admin_models.dart';
+import '../providers/admin_provider.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
+import '../widgets/permission_guard.dart';
+import '../widgets/read_only_banner.dart';
 import 'ayuda_soporte_screen.dart';
 import 'mis_donaciones_screen.dart';
 import 'mis_pedidos_screen.dart';
@@ -71,7 +75,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
       );
     }
 
-    // Escuchamos el estado reactivo de IglesiaProvider y AjustesProvider
+    // Escuchamos el estado reactivo de UserProvider, IglesiaProvider y AjustesProvider
+    final userProvider = Provider.of<UserProvider>(context);
     final iglesiaProvider = Provider.of<IglesiaProvider>(context);
     final ajustesProvider = context.watch<AjustesProvider>();
 
@@ -79,12 +84,22 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final String sinIglesiaTexto =
         l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada';
 
-    // Extracción segura de los datos de SQLite o del Provider de Iglesia
-    final String nombre =
-        _usuarioData?['nombre'] ?? (l10n?.usuario ?? 'Usuario');
-    final String inicial = nombre.trim().isNotEmpty
-        ? nombre.trim()[0].toUpperCase()
-        : 'U';
+    // Fuente de verdad: Si está autenticado, usar UserProvider (validado en Odoo)
+    // Si no está autenticado (Modo invitado), mostrar explícitamente "Usuario invitado"
+    final bool estaAutenticado = userProvider.isAuthenticated;
+    final currentUser = userProvider.currentUser;
+
+    final String nombre = estaAutenticado
+        ? (currentUser?.nombre.isNotEmpty == true
+            ? currentUser!.nombre
+            : (_usuarioData?['nombre'] ?? (l10n?.usuario ?? 'Usuario')))
+        : (l10n?.usuarioInvitado ?? 'Usuario invitado');
+
+    final String inicial = estaAutenticado
+        ? (currentUser?.avatarIniciales.isNotEmpty == true
+            ? currentUser!.avatarIniciales
+            : (nombre.trim().isNotEmpty ? nombre.trim()[0].toUpperCase() : 'U'))
+        : 'I';
 
     final String? nombreProvider =
         (iglesiaProvider.tieneIglesiaGuardada &&
@@ -92,17 +107,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
         ? iglesiaProvider.iglesiaActual!.nombre.trim()
         : null;
 
+    final String? nombreUserOdoo = currentUser?.iglesiaActual.trim();
     final String? nombreSqlite = (_usuarioData?['iglesia_nombre'] as String?)
         ?.trim();
 
     final String iglesia = (nombreProvider != null && nombreProvider.isNotEmpty)
         ? nombreProvider
-        : ((nombreSqlite != null &&
-                  nombreSqlite.isNotEmpty &&
-                  nombreSqlite != 'Sin iglesia seleccionada' &&
-                  nombreSqlite != sinIglesiaTexto)
-              ? nombreSqlite
-              : sinIglesiaTexto);
+        : ((nombreUserOdoo != null &&
+                  nombreUserOdoo.isNotEmpty &&
+                  nombreUserOdoo != 'Sin iglesia seleccionada' &&
+                  nombreUserOdoo != sinIglesiaTexto)
+              ? nombreUserOdoo
+              : ((nombreSqlite != null &&
+                        nombreSqlite.isNotEmpty &&
+                        nombreSqlite != 'Sin iglesia seleccionada' &&
+                        nombreSqlite != sinIglesiaTexto)
+                    ? nombreSqlite
+                    : sinIglesiaTexto));
 
     return Container(
       color: blancoFondo,
@@ -120,6 +141,47 @@ class _PerfilScreenState extends State<PerfilScreen> {
               iniciales: inicial,
               ajustesProvider: ajustesProvider,
             ),
+            if (!estaAutenticado)
+              Container(
+                margin: EdgeInsets.fromLTRB(
+                  screenWidth * 0.05,
+                  usableHeight * 0.015,
+                  screenWidth * 0.05,
+                  0,
+                ),
+                padding: EdgeInsets.all(screenWidth * 0.035),
+                decoration: BoxDecoration(
+                  color: amarilloOro.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  border: Border.all(
+                    color: amarilloOro.withValues(alpha: 0.4),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: const Color(0xFF8A5B00),
+                      size: screenWidth * 0.055,
+                    ),
+                    SizedBox(width: screenWidth * 0.03),
+                    Expanded(
+                      child: Text(
+                        l10n?.perfilInvitadoDesc ??
+                            'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
+                        style: TextStyle(
+                          color: const Color(0xFF5D3E00),
+                          fontSize: screenWidth * 0.032,
+                          fontWeight: FontWeight.w500,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const ReadOnlyBanner(),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
@@ -161,6 +223,62 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     ],
                   ),
                   SizedBox(height: usableHeight * 0.025),
+
+                  // Sección Administrativa Pastoral (Odoo 19 /admin/*)
+                  PermissionGuard(
+                    requireChurchAdmin: true,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionLabel(
+                          l10n?.administracionPastoral ??
+                              'Administración Pastoral',
+                          screenWidth,
+                          usableHeight,
+                        ),
+                        _buildMenuGroup(
+                          context: context,
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
+                          items: [
+                            _MenuItemData(
+                              icon: Icons.campaign_outlined,
+                              label: l10n?.gestionAvisos ??
+                                  'Avisos congregacionales',
+                              route: null,
+                              onCustomTap: () => _mostrarGestionAvisos(context),
+                            ),
+                            _MenuItemData(
+                              icon: Icons.groups_outlined,
+                              label: l10n?.gestionGrupos ??
+                                  'Audiencias y grupos',
+                              route: null,
+                              onCustomTap: () =>
+                                  _mostrarGruposAudiencia(context),
+                            ),
+                            _MenuItemData(
+                              icon: Icons.volunteer_activism_outlined,
+                              label: l10n?.moderacionPeticiones ??
+                                  'Moderación de peticiones',
+                              route: null,
+                              onCustomTap: () =>
+                                  _mostrarModeracionPeticiones(context),
+                            ),
+                            _MenuItemData(
+                              icon: Icons.analytics_outlined,
+                              label: l10n?.metricasComunidad ??
+                                  'Estadísticas de comunidad',
+                              route: null,
+                              onCustomTap: () =>
+                                  _mostrarMetricasComunidad(context),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: usableHeight * 0.025),
+                      ],
+                    ),
+                  ),
+
                   _sectionLabel(
                     l10n?.cuenta ?? 'Cuenta',
                     screenWidth,
@@ -268,13 +386,38 @@ class _PerfilScreenState extends State<PerfilScreen> {
     String? iglesiaActual,
   }) {
     final l10n = AppLocalizations.of(context);
+    final userProvider = context.read<UserProvider>();
+
+    if (!userProvider.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.perfilInvitadoDesc ??
+                'Estás navegando en modo invitado. Inicia sesión para acceder a tu perfil y datos.',
+          ),
+          backgroundColor: azulFondo,
+          action: SnackBarAction(
+            label: l10n?.iniciarSesion ?? 'Iniciar sesión',
+            textColor: amarilloOro,
+            onPressed: () {
+              Navigator.pushNamed(context, InicioSesionScreen.routeName);
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    final currentUser = userProvider.currentUser;
     final formKey = GlobalKey<FormState>();
     final nombreCtrl = TextEditingController(
-      text: _usuarioData?['nombre'] ?? '',
+      text: currentUser?.nombre ?? (_usuarioData?['nombre'] ?? ''),
     );
-    final emailCtrl = TextEditingController(text: _usuarioData?['email'] ?? '');
+    final emailCtrl = TextEditingController(
+      text: currentUser?.email ?? (_usuarioData?['email'] ?? ''),
+    );
     final telefonoCtrl = TextEditingController(
-      text: _usuarioData?['celular'] ?? '',
+      text: currentUser?.telefono ?? (_usuarioData?['celular'] ?? ''),
     );
     final String defaultIglesia =
         (iglesiaActual != null &&
@@ -283,7 +426,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
             iglesiaActual !=
                 (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada'))
         ? iglesiaActual
-        : (_usuarioData?['iglesia_nombre'] ?? '');
+        : (currentUser?.iglesiaActual ?? (_usuarioData?['iglesia_nombre'] ?? ''));
 
     final iglesiaCtrl = TextEditingController(text: defaultIglesia);
 
@@ -406,6 +549,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
               ),
               onPressed: () async {
+                if (context.read<UserProvider>().isReadOnly) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        l10n?.accionRestringidaSoloLectura ??
+                            'Acción restringida: Modo de solo lectura activado.',
+                      ),
+                      backgroundColor: Colors.red.shade700,
+                    ),
+                  );
+                  return;
+                }
                 if (formKey.currentState!.validate()) {
                   final scaffoldMessenger = ScaffoldMessenger.of(context);
                   final navigator = Navigator.of(dialogCtx);
@@ -535,6 +690,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required AjustesProvider ajustesProvider,
   }) {
     final l10n = AppLocalizations.of(context);
+    final userProvider = Provider.of<UserProvider>(context);
 
     return Container(
       width: screenWidth,
@@ -628,18 +784,81 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ],
                     ),
+                    SizedBox(height: usableHeight * 0.007),
+                    // Badges de Rol y Estado de Lectura (RBAC Odoo 19)
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: amarilloOro.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: amarilloOro.withValues(alpha: 0.7),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            userProvider.isAuthenticated
+                                ? userProvider.role.getLocalizedName(context)
+                                : (l10n?.modoInvitado ?? 'Modo invitado'),
+                            style: TextStyle(
+                              color: amarilloOro,
+                              fontSize: screenWidth * 0.027,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (userProvider.isAuthenticated && userProvider.isReadOnly)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white12,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.white38,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              l10n?.modoSoloLectura ?? 'Solo Lectura',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: screenWidth * 0.025,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
               IconButton(
-                onPressed: () => _mostrarDialogoEditarDatos(
-                  context,
-                  screenWidth,
-                  usableHeight,
-                  iglesiaActual: iglesia,
-                ),
+                onPressed: () {
+                  if (userProvider.isAuthenticated) {
+                    _mostrarDialogoEditarDatos(
+                      context,
+                      screenWidth,
+                      usableHeight,
+                      iglesiaActual: iglesia,
+                    );
+                  } else {
+                    Navigator.pushNamed(context, InicioSesionScreen.routeName);
+                  }
+                },
                 icon: Icon(
-                  Icons.edit_outlined,
+                  userProvider.isAuthenticated
+                      ? Icons.edit_outlined
+                      : Icons.login_rounded,
                   color: Colors.white,
                   size: screenWidth * 0.055,
                 ),
@@ -906,6 +1125,36 @@ class _PerfilScreenState extends State<PerfilScreen> {
     double usableHeight,
   ) {
     final l10n = AppLocalizations.of(context);
+    final userProvider = context.watch<UserProvider>();
+
+    if (!userProvider.isAuthenticated) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            Navigator.pushNamed(context, InicioSesionScreen.routeName);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: amarilloOro,
+            foregroundColor: azulFondo,
+            elevation: 0,
+            padding: EdgeInsets.symmetric(vertical: usableHeight * 0.016),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            ),
+          ),
+          icon: Icon(Icons.login_rounded, size: screenWidth * 0.05),
+          label: Text(
+            l10n?.iniciarSesion ?? 'Iniciar sesión',
+            style: TextStyle(
+              fontSize: screenWidth * 0.038,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
@@ -1190,6 +1439,830 @@ class _PerfilScreenState extends State<PerfilScreen> {
               l10n?.eliminarDefinitivamente ?? 'Eliminar definitivamente',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================================
+  // MÓDULO ADMINISTRATIVO PASTORAL (Odoo 19 /admin/* - ETAPA 3)
+  // ============================================================================
+
+  void _mostrarGestionAvisos(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
+    final adminProvider = context.read<AdminProvider>();
+    final userProvider = context.read<UserProvider>();
+
+    adminProvider.loadAnnouncements();
+    adminProvider.loadGroups();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: usableHeight * 0.85,
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(screenWidth * 0.06),
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: usableHeight * 0.02,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n?.gestionAvisos ?? 'Avisos congregacionales',
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.048,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (userProvider.canWrite)
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: amarilloOro,
+                        foregroundColor: azulFondo,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.03,
+                          vertical: usableHeight * 0.008,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        _mostrarDialogoCrearAviso(context);
+                      },
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(
+                        l10n?.publicarAviso ?? 'Publicar aviso',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: usableHeight * 0.015),
+              Expanded(
+                child: Consumer<AdminProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.isLoading && prov.announcements.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: amarilloOro),
+                      );
+                    }
+                    if (prov.announcements.isEmpty) {
+                      return Center(
+                        child: Text(
+                          l10n?.sinAvisosActivos ??
+                              'No hay avisos congregacionales publicados',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: screenWidth * 0.036,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: prov.announcements.length,
+                      separatorBuilder: (_, index) =>
+                          SizedBox(height: usableHeight * 0.012),
+                      itemBuilder: (context, index) {
+                        final a = prov.announcements[index];
+                        return Container(
+                          padding: EdgeInsets.all(screenWidth * 0.035),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: grisBorde),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (a.isPinned)
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 6),
+                                      child: Icon(
+                                        Icons.push_pin_rounded,
+                                        size: 16,
+                                        color: amarilloOro,
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      a.title,
+                                      style: TextStyle(
+                                        color: azulFondo,
+                                        fontSize: screenWidth * 0.038,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  if (userProvider.canWrite)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        size: 20,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () =>
+                                          prov.deleteAnnouncement(a.id),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: usableHeight * 0.006),
+                              Text(
+                                a.plainContent,
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: screenWidth * 0.032,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarDialogoCrearAviso(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final usableHeight = MediaQuery.sizeOf(context).height -
+        MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
+    final formKey = GlobalKey<FormState>();
+    final titleCtrl = TextEditingController();
+    final contentCtrl = TextEditingController();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    bool pinned = false;
+    int? selectedGroupId;
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: !isSubmitting,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (dialogStateCtx, setDialogState) {
+            final adminProv = dialogStateCtx.watch<AdminProvider>();
+            return AlertDialog(
+              backgroundColor: blancoFondo,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                l10n?.publicarAviso ?? 'Publicar aviso',
+                style: const TextStyle(
+                  color: azulFondo,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SizedBox(
+                width: screenWidth * 0.85,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: titleCtrl,
+                          enabled: !isSubmitting,
+                          decoration: InputDecoration(
+                            labelText:
+                                l10n?.tituloAviso ?? 'Título del aviso',
+                            border: const OutlineInputBorder(),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? (l10n?.campoRequerido ?? 'Este campo es requerido')
+                              : null,
+                        ),
+                        SizedBox(height: usableHeight * 0.015),
+                        TextFormField(
+                          controller: contentCtrl,
+                          enabled: !isSubmitting,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            labelText:
+                                l10n?.contenidoAviso ?? 'Contenido del aviso',
+                            border: const OutlineInputBorder(),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? (l10n?.campoRequerido ?? 'Este campo es requerido')
+                              : null,
+                        ),
+                        SizedBox(height: usableHeight * 0.015),
+                        DropdownButtonFormField<int?>(
+                          initialValue: selectedGroupId,
+                          decoration: InputDecoration(
+                            labelText: l10n?.seleccionarAudiencia ??
+                                'Audiencia / Grupo',
+                            border: const OutlineInputBorder(),
+                          ),
+                          items: [
+                            DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text(
+                                l10n?.todasLasAudiencias ??
+                                    'Toda la congregación',
+                              ),
+                            ),
+                            ...adminProv.groups.map(
+                              (g) => DropdownMenuItem<int?>(
+                                value: g.id,
+                                child: Text('${g.name} (${g.memberCount})'),
+                              ),
+                            ),
+                          ],
+                          onChanged: isSubmitting
+                              ? null
+                              : (val) =>
+                                  setDialogState(() => selectedGroupId = val),
+                        ),
+                        SizedBox(height: usableHeight * 0.01),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            l10n?.fijarAviso ?? 'Fijar al inicio',
+                            style: TextStyle(fontSize: screenWidth * 0.034),
+                          ),
+                          value: pinned,
+                          activeThumbColor: amarilloOro,
+                          onChanged: isSubmitting
+                              ? null
+                              : (val) =>
+                                  setDialogState(() => pinned = val),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(dialogCtx),
+                  child: Text(l10n?.cancelar ?? 'Cancelar'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: amarilloOro,
+                    foregroundColor: azulFondo,
+                  ),
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setDialogState(() => isSubmitting = true);
+                          final nav = Navigator.of(dialogCtx);
+                          try {
+                            final ok = await dialogStateCtx
+                                .read<AdminProvider>()
+                                .createAnnouncement(
+                                  title: titleCtrl.text.trim(),
+                                  content: contentCtrl.text.trim(),
+                                  targetGroupIds: selectedGroupId != null
+                                      ? [selectedGroupId!]
+                                      : null,
+                                  pinned: pinned,
+                                );
+                            if (ok) {
+                              nav.pop();
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n?.avisoPublicadoExito ??
+                                        'Aviso publicado con éxito',
+                                  ),
+                                  backgroundColor: azulFondo,
+                                ),
+                              );
+                            } else {
+                              setDialogState(() => isSubmitting = false);
+                              final errorMsg = adminProv.errorMessage ??
+                                  (l10n?.errorPublicarAviso ??
+                                      'No fue posible publicar el aviso');
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMsg),
+                                  backgroundColor: Colors.red.shade700,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setDialogState(() => isSubmitting = false);
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red.shade700,
+                              ),
+                            );
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: azulFondo,
+                          ),
+                        )
+                      : Text(l10n?.publicar ?? 'Publicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _mostrarGruposAudiencia(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final usableHeight = MediaQuery.sizeOf(context).height -
+        MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
+    final adminProv = context.read<AdminProvider>();
+    adminProv.loadGroups();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: usableHeight * 0.6,
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(screenWidth * 0.06),
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: usableHeight * 0.02,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              Text(
+                l10n?.gestionGrupos ?? 'Audiencias y grupos',
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.048,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.015),
+              Expanded(
+                child: Consumer<AdminProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.groups.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No hay grupos configurados',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: prov.groups.length,
+                      separatorBuilder: (_, index) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final g = prov.groups[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: azulFondo.withValues(alpha: 0.1),
+                            child: const Icon(Icons.group, color: azulFondo),
+                          ),
+                          title: Text(
+                            g.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(g.description.isNotEmpty
+                              ? g.description
+                              : '${g.memberCount} miembros'),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: amarilloOro.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${g.memberCount}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF9E6500),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarModeracionPeticiones(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final usableHeight = MediaQuery.sizeOf(context).height -
+        MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
+    final adminProv = context.read<AdminProvider>();
+    final userProvider = context.read<UserProvider>();
+    adminProv.loadPrayerRequests(status: 'pending');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: usableHeight * 0.85,
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(screenWidth * 0.06),
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: usableHeight * 0.02,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              Text(
+                l10n?.moderacionPeticiones ?? 'Moderación de peticiones',
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.048,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.015),
+              Expanded(
+                child: Consumer<AdminProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.isLoading && prov.prayerRequests.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: amarilloOro),
+                      );
+                    }
+                    final pending = prov.prayerRequests
+                        .where((r) => r.isPending)
+                        .toList();
+                    if (pending.isEmpty) {
+                      return Center(
+                        child: Text(
+                          l10n?.sinPeticionesPendientes ??
+                              'No hay peticiones pendientes de moderación',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: screenWidth * 0.036,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: pending.length,
+                      separatorBuilder: (_, index) =>
+                          SizedBox(height: usableHeight * 0.012),
+                      itemBuilder: (context, index) {
+                        final r = pending[index];
+                        return Container(
+                          padding: EdgeInsets.all(screenWidth * 0.035),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: grisBorde),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      r.title,
+                                      style: TextStyle(
+                                        color: azulFondo,
+                                        fontSize: screenWidth * 0.038,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    r.applicantName,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: screenWidth * 0.03,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: usableHeight * 0.006),
+                              Text(
+                                r.description,
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: screenWidth * 0.032,
+                                ),
+                              ),
+                              if (userProvider.canWrite) ...[
+                                SizedBox(height: usableHeight * 0.012),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                        side: const BorderSide(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                      onPressed: () async {
+                                        final messenger =
+                                            ScaffoldMessenger.of(context);
+                                        final ok = await prov
+                                            .moderatePrayerRequest(
+                                              requestId: r.id,
+                                              approve: false,
+                                              reason: 'Rechazado por moderador',
+                                            );
+                                        if (ok) {
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                l10n?.peticionRechazada ??
+                                                    'Petición rechazada',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Text(
+                                        l10n?.rechazar ?? 'Rechazar',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: amarilloOro,
+                                        foregroundColor: azulFondo,
+                                      ),
+                                      onPressed: () async {
+                                        final messenger =
+                                            ScaffoldMessenger.of(context);
+                                        final ok = await prov
+                                            .moderatePrayerRequest(
+                                              requestId: r.id,
+                                              approve: true,
+                                            );
+                                        if (ok) {
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                l10n?.peticionAprobada ??
+                                                    'Petición aprobada',
+                                              ),
+                                              backgroundColor: azulFondo,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Text(
+                                        l10n?.aprobar ?? 'Aprobar',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarMetricasComunidad(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final usableHeight = MediaQuery.sizeOf(context).height -
+        MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
+    final adminProv = context.read<AdminProvider>();
+    adminProv.loadAnalytics();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: usableHeight * 0.75,
+          decoration: BoxDecoration(
+            color: blancoFondo,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(screenWidth * 0.06),
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: usableHeight * 0.02,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: screenWidth * 0.12,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              Text(
+                l10n?.metricasComunidad ?? 'Estadísticas de comunidad',
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.048,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              Expanded(
+                child: Consumer<AdminProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.isLoading && prov.analytics == null) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: amarilloOro),
+                      );
+                    }
+                    final m = prov.analytics ?? AdminAnalyticsModel();
+                    return GridView.count(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: screenWidth * 0.03,
+                      mainAxisSpacing: usableHeight * 0.015,
+                      childAspectRatio: 1.25,
+                      children: [
+                        _buildStatCard(
+                          icon: Icons.people_outline,
+                          label: l10n?.totalMiembros ?? 'Total miembros',
+                          value: '${m.totalMembers}',
+                          screenWidth: screenWidth,
+                        ),
+                        _buildStatCard(
+                          icon: Icons.person_add_outlined,
+                          label: l10n?.nuevosMiembrosMes ?? 'Nuevos este mes',
+                          value: '+${m.newMembersThisMonth}',
+                          screenWidth: screenWidth,
+                        ),
+                        _buildStatCard(
+                          icon: Icons.event_available_outlined,
+                          label: l10n?.inscripcionesEventos ?? 'Eventos',
+                          value: '${m.eventRegistrationsCount}',
+                          screenWidth: screenWidth,
+                        ),
+                        _buildStatCard(
+                          icon: Icons.volunteer_activism_outlined,
+                          label: l10n?.peticionesPendientes ??
+                              'Peticiones pend.',
+                          value: '${m.pendingModerationCount}',
+                          screenWidth: screenWidth,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required double screenWidth,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(screenWidth * 0.03),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: grisBorde),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Icon(icon, color: azulFondo, size: screenWidth * 0.06),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.052,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: screenWidth * 0.028,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ],
       ),

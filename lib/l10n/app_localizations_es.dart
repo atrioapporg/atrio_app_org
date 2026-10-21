@@ -625,10 +625,218 @@ class AppLocalizationsEs extends AppLocalizations {
   String get verCalendario => 'Ver calendario';
 
   @override
+  String get buscarPorFecha => 'Buscar por fecha';
+
+  @override
+  String get buscarEventosPorFechaTitulo => 'BUSCAR EVENTOS POR FECHA';
+
+  @override
+  String eventosFechaEncabezado(String fecha) {
+    return 'Eventos: $fecha';
+  }
+
+  @override
+  String get noEventosParaFecha => 'No hay eventos para la fecha seleccionada';
+
+  @override
+  String get mostrarTodosLosEventos => 'Mostrar todos los eventos';
+
+  @override
   String get destacadoMayus => 'DESTACADO';
 
   @override
   String get inscribirmeAhora => 'Inscribirme ahora';
+
+  @override
+  String get cancelarInscripcion => 'Cancelar inscripción';
+
+  @override
+  String get rolAdministradorIglesia => 'Administrador de Iglesia';
+
+  @override
+  String get rolSuperAdmin => 'Super Administrador';
+
+  @override
+  String get rolMiembro => 'Miembro Activo';
+
+  @override
+  String get rolUsuario => 'Usuario';
+
+  @override
+  String get modoSoloLectura => 'Solo lectura';
+
+  @override
+  String get administracionPastoral => 'Administración Pastoral';
+
+  @override
+  String get gestionAvisos => 'Avisos congregacionales';
+
+  @override
+  String get gestionGrupos => 'Audiencias y grupos';
+
+  @override
+  String get accionRestringidaSoloLectura =>
+      'Acción no disponible en modo solo lectura';
+
+  @override
+  String get permisoRequerido => 'Requiere permisos de administrador';
+
+  @override
+  String get moderacionPeticiones => 'Moderación de peticiones';
+
+  @override
+  String get metricasComunidad => 'Estadísticas de comunidad';
+
+  @override
+  String get publicarAviso => 'Publicar aviso';
+
+  @override
+  String get tituloAviso => 'Título del aviso';
+
+  @override
+  String get contenidoAviso => 'Contenido del aviso';
+
+  @override
+  String get fijarAviso => 'Fijar al inicio';
+
+  @override
+  String get seleccionarAudiencia => 'Audiencia / Grupo';
+
+  @override
+  String get todasLasAudiencias => 'Toda la congregación';
+
+  @override
+  String get publicar => 'Publicar';
+
+  @override
+  String get avisoPublicadoExito => 'Aviso publicado con éxito';
+
+  @override
+  String get campoRequerido => 'Este campo es requerido';
+
+  @override
+  String get errorPublicarAviso => 'No fue posible publicar el aviso';
+
+  @override
+  String get peticionesPendientes => 'Peticiones pendientes';
+
+  @override
+  String get aprobar => 'Aprobar';
+
+  @override
+  String get rechazar => 'Rechazar';
+
+  @override
+  String get peticionAprobada => 'Petición aprobada';
+
+  @override
+  String get peticionRechazada => 'Petición rechazada';
+
+  @override
+  String get totalMiembros => 'Total de miembros';
+
+  @override
+  String get nuevosMiembrosMes => 'Nuevos miembros este mes';
+
+  @override
+  String get totalOfrendas => 'Ofrendas registradas';
+
+  @override
+  String get inscripcionesEventos => 'Inscripciones a eventos';
+
+  @override
+  String get sinPeticionesPendientes =>
+      'No hay peticiones pendientes de moderación';
+
+  @override
+  String get sinAvisosActivos => 'No hay avisos congregacionales publicados';
+
+  @override
+  String get motivoRechazoOpcional => 'Motivo opcional de rechazo';
+
+  @override
+  String get bannerModoSoloLectura =>
+      'Modo de solo lectura activado. Las funciones de publicación y registro están deshabilitadas.';
+
+  @override
+  String get avisoModeracionOracion =>
+      'Nota pastoral: Tu petición de oración será revisada por el equipo pastoral antes de ser visible en la congregación.';
+
+  @override
+  String get iglesiaRequeridaParaSolicitud =>
+      'Debes tener una iglesia asignada para enviar solicitudes o peticiones pastorales.';
+
+  @override
+  String get seleccionarIglesiaAccion => 'Seleccionar iglesia';
+
+  @override
+  String get solicitudRequiereSesion =>
+      'Debes iniciar sesión con tu cuenta para enviar solicitudes o peticiones pastorales a tu congregación.';
+
+  @override
+  String get solicitudRequiereMembresia =>
+      'Tu cuenta está pendiente de asignación o aprobación de membresía por parte de tu congregación para enviar solicitudes.';
+
+  @override
+  String get donacionRequiereSesion =>
+      'Debes iniciar sesión con una cuenta de miembro para realizar donaciones y ofrendas.';
+
+  @override
+  String get donacionRequiereMembresia =>
+      'Tu cuenta está registrada pero aún está pendiente de asignación o aprobación de membresía por parte de tu congregación. Solo miembros activos pueden realizar donaciones.';
+
+  @override
+  String get donacionRequiereIglesia =>
+      'Debes pertenecer a una congregación asignada para realizar donaciones.';
+
+  @override
+  String get inicioSesionRequerido => 'Inicio de sesión requerido';
+
+  @override
+  String get tiendaRequiereSesion =>
+      'Debes iniciar sesión con tu cuenta para agregar productos y realizar compras en la tienda.';
+
+  @override
+  String get librosRequiereSesion =>
+      'Debes iniciar sesión con tu cuenta para leer o escuchar libros de la biblioteca.';
+
+  @override
+  String get proyectoRequiereSesion =>
+      'Debes iniciar sesión con tu cuenta para colaborar y aportar a proyectos solidarios.';
+
+  @override
+  String get sesionRequeridaGenerica =>
+      'Debes iniciar sesión con tu cuenta para acceder a esta función.';
+
+  @override
+  String get membresiaPendiente => 'Membresía pendiente de aprobación';
+
+  @override
+  String get iniciarSesion => 'Iniciar sesión';
+
+  @override
+  String get modoInvitado => 'Modo invitado';
+
+  @override
+  String get usuarioInvitado => 'Usuario invitado';
+
+  @override
+  String get perfilInvitadoDesc =>
+      'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.';
+
+  @override
+  String get sinSolicitudesRegistradas => 'No tienes solicitudes registradas';
+
+  @override
+  String get solicitudesInvitadoDesc =>
+      'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.';
+
+  @override
+  String get sinDonacionesRegistradas => 'No tienes donaciones registradas';
+
+  @override
+  String get donacionesInvitadoDesc =>
+      'En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.';
 
   @override
   String eventoAnadidoACalendario(String titulo) {
@@ -2529,4 +2737,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get localizandoComunidades => 'Localizando comunidades cristianas...';
+
+  @override
+  String get pedidosInvitadoDesc =>
+      'En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.';
+
+  @override
+  String get notificacionesInvitadoDesc =>
+      'En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad.';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 
 class TiposSolicitudScreen extends StatelessWidget {
   static const routeName = 'tipos_solicitud_screen';
@@ -184,6 +185,12 @@ class TiposSolicitudScreen extends StatelessWidget {
                           azulFondo: azulFondo,
                           grisBorde: grisBorde,
                           onTap: () {
+                            if (!ModalRestriccionDonacion.verificarAutenticacion(
+                              context: context,
+                              mensaje: l10n?.solicitudRequiereSesion,
+                            )) {
+                              return;
+                            }
                             if (item['route'] != null) {
                               Navigator.pushNamed(
                                 context,

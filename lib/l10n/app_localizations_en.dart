@@ -620,10 +620,217 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verCalendario => 'View calendar';
 
   @override
+  String get buscarPorFecha => 'Search by date';
+
+  @override
+  String get buscarEventosPorFechaTitulo => 'SEARCH EVENTS BY DATE';
+
+  @override
+  String eventosFechaEncabezado(String fecha) {
+    return 'Events: $fecha';
+  }
+
+  @override
+  String get noEventosParaFecha => 'No events scheduled for the selected date';
+
+  @override
+  String get mostrarTodosLosEventos => 'Show all events';
+
+  @override
   String get destacadoMayus => 'FEATURED';
 
   @override
   String get inscribirmeAhora => 'Register now';
+
+  @override
+  String get cancelarInscripcion => 'Cancel registration';
+
+  @override
+  String get rolAdministradorIglesia => 'Church Administrator';
+
+  @override
+  String get rolSuperAdmin => 'Super Administrator';
+
+  @override
+  String get rolMiembro => 'Active Member';
+
+  @override
+  String get rolUsuario => 'User';
+
+  @override
+  String get modoSoloLectura => 'Read-only';
+
+  @override
+  String get administracionPastoral => 'Pastoral Administration';
+
+  @override
+  String get gestionAvisos => 'Congregational announcements';
+
+  @override
+  String get gestionGrupos => 'Audiences and groups';
+
+  @override
+  String get accionRestringidaSoloLectura =>
+      'Action not available in read-only mode';
+
+  @override
+  String get permisoRequerido => 'Requires administrator permissions';
+
+  @override
+  String get moderacionPeticiones => 'Prayer request moderation';
+
+  @override
+  String get metricasComunidad => 'Community analytics';
+
+  @override
+  String get publicarAviso => 'Post announcement';
+
+  @override
+  String get tituloAviso => 'Announcement title';
+
+  @override
+  String get contenidoAviso => 'Announcement content';
+
+  @override
+  String get fijarAviso => 'Pin to top';
+
+  @override
+  String get seleccionarAudiencia => 'Audience / Group';
+
+  @override
+  String get todasLasAudiencias => 'Entire congregation';
+
+  @override
+  String get publicar => 'Publish';
+
+  @override
+  String get avisoPublicadoExito => 'Announcement published successfully';
+
+  @override
+  String get campoRequerido => 'This field is required';
+
+  @override
+  String get errorPublicarAviso => 'Could not publish announcement';
+
+  @override
+  String get peticionesPendientes => 'Pending requests';
+
+  @override
+  String get aprobar => 'Approve';
+
+  @override
+  String get rechazar => 'Reject';
+
+  @override
+  String get peticionAprobada => 'Request approved';
+
+  @override
+  String get peticionRechazada => 'Request rejected';
+
+  @override
+  String get totalMiembros => 'Total members';
+
+  @override
+  String get nuevosMiembrosMes => 'New members this month';
+
+  @override
+  String get totalOfrendas => 'Recorded offerings';
+
+  @override
+  String get inscripcionesEventos => 'Event registrations';
+
+  @override
+  String get sinPeticionesPendientes => 'No prayer requests pending moderation';
+
+  @override
+  String get sinAvisosActivos => 'No congregational announcements published';
+
+  @override
+  String get motivoRechazoOpcional => 'Optional reason for rejection';
+
+  @override
+  String get bannerModoSoloLectura =>
+      'Read-only mode active. Publishing and registration features are disabled.';
+
+  @override
+  String get avisoModeracionOracion =>
+      'Pastoral notice: Your prayer request will be reviewed by the pastoral team before being visible to the congregation.';
+
+  @override
+  String get iglesiaRequeridaParaSolicitud =>
+      'You must be assigned to a church to submit pastoral requests.';
+
+  @override
+  String get seleccionarIglesiaAccion => 'Select church';
+
+  @override
+  String get solicitudRequiereSesion =>
+      'You must sign in with your account to submit requests or pastoral petitions to your congregation.';
+
+  @override
+  String get solicitudRequiereMembresia =>
+      'Your account is pending congregation membership assignment or approval to submit requests.';
+
+  @override
+  String get donacionRequiereSesion =>
+      'You must sign in with a member account to make donations and offerings.';
+
+  @override
+  String get donacionRequiereMembresia =>
+      'Your account is registered but pending congregation membership assignment or approval. Only active members can make donations.';
+
+  @override
+  String get donacionRequiereIglesia =>
+      'You must belong to an assigned congregation to make donations.';
+
+  @override
+  String get inicioSesionRequerido => 'Sign in required';
+
+  @override
+  String get tiendaRequiereSesion =>
+      'You must sign in with your account to add items and make purchases in the store.';
+
+  @override
+  String get librosRequiereSesion =>
+      'You must sign in with your account to read or listen to books in the library.';
+
+  @override
+  String get proyectoRequiereSesion =>
+      'You must sign in with your account to collaborate and contribute to solidarity projects.';
+
+  @override
+  String get sesionRequeridaGenerica =>
+      'You must sign in with your account to access this feature.';
+
+  @override
+  String get membresiaPendiente => 'Membership pending approval';
+
+  @override
+  String get iniciarSesion => 'Sign in';
+
+  @override
+  String get modoInvitado => 'Guest mode';
+
+  @override
+  String get usuarioInvitado => 'Guest user';
+
+  @override
+  String get perfilInvitadoDesc =>
+      'You are browsing as a guest. Sign in to access your history, requests, and donations.';
+
+  @override
+  String get sinSolicitudesRegistradas => 'No requests registered';
+
+  @override
+  String get solicitudesInvitadoDesc =>
+      'In guest mode, requests are not recorded or displayed. Sign in to create and track pastoral requests.';
+
+  @override
+  String get sinDonacionesRegistradas => 'No donations registered';
+
+  @override
+  String get donacionesInvitadoDesc =>
+      'In guest mode, donations are not recorded. Sign in to contribute and view your donation history.';
 
   @override
   String eventoAnadidoACalendario(String titulo) {
@@ -2511,4 +2718,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localizandoComunidades => 'Locating Christian communities...';
+
+  @override
+  String get pedidosInvitadoDesc =>
+      'In guest mode, orders are not recorded. Sign in to view your order history.';
+
+  @override
+  String get notificacionesInvitadoDesc =>
+      'In guest mode, personal notices and notifications are not available. Sign in to stay up to date with your community.';
 }

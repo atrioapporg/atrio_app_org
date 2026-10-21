@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/widgets/odoo_pago_dialog.dart';
+import 'package:atrio/widgets/read_only_banner.dart';
 
 class ConfirmarDonacionScreen extends StatefulWidget {
   static const routeName = 'confirmar_donacion_screen';
@@ -261,6 +263,7 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                       ),
                       child: Column(
                         children: [
+                          const ReadOnlyBanner(),
                           // Tarjeta de Resumen Detallado
                           Container(
                             width: double.infinity,
@@ -641,6 +644,9 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                 ),
                               ),
                               onPressed: () {
+                                if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+                                  return;
+                                }
                                 final userProvider = Provider.of<UserProvider>(
                                   context,
                                   listen: false,

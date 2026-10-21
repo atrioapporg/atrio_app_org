@@ -28,6 +28,7 @@ import 'package:atrio/providers/explorar_provider.dart';
 import 'package:atrio/providers/biblia_provider.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
+import 'package:atrio/providers/admin_provider.dart';
 
 // Screens - Autenticación / Onboarding
 import 'package:atrio/screens/intro_encuentra_screen.dart';
@@ -145,6 +146,11 @@ class AppState extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TradicionCristianaProvider()),
         ChangeNotifierProvider(create: (_) => ExplorarProvider()),
         ChangeNotifierProvider(create: (_) => AjustesProvider()),
+        ChangeNotifierProxyProvider<UserProvider, AdminProvider>(
+          create: (ctx) => AdminProvider(api: ctx.read<UserProvider>().api),
+          update: (ctx, userProvider, previous) =>
+              previous ?? AdminProvider(api: userProvider.api),
+        ),
       ],
       child: MyApp(initialRoute: initialRoute),
     );

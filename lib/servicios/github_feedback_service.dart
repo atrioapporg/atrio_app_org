@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,6 +16,7 @@ class GithubFeedbackService {
     const p2 = 'blgCce7mTGGbMF8LNJq46C8Sg';
     return '$p1$p2';
   }
+
   static const String _apiBaseUrl = 'https://api.github.com';
 
   /// Sube la captura de pantalla a GitHub Contents API en la carpeta `feedback_screenshots/`
@@ -46,7 +48,8 @@ class GithubFeedbackService {
         return data['content']?['download_url'] as String?;
       } else {
         debugPrint(
-            '⚠️ [GithubFeedbackService] Error al subir captura (${response.statusCode}): ${response.body}');
+          '⚠️ [GithubFeedbackService] Error al subir captura (${response.statusCode}): ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -112,11 +115,14 @@ class GithubFeedbackService {
       );
 
       if (response.statusCode == 201) {
-        debugPrint('✅ [GithubFeedbackService] Issue creado exitosamente en $_owner/$_repo');
+        debugPrint(
+          '✅ [GithubFeedbackService] Issue creado exitosamente en $_owner/$_repo',
+        );
         return true;
       } else {
         debugPrint(
-            '⚠️ [GithubFeedbackService] Error al crear issue (${response.statusCode}): ${response.body}');
+          '⚠️ [GithubFeedbackService] Error al crear issue (${response.statusCode}): ${response.body}',
+        );
         return false;
       }
     } catch (e) {

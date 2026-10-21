@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/data/app_config.dart';
+import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
@@ -44,6 +45,8 @@ class UserProvider extends ChangeNotifier {
       if (_api.isAuthenticated && _currentUser == null) {
         final meData = await _api.me();
         _currentUser = UserModel.fromOdooJson(meData);
+        _api.defaultChurchId = _currentUser?.iglesiaId;
+        _api.isReadOnly = _currentUser?.isReadOnly ?? false;
         notifyListeners();
         // Sincronizar token del dispositivo con Odoo en segundo plano
         DeviceNotificationService.instance.registerDeviceWithBackend(_api);
@@ -63,6 +66,69 @@ class UserProvider extends ChangeNotifier {
 
   /// Acceso al servicio de tokens para consultas o depuración.
   TokenStorageService get storageService => _storageService;
+
+  // ===========================================================================
+  // RBAC & PERMISOS GRANULARES (ETAPA 1)
+  // ===========================================================================
+
+  UserRole get role => _currentUser?.role ?? UserRole.user;
+  Set<String> get permissions => _currentUser?.permissions ?? const {};
+  bool get isReadOnly => _currentUser?.isReadOnly ?? false;
+  bool get isChurchAdmin => _currentUser?.isChurchAdmin ?? false;
+  bool get isPlatformAdmin => _currentUser?.isPlatformAdmin ?? false;
+  bool get isMember => _currentUser?.isMember ?? false;
+  bool get canWrite => _currentUser?.canWrite ?? false;
+
+  /// Indica si el usuario tiene una iglesia activa asignada en Odoo.
+  bool get hasChurchAssigned =>
+      _currentUser?.iglesiaId != null && _currentUser!.iglesiaId! > 0;
+
+  /// Valida si el usuario está plenamente habilitado para realizar donaciones y ofrendas.
+  /// No permitido para:
+  /// - Modo invitado (no autenticado).
+  /// - Modo solo lectura (auditoría / platform_admin con read_only activo).
+  /// - Rol 'user' (usuario recién registrado pendiente de asignación o aprobación de membresía).
+  /// - Usuarios sin congregación asignada activa.
+  bool get canDonate =>
+      isAuthenticated &&
+      !isReadOnly &&
+      (role == UserRole.member || role == UserRole.churchAdmin) &&
+      hasChurchAssigned;
+
+  /// Valida si el usuario actual tiene un permiso específico.
+  bool hasPermission(String permission) =>
+      _currentUser?.hasPermission(permission) ?? false;
+
+  /// Valida si el usuario cuenta con al menos uno de los permisos indicados.
+  bool hasAnyPermission(Iterable<String> perms) =>
+      perms.any((p) => hasPermission(p));
+
+  /// Valida si el usuario cuenta con todos los permisos indicados.
+  bool hasAllPermissions(Iterable<String> perms) =>
+      perms.every((p) => hasPermission(p));
+
+  /// Asigna directamente el usuario actual para pruebas unitarias y de widgets.
+  @visibleForTesting
+  void setCurrentUserForTesting(UserModel? user) {
+    _currentUser = user;
+    _api.defaultChurchId = user?.iglesiaId;
+    _api.isReadOnly = user?.isReadOnly ?? false;
+    notifyListeners();
+  }
+
+  /// Refresca el perfil del usuario actual consultando GET /me a Odoo.
+  Future<void> refreshUserProfile() async {
+    if (!_api.isAuthenticated) return;
+    try {
+      final meData = await _api.me();
+      _currentUser = UserModel.fromOdooJson(meData);
+      _api.defaultChurchId = _currentUser?.iglesiaId;
+      _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[UserProvider] Error al refrescar perfil: $e');
+    }
+  }
 
   // ===========================================================================
   // FLUJO DE AUTENTICACIÓN CON ODOO (ETAPA 2)
@@ -88,6 +154,8 @@ class UserProvider extends ChangeNotifier {
 
       // Crear el modelo de usuario a partir del payload completo de Odoo
       _currentUser = UserModel.fromOdooJson(data);
+      _api.defaultChurchId = _currentUser?.iglesiaId;
+      _api.isReadOnly = _currentUser?.isReadOnly ?? false;
 
       // Sincronizar flag en SharedPreferences para compatibilidad de navegación
       final prefs = await SharedPreferences.getInstance();
@@ -156,9 +224,18 @@ class UserProvider extends ChangeNotifier {
       await _api.logoutLocal();
     } finally {
       _currentUser = null;
+      _api.defaultChurchId = null;
+      _api.isReadOnly = false;
       _errorMessage = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', false);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', false);
+        await prefs.remove('user_email');
+        await prefs.remove('user_name');
+        await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
+      } catch (e) {
+        debugPrint('[UserProvider] Error limpiando datos locales en logout: $e');
+      }
       _isLoading = false;
       notifyListeners();
     }
@@ -234,18 +311,14 @@ class UserProvider extends ChangeNotifier {
     required String iglesiaActual,
   }) {
     if (_currentUser != null) {
-      _currentUser = UserModel(
-        id: _currentUser!.id,
+      _currentUser = _currentUser!.copyWith(
         nombre: nombre,
         email: email,
         telefono: telefono.isNotEmpty ? telefono : null,
         iglesiaActual: iglesiaActual,
-        fechaRegistro: _currentUser!.fechaRegistro,
         avatarIniciales: nombre.isNotEmpty
             ? nombre.trim()[0].toUpperCase()
             : 'U',
-        esMiembroVerificado: _currentUser!.esMiembroVerificado,
-        estadisticas: _currentUser!.estadisticas,
       );
       notifyListeners();
     }
@@ -274,6 +347,16 @@ class UserProvider extends ChangeNotifier {
         return 'Tu solicitud de membresía aún está pendiente de aprobación.';
       case 'subscription_required':
         return 'Esta función requiere una suscripción activa de tu iglesia.';
+      case 'validation_error':
+        return e.message.isNotEmpty
+            ? e.message
+            : 'Error de validación en los datos enviados.';
+      case 'content_unavailable':
+        return 'Este contenido ya no está disponible.';
+      case 'read_only':
+        return 'Acción no permitida: Modo de solo lectura activo.';
+      case 'church_required':
+        return 'Se requiere especificar una iglesia para esta operación.';
       default:
         return e.message.isNotEmpty ? e.message : 'Error en el servidor (${e.status}).';
     }

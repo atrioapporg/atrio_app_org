@@ -45,6 +45,13 @@ class AtrioApi {
   /// Token de refresco de larga duración para renovar el token de acceso sin pedir clave al usuario.
   String? refreshToken;
 
+  /// ID de la iglesia activa asignada al usuario (enviado en cabecera X-Church-Id para endpoints contextuales).
+  int? defaultChurchId;
+
+  /// Indica si la sesión actual opera en modo estrictamente de solo lectura (RBAC Odoo 19).
+  /// Cuando es true, AtrioApi previene peticiones HTTP de mutación (POST, PUT, PATCH, DELETE) hacia endpoints de contenido.
+  bool isReadOnly;
+
   AtrioApi({
     required this.baseUrl,
     this.database,
@@ -52,6 +59,8 @@ class AtrioApi {
     this.refreshToken,
     this.storageService,
     this.onSessionExpired,
+    this.defaultChurchId,
+    this.isReadOnly = false,
   });
 
   bool _storageInitialized = false;
@@ -84,15 +93,23 @@ class AtrioApi {
   /// Cabeceras HTTP estándar requeridas por la API de Odoo.
   /// En endpoints públicos de autenticación (/auth/login y /auth/refresh) se omite Authorization
   /// para evitar que un token expirado bloquee la renovación.
-  Map<String, String> _buildHeaders(String path) {
+  Map<String, String> _buildHeaders(
+    String path, {
+    int? churchId,
+    Map<String, String>? extraHeaders,
+  }) {
     final isPublicAuth = path == '/auth/login' || path == '/auth/refresh';
+    final effectiveChurchId = churchId ?? defaultChurchId;
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (database != null && database!.isNotEmpty)
         'X-Odoo-Database': database!,
+      if (effectiveChurchId != null)
+        'X-Church-Id': effectiveChurchId.toString(),
       if (!isPublicAuth && token != null && token!.isNotEmpty)
         'Authorization': 'Bearer $token',
+      ...?extraHeaders,
     };
   }
 
@@ -125,15 +142,29 @@ class AtrioApi {
     String path, {
     Map<String, dynamic>? body,
     Map<String, String>? query,
+    Map<String, String>? extraHeaders,
+    int? churchId,
     bool retryAuth = true,
   }) async {
+    // Restricción preventiva de mutaciones en modo solo lectura (RBAC Odoo 19)
+    final isMutation = method == 'POST' || method == 'PUT' || method == 'PATCH' || method == 'DELETE';
+    if (isReadOnly && isMutation && !path.startsWith('/auth/')) {
+      throw AtrioApiException(
+        403,
+        'read_only',
+        'Acción de escritura bloqueada: Modo de solo lectura activo.',
+      );
+    }
+
     await _ensureStorageLoaded();
 
     final uri = Uri.parse('$baseUrl/atrio/portal/api$path')
         .replace(queryParameters: query);
 
     final request = http.Request(method, uri)
-      ..headers.addAll(_buildHeaders(path));
+      ..headers.addAll(
+        _buildHeaders(path, churchId: churchId, extraHeaders: extraHeaders),
+      );
     if (body != null) {
       request.body = jsonEncode(body);
     }
@@ -175,6 +206,8 @@ class AtrioApi {
           path,
           body: body,
           query: query,
+          extraHeaders: extraHeaders,
+          churchId: churchId,
           retryAuth: false,
         );
       } on AtrioApiException catch (e) {
@@ -471,6 +504,13 @@ class AtrioApi {
     String title,
     String message,
   ) {
+    if (!isAuthenticated) {
+      throw AtrioApiException(
+        401,
+        'unauthenticated',
+        'Debes iniciar sesión para enviar una solicitud pastoral o petición.',
+      );
+    }
     final normalizedType = normalizeRequestType(type);
     return _send(
       'POST',
@@ -565,18 +605,27 @@ class AtrioApi {
     String? notes,
     bool publicConsent = false,
     String? location,
-  }) => _send(
-    'POST',
-    '/donations/paypal',
-    body: {
-      'name': name,
-      'email': email,
-      'amount': amount,
-      'notes': notes,
-      'public_consent': publicConsent,
-      'donor_location': location,
-    },
-  );
+  }) {
+    if (!isAuthenticated) {
+      throw AtrioApiException(
+        401,
+        'unauthenticated',
+        'Debes iniciar sesión con una cuenta de miembro para realizar donaciones.',
+      );
+    }
+    return _send(
+      'POST',
+      '/donations/paypal',
+      body: {
+        'name': name,
+        'email': email,
+        'amount': amount,
+        'notes': notes,
+        'public_consent': publicConsent,
+        'donor_location': location,
+      },
+    );
+  }
 
   /// Donación vía Transferencia bancaria adjuntando comprobante en Base64.
   Future<Map<String, dynamic>> donateWithTransfer({
@@ -587,19 +636,28 @@ class AtrioApi {
     String receiptFilename = 'comprobante.jpg',
     String currency = 'DOP',
     String? reference,
-  }) => _send(
-    'POST',
-    '/donations/transfer',
-    body: {
-      'name': name,
-      'email': email,
-      'amount': amount,
-      'currency': currency,
-      'reference': reference,
-      'receipt_file': receiptBase64,
-      'receipt_filename': receiptFilename,
-    },
-  );
+  }) {
+    if (!isAuthenticated) {
+      throw AtrioApiException(
+        401,
+        'unauthenticated',
+        'Debes iniciar sesión con una cuenta de miembro para realizar donaciones.',
+      );
+    }
+    return _send(
+      'POST',
+      '/donations/transfer',
+      body: {
+        'name': name,
+        'email': email,
+        'amount': amount,
+        'currency': currency,
+        'reference': reference,
+        'receipt_file': receiptBase64,
+        'receipt_filename': receiptFilename,
+      },
+    );
+  }
 
   /// Historial de donaciones del usuario actual.
   Future<Map<String, dynamic>> myDonations() => _send('GET', '/donations/mine');
@@ -764,4 +822,102 @@ class AtrioApi {
       rethrow;
     }
   }
+
+  // ===========================================================================
+  // 13. ENDPOINTS DE ADMINISTRADOR (church_admin / Odoo 19 /admin/*)
+  // ===========================================================================
+
+  /// Lista los avisos congregacionales de la iglesia activa (GET /admin/announcements).
+  Future<Map<String, dynamic>> adminAnnouncements({
+    int limit = 20,
+    int offset = 0,
+    int? churchId,
+  }) => _send(
+    'GET',
+    '/admin/announcements',
+    query: {'limit': '$limit', 'offset': '$offset'},
+    churchId: churchId,
+  );
+
+  /// Publica un nuevo aviso congregacional segmentado (POST /admin/announcements).
+  /// Soporta título, contenido, segmentación por grupos (target_group_ids) y fijación (pinned).
+  Future<Map<String, dynamic>> adminCreateAnnouncement({
+    required String title,
+    required String content,
+    List<int>? targetGroupIds,
+    bool pinned = false,
+    int? churchId,
+  }) {
+    final body = <String, dynamic>{
+      'title': title,
+      'message': content, // Odoo 19: obligatorio ('title' y 'message')
+      'content': content, // Retrocompatibilidad
+      'pinned': pinned,
+      'audience': (targetGroupIds != null && targetGroupIds.isNotEmpty)
+          ? 'grupos'
+          : 'todos',
+      if (targetGroupIds != null && targetGroupIds.isNotEmpty) ...{
+        'group_ids': targetGroupIds,
+        'target_group_ids': targetGroupIds,
+      },
+    };
+    return _send('POST', '/admin/announcements', body: body, churchId: churchId);
+  }
+
+  /// Elimina un aviso congregacional (DELETE /admin/announcements/{id}).
+  Future<Map<String, dynamic>> adminDeleteAnnouncement(
+    int announcementId, {
+    int? churchId,
+  }) => _send('DELETE', '/admin/announcements/$announcementId', churchId: churchId);
+
+  /// Obtiene los grupos de audiencia de la iglesia para segmentación (GET /admin/groups).
+  Future<Map<String, dynamic>> adminGroups({int? churchId}) =>
+      _send('GET', '/admin/groups', churchId: churchId);
+
+  /// Consulta las peticiones de oración para moderación pastoral (GET /admin/prayer-requests).
+  /// Filtro por estado: 'pending', 'approved', 'rejected', 'all'.
+  Future<Map<String, dynamic>> adminPrayerRequests({
+    String status = 'pending',
+    int limit = 20,
+    int offset = 0,
+    int? churchId,
+  }) => _send(
+    'GET',
+    '/admin/prayer-requests',
+    query: {'status': status, 'limit': '$limit', 'offset': '$offset'},
+    churchId: churchId,
+  );
+
+  /// Modera una petición de oración pastoral (PATCH /admin/prayer-requests/{id}/moderate).
+  /// [action]: 'approve' | 'reject'
+  /// [reason]: Justificación o motivo opcional.
+  Future<Map<String, dynamic>> adminModeratePrayerRequest({
+    required int requestId,
+    required String action,
+    String? reason,
+    int? churchId,
+  }) {
+    final body = <String, dynamic>{
+      'action': action,
+      if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+    };
+    return _send(
+      'PATCH',
+      '/admin/prayer-requests/$requestId/moderate',
+      body: body,
+      churchId: churchId,
+    );
+  }
+
+  /// Consulta estadísticas y métricas analíticas de la comunidad (GET /admin/analytics).
+  /// [period]: 'week', 'month', 'year'.
+  Future<Map<String, dynamic>> adminAnalytics({
+    String period = 'month',
+    int? churchId,
+  }) => _send(
+    'GET',
+    '/admin/analytics',
+    query: {'period': period},
+    churchId: churchId,
+  );
 }

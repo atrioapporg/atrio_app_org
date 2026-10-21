@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
+import '../main.dart';
 import '../modelos/notificacion_model.dart';
+import 'inicio_sesion_screen.dart';
 
 class NotificacionesScreen extends StatefulWidget {
   static const routeName = 'notificaciones_screen';
@@ -28,20 +30,35 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     super.didChangeDependencies();
     if (_isInit) {
       _isInit = false;
-      final l10n = AppLocalizations.of(context)!;
-      _notificaciones = _crearAvisosIniciales(l10n);
-      _cargarNotificaciones();
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (!userProvider.isAuthenticated) {
+        _notificaciones = [];
+      } else {
+        _notificaciones = [];
+        _cargarNotificaciones();
+      }
     }
   }
 
   Future<void> _cargarNotificaciones({bool silent = false}) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (!userProvider.isAuthenticated) {
+      if (mounted) {
+        setState(() {
+          _notificaciones = [];
+          _sponsored = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     if (!silent && mounted) {
       setState(() {
         _isLoading = true;
       });
     }
     try {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
       final res = await userProvider.api.notifications();
       final notisRaw = res['notifications'] as List? ?? [];
       final sponsoredRaw = res['sponsored'] as List? ?? [];
@@ -52,9 +69,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
       if (mounted) {
         setState(() {
-          if (parsed.isNotEmpty) {
-            _notificaciones = parsed;
-          }
+          _notificaciones = parsed;
           _sponsored = sponsoredRaw
               .map((e) => Map<String, dynamic>.from(e))
               .toList();
@@ -401,8 +416,13 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
     final l10n = AppLocalizations.of(context)!;
+    final userProvider = context.watch<UserProvider>();
+    final bool esInvitado = !userProvider.isAuthenticated;
+
     final filters = _obtenerFiltros(l10n);
-    final notificacionesFiltradas = _filtrarNotificaciones(l10n);
+    final notificacionesFiltradas = esInvitado
+        ? const <NotificacionModel>[]
+        : _filtrarNotificaciones(l10n);
 
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
@@ -455,7 +475,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (_notificaciones.isNotEmpty) ...[
+                        if (!esInvitado && _notificaciones.isNotEmpty) ...[
                           if (_conteoNoLeidas > 0)
                             IconButton(
                               tooltip: l10n.marcarTodasComoLeidas,
@@ -580,131 +600,134 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                           // Pastillas de Filtro con mayor tamaño táctil y tipográfico
-                          SizedBox(
-                            height: usableHeight * 0.052,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: filters.length,
-                              separatorBuilder: (context, index) =>
-                                   SizedBox(width: screenWidth * 0.025),
-                              itemBuilder: (context, index) {
-                                final isSelected =
-                                    _selectedFilterIndex == index;
-                                final label = filters[index];
-                                final bool esNoLeidas = index == 1;
+                          if (!esInvitado) ...[
+                            SizedBox(
+                              height: usableHeight * 0.052,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: filters.length,
+                                separatorBuilder: (context, index) =>
+                                     SizedBox(width: screenWidth * 0.025),
+                                itemBuilder: (context, index) {
+                                  final isSelected =
+                                      _selectedFilterIndex == index;
+                                  final label = filters[index];
+                                  final bool esNoLeidas = index == 1;
 
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (mounted) {
-                                      setState(() {
-                                        _selectedFilterIndex = index;
-                                      });
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: screenWidth * 0.042,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? azulFondo
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(
-                                        screenWidth * 0.028,
+                                  return GestureDetector(
+                                    onTap: () {
+                                      if (mounted) {
+                                        setState(() {
+                                          _selectedFilterIndex = index;
+                                        });
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.042,
                                       ),
-                                      border: Border.all(
+                                      decoration: BoxDecoration(
                                         color: isSelected
                                             ? azulFondo
-                                            : grisBorde,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          label,
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.white
-                                                : azulFondo,
-                                            fontSize: screenWidth * 0.038,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.028,
                                         ),
-                                        if (esNoLeidas &&
-                                            _conteoNoLeidas > 0) ...[
-                                          SizedBox(width: screenWidth * 0.018),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 7,
-                                              vertical: 2.5,
-                                            ),
-                                            decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? azulFondo
+                                              : grisBorde,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            label,
+                                            style: TextStyle(
                                               color: isSelected
-                                                  ? amarilloOro
+                                                  ? Colors.white
                                                   : azulFondo,
-                                              shape: BoxShape.circle,
+                                              fontSize: screenWidth * 0.038,
+                                              fontWeight: FontWeight.w600,
                                             ),
-                                            child: Text(
-                                              '$_conteoNoLeidas',
-                                              style: TextStyle(
+                                          ),
+                                          if (esNoLeidas &&
+                                              _conteoNoLeidas > 0) ...[
+                                            SizedBox(width: screenWidth * 0.018),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 7,
+                                                vertical: 2.5,
+                                              ),
+                                              decoration: BoxDecoration(
                                                 color: isSelected
-                                                    ? azulFondo
-                                                    : Colors.white,
-                                                fontSize: screenWidth * 0.028,
-                                                fontWeight: FontWeight.bold,
+                                                    ? amarilloOro
+                                                    : azulFondo,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                '$_conteoNoLeidas',
+                                                style: TextStyle(
+                                                  color: isSelected
+                                                      ? azulFondo
+                                                      : Colors.white,
+                                                  fontSize: screenWidth * 0.028,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.02),
+                            SizedBox(height: usableHeight * 0.02),
+                          ],
 
                           // Indicador de estado y ayuda visual
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  l10n.avisosDeLaComunidad,
+                          if (!esInvitado) ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    l10n.avisosDeLaComunidad,
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.048,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                SizedBox(width: screenWidth * 0.02),
+                                Text(
+                                  l10n.conteoNoLeidas(_conteoNoLeidas),
                                   style: TextStyle(
-                                    color: azulFondo,
-                                    fontSize: screenWidth * 0.048,
+                                    color: _conteoNoLeidas > 0
+                                        ? const Color(0xFF9E6500)
+                                        : Colors.grey.shade600,
+                                    fontSize: screenWidth * 0.035,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              SizedBox(width: screenWidth * 0.02),
-                              Text(
-                                l10n.conteoNoLeidas(_conteoNoLeidas),
-                                style: TextStyle(
-                                  color: _conteoNoLeidas > 0
-                                      ? const Color(0xFF9E6500)
-                                      : Colors.grey.shade600,
-                                  fontSize: screenWidth * 0.035,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.006),
-
-                          if (_notificaciones.isNotEmpty)
-                            Text(
-                              l10n.deslizaAvisoParaEliminar,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: screenWidth * 0.032,
-                                fontStyle: FontStyle.italic,
-                              ),
+                              ],
                             ),
+                            SizedBox(height: usableHeight * 0.006),
+                            if (_notificaciones.isNotEmpty)
+                              Text(
+                                l10n.deslizaAvisoParaEliminar,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: screenWidth * 0.032,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                          ],
                           SizedBox(height: usableHeight * 0.014),
 
                           // Lista de Notificaciones
@@ -717,28 +740,68 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                 child: Column(
                                   children: [
                                     Icon(
-                                      Icons.notifications_off_outlined,
+                                      esInvitado
+                                          ? Icons.account_circle_outlined
+                                          : Icons.notifications_off_outlined,
                                       color: Colors.grey.shade400,
                                       size: screenWidth * 0.16,
                                     ),
                                     SizedBox(height: usableHeight * 0.015),
                                     Text(
-                                      l10n.noHayAvisosMomento,
+                                      esInvitado
+                                          ? l10n.modoInvitado
+                                          : l10n.noHayAvisosMomento,
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                         fontSize: screenWidth * 0.044,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(height: usableHeight * 0.006),
-                                    Text(
-                                      l10n.avisosOdooApareceranAqui,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: screenWidth * 0.034,
+                                    SizedBox(height: usableHeight * 0.008),
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.06,
+                                      ),
+                                      child: Text(
+                                        esInvitado
+                                            ? l10n.notificacionesInvitadoDesc
+                                            : l10n.avisosOdooApareceranAqui,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: screenWidth * 0.034,
+                                          height: 1.35,
+                                        ),
                                       ),
                                     ),
-                                    if (_notificaciones.isEmpty) ...[
+                                    if (esInvitado) ...[
+                                      SizedBox(height: usableHeight * 0.025),
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.login_rounded, size: 18),
+                                        label: Text(
+                                          l10n.iniciarSesion,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: azulFondo,
+                                          foregroundColor: Colors.white,
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: screenWidth * 0.06,
+                                            vertical: usableHeight * 0.012,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          final nav = Navigator.maybeOf(context) ??
+                                              MyApp.navigatorKey.currentState;
+                                          nav?.pushNamed(
+                                            InicioSesionScreen.routeName,
+                                          );
+                                        },
+                                      ),
+                                    ] else if (_notificaciones.isEmpty) ...[
                                       SizedBox(height: usableHeight * 0.025),
                                       OutlinedButton.icon(
                                         style: OutlinedButton.styleFrom(

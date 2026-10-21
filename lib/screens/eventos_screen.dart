@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../atrio_api.dart';
 import '../providers/user_provider.dart';
 import '../l10n/app_localizations.dart';
 
 import '../modelos/evento_model.dart';
+import '../widgets/permission_guard.dart';
+import '../widgets/read_only_banner.dart';
 
 class EventosScreen extends StatefulWidget {
   static const routeName = 'eventos_screen';
@@ -18,6 +21,7 @@ class EventosScreen extends StatefulWidget {
 class _EventosScreenState extends State<EventosScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedCategoryIndex = 0;
+  DateTime? _selectedDate;
 
   final List<String> _categories = [
     'Todos',
@@ -71,6 +75,7 @@ class _EventosScreenState extends State<EventosScreen> {
     estaInscrito: true,
     fallbackBgColor: '0xFF072B4F',
     fallbackTextColor: '0xFFE5A023',
+    fechaDateTime: DateTime(2026, 10, 24),
   );
 
   // Catálogo inicial de 4 eventos (total 5 eventos con el destacado)
@@ -92,6 +97,7 @@ class _EventosScreenState extends State<EventosScreen> {
       estaInscrito: false,
       fallbackBgColor: '0xFF1B3B5A',
       fallbackTextColor: '0xFFFAF7F0',
+      fechaDateTime: DateTime(2026, 10, 31),
     ),
     EventoModel(
       id: '3',
@@ -110,6 +116,7 @@ class _EventosScreenState extends State<EventosScreen> {
       estaInscrito: false,
       fallbackBgColor: '0xFF2E4057',
       fallbackTextColor: '0xFFE5A023',
+      fechaDateTime: DateTime(2026, 11, 7),
     ),
     EventoModel(
       id: '4',
@@ -128,6 +135,7 @@ class _EventosScreenState extends State<EventosScreen> {
       estaInscrito: false,
       fallbackBgColor: '0xFF3D5A80',
       fallbackTextColor: '0xFFFFFFFF',
+      fechaDateTime: DateTime(2026, 11, 14),
     ),
     EventoModel(
       id: '5',
@@ -146,6 +154,7 @@ class _EventosScreenState extends State<EventosScreen> {
       estaInscrito: false,
       fallbackBgColor: '0xFF293241',
       fallbackTextColor: '0xFFE5A023',
+      fechaDateTime: DateTime(2026, 11, 21),
     ),
   ];
 
@@ -197,6 +206,19 @@ class _EventosScreenState extends State<EventosScreen> {
   /// Inscribe o cancela asistencia a un evento en Odoo (POST/DELETE /events/{id}/register)
   Future<void> _cambiarInscripcion(EventoModel evento) async {
     final userProvider = context.read<UserProvider>();
+    if (userProvider.isReadOnly) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.accionRestringidaSoloLectura ??
+                'Acción no disponible en modo solo lectura',
+          ),
+          backgroundColor: const Color(0xFF072B4F),
+        ),
+      );
+      return;
+    }
     final eventId = int.tryParse(evento.id);
 
     if (eventId == null) {
@@ -218,9 +240,12 @@ class _EventosScreenState extends State<EventosScreen> {
             mes: act.mes,
             descripcion: act.descripcion,
             cupoMaximo: act.cupoMaximo,
-            cupoReservado: act.estaInscrito ? act.cupoReservado - 1 : act.cupoReservado + 1,
+            cupoReservado: act.estaInscrito
+                ? act.cupoReservado - 1
+                : act.cupoReservado + 1,
             estaInscrito: !act.estaInscrito,
             esDestacado: act.esDestacado,
+            fechaDateTime: act.fechaDateTime,
           );
         }
       });
@@ -291,6 +316,180 @@ class _EventosScreenState extends State<EventosScreen> {
     }).toList();
   }
 
+  String _nombreMesCorto(int mes) {
+    const meses = [
+      'ENE',
+      'FEB',
+      'MAR',
+      'ABR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AGO',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DIC',
+    ];
+    if (mes >= 1 && mes <= 12) return meses[mes - 1];
+    return '';
+  }
+
+  String _nombreMesCompleto(int mes) {
+    const meses = [
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre',
+    ];
+    if (mes >= 1 && mes <= 12) return meses[mes - 1];
+    return '';
+  }
+
+  bool _eventMatchesDate(EventoModel event, DateTime target) {
+    if (event.fechaDateTime != null) {
+      if (event.fechaDateTime!.year == target.year &&
+          event.fechaDateTime!.month == target.month &&
+          event.fechaDateTime!.day == target.day) {
+        return true;
+      }
+    }
+
+    final parsed = DateTime.tryParse(event.fecha);
+    if (parsed != null) {
+      if (parsed.year == target.year &&
+          parsed.month == target.month &&
+          parsed.day == target.day) {
+        return true;
+      }
+    }
+
+    // Comprobación por día y mes abreviado
+    final dayNum = int.tryParse(event.dia);
+    const meses = [
+      'ENE',
+      'FEB',
+      'MAR',
+      'ABR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AGO',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DIC',
+    ];
+    final mesIndex = meses.indexOf(event.mes.toUpperCase().trim());
+    if (dayNum == target.day &&
+        mesIndex != -1 &&
+        (mesIndex + 1) == target.month) {
+      if (event.fecha.contains('${target.year}') ||
+          !event.fecha.contains(RegExp(r'\b20\d\d\b'))) {
+        return true;
+      }
+    }
+
+    // Comprobación de texto con nombres de meses en español (ej. "24 y Sábado 25 de Octubre, 2026")
+    final nombreMes = _nombreMesCompleto(target.month);
+    final patron = RegExp(
+      '\\b${target.day}\\b.*$nombreMes',
+      caseSensitive: false,
+    );
+    if (patron.hasMatch(event.fecha)) {
+      if (event.fecha.contains('${target.year}') ||
+          !event.fecha.contains(RegExp(r'\b20\d\d\b'))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Lista de eventos para la sección agenda (filtrada por búsqueda y fecha si aplica)
+  List<EventoModel> get _agendaEvents {
+    final query = _searchController.text.trim().toLowerCase();
+
+    // Pool de eventos disponibles (incluye destacado si no está en lista general)
+    final allEvents = <EventoModel>[
+      if (!_eventsList.any((e) => e.id == _featuredEvent.id)) _featuredEvent,
+      ..._eventsList,
+    ];
+
+    final sourceList = _selectedDate != null ? allEvents : _eventsList;
+
+    return sourceList.where((evento) {
+      final matchesDate =
+          _selectedDate == null || _eventMatchesDate(evento, _selectedDate!);
+      final matchesQuery =
+          query.isEmpty ||
+          evento.titulo.toLowerCase().contains(query) ||
+          evento.organizador.toLowerCase().contains(query) ||
+          evento.lugar.toLowerCase().contains(query);
+      return matchesDate && matchesQuery;
+    }).toList();
+  }
+
+  Future<void> _seleccionarFecha(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final now = DateTime.now();
+    final initial =
+        _selectedDate ??
+        (now.isBefore(DateTime(2026, 1, 1)) ? DateTime(2026, 10, 24) : now);
+    final first = DateTime(2024, 1, 1);
+    final last = DateTime(2030, 12, 31);
+    final safeInitial = initial.isBefore(first)
+        ? first
+        : (initial.isAfter(last) ? last : initial);
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: safeInitial,
+      firstDate: first,
+      lastDate: last,
+      helpText: l10n?.buscarEventosPorFechaTitulo ?? 'BUSCAR EVENTOS POR FECHA',
+      cancelText: l10n?.cancelar.toUpperCase() ?? 'CANCELAR',
+      confirmText: l10n?.buscar.toUpperCase() ?? 'BUSCAR',
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: azulFondo,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: azulFondo,
+              secondary: amarilloOro,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: azulFondo,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -351,6 +550,43 @@ class _EventosScreenState extends State<EventosScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const Spacer(),
+                        PermissionGuard(
+                          requireChurchAdmin: true,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: amarilloOro.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: amarilloOro.withValues(alpha: 0.8),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.admin_panel_settings_rounded,
+                                  color: amarilloOro,
+                                  size: screenWidth * 0.04,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n?.administracionPastoral ?? 'Admin',
+                                  style: TextStyle(
+                                    color: amarilloOro,
+                                    fontSize: screenWidth * 0.028,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: usableHeight * 0.015),
@@ -365,7 +601,8 @@ class _EventosScreenState extends State<EventosScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: l10n?.buscarEventosPlaceholder ??
+                          hintText:
+                              l10n?.buscarEventosPlaceholder ??
                               'Buscar eventos, expositores o lugares...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
@@ -430,6 +667,9 @@ class _EventosScreenState extends State<EventosScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const ReadOnlyBanner(
+                              margin: EdgeInsets.only(bottom: 12),
+                            ),
                             if (_isLoadingEvents)
                               const Padding(
                                 padding: EdgeInsets.only(bottom: 8),
@@ -441,246 +681,434 @@ class _EventosScreenState extends State<EventosScreen> {
                             // Banner Hero: Evento Destacado
                             _buildFeaturedEventHero(
                               evento: _featuredEvent,
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            azulFondo: azulFondo,
-                            amarilloOro: amarilloOro,
-                            grisBorde: grisBorde,
-                            onTap: () =>
-                                _showEventDetailsModal(context, _featuredEvent),
-                          ),
-                          SizedBox(height: usableHeight * 0.011),
-
-                          // Tarjeta "Mi próximo evento agendado" con miniatura y cupo
-                          _buildMyEventScheduleCard(
-                            evento: _featuredEvent,
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            azulFondo: azulFondo,
-                            amarilloOro: amarilloOro,
-                            grisBorde: grisBorde,
-                            onTap: () =>
-                                _showEventDetailsModal(context, _featuredEvent),
-                          ),
-                          SizedBox(height: usableHeight * 0.020),
-
-                          // Sección Categorías
-                          Text(
-                            l10n?.categorias ?? 'Categorías',
-                            style: TextStyle(
-                              color: azulFondo,
-                              fontSize: screenWidth * 0.045,
-                              fontWeight: FontWeight.bold,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              azulFondo: azulFondo,
+                              amarilloOro: amarilloOro,
+                              grisBorde: grisBorde,
+                              onTap: () => _showEventDetailsModal(
+                                context,
+                                _featuredEvent,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.012),
+                            SizedBox(height: usableHeight * 0.011),
 
-                          // Pastillas de Categorías interactivas
-                          SizedBox(
-                            height: usableHeight * 0.045,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: _categories.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(width: screenWidth * 0.025),
-                              itemBuilder: (context, index) {
-                                final isSelected =
-                                    _selectedCategoryIndex == index;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategoryIndex = index;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: screenWidth * 0.04,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? azulFondo
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(
-                                        screenWidth * 0.025,
+                            // Tarjeta "Mi próximo evento agendado" con miniatura y cupo
+                            _buildMyEventScheduleCard(
+                              evento: _featuredEvent,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              azulFondo: azulFondo,
+                              amarilloOro: amarilloOro,
+                              grisBorde: grisBorde,
+                              onTap: () => _showEventDetailsModal(
+                                context,
+                                _featuredEvent,
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.020),
+
+                            // Sección Categorías
+                            Text(
+                              l10n?.categorias ?? 'Categorías',
+                              style: TextStyle(
+                                color: azulFondo,
+                                fontSize: screenWidth * 0.045,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.012),
+
+                            // Pastillas de Categorías interactivas
+                            SizedBox(
+                              height: usableHeight * 0.045,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: _categories.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(width: screenWidth * 0.025),
+                                itemBuilder: (context, index) {
+                                  final isSelected =
+                                      _selectedCategoryIndex == index;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategoryIndex = index;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: screenWidth * 0.04,
                                       ),
-                                      border: Border.all(
+                                      decoration: BoxDecoration(
                                         color: isSelected
                                             ? azulFondo
-                                            : grisBorde,
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.025,
+                                        ),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? azulFondo
+                                              : grisBorde,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          _getCategoryName(
+                                            context,
+                                            _categories[index],
+                                          ),
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : azulFondo,
+                                            fontSize: screenWidth * 0.032,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        _getCategoryName(
-                                          context,
-                                          _categories[index],
-                                        ),
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? Colors.white
-                                              : azulFondo,
-                                          fontSize: screenWidth * 0.032,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                  );
+                                },
+                              ),
+                            ),
+                            SizedBox(height: usableHeight * 0.031),
+
+                            // Encabezado "Explorar eventos"
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  l10n?.explorarEventos ?? 'Explorar eventos',
+                                  style: TextStyle(
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_selectedCategoryIndex != 0)
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategoryIndex = 0;
+                                      });
+                                    },
+                                    child: Text(
+                                      l10n?.verTodos ?? 'Ver todos',
+                                      style: TextStyle(
+                                        color: amarilloOro,
+                                        fontSize: screenWidth * 0.034,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                );
-                              },
+                              ],
                             ),
-                          ),
-                          SizedBox(height: usableHeight * 0.031),
+                            SizedBox(height: usableHeight * 0.015),
 
-                          // Encabezado "Explorar eventos"
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                l10n?.explorarEventos ?? 'Explorar eventos',
-                                style: TextStyle(
-                                  color: azulFondo,
-                                  fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (_selectedCategoryIndex != 0)
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategoryIndex = 0;
-                                    });
-                                  },
+                            // Carrusel Horizontal de Eventos filtrado reactivamente
+                            SizedBox(
+                              height: usableHeight * 0.24,
+                              child: _filteredEvents.isEmpty
+                                  ? Center(
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.event_busy_rounded,
+                                            color: Colors.grey.shade500,
+                                            size: screenWidth * 0.05,
+                                          ),
+                                          SizedBox(width: screenWidth * 0.02),
+                                          Text(
+                                            l10n?.noEventosEnCategoria ?? 'No se encontraron eventos en esta categoría',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: screenWidth * 0.03,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      itemCount: _filteredEvents.length,
+                                      separatorBuilder: (context, index) =>
+                                          SizedBox(width: screenWidth * 0.03),
+                                      itemBuilder: (context, index) {
+                                        final evento = _filteredEvents[index];
+                                        return _buildEventCarouselItem(
+                                          evento: evento,
+                                          screenWidth: screenWidth,
+                                          usableHeight: usableHeight,
+                                          azulFondo: azulFondo,
+                                          amarilloOro: amarilloOro,
+                                          onTap: () => _showEventDetailsModal(
+                                            context,
+                                            evento,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                            SizedBox(height: usableHeight * 0.025),
+
+                            // Sección: Próximos en agenda (Lista vertical)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
                                   child: Text(
-                                    l10n?.verTodos ?? 'Ver todos',
+                                    _selectedDate != null
+                                        ? (l10n?.eventosFechaEncabezado(
+                                                '${_selectedDate!.day} ${_nombreMesCorto(_selectedDate!.month)}',
+                                              ) ??
+                                              'Eventos: ${_selectedDate!.day} ${_nombreMesCorto(_selectedDate!.month)}')
+                                        : (l10n?.proximosEnAgenda ??
+                                              'Próximos en agenda'),
                                     style: TextStyle(
-                                      color: amarilloOro,
-                                      fontSize: screenWidth * 0.034,
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.045,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.015),
-
-                          // Carrusel Horizontal de Eventos filtrado reactivamente
-                          SizedBox(
-                            height: usableHeight * 0.24,
-                            child: _filteredEvents.isEmpty
-                                ? Center(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.event_busy_rounded,
-                                          color: Colors.grey.shade500,
-                                          size: screenWidth * 0.05,
+                                SizedBox(width: screenWidth * 0.02),
+                                if (_selectedDate == null)
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () => _seleccionarFecha(context),
+                                      borderRadius: BorderRadius.circular(
+                                        screenWidth * 0.05,
+                                      ),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.028,
+                                          vertical: usableHeight * 0.007,
                                         ),
-                                        SizedBox(width: screenWidth * 0.02),
-                                        Text(
-                                          l10n?.noEventosEnCategoria ??
-                                              'No se encontraron eventos en esta categoría',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: screenWidth * 0.03,
+                                        decoration: BoxDecoration(
+                                          color: amarilloOro.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            screenWidth * 0.05,
+                                          ),
+                                          border: Border.all(
+                                            color: amarilloOro.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_month_rounded,
+                                              color: amarilloOro,
+                                              size: screenWidth * 0.04,
+                                            ),
+                                            SizedBox(
+                                              width: screenWidth * 0.015,
+                                            ),
+                                            Text(
+                                              l10n?.buscarPorFecha ??
+                                                  'Buscar por fecha',
+                                              style: TextStyle(
+                                                color: azulFondo,
+                                                fontSize: screenWidth * 0.032,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.025,
+                                      vertical: usableHeight * 0.006,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: azulFondo,
+                                      borderRadius: BorderRadius.circular(
+                                        screenWidth * 0.05,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () =>
+                                              _seleccionarFecha(context),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.event_available_rounded,
+                                                color: amarilloOro,
+                                                size: screenWidth * 0.038,
+                                              ),
+                                              SizedBox(
+                                                width: screenWidth * 0.012,
+                                              ),
+                                              Text(
+                                                '${_selectedDate!.day} ${_nombreMesCorto(_selectedDate!.month)}',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: screenWidth * 0.03,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        SizedBox(width: screenWidth * 0.018),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedDate = null;
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.18,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              Icons.close_rounded,
+                                              color: Colors.white,
+                                              size: screenWidth * 0.032,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  )
-                                : ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    itemCount: _filteredEvents.length,
-                                    separatorBuilder: (context, index) =>
-                                        SizedBox(width: screenWidth * 0.03),
-                                    itemBuilder: (context, index) {
-                                      final evento = _filteredEvents[index];
-                                      return _buildEventCarouselItem(
-                                        evento: evento,
-                                        screenWidth: screenWidth,
-                                        usableHeight: usableHeight,
-                                        azulFondo: azulFondo,
-                                        amarilloOro: amarilloOro,
-                                        onTap: () => _showEventDetailsModal(
-                                          context,
-                                          evento,
-                                        ),
-                                      );
-                                    },
                                   ),
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
+                              ],
+                            ),
+                            SizedBox(height: usableHeight * 0.015),
 
-                          // Sección: Próximos en agenda (Lista vertical)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                l10n?.proximosEnAgenda ?? 'Próximos en agenda',
-                                style: TextStyle(
-                                  color: azulFondo,
-                                  fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.bold,
+                            // Lista vertical de eventos
+                            if (_agendaEvents.isEmpty)
+                              Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.symmetric(
+                                  vertical: usableHeight * 0.035,
+                                  horizontal: screenWidth * 0.04,
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n?.mostrandoCalendarioCompleto ??
-                                            'Mostrando calendario completo de actividades...',
-                                      ),
-                                      backgroundColor: azulFondo,
-                                      duration: const Duration(seconds: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.035,
+                                  ),
+                                  border: Border.all(color: grisBorde),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.event_busy_rounded,
+                                      size: screenWidth * 0.11,
+                                      color: Colors.grey.shade400,
                                     ),
+                                    SizedBox(height: usableHeight * 0.012),
+                                    Text(
+                                      l10n?.noEventosParaFecha ?? 'No hay eventos para la fecha seleccionada',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: azulFondo,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: screenWidth * 0.038,
+                                      ),
+                                    ),
+                                    if (_selectedDate != null) ...[
+                                      SizedBox(height: usableHeight * 0.006),
+                                      Text(
+                                        '${_selectedDate!.day} de ${_nombreMesCompleto(_selectedDate!.month)} de ${_selectedDate!.year}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: amarilloOro,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: screenWidth * 0.032,
+                                        ),
+                                      ),
+                                    ],
+                                    SizedBox(height: usableHeight * 0.015),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        setState(() {
+                                          _selectedDate = null;
+                                        });
+                                      },
+                                      icon: const Icon(
+                                        Icons.refresh_rounded,
+                                        size: 16,
+                                      ),
+                                      label: Text(
+                                        l10n?.mostrarTodosLosEventos ??
+                                            'Mostrar todos los eventos',
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: azulFondo,
+                                        backgroundColor: azulFondo.withValues(
+                                          alpha: 0.07,
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.04,
+                                          vertical: usableHeight * 0.01,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            screenWidth * 0.04,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _agendaEvents.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(height: usableHeight * 0.014),
+                                itemBuilder: (context, index) {
+                                  final event = _agendaEvents[index];
+                                  return _buildEventTile(
+                                    evento: event,
+                                    screenWidth: screenWidth,
+                                    usableHeight: usableHeight,
+                                    azulFondo: azulFondo,
+                                    amarilloOro: amarilloOro,
+                                    grisBorde: grisBorde,
+                                    onTap: () =>
+                                        _showEventDetailsModal(context, event),
                                   );
                                 },
-                                child: Text(
-                                  l10n?.verCalendario ?? 'Ver calendario',
-                                  style: TextStyle(
-                                    color: amarilloOro,
-                                    fontSize: screenWidth * 0.034,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                               ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.015),
-
-                          // Lista vertical de eventos
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _eventsList.length,
-                            separatorBuilder: (context, index) =>
-                                SizedBox(height: usableHeight * 0.014),
-                            itemBuilder: (context, index) {
-                              final event = _eventsList[index];
-                              return _buildEventTile(
-                                evento: event,
-                                screenWidth: screenWidth,
-                                usableHeight: usableHeight,
-                                azulFondo: azulFondo,
-                                amarilloOro: amarilloOro,
-                                grisBorde: grisBorde,
-                                onTap: () =>
-                                    _showEventDetailsModal(context, event),
-                              );
-                            },
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-                        ],
+                            SizedBox(height: usableHeight * 0.025),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),
@@ -881,7 +1309,8 @@ class _EventosScreenState extends State<EventosScreen> {
                       onPressed: onTap,
                       child: Text(
                         evento.estaInscrito
-                            ? 'Cancelar inscripción'
+                            ? (l10n?.cancelarInscripcion ??
+                                'Cancelar inscripción')
                             : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,
@@ -1019,7 +1448,8 @@ class _EventosScreenState extends State<EventosScreen> {
                           ),
                           SizedBox(width: screenWidth * 0.015),
                           Text(
-                            l10n?.miActividadAgendada ?? 'Mi actividad agendada',
+                            l10n?.miActividadAgendada ??
+                                'Mi actividad agendada',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.038,
@@ -1684,7 +2114,8 @@ class _EventosScreenState extends State<EventosScreen> {
                       ),
                       label: Text(
                         evento.estaInscrito
-                            ? 'Cancelar inscripción'
+                            ? (l10n?.cancelarInscripcion ??
+                                'Cancelar inscripción')
                             : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora'),
                         style: TextStyle(
                           fontSize: screenWidth * 0.034,

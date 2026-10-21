@@ -1208,6 +1208,36 @@ abstract class AppLocalizations {
   /// **'Ver calendario'**
   String get verCalendario;
 
+  /// No description provided for @buscarPorFecha.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por fecha'**
+  String get buscarPorFecha;
+
+  /// No description provided for @buscarEventosPorFechaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'BUSCAR EVENTOS POR FECHA'**
+  String get buscarEventosPorFechaTitulo;
+
+  /// Encabezado de la lista cuando se filtra por fecha
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos: {fecha}'**
+  String eventosFechaEncabezado(String fecha);
+
+  /// No description provided for @noEventosParaFecha.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay eventos para la fecha seleccionada'**
+  String get noEventosParaFecha;
+
+  /// No description provided for @mostrarTodosLosEventos.
+  ///
+  /// In es, this message translates to:
+  /// **'Mostrar todos los eventos'**
+  String get mostrarTodosLosEventos;
+
   /// No description provided for @destacadoMayus.
   ///
   /// In es, this message translates to:
@@ -1219,6 +1249,354 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Inscribirme ahora'**
   String get inscribirmeAhora;
+
+  /// No description provided for @cancelarInscripcion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar inscripción'**
+  String get cancelarInscripcion;
+
+  /// No description provided for @rolAdministradorIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador de Iglesia'**
+  String get rolAdministradorIglesia;
+
+  /// No description provided for @rolSuperAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Super Administrador'**
+  String get rolSuperAdmin;
+
+  /// No description provided for @rolMiembro.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro Activo'**
+  String get rolMiembro;
+
+  /// No description provided for @rolUsuario.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuario'**
+  String get rolUsuario;
+
+  /// No description provided for @modoSoloLectura.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo lectura'**
+  String get modoSoloLectura;
+
+  /// No description provided for @administracionPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Administración Pastoral'**
+  String get administracionPastoral;
+
+  /// No description provided for @gestionAvisos.
+  ///
+  /// In es, this message translates to:
+  /// **'Avisos congregacionales'**
+  String get gestionAvisos;
+
+  /// No description provided for @gestionGrupos.
+  ///
+  /// In es, this message translates to:
+  /// **'Audiencias y grupos'**
+  String get gestionGrupos;
+
+  /// No description provided for @accionRestringidaSoloLectura.
+  ///
+  /// In es, this message translates to:
+  /// **'Acción no disponible en modo solo lectura'**
+  String get accionRestringidaSoloLectura;
+
+  /// No description provided for @permisoRequerido.
+  ///
+  /// In es, this message translates to:
+  /// **'Requiere permisos de administrador'**
+  String get permisoRequerido;
+
+  /// No description provided for @moderacionPeticiones.
+  ///
+  /// In es, this message translates to:
+  /// **'Moderación de peticiones'**
+  String get moderacionPeticiones;
+
+  /// No description provided for @metricasComunidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas de comunidad'**
+  String get metricasComunidad;
+
+  /// No description provided for @publicarAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicar aviso'**
+  String get publicarAviso;
+
+  /// No description provided for @tituloAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Título del aviso'**
+  String get tituloAviso;
+
+  /// No description provided for @contenidoAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Contenido del aviso'**
+  String get contenidoAviso;
+
+  /// No description provided for @fijarAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Fijar al inicio'**
+  String get fijarAviso;
+
+  /// No description provided for @seleccionarAudiencia.
+  ///
+  /// In es, this message translates to:
+  /// **'Audiencia / Grupo'**
+  String get seleccionarAudiencia;
+
+  /// No description provided for @todasLasAudiencias.
+  ///
+  /// In es, this message translates to:
+  /// **'Toda la congregación'**
+  String get todasLasAudiencias;
+
+  /// No description provided for @publicar.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicar'**
+  String get publicar;
+
+  /// No description provided for @avisoPublicadoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Aviso publicado con éxito'**
+  String get avisoPublicadoExito;
+
+  /// No description provided for @campoRequerido.
+  ///
+  /// In es, this message translates to:
+  /// **'Este campo es requerido'**
+  String get campoRequerido;
+
+  /// No description provided for @errorPublicarAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'No fue posible publicar el aviso'**
+  String get errorPublicarAviso;
+
+  /// No description provided for @peticionesPendientes.
+  ///
+  /// In es, this message translates to:
+  /// **'Peticiones pendientes'**
+  String get peticionesPendientes;
+
+  /// No description provided for @aprobar.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprobar'**
+  String get aprobar;
+
+  /// No description provided for @rechazar.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazar'**
+  String get rechazar;
+
+  /// No description provided for @peticionAprobada.
+  ///
+  /// In es, this message translates to:
+  /// **'Petición aprobada'**
+  String get peticionAprobada;
+
+  /// No description provided for @peticionRechazada.
+  ///
+  /// In es, this message translates to:
+  /// **'Petición rechazada'**
+  String get peticionRechazada;
+
+  /// No description provided for @totalMiembros.
+  ///
+  /// In es, this message translates to:
+  /// **'Total de miembros'**
+  String get totalMiembros;
+
+  /// No description provided for @nuevosMiembrosMes.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevos miembros este mes'**
+  String get nuevosMiembrosMes;
+
+  /// No description provided for @totalOfrendas.
+  ///
+  /// In es, this message translates to:
+  /// **'Ofrendas registradas'**
+  String get totalOfrendas;
+
+  /// No description provided for @inscripcionesEventos.
+  ///
+  /// In es, this message translates to:
+  /// **'Inscripciones a eventos'**
+  String get inscripcionesEventos;
+
+  /// No description provided for @sinPeticionesPendientes.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay peticiones pendientes de moderación'**
+  String get sinPeticionesPendientes;
+
+  /// No description provided for @sinAvisosActivos.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay avisos congregacionales publicados'**
+  String get sinAvisosActivos;
+
+  /// No description provided for @motivoRechazoOpcional.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo opcional de rechazo'**
+  String get motivoRechazoOpcional;
+
+  /// No description provided for @bannerModoSoloLectura.
+  ///
+  /// In es, this message translates to:
+  /// **'Modo de solo lectura activado. Las funciones de publicación y registro están deshabilitadas.'**
+  String get bannerModoSoloLectura;
+
+  /// No description provided for @avisoModeracionOracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota pastoral: Tu petición de oración será revisada por el equipo pastoral antes de ser visible en la congregación.'**
+  String get avisoModeracionOracion;
+
+  /// No description provided for @iglesiaRequeridaParaSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes tener una iglesia asignada para enviar solicitudes o peticiones pastorales.'**
+  String get iglesiaRequeridaParaSolicitud;
+
+  /// No description provided for @seleccionarIglesiaAccion.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar iglesia'**
+  String get seleccionarIglesiaAccion;
+
+  /// No description provided for @solicitudRequiereSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes iniciar sesión con tu cuenta para enviar solicitudes o peticiones pastorales a tu congregación.'**
+  String get solicitudRequiereSesion;
+
+  /// No description provided for @solicitudRequiereMembresia.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está pendiente de asignación o aprobación de membresía por parte de tu congregación para enviar solicitudes.'**
+  String get solicitudRequiereMembresia;
+
+  /// No description provided for @donacionRequiereSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes iniciar sesión con una cuenta de miembro para realizar donaciones y ofrendas.'**
+  String get donacionRequiereSesion;
+
+  /// No description provided for @donacionRequiereMembresia.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está registrada pero aún está pendiente de asignación o aprobación de membresía por parte de tu congregación. Solo miembros activos pueden realizar donaciones.'**
+  String get donacionRequiereMembresia;
+
+  /// No description provided for @donacionRequiereIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes pertenecer a una congregación asignada para realizar donaciones.'**
+  String get donacionRequiereIglesia;
+
+  /// No description provided for @inicioSesionRequerido.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio de sesión requerido'**
+  String get inicioSesionRequerido;
+
+  /// No description provided for @tiendaRequiereSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes iniciar sesión con tu cuenta para agregar productos y realizar compras en la tienda.'**
+  String get tiendaRequiereSesion;
+
+  /// No description provided for @librosRequiereSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes iniciar sesión con tu cuenta para leer o escuchar libros de la biblioteca.'**
+  String get librosRequiereSesion;
+
+  /// No description provided for @proyectoRequiereSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes iniciar sesión con tu cuenta para colaborar y aportar a proyectos solidarios.'**
+  String get proyectoRequiereSesion;
+
+  /// No description provided for @sesionRequeridaGenerica.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes iniciar sesión con tu cuenta para acceder a esta función.'**
+  String get sesionRequeridaGenerica;
+
+  /// No description provided for @membresiaPendiente.
+  ///
+  /// In es, this message translates to:
+  /// **'Membresía pendiente de aprobación'**
+  String get membresiaPendiente;
+
+  /// No description provided for @iniciarSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get iniciarSesion;
+
+  /// No description provided for @modoInvitado.
+  ///
+  /// In es, this message translates to:
+  /// **'Modo invitado'**
+  String get modoInvitado;
+
+  /// No description provided for @usuarioInvitado.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuario invitado'**
+  String get usuarioInvitado;
+
+  /// No description provided for @perfilInvitadoDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.'**
+  String get perfilInvitadoDesc;
+
+  /// No description provided for @sinSolicitudesRegistradas.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes solicitudes registradas'**
+  String get sinSolicitudesRegistradas;
+
+  /// No description provided for @solicitudesInvitadoDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.'**
+  String get solicitudesInvitadoDesc;
+
+  /// No description provided for @sinDonacionesRegistradas.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes donaciones registradas'**
+  String get sinDonacionesRegistradas;
+
+  /// No description provided for @donacionesInvitadoDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.'**
+  String get donacionesInvitadoDesc;
 
   /// Mensaje al añadir evento al calendario
   ///
@@ -4595,6 +4973,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Localizando comunidades cristianas...'**
   String get localizandoComunidades;
+
+  /// No description provided for @pedidosInvitadoDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.'**
+  String get pedidosInvitadoDesc;
+
+  /// No description provided for @notificacionesInvitadoDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad.'**
+  String get notificacionesInvitadoDesc;
 }
 
 class _AppLocalizationsDelegate

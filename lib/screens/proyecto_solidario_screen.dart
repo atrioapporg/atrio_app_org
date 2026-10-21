@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/proyecto_solidario_model.dart';
 import '../providers/proyecto_solidario_provider.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 import 'aportar_a_proyecto_screen.dart';
 
 class ProyectoSolidarioScreen extends StatefulWidget {
@@ -215,6 +216,12 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
             usableHeight: usableHeight,
             l10n: l10n,
             onTap: () {
+              if (!ModalRestriccionDonacion.verificarYMostrar(
+                context: context,
+                mensaje: l10n?.proyectoRequiereSesion,
+              )) {
+                return;
+              }
               Navigator.pushNamed(
                 context,
                 AportarAProyectoScreen.routeName,
@@ -247,6 +254,12 @@ class _ProyectoSolidarioScreenState extends State<ProyectoSolidarioScreen> {
                 usableHeight: usableHeight,
                 l10n: l10n,
                 onTap: () {
+                  if (!ModalRestriccionDonacion.verificarYMostrar(
+                    context: context,
+                    mensaje: l10n?.proyectoRequiereSesion,
+                  )) {
+                    return;
+                  }
                   Navigator.pushNamed(
                     context,
                     AportarAProyectoScreen.routeName,

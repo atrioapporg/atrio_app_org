@@ -1,6 +1,11 @@
-import 'package:atrio/screens/realizar_aporte_screen.dart';
-import 'package:atrio/screens/mis_donaciones_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/screens/mis_donaciones_screen.dart';
+import 'package:atrio/screens/realizar_aporte_screen.dart';
+import 'package:atrio/widgets/modal_restriccion_donacion.dart';
+import 'package:atrio/widgets/read_only_banner.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -139,6 +144,7 @@ class DonacionesScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
+                          const ReadOnlyBanner(),
                           // Tarjeta de la Iglesia Verificada
                           _buildVerifiedChurchCard(
                             screenWidth: screenWidth,
@@ -159,13 +165,7 @@ class DonacionesScreen extends StatelessWidget {
                             usableHeight: usableHeight,
                             azulFondo: azulFondo,
                             grisBorde: grisBorde,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                RealizarAporteScreen.routeName,
-                                arguments: 'Diezmo',
-                              );
-                            },
+                            onTap: () => _iniciarAporte(context, 'Diezmo'),
                           ),
                           SizedBox(height: usableHeight * 0.012),
 
@@ -178,13 +178,7 @@ class DonacionesScreen extends StatelessWidget {
                             usableHeight: usableHeight,
                             azulFondo: azulFondo,
                             grisBorde: grisBorde,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                RealizarAporteScreen.routeName,
-                                arguments: 'Ofrenda',
-                              );
-                            },
+                            onTap: () => _iniciarAporte(context, 'Ofrenda'),
                           ),
                           SizedBox(height: usableHeight * 0.012),
 
@@ -197,13 +191,7 @@ class DonacionesScreen extends StatelessWidget {
                             usableHeight: usableHeight,
                             azulFondo: azulFondo,
                             grisBorde: grisBorde,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                RealizarAporteScreen.routeName,
-                                arguments: 'Campaña especial',
-                              );
-                            },
+                            onTap: () => _iniciarAporte(context, 'Campaña especial'),
                           ),
                           SizedBox(height: usableHeight * 0.012),
 
@@ -216,13 +204,7 @@ class DonacionesScreen extends StatelessWidget {
                             usableHeight: usableHeight,
                             azulFondo: azulFondo,
                             grisBorde: grisBorde,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                RealizarAporteScreen.routeName,
-                                arguments: 'Ayuda comunitaria',
-                              );
-                            },
+                            onTap: () => _iniciarAporte(context, 'Ayuda comunitaria'),
                           ),
                           SizedBox(height: usableHeight * 0.012),
 
@@ -235,13 +217,7 @@ class DonacionesScreen extends StatelessWidget {
                             usableHeight: usableHeight,
                             azulFondo: azulFondo,
                             grisBorde: grisBorde,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                RealizarAporteScreen.routeName,
-                                arguments: 'Otro aporte',
-                              );
-                            },
+                            onTap: () => _iniciarAporte(context, 'Otro aporte'),
                           ),
                           SizedBox(height: usableHeight * 0.02),
 
@@ -253,12 +229,7 @@ class DonacionesScreen extends StatelessWidget {
                             celesteCard: celesteCard,
                             grisBorde: grisBorde,
                             l10n: l10n,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                MisDonacionesScreen.routeName,
-                              );
-                            },
+                            onTap: () => _abrirMisDonaciones(context),
                           ),
                           SizedBox(height: usableHeight * 0.02),
                         ],
@@ -450,6 +421,29 @@ class DonacionesScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _iniciarAporte(BuildContext context, String concepto) {
+    if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+      return;
+    }
+    Navigator.pushNamed(
+      context,
+      RealizarAporteScreen.routeName,
+      arguments: concepto,
+    );
+  }
+
+  void _abrirMisDonaciones(BuildContext context) {
+    final userProvider = context.read<UserProvider>();
+    if (!userProvider.isAuthenticated) {
+      ModalRestriccionDonacion.mostrar(context: context);
+      return;
+    }
+    Navigator.pushNamed(
+      context,
+      MisDonacionesScreen.routeName,
     );
   }
 }

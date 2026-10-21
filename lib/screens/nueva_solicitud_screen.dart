@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
+import '../main.dart';
+import '../providers/user_provider.dart';
+import '../screens/tradicion_cristiana_screen.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
+import '../widgets/modal_restriccion_donacion.dart';
+import '../widgets/read_only_banner.dart';
 
 class NuevaSolicitudScreen extends StatefulWidget {
   static const routeName = 'nueva_solicitud_screen';
@@ -24,6 +30,14 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
   void initState() {
     super.initState();
     _cargarTelefonoUsuario();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ModalRestriccionDonacion.verificarAutenticacion(
+          context: context,
+          mensaje: AppLocalizations.of(context)?.solicitudRequiereSesion,
+        );
+      }
+    });
   }
 
   Future<void> _cargarTelefonoUsuario() async {
@@ -176,6 +190,9 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const ReadOnlyBanner(
+                              margin: EdgeInsets.only(bottom: 14),
+                            ),
                             // 1. Selector Tipo de Solicitud
                             _buildFieldLabel(
                               l10n?.tipoSolicitudLabel ?? 'Tipo de solicitud',
@@ -230,6 +247,49 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                 ),
                               ),
                             ),
+                            if (_selectedTipoSolicitud?.toLowerCase().contains(
+                                      'orac',
+                                    ) ==
+                                    true ||
+                                _selectedTipoSolicitud?.toLowerCase().contains(
+                                      'prayer',
+                                    ) ==
+                                    true) ...[
+                              SizedBox(height: usableHeight * 0.012),
+                              Container(
+                                padding: EdgeInsets.all(screenWidth * 0.03),
+                                decoration: BoxDecoration(
+                                  color: amarilloOro.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.025,
+                                  ),
+                                  border: Border.all(
+                                    color: amarilloOro.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: const Color(0xFF9E6500),
+                                      size: screenWidth * 0.045,
+                                    ),
+                                    SizedBox(width: screenWidth * 0.02),
+                                    Expanded(
+                                      child: Text(
+                                        l10n?.avisoModeracionOracion ?? 'Nota pastoral: Tu petición de oración será revisada por el equipo pastoral antes de ser visible en la congregación.',
+                                        style: TextStyle(
+                                          color: const Color(0xFF5D3E00),
+                                          fontSize: screenWidth * 0.03,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             SizedBox(height: usableHeight * 0.02),
 
                             // 2. Campo Asunto (Obligatorio)
@@ -242,7 +302,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                             SizedBox(height: usableHeight * 0.008),
                             _buildInputField(
                               controller: _asuntoController,
-                              hintText: l10n?.asuntoPlaceholder ??
+                              hintText:
+                                  l10n?.asuntoPlaceholder ??
                                   'Escribe un asunto breve',
                               screenWidth: screenWidth,
                               usableHeight: usableHeight,
@@ -283,7 +344,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                 return null;
                               },
                               decoration: InputDecoration(
-                                hintText: l10n?.detallesSolicitudPlaceholder ??
+                                hintText:
+                                    l10n?.detallesSolicitudPlaceholder ??
                                     'Cuéntanos los detalles de tu solicitud',
                                 hintStyle: TextStyle(
                                   color: Colors.grey.shade400,
@@ -392,8 +454,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                       ),
                                       SizedBox(height: usableHeight * 0.003),
                                       Text(
-                                        l10n?.solicitudPrivadaDesc ??
-                                            'Solo el equipo pastoral podrá verla',
+                                        l10n?.solicitudPrivadaDesc ?? 'Solo el equipo pastoral podrá verla',
                                         style: TextStyle(
                                           color: Colors.grey.shade600,
                                           fontSize: screenWidth * 0.033,
@@ -431,14 +492,64 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   ),
                                 ),
                                 onPressed: () {
+                                  final userProvider = context
+                                      .read<UserProvider>();
+                                  if (userProvider.isReadOnly) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          l10n?.accionRestringidaSoloLectura ?? 'Acción no disponible en modo solo lectura',
+                                        ),
+                                        backgroundColor: Colors.red.shade700,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Modo invitado: no autenticado
+                                  if (!ModalRestriccionDonacion.verificarAutenticacion(
+                                    context: context,
+                                    mensaje: l10n?.solicitudRequiereSesion,
+                                  )) {
+                                    return;
+                                  }
+
+                                  // Sin congregación asignada
+                                  if (!userProvider.hasChurchAssigned) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          l10n?.iglesiaRequeridaParaSolicitud ?? 'Debes tener una iglesia asignada para enviar solicitudes o peticiones pastorales.',
+                                        ),
+                                        backgroundColor: azulFondo,
+                                        action: SnackBarAction(
+                                          label:
+                                              l10n?.seleccionarIglesiaAccion ??
+                                              'Seleccionar iglesia',
+                                          textColor: amarilloOro,
+                                          onPressed: () {
+                                            final nav =
+                                                Navigator.maybeOf(context) ??
+                                                MyApp.navigatorKey.currentState;
+                                            nav?.pushNamed(
+                                              TradicionCristianaScreen
+                                                  .routeName,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   if (_formKey.currentState!.validate()) {
                                     ModalConfirmacionSolicitud.mostrar(
                                       context: context,
                                       tipoSolicitud:
                                           _selectedTipoSolicitud ??
-                                              (l10n?.general ?? 'General'),
+                                          (l10n?.general ?? 'General'),
                                       asunto: _asuntoController.text.trim(),
-                                      mensaje: _descripcionController.text.trim(),
+                                      mensaje: _descripcionController.text
+                                          .trim(),
                                       isPrivate: _isPrivate,
                                       onConfirmado: () {
                                         Navigator.pop(context);
@@ -451,8 +562,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                           0xFFC0392B,
                                         ),
                                         content: Text(
-                                          l10n?.completaCamposObligatorios ??
-                                              'Por favor completa todos los campos obligatorios.',
+                                          l10n?.completaCamposObligatorios ?? 'Por favor completa todos los campos obligatorios.',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,

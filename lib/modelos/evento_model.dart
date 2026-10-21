@@ -16,6 +16,7 @@ class EventoModel {
   final bool estaInscrito;
   final String fallbackBgColor;
   final String fallbackTextColor;
+  final DateTime? fechaDateTime;
 
   EventoModel({
     required this.id,
@@ -35,6 +36,7 @@ class EventoModel {
     this.estaInscrito = false,
     this.fallbackBgColor = '0xFF072B4F',
     this.fallbackTextColor = '0xFFFFFFFF',
+    this.fechaDateTime,
   });
 
   /// Retorna la fracción de ocupación de cupo (0.0 a 1.0)
@@ -72,6 +74,11 @@ class EventoModel {
     final maxCap = json['max_capacity'] ?? json['seats_max'] ?? json['cupo_maximo'] ?? 100;
     final regCount = json['registration_count'] ?? json['seats_reserved'] ?? json['cupo_reservado'] ?? 0;
 
+    DateTime? dt;
+    if (dateStr != null && dateStr.isNotEmpty) {
+      dt = DateTime.tryParse(dateStr);
+    }
+
     return EventoModel(
       id: json['id']?.toString() ?? '',
       titulo: json['title'] ?? json['name'] ?? json['titulo'] ?? 'Evento ATRIO',
@@ -107,6 +114,7 @@ class EventoModel {
       estaInscrito: json['registered'] ?? json['is_registered'] ?? json['esta_inscrito'] ?? false,
       fallbackBgColor: json['fallback_bg_color'] ?? '0xFF072B4F',
       fallbackTextColor: json['fallback_text_color'] ?? '0xFFFFFFFF',
+      fechaDateTime: dt,
     );
   }
 

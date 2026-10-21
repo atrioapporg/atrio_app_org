@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../main.dart';
 import '../modelos/pedido_model.dart';
 import '../providers/user_provider.dart';
 import 'tienda_screen.dart';
@@ -33,10 +34,23 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
   /// Consulta el listado real de pedidos en Odoo (GET /orders?scope={active|past})
   Future<void> _cargarPedidos() async {
     if (!mounted) return;
+    final userProvider = context.read<UserProvider>();
+    if (!userProvider.isAuthenticated) {
+      if (mounted) {
+        setState(() {
+          _pedidos = [];
+          _activeCount = 0;
+          _pastCount = 0;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final api = context.read<UserProvider>().api;
+      final api = userProvider.api;
       final data = await api.orders(scope: _selectedScope, limit: 50);
 
       final dynamic raw = data['orders'] ?? data['items'] ?? data['data'];
@@ -397,15 +411,23 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     Color amarilloOro,
     AppLocalizations? l10n,
   ) {
-    final String tituloVacio = _selectedScope == 'active'
-        ? (l10n?.noTienesPedidosActivos ?? 'No tienes pedidos activos')
-        : (l10n?.noTienesPedidosAnteriores ?? 'No tienes pedidos anteriores');
+    final userProvider = context.watch<UserProvider>();
+    final bool esInvitado = !userProvider.isAuthenticated;
 
-    final String descVacio = _selectedScope == 'active'
-        ? (l10n?.pedidosActivosDesc ??
-            'Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.')
-        : (l10n?.pedidosAnterioresDesc ??
-            'Cuando tus pedidos sean completados o entregados, podrás consultarlos en este historial.');
+    final String tituloVacio = esInvitado
+        ? (l10n?.modoInvitado ?? 'Modo invitado')
+        : (_selectedScope == 'active'
+            ? (l10n?.noTienesPedidosActivos ?? 'No tienes pedidos activos')
+            : (l10n?.noTienesPedidosAnteriores ?? 'No tienes pedidos anteriores'));
+
+    final String descVacio = esInvitado
+        ? (l10n?.pedidosInvitadoDesc ??
+            'En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.')
+        : (_selectedScope == 'active'
+            ? (l10n?.pedidosActivosDesc ??
+                'Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.')
+            : (l10n?.pedidosAnterioresDesc ??
+                'Cuando tus pedidos sean completados o entregados, podrás consultarlos en este historial.'));
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -422,7 +444,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.receipt_long_outlined,
+                  esInvitado ? Icons.account_circle_outlined : Icons.receipt_long_outlined,
                   size: screenWidth * 0.16,
                   color: azulFondo.withValues(alpha: 0.5),
                 ),
@@ -445,9 +467,38 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   style: TextStyle(
                     fontSize: screenWidth * 0.034,
                     color: Colors.black54,
+                    height: 1.35,
                   ),
                 ),
               ),
+              if (esInvitado) ...[
+                SizedBox(height: usableHeight * 0.025),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.login_rounded, size: 18),
+                  label: Text(
+                    l10n?.iniciarSesion ?? 'Iniciar sesión',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azulFondo,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.06,
+                      vertical: usableHeight * 0.012,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
+                  ),
+                  onPressed: () {
+                    final nav = Navigator.maybeOf(context) ??
+                        MyApp.navigatorKey.currentState;
+                    nav?.pushNamed(
+                      'inicio_sesion_screen',
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../modelos/libro_model.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 
 class LibrosScreen extends StatefulWidget {
   static const routeName = 'libros_screen';
@@ -619,6 +620,12 @@ class _LibrosScreenState extends State<LibrosScreen> {
                         ),
                       ),
                       onPressed: () {
+                        if (!ModalRestriccionDonacion.verificarAutenticacion(
+                          context: context,
+                          mensaje: l10n?.librosRequiereSesion,
+                        )) {
+                          return;
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -1170,6 +1177,12 @@ class _LibrosScreenState extends State<LibrosScreen> {
                       ),
                       onPressed: () {
                         Navigator.pop(modalContext);
+                        if (!ModalRestriccionDonacion.verificarAutenticacion(
+                          context: context,
+                          mensaje: l10n?.librosRequiereSesion,
+                        )) {
+                          return;
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -1213,6 +1226,12 @@ class _LibrosScreenState extends State<LibrosScreen> {
                     ),
                     onPressed: () {
                       Navigator.pop(modalContext);
+                      if (!ModalRestriccionDonacion.verificarAutenticacion(
+                        context: context,
+                        mensaje: l10n?.librosRequiereSesion,
+                      )) {
+                        return;
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(

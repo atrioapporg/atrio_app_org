@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../widgets/modal_otro_monto.dart';
+import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
 class AportarAProyectoScreen extends StatefulWidget {
@@ -438,6 +439,9 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                 ),
                               ),
                               onPressed: () {
+                                if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+                                  return;
+                                }
                                 // Determinamos el monto seleccionado
                                 final String montoAEnviar =
                                     _selectedAmountIndex == -1

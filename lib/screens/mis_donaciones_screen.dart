@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../main.dart';
 import '../providers/user_provider.dart';
 import 'donaciones_screen.dart';
+import 'inicio_sesion_screen.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 
 class MisDonacionesScreen extends StatefulWidget {
   static const routeName = 'mis_donaciones_screen';
@@ -29,10 +32,21 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
   /// Consulta el historial real de donaciones del usuario en Odoo (GET /donations/mine)
   Future<void> _cargarDonaciones() async {
     if (!mounted) return;
+    final userProvider = context.read<UserProvider>();
+    if (!userProvider.isAuthenticated) {
+      if (mounted) {
+        setState(() {
+          _donacionesApi = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final api = context.read<UserProvider>().api;
+      final api = userProvider.api;
       final data = await api.myDonations();
       final dynamic raw = data['donations'] ?? data['items'] ?? data['data'];
 
@@ -62,7 +76,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[DONACIONES] Fallback local activo: $e');
+      debugPrint('[DONACIONES] Error al consultar donaciones: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -84,83 +98,15 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE5E5E5);
-    const Color verdeIcono = Color(0xFF5A7D5A);
 
-    // Si la API devolvió donaciones reales las usamos; si no, mostramos el listado base
-    final List<Map<String, dynamic>> donaciones = _donacionesApi.isNotEmpty
-        ? _donacionesApi
-        : [
-            {
-              'title': l10n?.diezmo ?? 'Diezmo',
-              'monto': '\$ 75.00 USD',
-              'status': l10n?.estadoCompletada ?? 'Completada',
-              'statusColor': const Color(0xFF2E7D32),
-              'dateInfo': l10n?.fechaDiezmoMock ?? '15 Oct 2026 · 10:30 a. m.',
-              'icon': Icons.church_outlined,
-              'iconColor': amarilloOro,
-              'referencia': 'DON-2026-0104',
-              'metodoPago':
-                  l10n?.metodoTarjetaDebitoVisa ?? 'Tarjeta de débito (Visa)',
-              'destino':
-                  l10n?.destinoFondoGeneralMinisterial ?? 'Fondo General Ministerial',
-              'detalle':
-                  l10n?.detalleDiezmoMock ??
-                  'Aporte de diezmo mensual para el sostenimiento del templo y ministerio pastoral.',
-            },
-            {
-              'title': l10n?.ofrenda ?? 'Ofrenda',
-              'monto': '\$ 25.00 USD',
-              'status': l10n?.estadoCompletada ?? 'Completada',
-              'statusColor': const Color(0xFF2E7D32),
-              'dateInfo': l10n?.fechaOfrendaMock ?? '08 Oct 2026 · 7:15 p. m.',
-              'icon': Icons.favorite_border_rounded,
-              'iconColor': amarilloOro,
-              'referencia': 'DON-2026-0092',
-              'metodoPago': l10n?.metodoTransferenciaACH ?? 'Transferencia ACH',
-              'destino':
-                  l10n?.destinoCultoAdoracionDominical ??
-                  'Culto de Adoración Dominical',
-              'detalle':
-                  l10n?.detalleOfrendaMock ??
-                  'Ofrenda voluntaria de gratitud y adoración durante el servicio de alabanza.',
-            },
-            {
-              'title': l10n?.campanaEspecial ?? 'Campaña especial',
-              'monto': '\$ 100.00 USD',
-              'status': l10n?.estadoEnProceso ?? 'En proceso',
-              'statusColor': const Color(0xFF0055A5),
-              'dateInfo': l10n?.fechaCampanaMock ?? '28 Sep 2026 · 4:20 p. m.',
-              'icon': Icons.campaign_outlined,
-              'iconColor': verdeIcono,
-              'referencia': 'DON-2026-0081',
-              'metodoPago':
-                  l10n?.metodoTarjetaCreditoMastercard ??
-                  'Tarjeta de crédito (Mastercard)',
-              'destino':
-                  l10n?.destinoCampanaMock ?? 'Campaña "Construyendo Esperanza 2026"',
-              'detalle':
-                  l10n?.detalleCampanaMock ??
-                  'Aporte especial voluntario destinado a las obras de remodelación y mantenimiento del templo.',
-            },
-            {
-              'title': l10n?.ayudaComunitaria ?? 'Ayuda comunitaria',
-              'monto': '\$ 40.00 USD',
-              'status': l10n?.estadoCompletada ?? 'Completada',
-              'statusColor': const Color(0xFF2E7D32),
-              'dateInfo': l10n?.fechaAyudaMock ?? '14 Sep 2026 · 11:00 a. m.',
-              'icon': Icons.volunteer_activism_outlined,
-              'iconColor': verdeIcono,
-              'referencia': 'DON-2026-0065',
-              'metodoPago':
-                  l10n?.metodoPayPalSaldoDigital ?? 'PayPal / Saldo digital',
-              'destino':
-                  l10n?.destinoProgramaManosQueBendicen ??
-                  'Programa "Manos que Bendicen"',
-              'detalle':
-                  l10n?.detalleAyudaMock ??
-                  'Donación benéfica para canastas de alimentos básicos y medicinas para familias vulnerables.',
-            },
-          ];
+    // En modo invitado NO se muestran donaciones de prueba ni historial
+    final userProvider = context.watch<UserProvider>();
+    final bool esInvitado = !userProvider.isAuthenticated;
+    final List<Map<String, dynamic>> donaciones = esInvitado
+        ? const []
+        : (_donacionesApi.isNotEmpty
+            ? _donacionesApi
+            : const []);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -244,52 +190,141 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                 minHeight: 2,
                               ),
                             ),
-                          // Lista de Donaciones Desplazable
+                          // Lista de Donaciones Desplazable o Estado Vacío
                           Expanded(
-                            child: RefreshIndicator(
-                              onRefresh: _cargarDonaciones,
-                              color: azulFondo,
-                              child: ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(
-                                  parent: BouncingScrollPhysics(),
-                                ),
-                                itemCount: donaciones.length,
-                                separatorBuilder: (context, index) =>
-                                    SizedBox(height: usableHeight * 0.014),
-                              itemBuilder: (context, index) {
-                                final item = donaciones[index];
-                                return _buildDonationCard(
-                                  title: item['title'] as String,
-                                  monto: item['monto'] as String,
-                                  status: item['status'] as String,
-                                  statusColor: item['statusColor'] as Color,
-                                  dateInfo: item['dateInfo'] as String?,
-                                  icon: item['icon'] as IconData,
-                                  iconColor: item['iconColor'] as Color,
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  azulFondo: azulFondo,
-                                  grisBorde: grisBorde,
-                                  onTap: () {
-                                    _mostrarDetalleDonacion(
-                                      context: context,
-                                      item: item,
-                                      screenWidth: screenWidth,
-                                      usableHeight: usableHeight,
-                                      azulFondo: azulFondo,
-                                      blancoFondo: blancoFondo,
-                                      grisBorde: grisBorde,
-                                      amarilloOro: amarilloOro,
-                                      l10n: l10n,
-                                    );
-                                  },
-                                );
-                              },
-                            ),
+                            child: donaciones.isEmpty
+                                ? Center(
+                                    child: SingleChildScrollView(
+                                      physics: const AlwaysScrollableScrollPhysics(
+                                        parent: BouncingScrollPhysics(),
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.06,
+                                          vertical: usableHeight * 0.02,
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: screenWidth * 0.18,
+                                              height: screenWidth * 0.18,
+                                              decoration: BoxDecoration(
+                                                color: azulFondo.withValues(alpha: 0.08),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                esInvitado
+                                                    ? Icons.account_circle_outlined
+                                                    : Icons.volunteer_activism_outlined,
+                                                color: azulFondo,
+                                                size: screenWidth * 0.09,
+                                              ),
+                                            ),
+                                            SizedBox(height: usableHeight * 0.02),
+                                            Text(
+                                              esInvitado
+                                                  ? (l10n?.modoInvitado ?? 'Modo invitado')
+                                                  : (l10n?.sinDonacionesRegistradas ??
+                                                      'No tienes donaciones registradas'),
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: azulFondo,
+                                                fontSize: screenWidth * 0.045,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            SizedBox(height: usableHeight * 0.01),
+                                            Text(
+                                              esInvitado
+                                                  ? (l10n?.donacionesInvitadoDesc ??
+                                                      'En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.')
+                                                  : (l10n?.sinDonacionesRegistradas ??
+                                                      'Tus aportes ministeriales aparecerán aquí.'),
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: screenWidth * 0.034,
+                                                height: 1.35,
+                                              ),
+                                            ),
+                                            if (esInvitado) ...[
+                                              SizedBox(height: usableHeight * 0.025),
+                                              ElevatedButton.icon(
+                                                icon: const Icon(Icons.login_rounded, size: 18),
+                                                label: Text(
+                                                  l10n?.iniciarSesion ?? 'Iniciar sesión',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: azulFondo,
+                                                  foregroundColor: Colors.white,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.06,
+                                                    vertical: usableHeight * 0.012,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  final nav = Navigator.maybeOf(context) ??
+                                                      MyApp.navigatorKey.currentState;
+                                                  nav?.pushNamed(
+                                                    InicioSesionScreen.routeName,
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : RefreshIndicator(
+                                    onRefresh: _cargarDonaciones,
+                                    color: azulFondo,
+                                    child: ListView.separated(
+                                      physics: const AlwaysScrollableScrollPhysics(
+                                        parent: BouncingScrollPhysics(),
+                                      ),
+                                      itemCount: donaciones.length,
+                                      separatorBuilder: (context, index) =>
+                                          SizedBox(height: usableHeight * 0.014),
+                                      itemBuilder: (context, index) {
+                                        final item = donaciones[index];
+                                        return _buildDonationCard(
+                                          title: item['title'] as String,
+                                          monto: item['monto'] as String,
+                                          status: item['status'] as String,
+                                          statusColor: item['statusColor'] as Color,
+                                          dateInfo: item['dateInfo'] as String?,
+                                          icon: item['icon'] as IconData,
+                                          iconColor: item['iconColor'] as Color,
+                                          screenWidth: screenWidth,
+                                          usableHeight: usableHeight,
+                                          azulFondo: azulFondo,
+                                          grisBorde: grisBorde,
+                                          onTap: () {
+                                            _mostrarDetalleDonacion(
+                                              context: context,
+                                              item: item,
+                                              screenWidth: screenWidth,
+                                              usableHeight: usableHeight,
+                                              azulFondo: azulFondo,
+                                              blancoFondo: blancoFondo,
+                                              grisBorde: grisBorde,
+                                              amarilloOro: amarilloOro,
+                                              l10n: l10n,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
                           ),
-                        ),
 
-                        SizedBox(height: usableHeight * 0.015),
+                          SizedBox(height: usableHeight * 0.015),
 
                           // Botón Inferior "Nueva donación"
                           SizedBox(
@@ -307,6 +342,9 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                 ),
                               ),
                               onPressed: () {
+                                if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+                                  return;
+                                }
                                 Navigator.pushNamed(
                                   context,
                                   DonacionesScreen.routeName,

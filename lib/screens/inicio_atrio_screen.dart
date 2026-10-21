@@ -17,6 +17,7 @@ import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
+import '../widgets/read_only_banner.dart';
 import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
@@ -153,6 +154,14 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   }) async {
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (!userProvider.isAuthenticated) {
+        if (mounted) {
+          setState(() {
+            _notificacionesSinLeer = 0;
+          });
+        }
+        return;
+      }
       final res = await userProvider.api.notifications();
       final listRaw = res['notifications'] as List? ?? [];
       if (mounted) {
@@ -775,48 +784,56 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       ),
                     ),
                     // Fin Encabezado Superior--------------------
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          NotificacionesScreen.routeName,
-                        );
-                      },
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            Icons.notifications_none_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.080,
-                          ),
-                          Positioned(
-                            top: -2,
-                            right: -2,
-                            child: Container(
-                              padding: EdgeInsets.all(screenWidth * 0.008),
-                              decoration: BoxDecoration(
-                                color: amarilloOro,
-                                shape: BoxShape.circle,
+                    Builder(
+                      builder: (context) {
+                        final esAutenticado = context.watch<UserProvider>().isAuthenticated;
+                        final bool tieneNotis = esAutenticado && _notificacionesSinLeer > 0;
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              NotificacionesScreen.routeName,
+                            );
+                          },
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Icon(
+                                Icons.notifications_none_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.080,
                               ),
-                              constraints: BoxConstraints(
-                                minWidth: screenWidth * 0.04,
-                                minHeight: screenWidth * 0.04,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${_notificacionesSinLeer > 0 ? _notificacionesSinLeer : 3}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                              if (tieneNotis)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    padding: EdgeInsets.all(screenWidth * 0.008),
+                                    decoration: BoxDecoration(
+                                      color: amarilloOro,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: BoxConstraints(
+                                      minWidth: screenWidth * 0.04,
+                                      minHeight: screenWidth * 0.04,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '$_notificacionesSinLeer',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -927,7 +944,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                   );
                 },
               ),
-
+              const ReadOnlyBanner(),
               SizedBox(height: usableHeight * 0.008),
             ],
           ),

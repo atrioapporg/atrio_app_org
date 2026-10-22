@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../widgets/modal_restriccion_donacion.dart';
+import 'seguimiento_solicitud_screen.dart';
 
 class TiposSolicitudScreen extends StatelessWidget {
   static const routeName = 'tipos_solicitud_screen';
@@ -165,42 +166,85 @@ class TiposSolicitudScreen extends StatelessWidget {
                       topLeft: Radius.circular(screenWidth * 0.08),
                       topRight: Radius.circular(screenWidth * 0.08),
                     ),
-                    child: ListView.separated(
-                      physics: const BouncingScrollPhysics(),
+                    child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: screenWidth * 0.05,
-                        vertical: usableHeight * 0.025,
+                        vertical: usableHeight * 0.022,
                       ),
-                      itemCount: tiposSolicitud.length,
-                      separatorBuilder: (context, index) =>
-                          SizedBox(height: usableHeight * 0.014),
-                      itemBuilder: (context, index) {
-                        final item = tiposSolicitud[index];
-                        return _buildOptionTile(
-                          icon: item['icon'] as IconData,
-                          iconColor: item['iconColor'] as Color,
-                          title: item['title'] as String,
-                          screenWidth: screenWidth,
-                          usableHeight: usableHeight,
-                          azulFondo: azulFondo,
-                          grisBorde: grisBorde,
-                          onTap: () {
-                            if (!ModalRestriccionDonacion.verificarAutenticacion(
-                              context: context,
-                              mensaje: l10n?.solicitudRequiereSesion,
-                            )) {
-                              return;
-                            }
-                            if (item['route'] != null) {
-                              Navigator.pushNamed(
-                                context,
-                                item['route'] as String,
-                                arguments: {'tipo': item['title']},
-                              );
-                            }
-                          },
-                        );
-                      },
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: ListView.separated(
+                              physics: const BouncingScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              itemCount: tiposSolicitud.length,
+                              separatorBuilder: (context, index) =>
+                                  SizedBox(height: usableHeight * 0.014),
+                              itemBuilder: (context, index) {
+                                final item = tiposSolicitud[index];
+                                return _buildOptionTile(
+                                  icon: item['icon'] as IconData,
+                                  iconColor: item['iconColor'] as Color,
+                                  title: item['title'] as String,
+                                  screenWidth: screenWidth,
+                                  usableHeight: usableHeight,
+                                  azulFondo: azulFondo,
+                                  grisBorde: grisBorde,
+                                  onTap: () {
+                                    if (!ModalRestriccionDonacion.verificarAutenticacion(
+                                      context: context,
+                                      mensaje: l10n?.solicitudRequiereSesion,
+                                    )) {
+                                      return;
+                                    }
+                                    if (item['route'] != null) {
+                                      Navigator.pushNamed(
+                                        context,
+                                        item['route'] as String,
+                                        arguments: {'tipo': item['title']},
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          SizedBox(height: usableHeight * 0.015),
+                          SizedBox(
+                            width: screenWidth,
+                            height: usableHeight * 0.062,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: amarilloOro,
+                                foregroundColor: azulFondo,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.035,
+                                  ),
+                                ),
+                              ),
+                              icon: Icon(
+                                Icons.history_rounded,
+                                size: screenWidth * 0.055,
+                              ),
+                              label: Text(
+                                'Historial de solicitudes',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.042,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  SeguimientoSolicitudScreen.routeName,
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

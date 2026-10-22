@@ -223,10 +223,20 @@ class AtrioApi {
 
     // Si el servidor responde con un código de error (400-599), disparamos la excepción tipada.
     if (response.statusCode >= 400) {
-      final code = data['code'] as String? ?? 'error_${response.statusCode}';
-      final message =
-          data['error'] as String? ??
-          'Error en la petición (${response.statusCode})';
+      final rawCode = data['code'];
+      final code = rawCode != null ? rawCode.toString() : 'error_${response.statusCode}';
+
+      String message;
+      final rawError = data['error'];
+      if (rawError is String && rawError.isNotEmpty) {
+        message = rawError;
+      } else if (rawError is Map && rawError['message'] != null) {
+        message = rawError['message'].toString();
+      } else if (data['message'] != null && data['message'].toString().isNotEmpty) {
+        message = data['message'].toString();
+      } else {
+        message = 'Error en la petición (${response.statusCode})';
+      }
       throw AtrioApiException(response.statusCode, code, message);
     }
 

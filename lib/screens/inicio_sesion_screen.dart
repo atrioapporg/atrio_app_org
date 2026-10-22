@@ -9,7 +9,6 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
-import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
@@ -21,10 +20,15 @@ import 'tradicion_cristiana_screen.dart';
 /// ==============================================================================
 /// PANTALLA DE ACCESO ATRIO (INICIO DE SESIÓN / REGISTRO)
 /// ==============================================================================
-/// Arquitectura:
-/// - Autenticación REST oficial con Odoo 19 (POST /auth/login y refresh).
-/// - Social Login (Google Sign-In y Sign in with Apple).
-/// - Almacenamiento seguro de tokens (flutter_secure_storage).
+/// Principios de UX/UI aplicados (Guía Heurística de Nielsen & Minimalismo Funcional):
+/// 1. Minimalismo funcional: Eliminación de redundancias, iconos innecesarios y dobles títulos.
+/// 2. Jerarquía visual ("Un solo primario"): Un botón principal de acción clara ('Iniciar Sesión')
+///    y acciones secundarias consistentes sin competir (Google y Apple en fila unificada).
+/// 3. Visibilidad del estado del sistema: Indicadores en vivo en el botón ('Iniciando sesión...',
+///    spinner y confirmación '¡Listo!') evitando dobles envíos y dudas en el usuario.
+/// 4. Campos de entrada optimizados: Altura estándar, bordes suaves, navegación de teclado fluida,
+///    toggle de visibilidad de contraseña y auto-completado.
+/// 5. Adaptabilidad responsiva: Composición fluida sin 'overflows' ante el teclado ni en pantallas pequeñas.
 /// ==============================================================================
 class InicioSesionScreen extends StatefulWidget {
   static const routeName = 'inicio_sesion_screen';
@@ -36,28 +40,32 @@ class InicioSesionScreen extends StatefulWidget {
 }
 
 class _InicioSesionScreenState extends State<InicioSesionScreen> {
-  // Paleta oficial ATRIO
+  // Paleta oficial y tokens de diseño ATRIO
   static const Color azulFondo = Color(0xFF072B4F);
   static const Color amarilloOro = Color(0xFFE5A023);
-  static const Color blancoFondo = Color(0xFFFAF7F0);
-  static const Color grisBorde = Color(0xFFE0E0E0);
-  static const Color textoGris = Color(0xFF757575);
-  static const Color azulLink = Color(0xFF0055A5);
+  static const Color superficieBlanca = Color(0xFFFFFFFF);
+  static const Color superficieCampo = Color(0xFFF8FAFC);
+  static const Color grisBorde = Color(0xFFE2E8F0);
+  static const Color textoGris = Color(0xFF64748B);
+  static const Color textoOscuro = Color(0xFF0F172A);
+  static const Color azulLink = Color(0xFF0284C7);
+  static const Color verdeExito = Color(0xFF16A34A);
 
-  // Estados de carga independientes para feedback visual responsivo
+  // Estados de carga y confirmación
   bool _isLoadingGoogle = false;
   bool _isLoadingApple = false;
   bool _isLoadingCredentials = false;
+  bool _isLoginSuccess = false;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
 
   bool get _isProcessing =>
       _isLoadingGoogle || _isLoadingApple || _isLoadingCredentials;
 
-  // Instancia de GoogleSignIn (temporalmente con serverClientId de prueba hasta tener credenciales oficiales de Odoo)
-  // TODO: Reemplazar serverClientId temporal por credenciales oficiales de ATRIO cuando estén disponibles
+  // Instancia de GoogleSignIn oficial
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     serverClientId: AppConfig.googleServerClientId.isNotEmpty
@@ -73,14 +81,14 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         final userProvider = context.read<UserProvider>();
         final bool autoLogueado = await userProvider.tryAutoLogin();
         if (autoLogueado && mounted) {
-          await _redirigirUsuarioPostLogin();
+          await _redirigirUsuarioPostLogin(esAutoLogin: true);
           return;
         }
 
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
         if (isLoggedIn && mounted) {
-          await _redirigirUsuarioPostLogin();
+          await _redirigirUsuarioPostLogin(esAutoLogin: true);
         }
       } catch (e) {
         debugPrint('[AUTH] Error verificando sesión inicial: $e');
@@ -92,565 +100,893 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Métricas dinámicas relativas (Flutter 3.22+)
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final safeAreaTop = MediaQuery.of(context).padding.top;
-    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
-    final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
-
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final topPadding = mediaQuery.padding.top;
+    final bottomInset = mediaQuery.padding.bottom;
     final ajustesProvider = context.watch<AjustesProvider>();
     final l10n = AppLocalizations.of(context);
 
+    // Altura responsiva del hero fotográfico superior
+    final double heroHeight = (screenHeight * 0.40).clamp(240.0, 360.0);
+    final bool isCompact = screenHeight < 720;
+
     return Scaffold(
-      backgroundColor: azulFondo,
-      body: SafeArea(
-        bottom: true,
-        child: SizedBox(
-          width: screenWidth,
-          height: usableHeight,
-          child: Column(
-            children: [
-              // ===============================================================
-              // 1. TOP HEADER (Logo Horizontal + Selector de Idioma + Título)
-              // ===============================================================
-              Container(
-                width: screenWidth,
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
-                child: Column(
-                  children: [
-                    SizedBox(height: usableHeight * 0.015),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+      backgroundColor: const Color(0xFF072B4F),
+      body: Stack(
+        children: [
+          // ===================================================================
+          // 1. CAPA DE FONDO: Degradado azul profundo corporativo ATRIO
+          // ===================================================================
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF03182E),
+                    Color(0xFF072B4F),
+                    Color(0xFF093660),
+                    Color(0xFF041C35),
+                  ],
+                  stops: [0.0, 0.42, 0.82, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+          // ===================================================================
+          // 2. ONDA DECORATIVA INFERIOR SUTIL
+          // ===================================================================
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 90,
+            child: IgnorePointer(
+              child: ClipPath(
+                clipper: _BottomWaveClipper(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF0F4C81).withValues(alpha: 0.22),
+                        const Color(0xFF0A335C).withValues(alpha: 0.50),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ===================================================================
+          // 3. CABECERA HERO: Fotografía de la mujer orando con transición ondulada
+          // ===================================================================
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: heroHeight,
+            child: Stack(
+              children: [
+                // Resplandor / onda secundaria cian por detrás
+                Positioned.fill(
+                  child: ClipPath(
+                    clipper: _HeroWaveClipper(offsetY: 6),
+                    child: Container(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+                // Imagen de cabecera recortada por la onda curva orgánica
+                Positioned.fill(
+                  child: ClipPath(
+                    clipper: _HeroWaveClipper(),
+                    child: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        // Logo Horizontal Atrio
                         Image.asset(
-                          'assets/images/logo_encabezado_sinfondo.png',
-                          height: usableHeight * 0.060,
-                          fit: BoxFit.contain,
+                          'assets/images/login_header_mujer_limpia.jpg',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
                           errorBuilder: (context, error, stackTrace) {
                             return Image.asset(
-                              'assets/images/logo_encabezado.png',
-                              height: usableHeight * 0.060,
-                              fit: BoxFit.contain,
+                              'assets/images/login_header_mujer.jpg',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: const Color(0xFF072B4F),
+                                );
+                              },
                             );
                           },
                         ),
-
-                        // Selector de Idioma
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(
-                              screenWidth * 0.02,
-                            ),
-                            onTap: () => _mostrarSelectorIdioma(
-                              context,
-                              ajustesProvider,
-                              screenWidth,
-                            ),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.025,
-                                vertical: usableHeight * 0.006,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  screenWidth * 0.02,
-                                ),
-                                border: Border.all(color: Colors.white38),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.language,
-                                    color: Colors.white,
-                                    size: screenWidth * 0.04,
-                                  ),
-                                  SizedBox(width: screenWidth * 0.015),
-                                  Text(
-                                    _obtenerNombreIdioma(
-                                      ajustesProvider.idiomaCodigo,
-                                    ),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: screenWidth * 0.03,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: Colors.white,
-                                    size: screenWidth * 0.04,
-                                  ),
-                                ],
-                              ),
+                        // Viñeta superior para asegurar contraste con el logo y selector
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.40),
+                                Colors.transparent,
+                                const Color(0xFF072B4F).withValues(alpha: 0.25),
+                              ],
+                              stops: const [0.0, 0.45, 1.0],
                             ),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: usableHeight * 0.018),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                    // Título y Subtítulo
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
+          // ===================================================================
+          // 4. BARRA SUPERIOR: Logo ATRIO + Selector de Idioma
+          // ===================================================================
+          Positioned(
+            top: topPadding + 6,
+            left: screenWidth > 600 ? 32 : 18,
+            right: screenWidth > 600 ? 32 : 18,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/logo_encabezado_sinfondo.png',
+                  height: isCompact ? 32 : 36,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      'assets/images/logo_encabezado.png',
+                      height: isCompact ? 32 : 36,
+                      fit: BoxFit.contain,
+                    );
+                  },
+                ),
+                _buildLanguageSelector(
+                  context,
+                  ajustesProvider,
+                  isCompact: isCompact,
+                ),
+              ],
+            ),
+          ),
+
+          // ===================================================================
+          // 5. BLOQUE DE CONTENIDO: Bienvenida, Botones y Cumplimiento
+          // ===================================================================
+          Positioned(
+            top: heroHeight - (isCompact ? 18 : 10),
+            left: 0,
+            right: 0,
+            bottom: bottomInset > 0 ? bottomInset : 8,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth > 600 ? 32 : 24,
+                  ),
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 1),
+                      // Título principal
+                      Text(
                         l10n?.bienvenida ?? 'Bienvenido a Atrio',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: screenWidth * 0.075,
+                          fontSize: isCompact ? 24 : 28,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                    ),
-                    SizedBox(height: usableHeight * 0.004),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
+                      const SizedBox(height: 6),
+                      // Subtítulo
+                      Text(
                         l10n?.subtituloBienvenida ??
                             'Un espacio para vivir y compartir tu fe',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: screenWidth * 0.042,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: isCompact ? 13.5 : 15,
+                          fontWeight: FontWeight.w400,
+                          height: 1.25,
                         ),
                       ),
-                    ),
-                    SizedBox(height: usableHeight * 0.015),
-                  ],
-                ),
-              ),
+                      const Spacer(flex: 2),
 
-              // ===============================================================
-              // 2. CONTENEDOR PRINCIPAL INFERIOR (Acceso Social Exclusivo)
-              // ===============================================================
-              Expanded(
-                child: Container(
-                  width: screenWidth,
-                  decoration: BoxDecoration(
-                    color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
-                    ),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.06,
-                        vertical: usableHeight * 0.030,
+                      // Botón 1: Continuar con Google
+                      _buildPillButton(
+                        title: 'Continuar con Google',
+                        backgroundColor: Colors.white,
+                        textColor: const Color(0xFF072B4F),
+                        icon: Image.asset(
+                          'assets/images/google_logo.png',
+                          width: 22,
+                          height: 22,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.g_mobiledata,
+                                size: 26,
+                                color: Color(0xFF072B4F),
+                              ),
+                        ),
+                        isLoading: _isLoadingGoogle,
+                        onTap: _isProcessing ? null : _iniciarSesionGoogle,
+                        isCompact: isCompact,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      SizedBox(height: isCompact ? 10 : 13),
+
+                      // Botón 2: Continuar con Apple
+                      _buildPillButton(
+                        title: 'Continuar con Apple',
+                        backgroundColor: Colors.black,
+                        textColor: Colors.white,
+                        icon: const FaIcon(
+                          FontAwesomeIcons.apple,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        isLoading: _isLoadingApple,
+                        onTap: _isProcessing
+                            ? null
+                            : () {
+                                if (defaultTargetPlatform ==
+                                    TargetPlatform.android) {
+                                  _mostrarAvisoAndroidApple(context);
+                                  return;
+                                }
+                                _iniciarSesionApple();
+                              },
+                        isCompact: isCompact,
+                      ),
+                      SizedBox(height: isCompact ? 10 : 13),
+
+                      // Botón 3: Iniciar sesión (Credenciales)
+                      _buildPillButton(
+                        title: 'Iniciar sesión',
+                        backgroundColor: const Color(0xFF0A335C)
+                            .withValues(alpha: 0.35),
+                        textColor: Colors.white,
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          width: 1.2,
+                        ),
+                        icon: const Icon(
+                          Icons.person_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        isLoading: _isLoadingCredentials,
+                        onTap: _isProcessing
+                            ? null
+                            : () => _mostrarModalInicioSesionCredenciales(
+                                context,
+                              ),
+                        isCompact: isCompact,
+                      ),
+                      const Spacer(flex: 2),
+
+                      // Nota de privacidad Odoo ERP
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          l10n?.avisoPrivacidadOdoo ?? 'Al continuar, vinculas tu cuenta de forma segura con el servidor eclesial de ATRIO en Odoo ERP.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.65),
+                            fontSize: isCompact ? 10 : 11.5,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(height: isCompact ? 6 : 10),
+
+                      // Enlaces de Términos y Privacidad
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(height: usableHeight * 0.01),
-
-                          // Icono / Distintivo de Seguridad
-                          Container(
-                            width: screenWidth * 0.14,
-                            height: screenWidth * 0.14,
-                            decoration: BoxDecoration(
-                              color: azulFondo.withValues(alpha: 0.08),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.verified_user_outlined,
-                              color: azulFondo,
-                              size: screenWidth * 0.075,
-                            ),
-                          ),
-                          SizedBox(height: usableHeight * 0.015),
-
-                          // Título de la sección
-                          Text(
-                            'Iniciar Sesión',
-                            style: TextStyle(
-                              color: azulFondo,
-                              fontSize: screenWidth * 0.065,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: usableHeight * 0.008),
-
-                          Text(
-                            'Ingresa con tu cuenta de ATRIO',
-                            style: TextStyle(
-                              color: textoGris,
-                              fontSize: screenWidth * 0.040,
-                              height: 1.35,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // ===================================================
-                          // FORMULARIO DE ACCESO (ODOO API REST)
-                          // ===================================================
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                              border: Border.all(color: grisBorde),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            padding: EdgeInsets.all(screenWidth * 0.045),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Campo Correo / Login
-                                TextField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: InputDecoration(
-                                    labelText: 'Correo electrónico o usuario',
-                                    hintText: 'ej. juan@gmail.com',
-                                    prefixIcon: const Icon(Icons.email_outlined, color: azulFondo),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                      borderSide: const BorderSide(color: grisBorde),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                      borderSide: const BorderSide(color: grisBorde),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                      borderSide: const BorderSide(color: azulFondo, width: 1.5),
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: screenWidth * 0.035,
-                                      vertical: usableHeight * 0.015,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: usableHeight * 0.018),
-
-                                // Campo Contraseña
-                                TextField(
-                                  controller: _passwordController,
-                                  obscureText: _obscurePassword,
-                                  textInputAction: TextInputAction.done,
-                                  onSubmitted: (_) => _isProcessing ? null : _iniciarSesionCredenciales(),
-                                  decoration: InputDecoration(
-                                    labelText: 'Contraseña',
-                                    prefixIcon: const Icon(Icons.lock_outline, color: azulFondo),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                        color: textoGris,
-                                      ),
-                                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                      borderSide: const BorderSide(color: grisBorde),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                      borderSide: const BorderSide(color: grisBorde),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                      borderSide: const BorderSide(color: azulFondo, width: 1.5),
-                                    ),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: screenWidth * 0.035,
-                                      vertical: usableHeight * 0.015,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: usableHeight * 0.008),
-
-                                // Olvidé contraseña
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: _isProcessing
-                                        ? null
-                                        : () => Navigator.pushNamed(context, RecuperarClaveScreen.routeName),
-                                    child: Text(
-                                      '¿Olvidaste tu contraseña?',
-                                      style: TextStyle(
-                                        color: azulLink,
-                                        fontSize: screenWidth * 0.034,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: usableHeight * 0.01),
-
-                                // Botón Iniciar Sesión Odoo
-                                ElevatedButton(
-                                  onPressed: _isProcessing ? null : _iniciarSesionCredenciales,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: azulFondo,
-                                    foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(vertical: usableHeight * 0.018),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                    ),
-                                    elevation: 2,
-                                  ),
-                                  child: _isLoadingCredentials
-                                      ? SizedBox(
-                                          height: screenWidth * 0.05,
-                                          width: screenWidth * 0.05,
-                                          child: const CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2.5,
-                                          ),
-                                        )
-                                      : Text(
-                                          'Iniciar Sesión',
-                                          style: TextStyle(
-                                            fontSize: screenWidth * 0.045,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // Separador "o continúa con"
-                          Row(
-                            children: [
-                              const Expanded(child: Divider(color: grisBorde)),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
-                                child: Text(
-                                  'o accede con',
-                                  style: TextStyle(
-                                    color: textoGris,
-                                    fontSize: screenWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                              const Expanded(child: Divider(color: grisBorde)),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // ===================================================
-                          // BOTÓN 1: CONTINUAR CON GOOGLE
-                          // ===================================================
-                          _buildSocialButton(
-                            title:
-                                l10n?.continuarConGoogle ??
-                                'Continuar con Google',
-                            imageAsset: 'assets/images/google_logo.png',
-                            backgroundColor: Colors.white,
-                            textColor: azulFondo,
-                            borderColor: grisBorde,
-                            isLoading: _isLoadingGoogle,
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            onTap: _isProcessing ? null : _iniciarSesionGoogle,
-                          ),
-                          SizedBox(height: usableHeight * 0.040),
-
-                          // ===================================================
-                          // BOTÓN 2: CONTINUAR CON APPLE (Obligatorio iOS)
-                          // ===================================================
-                          _buildSocialButton(
-                            title: l10n != null
-                                ? '   ${l10n.continuarConApple}'
-                                : '   Continuar con Apple',
-                            customIcon: FaIcon(
-                              FontAwesomeIcons.apple,
-                              color: Colors.white,
-                              size: screenWidth * 0.085,
-                            ),
-                            backgroundColor: Colors.black,
-                            textColor: Colors.white,
-                            borderColor: Colors.black,
-                            isLoading: _isLoadingApple,
-                            screenWidth: screenWidth,
-                            usableHeight: usableHeight,
-                            onTap: _isProcessing
-                                ? null
-                                : () {
-                                    if (defaultTargetPlatform ==
-                                        TargetPlatform.android) {
-                                      _mostrarAvisoAndroidApple(
-                                        context,
-                                        screenWidth,
-                                        usableHeight,
-                                      );
-                                      return;
-                                    }
-                                    _iniciarSesionApple();
-                                  },
-                          ),
-                          SizedBox(height: usableHeight * 0.025),
-
-                          // Enlace a Registro
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '¿No tienes una cuenta? ',
-                                style: TextStyle(
-                                  color: textoGris,
-                                  fontSize: screenWidth * 0.038,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _isProcessing
-                                    ? null
-                                    : () => Navigator.pushNamed(
-                                          context,
-                                          CrearCuentaScreen.routeName,
-                                        ),
-                                child: Text(
-                                  'Regístrate',
-                                  style: TextStyle(
-                                    color: amarilloOro,
-                                    fontSize: screenWidth * 0.038,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.015),
-
-                          // ===================================================
-                          // ACCESO INVITADO / EXPLORAR
-                          // ===================================================
-                          TextButton.icon(
-                            onPressed: _isProcessing
-                                ? null
-                                : () => _continuarComoInvitado(context),
-                            icon: Icon(
-                              Icons.explore_outlined,
-                              color: azulLink,
-                              size: screenWidth * 0.045,
-                            ),
-                            label: Text(
-                              l10n?.explorarInvitado ??
-                                  'Explorar como invitado',
-                              style: TextStyle(
-                                color: azulLink,
-                                fontSize: screenWidth * 0.050,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: usableHeight * 0.030),
-
-                          // Información de privacidad
-                          Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04,
-                            ),
-                            child: Text(
-                              l10n?.avisoPrivacidadOdoo ?? 'Al continuar, vinculas tu cuenta de forma segura con el servidor eclesial de ATRIO en Odoo ERP.',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: screenWidth * 0.029,
-                                height: 1.3,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          SizedBox(height: usableHeight * 0.020),
-
-                          // ===================================================
-                          // ENLACES LEGALES Y GESTIÓN DE CUENTA
-                          // ===================================================
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: _mostrarTerminosDeUso,
-                                child: Text(
-                                  l10n?.terminosDeUso ?? 'Términos de uso',
-                                  style: TextStyle(
-                                    color: azulFondo,
-                                    fontSize: screenWidth * 0.040,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.02,
-                                ),
-                                child: Text(
-                                  '•',
-                                  style: TextStyle(
-                                    color: textoGris,
-                                    fontSize: screenWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _mostrarPoliticaPrivacidad,
-                                child: Text(
-                                  l10n?.privacidad ?? 'Privacidad',
-                                  style: TextStyle(
-                                    color: azulFondo,
-                                    fontSize: screenWidth * 0.040,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: usableHeight * 0.012),
-
-                          // Enlace directo a solicitud de eliminación de datos
-                          // (Cumplimiento de políticas de Google Play y Apple)
                           GestureDetector(
-                            onTap: () => _mostrarSolicitudEliminacionDatos(
-                              context,
-                              screenWidth,
-                              usableHeight,
-                            ),
+                            onTap: _mostrarTerminosDeUso,
                             child: Text(
-                              l10n?.eliminarMisDatos ?? 'Eliminar mis datos',
+                              l10n?.terminosDeUso ?? 'Términos de uso',
                               style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontSize: screenWidth * 0.040,
-                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: isCompact ? 11 : 12.5,
                                 decoration: TextDecoration.underline,
+                                decorationColor: Colors.white.withValues(
+                                  alpha: 0.8,
+                                ),
                               ),
                             ),
                           ),
-                          SizedBox(height: usableHeight * 0.02),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '•',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _mostrarPoliticaPrivacidad,
+                            child: Text(
+                              l10n?.privacidad ?? 'Privacidad',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: isCompact ? 11 : 12.5,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white.withValues(
+                                  alpha: 0.8,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
+                      SizedBox(height: isCompact ? 4 : 6),
+
+                      // Enlace Eliminar mis datos
+                      GestureDetector(
+                        onTap: () => _mostrarSolicitudEliminacionDatos(context),
+                        child: Text(
+                          l10n?.eliminarMisDatos ?? 'Eliminar mis datos',
+                          style: TextStyle(
+                            color: const Color(0xFFEF4444),
+                            fontSize: isCompact ? 11 : 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Spacer(flex: 1),
+                    ],
                   ),
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================================
+  // WIDGET: SELECTOR DE IDIOMA MINIMALISTA
+  // ============================================================================
+  Widget _buildLanguageSelector(
+    BuildContext context,
+    AjustesProvider provider, {
+    bool isCompact = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _mostrarSelectorIdioma(context, provider),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 8 : 10,
+            vertical: isCompact ? 4 : 5,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.language_rounded,
+                color: Colors.white,
+                size: isCompact ? 14 : 16,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                _obtenerNombreIdioma(provider.idiomaCodigo),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isCompact ? 11.5 : 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Colors.white,
+                size: isCompact ? 14 : 16,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // ============================================================================
+  // WIDGET: BOTÓN SOCIAL PRINCIPAL EN CÁPSULA (PILL BUTTON)
+  // ============================================================================
+  Widget _buildPillButton({
+    required String title,
+    required Color backgroundColor,
+    required Color textColor,
+    required Widget icon,
+    required bool isLoading,
+    required VoidCallback? onTap,
+    BorderSide? borderSide,
+    bool isCompact = false,
+  }) {
+    final double height = isCompact ? 46 : 50;
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: textColor,
+          disabledBackgroundColor: backgroundColor.withValues(alpha: 0.6),
+          disabledForegroundColor: textColor.withValues(alpha: 0.6),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          side: borderSide,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(height / 2),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+        ),
+        child: isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  icon,
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: isCompact ? 14.5 : 15.5,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  // ============================================================================
+  // MODAL BOTTOM SHEET: INICIO DE SESIÓN CON CREDENCIALES (EMAIL / PASSWORD)
+  // ============================================================================
+  void _mostrarModalInicioSesionCredenciales(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final isCompact = mediaQuery.size.height < 720;
+    String? errorMessageModal;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        return StatefulBuilder(
+          builder: (builderCtx, setModalState) {
+            final bottomInset = MediaQuery.of(builderCtx).viewInsets.bottom;
+
+            Future<void> ejecutarLogin() async {
+              setModalState(() => errorMessageModal = null);
+              await _iniciarSesionCredenciales(
+                setModalState: setModalState,
+                modalCtx: modalCtx,
+                onErrorMessage: (msg) {
+                  setModalState(() => errorMessageModal = msg);
+                },
+              );
+            }
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: superficieBlanca,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x28000000),
+                    blurRadius: 25,
+                    offset: Offset(0, -6),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                14,
+                24,
+                (isCompact ? 16 : 24) + bottomInset,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Indicador de arrastre superior (pill)
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
+
+                    // Título del formulario
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n?.iniciarSesion ?? 'Iniciar Sesión',
+                          style: const TextStyle(
+                            color: textoOscuro,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: textoGris,
+                          ),
+                          onPressed: () => Navigator.pop(modalCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Campo: Correo Electrónico / Usuario
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      enabled: !_isProcessing,
+                      onFieldSubmitted: (_) =>
+                          _passwordFocusNode.requestFocus(),
+                      style: const TextStyle(
+                        color: textoOscuro,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        labelText: 'Correo electrónico o usuario',
+                        labelStyle: const TextStyle(
+                          color: textoGris,
+                          fontSize: 13,
+                        ),
+                        hintText: 'ej. nombre@correo.com',
+                        hintStyle: TextStyle(
+                          color: textoGris.withValues(alpha: 0.6),
+                          fontSize: 13,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.mail_outline_rounded,
+                          color: Color(0xFF64748B),
+                          size: 19,
+                        ),
+                        filled: true,
+                        fillColor: superficieCampo,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: grisBorde),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: grisBorde),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: azulFondo,
+                            width: 1.6,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Campo: Contraseña
+                    TextFormField(
+                      controller: _passwordController,
+                      focusNode: _passwordFocusNode,
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.done,
+                      enabled: !_isProcessing,
+                      onFieldSubmitted: (_) async {
+                        if (!_isProcessing) {
+                          await ejecutarLogin();
+                        }
+                      },
+                      style: const TextStyle(
+                        color: textoOscuro,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        labelText: 'Contraseña',
+                        labelStyle: const TextStyle(
+                          color: textoGris,
+                          fontSize: 13,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline_rounded,
+                          color: Color(0xFF64748B),
+                          size: 19,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: const Color(0xFF64748B),
+                            size: 19,
+                          ),
+                          onPressed: () {
+                            setModalState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                        filled: true,
+                        fillColor: superficieCampo,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: grisBorde),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: grisBorde),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: azulFondo,
+                            width: 1.6,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Olvidé mi contraseña
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _isProcessing
+                            ? null
+                            : () {
+                                Navigator.pop(modalCtx);
+                                Navigator.pushNamed(
+                                  context,
+                                  RecuperarClaveScreen.routeName,
+                                );
+                              },
+                        child: const Text(
+                          '¿Olvidaste tu contraseña?',
+                          style: TextStyle(
+                            color: azulLink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Banner visual de alerta ante credenciales incorrectas o errores de red (Caso 1)
+                    if (errorMessageModal != null &&
+                        errorMessageModal!.isNotEmpty) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: Color(0xFFDC2626),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessageModal!,
+                                style: const TextStyle(
+                                  color: Color(0xFFB91C1C),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Botón Iniciar Sesión en modal
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _isProcessing
+                            ? null
+                            : () async {
+                                await ejecutarLogin();
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isLoginSuccess
+                              ? verdeExito
+                              : azulFondo,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              azulFondo.withValues(alpha: 0.6),
+                          disabledForegroundColor: Colors.white70,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isLoginSuccess
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    '¡Listo!',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : _isLoadingCredentials
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Iniciando sesión...',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : const Text(
+                                'Iniciar Sesión',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Enlace a Registro
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          '¿No tienes una cuenta? ',
+                          style: TextStyle(color: textoGris, fontSize: 13),
+                        ),
+                        GestureDetector(
+                          onTap: _isProcessing
+                              ? null
+                              : () {
+                                  Navigator.pop(modalCtx);
+                                  Navigator.pushNamed(
+                                    context,
+                                    CrearCuentaScreen.routeName,
+                                  );
+                                },
+                          child: const Text(
+                            'Regístrate',
+                            style: TextStyle(
+                              color: amarilloOro,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Explorar como invitado
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: _isProcessing
+                            ? null
+                            : () {
+                                Navigator.pop(modalCtx);
+                                _continuarComoInvitado(context);
+                              },
+                        icon: const Icon(Icons.explore_outlined, size: 16),
+                        label: Text(
+                          l10n?.explorarInvitado ?? 'Explorar como invitado',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -667,11 +1003,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     }
   }
 
-  void _mostrarSelectorIdioma(
-    BuildContext context,
-    AjustesProvider provider,
-    double screenWidth,
-  ) {
+  void _mostrarSelectorIdioma(BuildContext context, AjustesProvider provider) {
     final l10n = AppLocalizations.of(context);
     final opciones = [
       {
@@ -690,52 +1022,51 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(screenWidth * 0.06),
-        ),
+      backgroundColor: superficieBlanca,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.05,
-            vertical: screenWidth * 0.04,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.translate_rounded, color: azulFondo),
-                  SizedBox(width: screenWidth * 0.02),
+                  const Icon(
+                    Icons.translate_rounded,
+                    color: azulFondo,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
                   Text(
                     l10n?.seleccionarIdioma ?? 'Seleccionar Idioma',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: azulFondo,
                       fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.045,
+                      fontSize: 18,
                     ),
                   ),
                 ],
               ),
-              const Divider(height: 24),
+              const Divider(height: 28, color: grisBorde),
               ...opciones.map((opcion) {
                 final isSelected = provider.idiomaCodigo == opcion['codigo'];
                 return ListTile(
                   leading: Text(
                     opcion['bandera']!,
-                    style: TextStyle(fontSize: screenWidth * 0.06),
+                    style: const TextStyle(fontSize: 24),
                   ),
                   title: Text(
                     opcion['nombre']!,
                     style: TextStyle(
-                      color: isSelected ? azulFondo : Colors.black87,
+                      color: isSelected ? azulFondo : textoOscuro,
                       fontWeight: isSelected
                           ? FontWeight.bold
-                          : FontWeight.normal,
-                      fontSize: screenWidth * 0.038,
+                          : FontWeight.w500,
+                      fontSize: 15,
                     ),
                   ),
                   trailing: isSelected
@@ -745,7 +1076,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         )
                       : null,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   tileColor: isSelected
                       ? azulFondo.withValues(alpha: 0.05)
@@ -769,16 +1100,26 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   // AUTENTICACIÓN CON CREDENCIALES (ODOO 19 REST API - POST /auth/login)
   // ============================================================================
-  Future<void> _iniciarSesionCredenciales() async {
+  Future<void> _iniciarSesionCredenciales({
+    StateSetter? setModalState,
+    BuildContext? modalCtx,
+    void Function(String)? onErrorMessage,
+  }) async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      _mostrarMensajeError('Por favor ingresa tu correo y contraseña');
+      const msg = 'Por favor ingresa tu correo y contraseña';
+      onErrorMessage?.call(msg);
+      _mostrarMensajeError(msg);
       return;
     }
 
-    setState(() => _isLoadingCredentials = true);
+    setModalState?.call(() {});
+    setState(() {
+      _isLoadingCredentials = true;
+      _isLoginSuccess = false;
+    });
     FocusScope.of(context).unfocus();
 
     try {
@@ -792,15 +1133,32 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       if (!mounted) return;
 
       if (ok) {
+        setModalState?.call(() {});
+        setState(() {
+          _isLoginSuccess = true;
+        });
+
         // Guardar también en la base de datos local SQLite para soporte offline
         try {
           final user = userProvider.currentUser;
           if (user != null) {
+            final SharedPreferences prefs =
+                await SharedPreferences.getInstance();
+            final String? iglesiaGuardada =
+                prefs.getString('iglesia_guardada');
+            final String iglesiaNombre = (iglesiaGuardada != null &&
+                    iglesiaGuardada.trim().isNotEmpty)
+                ? (user.iglesiaActual.isNotEmpty &&
+                        user.iglesiaActual != 'Iglesia Atrio'
+                    ? user.iglesiaActual
+                    : 'Sin iglesia seleccionada')
+                : 'Sin iglesia seleccionada';
+
             await AtrioDatabaseHelper.instance.guardarUsuario({
               'email': user.email,
               'nombre': user.nombre,
               'celular': user.telefono ?? '',
-              'iglesia_nombre': user.iglesiaActual,
+              'iglesia_nombre': iglesiaNombre,
               'creado_en': DateTime.now().toIso8601String(),
             });
           }
@@ -810,29 +1168,73 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
         if (!mounted) return;
 
+        // Pausa breve de 350ms para que el usuario aprecie el estado visual "¡Listo!"
+        await Future.delayed(const Duration(milliseconds: 350));
+
+        // 1. Cerrar primero el modal para evitar congelamiento de navegación o colisiones de rutas
+        if (modalCtx != null && modalCtx.mounted) {
+          Navigator.pop(modalCtx);
+        }
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '¡Bienvenido ${userProvider.currentUser?.nombre ?? ""}!',
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '¡Bienvenido ${userProvider.currentUser?.nombre ?? ""}!',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
-            backgroundColor: const Color(0xFF1B5E20),
+            backgroundColor: verdeExito,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
             duration: const Duration(seconds: 2),
           ),
         );
 
+        // 2. Redirigir según el estado del usuario
         await _redirigirUsuarioPostLogin();
       } else {
-        _mostrarMensajeError(
-          userProvider.errorMessage ?? 'Usuario o contraseña incorrectos.',
-        );
+        final errorMsg = userProvider.errorMessage ??
+            'Usuario o contraseña incorrectos. Verifica tus credenciales.';
+        onErrorMessage?.call(errorMsg);
+        setModalState?.call(() {});
+        setState(() {
+          _isLoginSuccess = false;
+        });
+        _mostrarMensajeError(errorMsg);
       }
     } catch (e) {
+      final errorMsg = 'Error al comunicarse con el servidor: $e';
+      onErrorMessage?.call(errorMsg);
       if (mounted) {
-        _mostrarMensajeError('Error de conexión al servidor: $e');
+        setModalState?.call(() {});
+        setState(() {
+          _isLoginSuccess = false;
+        });
+        _mostrarMensajeError(errorMsg);
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoadingCredentials = false);
+        setModalState?.call(() {});
+        setState(() {
+          _isLoadingCredentials = false;
+        });
       }
     }
   }
@@ -849,12 +1251,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       String email = 'usuario.google@gmail.com';
       String nombre = l10n?.usuarioGoogle ?? 'Usuario Google';
 
-      // Intento de conexión nativa con Google Sign-In
       try {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
         if (googleUser == null) {
-          // El usuario canceló voluntariamente el diálogo de Google
           debugPrint('[AUTH] Inicio de sesión cancelado por el usuario.');
           if (mounted) setState(() => _isLoadingGoogle = false);
           return;
@@ -910,11 +1310,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
       }
 
-      // 4. Redirigir según el estado del usuario (hacia selección de tradición e iglesia si es primer registro)
+      // 4. Redirigir según el estado del usuario
       await _redirigirUsuarioPostLogin();
     } catch (error) {
       debugPrint('[AUTH_ERROR] Error en Google Sign-In: $error');
-      _mostrarError('No se pudo conectar con Google. Revisa tu conexión.');
+      _mostrarMensajeError(
+        'No se pudo conectar con Google. Revisa tu conexión.',
+      );
     } finally {
       if (mounted) setState(() => _isLoadingGoogle = false);
     }
@@ -932,13 +1334,11 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     try {
       debugPrint('[AUTH] Iniciando flujo nativo de Sign in with Apple...');
 
-      // Verificamos si estamos en un entorno compatible (iOS/macOS o Web)
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
-        // Opcional para web o Android (mediante Service ID de AppConfig):
         webAuthenticationOptions: AppConfig.appleServiceId.isNotEmpty
             ? WebAuthenticationOptions(
                 clientId: AppConfig.appleServiceId,
@@ -949,58 +1349,22 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             : null,
       );
 
-      final String? identityToken = credential.identityToken;
-      final authorizationCode = credential.authorizationCode;
-
-      // Apple solo entrega nombre y correo en la primera autorización
       final String nombre = [
         credential.givenName ?? '',
         credential.familyName ?? '',
       ].join(' ').trim();
       final String email = credential.email ?? '';
 
-      debugPrint('[AUTH] Apple Sign-In exitoso.');
-      debugPrint('       User Identifier: ${credential.userIdentifier}');
-      debugPrint('       Email: $email');
-      debugPrint('       Nombre: $nombre');
-      debugPrint('       Identity Token presente: ${identityToken != null}');
-      debugPrint(
-        '       Authorization Code presente: ${authorizationCode.isNotEmpty}',
-      );
-
-      // =======================================================================
-      // TODO: ODOO 19 BACKEND INTEGRATION
-      // =======================================================================
-      // 1. URL Endpoint:
-      //    '${AppConfig.odooBaseUrl}${AppConfig.odooSocialAuthEndpoint}'
-      //
-      // 2. Payload HTTP POST:
-      //    final body = jsonEncode({
-      //      'provider': 'apple',
-      //      'identity_token': identityToken,
-      //      'authorization_code': authorizationCode,
-      //      'user_identifier': credential.userIdentifier,
-      //      'email': email,
-      //      'name': nombre.isNotEmpty ? nombre : 'Usuario Apple',
-      //      'db': AppConfig.odooDatabase,
-      //    });
-      //
-      // 3. Odoo validará la firma criptográfica con las claves públicas de Apple
-      //    y responderá con session_id y perfil de res.partner.
-      // =======================================================================
-
       final String nombreFinal = nombre.isNotEmpty ? nombre : 'Usuario Apple';
       final String emailFinal = email.isNotEmpty
           ? email
           : 'apple_user_${credential.userIdentifier?.substring(0, 6)}@privaterelay.appleid.com';
 
-      // 1. Guardar en SharedPreferences
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
       await prefs.setString('userEmail', emailFinal);
       await prefs.setString('userName', nombreFinal);
 
-      // Verificamos si ya existe una iglesia previa configurada en SQLite
       final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
       final String iglesiaExistente =
           (usuarioExistente != null &&
@@ -1011,7 +1375,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? usuarioExistente['iglesia_nombre'].toString().trim()
           : 'Sin iglesia seleccionada';
 
-      // 2. Persistir localmente en SQLite (atrio.db)
       await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
         'nombre': nombreFinal,
         'email': emailFinal,
@@ -1022,7 +1385,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
       if (!mounted) return;
 
-      // 3. Sincronizar en memoria con UserProvider
       try {
         Provider.of<UserProvider>(context, listen: false).updateUserProfile(
           nombre: nombreFinal,
@@ -1034,15 +1396,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
       }
 
-      // 4. Redirigir según el estado del usuario (hacia selección de tradición e iglesia si es primer registro)
       await _redirigirUsuarioPostLogin();
     } catch (error) {
       debugPrint('[AUTH] Error en Sign in with Apple: $error');
-      // Si el error no es de cancelación por el usuario, mostrar alerta informativa
       if (!error.toString().contains('canceled') &&
           !error.toString().contains('cancelled')) {
         _mostrarMensajeError(
-          'No se pudo completar el acceso con Apple. Verifica tu cuenta de Apple ID o tu conexión.',
+          'No se pudo completar el acceso con Apple. Verifica tu cuenta o conexión.',
         );
       }
     } finally {
@@ -1053,49 +1413,55 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   // REDIRECCIÓN INTELIGENTE POST LOGIN
   // ============================================================================
-  Future<void> _redirigirUsuarioPostLogin() async {
-    final iglesiaProvider = context.read<IglesiaProvider>();
-    final bool tieneIglesiaLocal = await iglesiaProvider
-        .verificarIglesiaGuardada();
+  Future<void> _redirigirUsuarioPostLogin({bool esAutoLogin = false}) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
+    final bool tieneIglesiaLocal =
+        iglesiaGuardada != null && iglesiaGuardada.trim().isNotEmpty;
 
-    // Verificamos si en la base de datos local el usuario ya tiene una iglesia válida configurada
     final usuario = await AtrioDatabaseHelper.instance.getUsuario();
     final bool tieneIglesiaDb =
         usuario != null &&
         usuario['iglesia_nombre'] != null &&
         usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
         usuario['iglesia_nombre'].toString().trim() !=
-            'Sin iglesia seleccionada';
+            'Sin iglesia seleccionada' &&
+        usuario['iglesia_nombre'].toString().trim() !=
+            'Iglesia Atrio';
 
     final bool usuarioTieneIglesia = tieneIglesiaLocal || tieneIglesiaDb;
 
     if (!mounted) return;
 
-    if (usuarioTieneIglesia) {
+    // Solo si es una sesión pasiva previamente restaurada al iniciar la app
+    // y el usuario ya completó la selección de iglesia con anterioridad:
+    if (esAutoLogin && usuarioTieneIglesia) {
       Navigator.pushNamedAndRemoveUntil(
         context,
         InicioAtrioScreen.routeName,
         (route) => false,
       );
     } else {
+      // Al iniciar sesión por primera vez o tras autenticarse con éxito,
+      // debe siempre enviar a TradicionCristianaScreen para seleccionar su iglesia.
       Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
     }
   }
 
-  // Continuar como invitado sin autenticarse de inmediato
   void _continuarComoInvitado(BuildContext context) {
-    Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
+    // Modo Invitado: es el ÚNICO caso donde NO pasa por TradicionCristianaScreen
+    // y entra directamente al contenido principal de la app en InicioAtrioScreen.
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      InicioAtrioScreen.routeName,
+      (route) => false,
+    );
   }
 
   // ============================================================================
   // MODAL DE SOLICITUD DE ELIMINACIÓN DE CUENTA Y DATOS PERSONALES
-  // (Cumplimiento estricto con Apple App Store 5.1.1(v) y Google Play Console)
   // ============================================================================
-  void _mostrarSolicitudEliminacionDatos(
-    BuildContext context,
-    double screenWidth,
-    double usableHeight,
-  ) {
+  void _mostrarSolicitudEliminacionDatos(BuildContext context) {
     final emailController = TextEditingController();
     final l10n = AppLocalizations.of(context);
 
@@ -1103,24 +1469,24 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       context: context,
       builder: (dialogCtx) {
         return AlertDialog(
-          backgroundColor: blancoFondo,
+          backgroundColor: superficieBlanca,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+            borderRadius: BorderRadius.circular(20),
           ),
           title: Row(
             children: [
               Icon(
                 Icons.delete_forever_rounded,
                 color: Colors.red.shade700,
-                size: screenWidth * 0.065,
+                size: 26,
               ),
-              SizedBox(width: screenWidth * 0.02),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   l10n?.eliminarCuentaYDatos ?? 'Eliminar cuenta y datos',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: azulFondo,
-                    fontSize: screenWidth * 0.045,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1133,50 +1499,51 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Conforme a nuestras políticas de privacidad y los estándares de las tiendas de aplicaciones, tienes el derecho de solicitar la eliminación total de tu cuenta y los datos personales asociados en los servidores de ATRIO y Odoo.',
+                  'Conforme a nuestras políticas de privacidad y los estándares de las tiendas de aplicaciones, tienes el derecho de solicitar la eliminación total de tu cuenta y los datos personales asociados.',
                   style: TextStyle(
                     color: Colors.grey.shade800,
-                    fontSize: screenWidth * 0.033,
-                    height: 1.35,
+                    fontSize: 13.5,
+                    height: 1.4,
                   ),
                 ),
-                SizedBox(height: usableHeight * 0.015),
-                Text(
-                  'Ingresa el correo con el que te autenticaste para procesar tu solicitud:',
+                const SizedBox(height: 16),
+                const Text(
+                  'Ingresa tu correo para confirmar la solicitud:',
                   style: TextStyle(
                     color: azulFondo,
-                    fontSize: screenWidth * 0.032,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: usableHeight * 0.008),
+                const SizedBox(height: 8),
                 TextField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontSize: screenWidth * 0.035,
-                  ),
+                  style: const TextStyle(color: azulFondo, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'tu@correo.com',
                     filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.03,
-                      vertical: usableHeight * 0.012,
+                    fillColor: superficieCampo,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: grisBorde),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: grisBorde),
                     ),
                   ),
                 ),
-                SizedBox(height: usableHeight * 0.012),
+                const SizedBox(height: 12),
                 Container(
-                  padding: EdgeInsets.all(screenWidth * 0.025),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.amber.shade300),
                   ),
                   child: Row(
@@ -1185,15 +1552,15 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                       Icon(
                         Icons.info_outline,
                         color: Colors.amber.shade900,
-                        size: screenWidth * 0.04,
+                        size: 18,
                       ),
-                      SizedBox(width: screenWidth * 0.015),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Esta acción purgará tus notas de la Biblia, historial de aportes y desvinculará tu usuario en Odoo de forma irreversible.',
+                          'Esta acción purgará tus notas bíblicas, historial y desvinculará tu usuario de forma irreversible.',
                           style: TextStyle(
                             color: Colors.amber.shade900,
-                            fontSize: screenWidth * 0.028,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -1213,7 +1580,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                 backgroundColor: Colors.red.shade700,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               onPressed: () async {
@@ -1222,14 +1589,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
                 Navigator.pop(dialogCtx);
 
-                // =============================================================
-                // TODO: ODOO 19 BACKEND INTEGRATION - SOLICITUD DE BORRADO
-                // =============================================================
-                // URL: '${AppConfig.odooBaseUrl}${AppConfig.odooDeleteAccountEndpoint}'
-                // Body: { 'email': emailSolicitado, 'db': AppConfig.odooDatabase }
-                // =============================================================
-
-                // Purgado de datos locales inmediatos
                 await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
                 if (context.mounted) {
                   Provider.of<UserProvider>(
@@ -1244,7 +1603,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   SnackBar(
                     backgroundColor: azulFondo,
                     content: Text(
-                      'Solicitud de eliminación registrada para $emailSolicitado. Tus datos locales han sido borrados.',
+                      'Solicitud registrada para $emailSolicitado. Datos locales eliminados.',
                       style: const TextStyle(color: Colors.white),
                     ),
                     duration: const Duration(seconds: 4),
@@ -1264,41 +1623,35 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   // AVISO SISTEMA OPERATIVO (APPLE EN ANDROID)
   // ============================================================================
-  void _mostrarAvisoAndroidApple(
-    BuildContext context,
-    double screenWidth,
-    double usableHeight,
-  ) {
+  void _mostrarAvisoAndroidApple(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: blancoFondo,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
-        ),
+        backgroundColor: superficieBlanca,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(screenWidth * 0.02),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: amarilloOro.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.phone_android_rounded,
                 color: azulFondo,
-                size: screenWidth * 0.065,
+                size: 22,
               ),
             ),
-            SizedBox(width: screenWidth * 0.025),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 l10n?.opcionNoDisponible ?? 'Opción no disponible',
-                style: TextStyle(
+                style: const TextStyle(
                   color: azulFondo,
-                  fontSize: screenWidth * 0.045,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1313,32 +1666,32 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
               'Has seleccionado "Continuar con Apple", la cual es una opción diseñada exclusivamente para dispositivos Apple (iOS).',
               style: TextStyle(
                 color: Colors.grey.shade800,
-                fontSize: screenWidth * 0.036,
+                fontSize: 14,
                 height: 1.4,
               ),
             ),
-            SizedBox(height: usableHeight * 0.015),
+            const SizedBox(height: 14),
             Container(
-              padding: EdgeInsets.all(screenWidth * 0.03),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                border: Border.all(color: grisBorde),
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
               ),
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(
                     Icons.check_circle_outline_rounded,
-                    color: const Color(0xFF2E7D32),
-                    size: screenWidth * 0.055,
+                    color: verdeExito,
+                    size: 20,
                   ),
-                  SizedBox(width: screenWidth * 0.02),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'En tu dispositivo Android, por favor utiliza "Continuar con Google" para ingresar de forma rápida y segura.',
+                      'En tu dispositivo Android, por favor utiliza "Google" para ingresar de forma rápida y segura.',
                       style: TextStyle(
                         color: azulFondo,
-                        fontSize: screenWidth * 0.033,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1356,7 +1709,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
               style: TextStyle(
                 color: Colors.grey.shade700,
                 fontWeight: FontWeight.w600,
-                fontSize: screenWidth * 0.036,
               ),
             ),
           ),
@@ -1367,25 +1719,18 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             },
             icon: Image.asset(
               'assets/images/google_logo.png',
-              width: screenWidth * 0.045,
-              height: screenWidth * 0.045,
+              width: 18,
+              height: 18,
             ),
-            label: Text(
+            label: const Text(
               'Usar Google',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: screenWidth * 0.036,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: azulFondo,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(screenWidth * 0.025),
-              ),
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.04,
-                vertical: usableHeight * 0.012,
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
@@ -1397,19 +1742,34 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   // UTILIDADES Y MODALES INFORMATIVOS
   // ============================================================================
-  void _mostrarError(String mensaje) => _mostrarMensajeError(mensaje);
-
   void _mostrarMensajeError(String mensaje) {
     if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.red.shade700,
-        content: Text(
-          mensaje,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
+        backgroundColor: const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                mensaje,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13.5,
+                ),
+              ),
+            ),
+          ],
         ),
         duration: const Duration(seconds: 4),
       ),
@@ -1420,6 +1780,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: superficieBlanca,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Términos de uso - ATRIO'),
         content: const SingleChildScrollView(
           child: Text(
@@ -1440,6 +1802,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: superficieBlanca,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Política de Privacidad'),
         content: const SingleChildScrollView(
           child: Text(
@@ -1455,83 +1819,59 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       ),
     );
   }
+}
 
-  // ============================================================================
-  // WIDGET: BOTÓN SOCIAL CON ESTADO DE CARGA Y ESTILOS NATIVOS
-  // ============================================================================
-  Widget _buildSocialButton({
-    required String title,
-    String? imageAsset,
-    IconData? iconData,
-    Widget? customIcon,
-    required Color backgroundColor,
-    required Color textColor,
-    required Color borderColor,
-    required bool isLoading,
-    required double screenWidth,
-    required double usableHeight,
-    required VoidCallback? onTap,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: usableHeight * 0.060,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          side: BorderSide(color: borderColor),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.025),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-        ),
-        child: isLoading
-            ? SizedBox(
-                width: screenWidth * 0.05,
-                height: screenWidth * 0.05,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (imageAsset != null)
-                    Image.asset(
-                      imageAsset,
-                      width: screenWidth * 0.065,
-                      height: screenWidth * 0.065,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.account_circle,
-                        color: textColor,
-                        size: screenWidth * 0.055,
-                      ),
-                    )
-                  else if (customIcon != null)
-                    customIcon
-                  else if (iconData != null)
-                    Icon(iconData, color: textColor, size: screenWidth * 0.055),
-                  SizedBox(width: screenWidth * 0.03),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: screenWidth * 0.042,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
+// ==============================================================================
+// CLIPPERS: ONDAS ORGÁNICAS DE TRANSICIÓN Y DECORACIÓN (HERO & BOTTOM)
+// ==============================================================================
+class _HeroWaveClipper extends CustomClipper<Path> {
+  final double offsetY;
+  _HeroWaveClipper({this.offsetY = 0});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height * 0.88 + offsetY);
+
+    // Primera curva descendente hacia el centro-izquierdo
+    final p1 = Offset(size.width * 0.28, size.height * 0.98 + offsetY);
+    final p2 = Offset(size.width * 0.58, size.height * 0.88 + offsetY);
+    path.quadraticBezierTo(p1.dx, p1.dy, p2.dx, p2.dy);
+
+    // Segunda curva suave ascendente hacia el extremo derecho
+    final p3 = Offset(size.width * 0.84, size.height * 0.78 + offsetY);
+    final p4 = Offset(size.width, size.height * 0.84 + offsetY);
+    path.quadraticBezierTo(p3.dx, p3.dy, p4.dx, p4.dy);
+
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
   }
+
+  @override
+  bool shouldReclip(_HeroWaveClipper oldClipper) =>
+      oldClipper.offsetY != offsetY;
+}
+
+class _BottomWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.moveTo(0, size.height * 0.45);
+    final p1 = Offset(size.width * 0.35, size.height * 0.15);
+    final p2 = Offset(size.width * 0.70, size.height * 0.40);
+    path.quadraticBezierTo(p1.dx, p1.dy, p2.dx, p2.dy);
+
+    final p3 = Offset(size.width * 0.88, size.height * 0.55);
+    final p4 = Offset(size.width, size.height * 0.30);
+    path.quadraticBezierTo(p3.dx, p3.dy, p4.dx, p4.dy);
+
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

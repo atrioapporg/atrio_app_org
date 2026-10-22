@@ -158,27 +158,32 @@ class UserProvider extends ChangeNotifier {
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
 
       // Sincronizar flag en SharedPreferences para compatibilidad de navegación
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('user_email', _currentUser!.email);
-      await prefs.setString('user_name', _currentUser!.nombre);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('user_email', _currentUser!.email);
+        await prefs.setString('user_name', _currentUser!.nombre);
+      } catch (e) {
+        debugPrint('[UserProvider] Advertencia guardando en SharedPreferences: $e');
+      }
 
-      // Registrar dispositivo en Odoo para recibir notificaciones push
-      DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+      // Registrar dispositivo en Odoo para recibir notificaciones push (no bloqueante)
+      try {
+        await DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+      } catch (e) {
+        debugPrint('[UserProvider] Error no bloqueante al registrar dispositivo: $e');
+      }
 
-      _isLoading = false;
-      notifyListeners();
       return true;
     } on AtrioApiException catch (e) {
-      _isLoading = false;
       _errorMessage = _traducirErrorOdoo(e);
-      notifyListeners();
       return false;
     } catch (e) {
-      _isLoading = false;
       _errorMessage = 'Error de conexión: Por favor verifica tu conexión a internet.';
-      notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -326,10 +331,17 @@ class UserProvider extends ChangeNotifier {
 
   /// Traduce los códigos de error estándar de Odoo a mensajes claros y amigables.
   String _traducirErrorOdoo(AtrioApiException e) {
+    // Si el servidor retorna HTTP 401 o códigos típicos de autenticación fallida
+    if (e.status == 401 ||
+        e.code == 'invalid_credentials' ||
+        e.code == 'wrong_password' ||
+        e.code == 'access_denied' ||
+        e.code.toLowerCase().contains('credential') ||
+        e.code.toLowerCase().contains('auth')) {
+      return 'Usuario o contraseña incorrectos. Verifica tus credenciales.';
+    }
+
     switch (e.code) {
-      case 'invalid_credentials':
-      case 'wrong_password':
-        return 'Usuario o contraseña incorrectos. Verifica tus credenciales.';
       case 'missing_fields':
         return 'Por favor completa todos los campos requeridos.';
       case 'invalid_email':
@@ -358,6 +370,11 @@ class UserProvider extends ChangeNotifier {
       case 'church_required':
         return 'Se requiere especificar una iglesia para esta operación.';
       default:
+        if (e.status == 400) {
+          return e.message.isNotEmpty
+              ? e.message
+              : 'Solicitud incorrecta o datos inválidos (400).';
+        }
         return e.message.isNotEmpty ? e.message : 'Error en el servidor (${e.status}).';
     }
   }

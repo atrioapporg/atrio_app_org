@@ -174,6 +174,57 @@ void main() {
       );
       expect(canUserDonate(miembroSinIglesia), isFalse);
     });
+
+    test('AppPermissions contiene las constantes y conjuntos canónicos oficiales de Pablo Oliveros', () {
+      // 1. Constantes canónicas individuales
+      expect(AppPermissions.viewContent, 'view_content');
+      expect(AppPermissions.registerEvents, 'register_events');
+      expect(AppPermissions.createOfferings, 'create_offerings');
+      expect(AppPermissions.createRequests, 'create_requests');
+      expect(AppPermissions.manageProfile, 'manage_profile');
+      expect(AppPermissions.shop, 'shop');
+      expect(AppPermissions.donate, 'donate');
+      expect(AppPermissions.managePosts, 'manage_posts');
+      expect(AppPermissions.manageEvents, 'manage_events');
+      expect(AppPermissions.manageAnnouncements, 'manage_announcements');
+      expect(AppPermissions.manageAds, 'manage_ads');
+      expect(AppPermissions.manageRequests, 'manage_requests');
+      expect(AppPermissions.viewStats, 'view_stats');
+      expect(AppPermissions.viewAdminNotifications, 'view_admin_notifications');
+      expect(AppPermissions.viewAllChurches, 'view_all_churches');
+      expect(AppPermissions.viewAdminContent, 'view_admin_content');
+      expect(AppPermissions.readOnly, 'read_only');
+
+      // 2. Conjunto de Miembro (Pág. 3)
+      expect(AppPermissions.memberOfficialPermissions, {
+        'view_content',
+        'register_events',
+        'create_offerings',
+        'create_requests',
+        'manage_profile',
+        'shop',
+        'donate',
+      });
+
+      // 3. Conjunto adicional de Administrador de Iglesia (Pág. 4)
+      expect(AppPermissions.churchAdminAdditionalPermissions, {
+        'manage_posts',
+        'manage_events',
+        'manage_announcements',
+        'manage_ads',
+        'view_admin_notifications',
+        'manage_requests',
+        'view_stats',
+      });
+
+      // 4. Conjunto de Super Admin (Pág. 5)
+      expect(AppPermissions.platformAdminOfficialPermissions, {
+        'view_all_churches',
+        'view_content',
+        'view_admin_content',
+        'read_only',
+      });
+    });
   });
 }
 

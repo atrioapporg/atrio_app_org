@@ -39,7 +39,28 @@ class ModalRestriccionDonacion {
     return false;
   }
 
-  /// Evalúa si el usuario actual puede donar. Si puede, retorna `true`.
+  /// Evalúa si el usuario actual puede realizar una donación general a la plataforma ATRIO.
+  /// Conforme a Odoo 19 (Pablo Oliveros Págs. 2 y 6), las donaciones por PayPal y transferencia
+  /// están permitidas tanto para miembros como para invitados sin sesión.
+  /// Se bloquea exclusivamente si la sesión opera en modo solo lectura (Super Admin: isReadOnly == true).
+  static bool verificarDonacionGeneral({
+    required BuildContext context,
+    String? titulo,
+    String? mensaje,
+  }) {
+    final userProvider = context.read<UserProvider>();
+    if (userProvider.isReadOnly) {
+      mostrar(
+        context: context,
+        tituloPersonalizado: titulo,
+        mensajePersonalizado: mensaje,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  /// Evalúa si el usuario actual puede donar ofrendas congregacionales locales.
   /// Si no puede, despliega el diálogo informativo con la acción adecuada y retorna `false`.
   static bool verificarYMostrar({
     required BuildContext context,

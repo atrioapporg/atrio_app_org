@@ -83,17 +83,18 @@ class UserProvider extends ChangeNotifier {
   bool get hasChurchAssigned =>
       _currentUser?.iglesiaId != null && _currentUser!.iglesiaId! > 0;
 
-  /// Valida si el usuario está plenamente habilitado para realizar donaciones y ofrendas.
-  /// No permitido para:
-  /// - Modo invitado (no autenticado).
-  /// - Modo solo lectura (auditoría / platform_admin con read_only activo).
-  /// - Rol 'user' (usuario recién registrado pendiente de asignación o aprobación de membresía).
-  /// - Usuarios sin congregación asignada activa.
+  /// Valida si el usuario está plenamente habilitado para realizar ofrendas congregacionales locales.
+  /// Requiere membresía activa e iglesia asignada en Odoo.
   bool get canDonate =>
       isAuthenticated &&
       !isReadOnly &&
       (role == UserRole.member || role == UserRole.churchAdmin) &&
       hasChurchAssigned;
+
+  /// Indica si el usuario o visitante puede realizar donaciones generales a la plataforma ATRIO.
+  /// Conforme a Odoo 19 (Pablo Oliveros Págs. 2 y 6), está permitido tanto para miembros como para invitados.
+  /// Bloqueado exclusivamente para cuentas de auditoría en modo solo lectura (Super Admin: isReadOnly == true).
+  bool get canDonateToPlatform => !isReadOnly;
 
   /// Valida si el usuario actual tiene un permiso específico.
   bool hasPermission(String permission) =>

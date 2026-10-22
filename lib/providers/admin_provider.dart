@@ -15,6 +15,8 @@ class AdminProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isPrayerRequestsWebOnly = false;
+  bool _isAnalyticsWebOnly = false;
 
   AdminProvider({required this.api});
 
@@ -24,6 +26,8 @@ class AdminProvider extends ChangeNotifier {
   AdminAnalyticsModel? get analytics => _analytics;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isPrayerRequestsWebOnly => _isPrayerRequestsWebOnly;
+  bool get isAnalyticsWebOnly => _isAnalyticsWebOnly;
 
   void clearError() {
     _errorMessage = null;
@@ -144,6 +148,8 @@ class AdminProvider extends ChangeNotifier {
   // ===========================================================================
 
   /// Consulta peticiones de oración para moderación pastoral.
+  /// Si el endpoint no existe en el backend Odoo (clasificado como punto pendiente),
+  /// activa el fallback informativo hacia la consola web (/atrio/manage).
   Future<void> loadPrayerRequests({String status = 'pending'}) async {
     _isLoading = true;
     _errorMessage = null;
@@ -151,6 +157,7 @@ class AdminProvider extends ChangeNotifier {
 
     try {
       final res = await _api.adminPrayerRequests(status: status);
+      _isPrayerRequestsWebOnly = false;
       final rawList = res['prayer_requests'] ?? res['items'] ?? res['requests'] ?? [];
       if (rawList is List) {
         _prayerRequests = rawList
@@ -158,8 +165,17 @@ class AdminProvider extends ChangeNotifier {
             .toList();
       }
     } on AtrioApiException catch (e) {
-      _errorMessage = _traducirErrorOdoo(e);
-      debugPrint('[AdminProvider] Error al cargar peticiones: $e');
+      if (e.status == 404 || e.code == 'not_found' || e.code == 'endpoint_not_found') {
+        _isPrayerRequestsWebOnly = true;
+        _errorMessage =
+            'La moderación de solicitudes pastorales se gestiona actualmente desde la consola web (/atrio/manage).';
+        debugPrint(
+          'ℹ️ [AdminProvider] Endpoint /admin/prayer-requests pendiente en Odoo. Activando vista informativa de consola web: $e',
+        );
+      } else {
+        _errorMessage = _traducirErrorOdoo(e);
+        debugPrint('[AdminProvider] Error al cargar peticiones: $e');
+      }
     } catch (e) {
       _errorMessage = 'Error al consultar peticiones: $e';
     } finally {
@@ -202,7 +218,12 @@ class AdminProvider extends ChangeNotifier {
       }
       return true;
     } on AtrioApiException catch (e) {
-      _errorMessage = _traducirErrorOdoo(e);
+      if (e.status == 404 || e.code == 'not_found') {
+        _errorMessage =
+            'Esta función de moderación se debe responder desde la consola web (/atrio/manage).';
+      } else {
+        _errorMessage = _traducirErrorOdoo(e);
+      }
       notifyListeners();
       return false;
     } catch (e) {
@@ -217,6 +238,8 @@ class AdminProvider extends ChangeNotifier {
   // ===========================================================================
 
   /// Carga métricas y estadísticas consolidadas de la iglesia.
+  /// Si el endpoint no existe en la API de Odoo (punto pendiente de especificación),
+  /// activa el fallback transparente hacia las métricas reales disponibles (anuncios).
   Future<void> loadAnalytics({String period = 'month'}) async {
     _isLoading = true;
     _errorMessage = null;
@@ -224,10 +247,34 @@ class AdminProvider extends ChangeNotifier {
 
     try {
       final res = await _api.adminAnalytics(period: period);
+      _isAnalyticsWebOnly = false;
       _analytics = AdminAnalyticsModel.fromJson(res);
     } on AtrioApiException catch (e) {
-      _errorMessage = _traducirErrorOdoo(e);
-      debugPrint('[AdminProvider] Error al cargar analítica: $e');
+      if (e.status == 404 || e.code == 'not_found' || e.code == 'endpoint_not_found') {
+        _isAnalyticsWebOnly = true;
+        debugPrint(
+          'ℹ️ [AdminProvider] Endpoint /admin/analytics pendiente en Odoo. Activando fallback de anuncios: $e',
+        );
+
+        // Fallback resiliente: consultar estadísticas de anuncios propios de la iglesia
+        try {
+          final adsRes = await _api.myChurchAds();
+          final rawAds = adsRes['ads'] ?? adsRes['items'] ?? [];
+          final int adsCount = rawAds is List ? rawAds.length : 0;
+          _analytics = AdminAnalyticsModel(
+            period: period,
+            rawMetrics: {'church_ads_count': adsCount},
+          );
+        } catch (_) {
+          _analytics = AdminAnalyticsModel(period: period);
+        }
+
+        _errorMessage =
+            'Las estadísticas comunitarias consolidadas se consultan en el portal web. En la app puedes consultar el rendimiento de tus anuncios.';
+      } else {
+        _errorMessage = _traducirErrorOdoo(e);
+        debugPrint('[AdminProvider] Error al cargar analítica: $e');
+      }
     } catch (e) {
       _errorMessage = 'Error al cargar analítica: $e';
     } finally {

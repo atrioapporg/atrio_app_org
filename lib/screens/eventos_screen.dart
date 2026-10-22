@@ -6,6 +6,7 @@ import '../providers/user_provider.dart';
 import '../l10n/app_localizations.dart';
 
 import '../modelos/evento_model.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
 
@@ -2086,42 +2087,94 @@ class _EventosScreenState extends State<EventosScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: evento.estaInscrito
-                            ? const Color(0xFFC62828)
-                            : amarilloOro,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(
-                          vertical: usableHeight * 0.015,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            screenWidth * 0.025,
-                          ),
-                        ),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(modalContext);
-                        await _cambiarInscripcion(evento);
-                      },
-                      icon: Icon(
-                        evento.estaInscrito
-                            ? Icons.cancel_outlined
-                            : Icons.check_circle_outline_rounded,
-                        size: screenWidth * 0.045,
-                      ),
-                      label: Text(
-                        evento.estaInscrito
+                    child: PermissionBuilder(
+                      disallowReadOnly: true,
+                      builder: (context, isAuthorized, user) {
+                        final bool isReadOnlyUser = user != null && user.isReadOnly;
+                        final bool isGuest = user == null;
+
+                        Color btnColor = amarilloOro;
+                        if (isReadOnlyUser) {
+                          btnColor = Colors.grey.shade400;
+                        } else if (evento.estaInscrito) {
+                          btnColor = const Color(0xFFC62828);
+                        }
+
+                        IconData iconData = Icons.check_circle_outline_rounded;
+                        if (isReadOnlyUser) {
+                          iconData = Icons.lock_clock_outlined;
+                        } else if (evento.estaInscrito) {
+                          iconData = Icons.cancel_outlined;
+                        } else if (isGuest) {
+                          iconData = Icons.login_rounded;
+                        }
+
+                        String labelText = evento.estaInscrito
                             ? (l10n?.cancelarInscripcion ??
                                 'Cancelar inscripción')
-                            : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora'),
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.034,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                            : (l10n?.inscribirmeAhora ?? 'Inscribirme ahora');
+                        if (isReadOnlyUser) {
+                          labelText = l10n?.modoSoloLectura ?? 'Solo lectura';
+                        } else if (isGuest) {
+                          labelText = l10n?.iniciarSesion ?? 'Iniciar sesión';
+                        }
+
+                        return ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: btnColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(
+                              vertical: usableHeight * 0.015,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.025,
+                              ),
+                            ),
+                          ),
+                          onPressed: () async {
+                            if (isReadOnlyUser) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n?.accionRestringidaSoloLectura ??
+                                        'Acción no disponible en modo solo lectura.',
+                                  ),
+                                  backgroundColor: const Color(0xFF072B4F),
+                                ),
+                              );
+                              return;
+                            }
+                            if (isGuest) {
+                              Navigator.pop(modalContext);
+                              ModalRestriccionDonacion.mostrar(
+                                context: context,
+                                tituloPersonalizado:
+                                    l10n?.inicioSesionRequerido ??
+                                        'Inicio de sesión requerido',
+                                mensajePersonalizado:
+                                    'Debes iniciar sesión con tu cuenta de miembro para inscribirte en eventos.',
+                                forzarModoInvitado: true,
+                              );
+                              return;
+                            }
+                            Navigator.pop(modalContext);
+                            await _cambiarInscripcion(evento);
+                          },
+                          icon: Icon(
+                            iconData,
+                            size: screenWidth * 0.045,
+                          ),
+                          label: Text(
+                            labelText,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.034,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   SizedBox(width: screenWidth * 0.03),

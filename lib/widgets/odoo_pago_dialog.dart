@@ -37,7 +37,7 @@ class OdooPagoDialog {
     const Color rojoError = Color(0xFFD32F2F);
 
     final bool esPaypal = metodoPago.toLowerCase().contains('paypal');
-    if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+    if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
       return Future.value();
     }
 
@@ -246,9 +246,9 @@ class OdooPagoDialog {
                             context,
                             listen: false,
                           );
-                          if (!userProvider.canDonate) {
+                          if (!userProvider.canDonateToPlatform) {
                             Navigator.of(modalContext).pop();
-                            ModalRestriccionDonacion.verificarYMostrar(
+                            ModalRestriccionDonacion.mostrar(
                               context: context,
                             );
                             return;
@@ -270,7 +270,7 @@ class OdooPagoDialog {
                                 : ((user != null &&
                                           user.nombre.trim().isNotEmpty)
                                       ? user.nombre.trim()
-                                      : 'Miembro Atrio');
+                                      : 'Donante Atrio');
 
                             final effectiveEmail =
                                 (donorEmail != null &&
@@ -279,7 +279,7 @@ class OdooPagoDialog {
                                 : ((user != null &&
                                           user.email.trim().isNotEmpty)
                                       ? user.email.trim()
-                                      : 'miembro@atrio.app');
+                                      : 'donaciones@atrio.app');
 
                             final cleanStr = monto
                                 .replaceAll(',', '')

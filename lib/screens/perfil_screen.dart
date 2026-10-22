@@ -1,5 +1,6 @@
 import 'package:atrio/screens/mis_notas_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,11 +41,30 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   bool _isLoading = true;
   Map<String, dynamic>? _usuarioData;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _cargarDatosUsuario();
+    _cargarVersionApp();
+  }
+
+  Future<void> _cargarVersionApp() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = 'v${info.version}+${info.buildNumber}';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _appVersion = 'v0.1.0+15';
+        });
+      }
+    }
   }
 
   // Carga los datos directamente desde atrio.db
@@ -362,7 +382,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   SizedBox(height: usableHeight * 0.02),
                   Center(
                     child: Text(
-                      'Atrio · v1.0.0',
+                      _appVersion.isNotEmpty
+                          ? 'Atrio · $_appVersion'
+                          : 'Atrio',
                       style: TextStyle(
                         color: Colors.grey.shade400,
                         fontSize: screenWidth * 0.03,
@@ -1976,6 +1998,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         child: CircularProgressIndicator(color: amarilloOro),
                       );
                     }
+                    if (prov.isPrayerRequestsWebOnly) {
+                      return _buildWebOnlyNotice(
+                        screenWidth: screenWidth,
+                        usableHeight: usableHeight,
+                        icon: Icons.laptop_chromebook_rounded,
+                        titulo: 'Gestión en Consola Web',
+                        descripcion:
+                            'Las solicitudes pastorales y peticiones de oración de tu congregación se responden y administran centralizadamente a través de la consola web:',
+                        url: 'https://atrioapp.odoo19rd.com/atrio/manage',
+                      );
+                    }
                     final pending = prov.prayerRequests
                         .where((r) => r.isPending)
                         .toList();
@@ -2181,36 +2214,75 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       );
                     }
                     final m = prov.analytics ?? AdminAnalyticsModel();
-                    return GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: screenWidth * 0.03,
-                      mainAxisSpacing: usableHeight * 0.015,
-                      childAspectRatio: 1.25,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStatCard(
-                          icon: Icons.people_outline,
-                          label: l10n?.totalMiembros ?? 'Total miembros',
-                          value: '${m.totalMembers}',
-                          screenWidth: screenWidth,
-                        ),
-                        _buildStatCard(
-                          icon: Icons.person_add_outlined,
-                          label: l10n?.nuevosMiembrosMes ?? 'Nuevos este mes',
-                          value: '+${m.newMembersThisMonth}',
-                          screenWidth: screenWidth,
-                        ),
-                        _buildStatCard(
-                          icon: Icons.event_available_outlined,
-                          label: l10n?.inscripcionesEventos ?? 'Eventos',
-                          value: '${m.eventRegistrationsCount}',
-                          screenWidth: screenWidth,
-                        ),
-                        _buildStatCard(
-                          icon: Icons.volunteer_activism_outlined,
-                          label: l10n?.peticionesPendientes ??
-                              'Peticiones pend.',
-                          value: '${m.pendingModerationCount}',
-                          screenWidth: screenWidth,
+                        if (prov.isAnalyticsWebOnly)
+                          Container(
+                            margin: EdgeInsets.only(bottom: usableHeight * 0.015),
+                            padding: EdgeInsets.all(screenWidth * 0.03),
+                            decoration: BoxDecoration(
+                              color: azulFondo.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: azulFondo.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: azulFondo,
+                                  size: screenWidth * 0.045,
+                                ),
+                                SizedBox(width: screenWidth * 0.02),
+                                Expanded(
+                                  child: Text(
+                                    'Reportes de comunidad avanzados disponibles en la consola web (/atrio/manage).',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.028,
+                                      color: azulFondo,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Expanded(
+                          child: GridView.count(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: screenWidth * 0.03,
+                            mainAxisSpacing: usableHeight * 0.015,
+                            childAspectRatio: 1.25,
+                            children: [
+                              _buildStatCard(
+                                icon: Icons.people_outline,
+                                label: l10n?.totalMiembros ?? 'Total miembros',
+                                value: '${m.totalMembers}',
+                                screenWidth: screenWidth,
+                              ),
+                              _buildStatCard(
+                                icon: Icons.person_add_outlined,
+                                label: l10n?.nuevosMiembrosMes ?? 'Nuevos este mes',
+                                value: '+${m.newMembersThisMonth}',
+                                screenWidth: screenWidth,
+                              ),
+                              _buildStatCard(
+                                icon: Icons.event_available_outlined,
+                                label: l10n?.inscripcionesEventos ?? 'Eventos',
+                                value: '${m.eventRegistrationsCount}',
+                                screenWidth: screenWidth,
+                              ),
+                              _buildStatCard(
+                                icon: Icons.volunteer_activism_outlined,
+                                label: l10n?.peticionesPendientes ??
+                                    'Peticiones pend.',
+                                value: '${m.pendingModerationCount}',
+                                screenWidth: screenWidth,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     );
@@ -2221,6 +2293,96 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWebOnlyNotice({
+    required double screenWidth,
+    required double usableHeight,
+    required IconData icon,
+    required String titulo,
+    required String descripcion,
+    required String url,
+  }) {
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(screenWidth * 0.05),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: grisBorde),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.04),
+              decoration: BoxDecoration(
+                color: azulFondo.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: screenWidth * 0.09, color: azulFondo),
+            ),
+            SizedBox(height: usableHeight * 0.02),
+            Text(
+              titulo,
+              style: TextStyle(
+                color: azulFondo,
+                fontSize: screenWidth * 0.044,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: usableHeight * 0.01),
+            Text(
+              descripcion,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontSize: screenWidth * 0.032,
+                height: 1.35,
+              ),
+            ),
+            SizedBox(height: usableHeight * 0.02),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.035,
+                vertical: usableHeight * 0.01,
+              ),
+              decoration: BoxDecoration(
+                color: amarilloOro.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: amarilloOro.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.link_rounded,
+                    size: screenWidth * 0.04,
+                    color: azulFondo,
+                  ),
+                  SizedBox(width: screenWidth * 0.015),
+                  Text(
+                    url,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.029,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

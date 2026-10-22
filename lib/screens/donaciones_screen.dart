@@ -425,7 +425,7 @@ class DonacionesScreen extends StatelessWidget {
   }
 
   void _iniciarAporte(BuildContext context, String concepto) {
-    if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+    if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
       return;
     }
     Navigator.pushNamed(

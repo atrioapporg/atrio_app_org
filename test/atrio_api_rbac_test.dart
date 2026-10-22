@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/modelos/admin_models.dart';
+import 'package:atrio/providers/admin_provider.dart';
 
 void main() {
   group('AtrioApi RBAC, Cabeceras y Modo Solo Lectura (Odoo 19)', () {
@@ -44,6 +45,46 @@ void main() {
               .having((e) => e.code, 'code', 'read_only'),
         ),
       );
+
+      // Intentar donar por PayPal en modo solo lectura debe ser bloqueado con 403 read_only
+      expect(
+        () => api.donateWithPaypal(
+          name: 'Auditor',
+          email: 'auditor@atrio.org',
+          amount: 50.0,
+        ),
+        throwsA(
+          isA<AtrioApiException>()
+              .having((e) => e.code, 'code', 'read_only')
+              .having((e) => e.status, 'status', 403),
+        ),
+      );
+
+      // Intentar donar por transferencia en modo solo lectura debe ser bloqueado con 403 read_only
+      expect(
+        () => api.donateWithTransfer(
+          name: 'Auditor',
+          email: 'auditor@atrio.org',
+          amount: 50.0,
+          receiptBase64: 'base64mock',
+        ),
+        throwsA(
+          isA<AtrioApiException>()
+              .having((e) => e.code, 'code', 'read_only')
+              .having((e) => e.status, 'status', 403),
+        ),
+      );
+    });
+
+    test('Donaciones en modo invitado no arrojan error unauthenticated local en AtrioApi', () {
+      final guestApi = AtrioApi(
+        baseUrl: 'https://test.atrioapp.org',
+        token: null, // Sin sesión / invitado
+        isReadOnly: false,
+      );
+
+      expect(guestApi.isAuthenticated, isFalse);
+      expect(guestApi.isReadOnly, isFalse);
     });
 
     test('defaultChurchId se configura y sincroniza en AtrioApi', () {
@@ -58,6 +99,33 @@ void main() {
 
       api.defaultChurchId = 42;
       expect(api.defaultChurchId, 42);
+    });
+
+    test('Cabecera X-Atrio-Church es exclusiva de Super Admin (isReadOnly == true)', () {
+      // 1. Caso Super Admin (auditoría / solo lectura): debe inyectar X-Atrio-Church
+      final apiSuperAdmin = AtrioApi(
+        baseUrl: 'https://test.atrioapp.org',
+        token: 'token_super_admin',
+        defaultChurchId: 10,
+        isReadOnly: true,
+      );
+
+      final headersAdmin = apiSuperAdmin.buildHeadersForTesting('/events');
+      expect(headersAdmin['X-Atrio-Church'], '10');
+      expect(headersAdmin.containsKey('X-Church-Id'), isFalse);
+
+      // 2. Caso Usuario Normal / Miembro / Admin Iglesia: NO debe inyectar X-Atrio-Church
+      // La iglesia se deduce siempre del token en el servidor de Odoo
+      final apiMiembro = AtrioApi(
+        baseUrl: 'https://test.atrioapp.org',
+        token: 'token_miembro',
+        defaultChurchId: 10,
+        isReadOnly: false,
+      );
+
+      final headersMiembro = apiMiembro.buildHeadersForTesting('/events');
+      expect(headersMiembro.containsKey('X-Atrio-Church'), isFalse);
+      expect(headersMiembro.containsKey('X-Church-Id'), isFalse);
     });
   });
 
@@ -162,4 +230,69 @@ void main() {
       expect(analytics.eventRegistrationsCount, 88);
     });
   });
+
+  group('Fallback y Resiliencia ante Endpoints Pendientes Odoo (Pablo Oliveros)', () {
+    test('loadPrayerRequests activa isPrayerRequestsWebOnly ante error 404 (endpoint pendiente)', () async {
+      final fakeApi = _Fake404AtrioApi();
+      final adminProvider = AdminProvider(api: fakeApi);
+
+      expect(adminProvider.isPrayerRequestsWebOnly, isFalse);
+
+      await adminProvider.loadPrayerRequests();
+
+      expect(adminProvider.isPrayerRequestsWebOnly, isTrue);
+      expect(adminProvider.prayerRequests, isEmpty);
+      expect(
+        adminProvider.errorMessage,
+        contains('consola web (/atrio/manage)'),
+      );
+    });
+
+    test('loadAnalytics activa isAnalyticsWebOnly y provee fallback ante error 404 (endpoint pendiente)', () async {
+      final fakeApi = _Fake404AtrioApi();
+      final adminProvider = AdminProvider(api: fakeApi);
+
+      expect(adminProvider.isAnalyticsWebOnly, isFalse);
+
+      await adminProvider.loadAnalytics();
+
+      expect(adminProvider.isAnalyticsWebOnly, isTrue);
+      expect(adminProvider.analytics, isNotNull);
+      expect(
+        adminProvider.errorMessage,
+        contains('portal web'),
+      );
+    });
+  });
+}
+
+class _Fake404AtrioApi extends AtrioApi {
+  _Fake404AtrioApi() : super(baseUrl: 'https://test.atrioapp.org');
+
+  @override
+  Future<Map<String, dynamic>> adminPrayerRequests({
+    String status = 'pending',
+    int limit = 20,
+    int offset = 0,
+    int? churchId,
+  }) async {
+    throw AtrioApiException(404, 'not_found', 'Endpoint /admin/prayer-requests no encontrado en Odoo');
+  }
+
+  @override
+  Future<Map<String, dynamic>> adminAnalytics({
+    String period = 'month',
+    int? churchId,
+  }) async {
+    throw AtrioApiException(404, 'not_found', 'Endpoint /admin/analytics no encontrado en Odoo');
+  }
+
+  @override
+  Future<Map<String, dynamic>> myChurchAds() async {
+    return {
+      'ads': [
+        {'id': 1, 'name': 'Campaña Juvenil'}
+      ]
+    };
+  }
 }

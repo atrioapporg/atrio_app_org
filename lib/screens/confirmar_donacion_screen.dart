@@ -644,7 +644,7 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                 ),
                               ),
                               onPressed: () {
-                                if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+                                if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
                                   return;
                                 }
                                 final userProvider = Provider.of<UserProvider>(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -308,12 +309,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: isCompact ? 13.5 : 15,
+                          fontSize: isCompact ? 15 : 16,
                           fontWeight: FontWeight.w400,
                           height: 1.25,
                         ),
                       ),
-                      const Spacer(flex: 2),
+                      const Spacer(flex: 1),
 
                       // Botón 1: Continuar con Google
                       _buildPillButton(
@@ -322,13 +323,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         textColor: const Color(0xFF072B4F),
                         icon: Image.asset(
                           'assets/images/google_logo.png',
-                          width: 22,
-                          height: 22,
+                          width: 32,
+                          height: 32,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) =>
                               const Icon(
                                 Icons.g_mobiledata,
-                                size: 26,
+                                size: 28,
                                 color: Color(0xFF072B4F),
                               ),
                         ),
@@ -336,7 +337,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         onTap: _isProcessing ? null : _iniciarSesionGoogle,
                         isCompact: isCompact,
                       ),
-                      SizedBox(height: isCompact ? 10 : 13),
+                      SizedBox(height: isCompact ? 12 : 16),
 
                       // Botón 2: Continuar con Apple
                       _buildPillButton(
@@ -346,7 +347,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         icon: const FaIcon(
                           FontAwesomeIcons.apple,
                           color: Colors.white,
-                          size: 20,
+                          size: 28,
                         ),
                         isLoading: _isLoadingApple,
                         onTap: _isProcessing
@@ -361,7 +362,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               },
                         isCompact: isCompact,
                       ),
-                      SizedBox(height: isCompact ? 10 : 13),
+                      SizedBox(height: isCompact ? 12 : 16),
 
                       // Botón 3: Iniciar sesión (Credenciales)
                       _buildPillButton(
@@ -376,7 +377,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                         icon: const Icon(
                           Icons.person_rounded,
                           color: Colors.white,
-                          size: 22,
+                          size: 28,
                         ),
                         isLoading: _isLoadingCredentials,
                         onTap: _isProcessing
@@ -386,7 +387,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               ),
                         isCompact: isCompact,
                       ),
-                      const Spacer(flex: 2),
+                      const Spacer(flex: 1),
 
                       // Nota de privacidad Odoo ERP
                       Padding(
@@ -494,7 +495,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             vertical: isCompact ? 4 : 5,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+            color: const Color.fromARGB(
+              255,
+              69,
+              68,
+              68,
+            ).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
           ),
@@ -562,8 +568,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         ),
         child: isLoading
             ? SizedBox(
-                width: 20,
-                height: 20,
+                width: 25,
+                height: 25,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(textColor),
@@ -577,7 +583,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: isCompact ? 14.5 : 15.5,
+                      fontSize: isCompact ? 18 : 20,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.2,
                     ),
@@ -876,8 +882,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                               ? verdeExito
                               : azulFondo,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              azulFondo.withValues(alpha: 0.6),
+                          disabledBackgroundColor: azulFondo.withValues(
+                            alpha: 0.6,
+                          ),
                           disabledForegroundColor: Colors.white70,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1148,25 +1155,26 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           if (user != null) {
             final SharedPreferences prefs =
                 await SharedPreferences.getInstance();
-            final String? iglesiaGuardada =
-                prefs.getString('iglesia_guardada');
+            final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
 
-            final bool tieneIglesiaOdoo = user.hasChurchAssigned ||
+            final bool tieneIglesiaOdoo =
+                user.hasChurchAssigned ||
                 user.isMember ||
                 (user.iglesiaActual.trim().isNotEmpty &&
                     user.iglesiaActual.trim() != 'Sin iglesia seleccionada' &&
                     user.iglesiaActual.trim() != 'Iglesia Atrio');
 
-            final String iglesiaNombre = (user.iglesiaActual.trim().isNotEmpty &&
+            final String iglesiaNombre =
+                (user.iglesiaActual.trim().isNotEmpty &&
                     user.iglesiaActual.trim() != 'Iglesia Atrio' &&
                     user.iglesiaActual.trim() != 'Sin iglesia seleccionada')
                 ? user.iglesiaActual.trim()
                 : (tieneIglesiaOdoo
-                    ? 'Iglesia Asignada'
-                    : ((iglesiaGuardada != null &&
-                            iglesiaGuardada.trim().isNotEmpty)
-                        ? 'Iglesia Guardada'
-                        : 'Sin iglesia seleccionada'));
+                      ? 'Iglesia Asignada'
+                      : ((iglesiaGuardada != null &&
+                                iglesiaGuardada.trim().isNotEmpty)
+                            ? 'Iglesia Guardada'
+                            : 'Sin iglesia seleccionada'));
 
             await AtrioDatabaseHelper.instance.guardarUsuario({
               'email': user.email,
@@ -1203,17 +1211,22 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   },
                 };
                 try {
-                  await iglesiaProvider
-                      .guardarIglesiaLocal(jsonEncode(datosIglesia));
+                  await iglesiaProvider.guardarIglesiaLocal(
+                    jsonEncode(datosIglesia),
+                  );
                 } catch (e) {
                   debugPrint(
-                      '[AUTH] Advertencia guardando iglesia local en provider: $e');
+                    '[AUTH] Advertencia guardando iglesia local en provider: $e',
+                  );
                   await prefs.setString(
-                      'iglesia_guardada', jsonEncode(datosIglesia));
+                    'iglesia_guardada',
+                    jsonEncode(datosIglesia),
+                  );
                 }
               }
-              await AtrioDatabaseHelper.instance
-                  .guardarIglesiaNombre(iglesiaNombre);
+              await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+                iglesiaNombre,
+              );
             }
           }
         } catch (e) {
@@ -1264,7 +1277,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         // 2. Redirigir según el estado del usuario
         await _redirigirUsuarioPostLogin();
       } else {
-        final errorMsg = userProvider.errorMessage ??
+        final errorMsg =
+            userProvider.errorMessage ??
             'Usuario o contraseña incorrectos. Verifica tus credenciales.';
         onErrorMessage?.call(errorMsg);
         setModalState?.call(() {});
@@ -1304,6 +1318,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       final l10n = AppLocalizations.of(context);
       String email = 'usuario.google@gmail.com';
       String nombre = l10n?.usuarioGoogle ?? 'Usuario Google';
+      String? idToken;
+      String? accessToken;
+      String? serverAuthCode;
 
       try {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -1319,17 +1336,20 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             googleUser.displayName!.trim().isNotEmpty) {
           nombre = googleUser.displayName!.trim();
         }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        idToken = googleAuth.idToken;
+        accessToken = googleAuth.accessToken;
+        serverAuthCode = googleUser.serverAuthCode;
+        debugPrint(
+          '[AUTH] Google Sign-In autenticado. idToken: ${idToken != null ? "ok" : "null"}',
+        );
       } catch (e) {
         debugPrint(
           '[AUTH_INFO] Google Sign-In nativo no disponible en este entorno: $e. Procediendo con inicio de sesión simulado.',
         );
       }
-
-      // 1. Guardar en SharedPreferences
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userEmail', email);
-      await prefs.setString('userName', nombre);
 
       // Verificamos si ya existe una iglesia previa configurada en SQLite
       final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
@@ -1342,29 +1362,62 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? usuarioExistente['iglesia_nombre'].toString().trim()
           : 'Sin iglesia seleccionada';
 
-      // 2. Persistir localmente en SQLite (atrio.db)
-      await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
-        'nombre': nombre,
-        'email': email,
-        'celular': '',
-        'iglesia_nombre': iglesiaExistente,
-      });
+      if (!mounted) return;
+
+      // Sincronizar e iniciar sesión en UserProvider (gestiona tokens seguros y persistencia)
+      final userProvider = context.read<UserProvider>();
+      final ok = await userProvider.loginWithSocial(
+        provider: 'google',
+        email: email,
+        nombre: nombre,
+        idToken: idToken,
+        accessToken: accessToken,
+        serverAuthCode: serverAuthCode,
+        iglesiaActual: iglesiaExistente,
+        deviceName: 'App Atrio Flutter',
+      );
 
       if (!mounted) return;
 
-      // 3. Sincronizar en memoria con UserProvider
-      try {
-        Provider.of<UserProvider>(context, listen: false).updateUserProfile(
-          nombre: nombre,
-          email: email,
-          telefono: '',
-          iglesiaActual: iglesiaExistente,
+      if (!ok) {
+        _mostrarMensajeError(
+          userProvider.errorMessage ??
+              'Error al procesar el inicio de sesión con Google.',
         );
-      } catch (e) {
-        debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
+        return;
       }
 
-      // 4. Redirigir según el estado del usuario
+      // Feedback amigable
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '¡Bienvenido ${userProvider.currentUser?.nombre ?? nombre}!',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: verdeExito,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Redirigir según el estado del usuario
       await _redirigirUsuarioPostLogin();
     } catch (error) {
       debugPrint('[AUTH_ERROR] Error en Google Sign-In: $error');
@@ -1414,11 +1467,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? email
           : 'apple_user_${credential.userIdentifier?.substring(0, 6)}@privaterelay.appleid.com';
 
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      await prefs.setString('userEmail', emailFinal);
-      await prefs.setString('userName', nombreFinal);
-
       final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
       final String iglesiaExistente =
           (usuarioExistente != null &&
@@ -1429,26 +1477,56 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? usuarioExistente['iglesia_nombre'].toString().trim()
           : 'Sin iglesia seleccionada';
 
-      await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
-        'nombre': nombreFinal,
-        'email': emailFinal,
-        'celular': '',
-        'idioma': 'es_DO',
-        'iglesia_nombre': iglesiaExistente,
-      });
+      if (!mounted) return;
+
+      final userProvider = context.read<UserProvider>();
+      final ok = await userProvider.loginWithSocial(
+        provider: 'apple',
+        email: emailFinal,
+        nombre: nombreFinal,
+        idToken: credential.identityToken,
+        serverAuthCode: credential.authorizationCode,
+        iglesiaActual: iglesiaExistente,
+        deviceName: 'App Atrio Apple',
+      );
 
       if (!mounted) return;
 
-      try {
-        Provider.of<UserProvider>(context, listen: false).updateUserProfile(
-          nombre: nombreFinal,
-          email: emailFinal,
-          telefono: '',
-          iglesiaActual: iglesiaExistente,
+      if (!ok) {
+        _mostrarMensajeError(
+          userProvider.errorMessage ?? 'No se pudo completar el acceso con Apple. Verifica tu cuenta o conexión.',
         );
-      } catch (e) {
-        debugPrint('[PROVIDER_WARN] Provider no encontrado: $e');
+        return;
       }
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '¡Bienvenido ${userProvider.currentUser?.nombre ?? nombreFinal}!',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: verdeExito,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
 
       await _redirigirUsuarioPostLogin();
     } catch (error) {
@@ -1470,8 +1548,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   Future<void> _redirigirUsuarioPostLogin({bool esAutoLogin = false}) async {
     UserModel? currentUser;
     try {
-      currentUser =
-          Provider.of<UserProvider>(context, listen: false).currentUser;
+      currentUser = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).currentUser;
     } catch (_) {}
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1486,10 +1566,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
         usuario['iglesia_nombre'].toString().trim() !=
             'Sin iglesia seleccionada' &&
-        usuario['iglesia_nombre'].toString().trim() !=
-            'Iglesia Atrio';
+        usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio';
 
-    final bool tieneIglesiaOdoo = currentUser != null &&
+    final bool tieneIglesiaOdoo =
+        currentUser != null &&
         (currentUser.hasChurchAssigned ||
             currentUser.isMember ||
             (currentUser.iglesiaActual.trim().isNotEmpty &&

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Importación de las pantallas para obtener sus static const routeName
+import '../data/app_config.dart';
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/admin_models.dart';
@@ -69,12 +70,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   // Carga los datos directamente desde atrio.db
   Future<void> _cargarDatosUsuario() async {
-    final data = await AtrioDatabaseHelper.instance.getUsuario();
-    if (mounted) {
-      setState(() {
-        _usuarioData = data;
-        _isLoading = false;
-      });
+    try {
+      final data = await AtrioDatabaseHelper.instance.getUsuario();
+      if (mounted) {
+        setState(() {
+          _usuarioData = data;
+          _isLoading = false;
+        });
+        // Si el Provider aún no ha cargado la sesión reactiva, intentar auto-login desde secure storage
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        if (!userProvider.isAuthenticated && userProvider.currentUser == null) {
+          userProvider.tryAutoLogin();
+        }
+      }
+    } catch (e) {
+      debugPrint('[PerfilScreen] Error leyendo usuario de base de datos local: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -104,9 +119,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final String sinIglesiaTexto =
         l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada';
 
-    // Fuente de verdad: Si está autenticado, usar UserProvider (validado en Odoo)
+    // Fuente de verdad: Si está autenticado, usar UserProvider (validado en Odoo o Social Session)
     // Si no está autenticado (Modo invitado), mostrar explícitamente "Usuario invitado"
-    final bool estaAutenticado = userProvider.isAuthenticated;
+    final bool estaAutenticado =
+        userProvider.isAuthenticated || userProvider.currentUser != null;
     final currentUser = userProvider.currentUser;
 
     final String nombre = estaAutenticado
@@ -294,6 +310,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         label: l10n?.ajustesDeLaApp ?? 'Ajustes de la app',
                         route: ConfiguracionScreen.routeName,
                       ),
+                      if (AppConfig.appEnvironment != 'production')
+                        _MenuItemData(
+                          icon: Icons.sync_lock_rounded,
+                          label: 'Diagnóstico Token Odoo',
+                          customColor: Colors.deepPurple,
+                          route: null,
+                          onCustomTap: () => _probarRenovacionToken(context),
+                        ),
                       _MenuItemData(
                         icon: Icons.delete_forever_outlined,
                         label:
@@ -360,8 +384,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }) {
     final l10n = AppLocalizations.of(context);
     final userProvider = context.read<UserProvider>();
+    final bool estaAutenticado =
+        userProvider.isAuthenticated || userProvider.currentUser != null;
 
-    if (!userProvider.isAuthenticated) {
+    if (!estaAutenticado) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -663,6 +689,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }) {
     final l10n = AppLocalizations.of(context);
     final userProvider = Provider.of<UserProvider>(context);
+    final bool estaAutenticado =
+        userProvider.isAuthenticated || userProvider.currentUser != null;
 
     return Container(
       width: screenWidth,
@@ -776,7 +804,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             ),
                           ),
                           child: Text(
-                            userProvider.isAuthenticated
+                            estaAutenticado
                                 ? userProvider.role.getLocalizedName(context)
                                 : (l10n?.modoInvitado ?? 'Modo invitado'),
                             style: TextStyle(
@@ -786,7 +814,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             ),
                           ),
                         ),
-                        if (userProvider.isAuthenticated &&
+                        if (estaAutenticado &&
                             userProvider.isReadOnly)
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -817,7 +845,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               IconButton(
                 onPressed: () {
-                  if (userProvider.isAuthenticated) {
+                  if (estaAutenticado) {
                     _mostrarDialogoEditarDatos(
                       context,
                       screenWidth,
@@ -829,7 +857,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   }
                 },
                 icon: Icon(
-                  userProvider.isAuthenticated
+                  estaAutenticado
                       ? Icons.edit_outlined
                       : Icons.login_rounded,
                   color: Colors.white,
@@ -1361,8 +1389,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
   ) {
     final l10n = AppLocalizations.of(context);
     final userProvider = context.watch<UserProvider>();
+    final bool estaAutenticado =
+        userProvider.isAuthenticated || userProvider.currentUser != null;
 
-    if (!userProvider.isAuthenticated) {
+    if (!estaAutenticado) {
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
@@ -1461,7 +1491,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
   /// Herramienta interactiva para verificar en vivo la recuperación ante error 401 y refresh de Odoo
   Future<void> _probarRenovacionToken(BuildContext context) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    if (!userProvider.isAuthenticated) {
+    final bool estaAutenticado =
+        userProvider.isAuthenticated || userProvider.currentUser != null;
+    if (!estaAutenticado) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(

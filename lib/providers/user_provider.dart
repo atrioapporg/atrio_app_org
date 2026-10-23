@@ -43,13 +43,47 @@ class UserProvider extends ChangeNotifier {
     try {
       await _api.initFromStorage();
       if (_api.isAuthenticated && _currentUser == null) {
-        final meData = await _api.me();
-        _currentUser = UserModel.fromOdooJson(meData);
-        _api.defaultChurchId = _currentUser?.iglesiaId;
-        _api.isReadOnly = _currentUser?.isReadOnly ?? false;
-        notifyListeners();
-        // Sincronizar token del dispositivo con Odoo en segundo plano
-        DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+        try {
+          final meData = await _api.me();
+          _currentUser = UserModel.fromOdooJson(meData);
+        } catch (meError) {
+          debugPrint(
+            'ℹ️ [UserProvider] /me no disponible en restauración: $meError. Cargando desde SQLite...',
+          );
+          final localData = await AtrioDatabaseHelper.instance.getUsuario();
+          if (localData != null &&
+              ((localData['email'] as String?)?.isNotEmpty == true ||
+                  (localData['nombre'] as String?)?.isNotEmpty == true)) {
+            final String name = (localData['nombre'] as String?) ?? 'Usuario';
+            _currentUser = UserModel(
+              id: 0,
+              nombre: name,
+              email: (localData['email'] as String?) ?? '',
+              telefono: localData['celular'] as String?,
+              iglesiaActual: (localData['iglesia_nombre'] as String?) ??
+                  'Sin iglesia seleccionada',
+              fechaRegistro: (localData['creado_en'] as String?) ?? '',
+              avatarIniciales: name.trim().isNotEmpty
+                  ? name.trim()[0].toUpperCase()
+                  : 'U',
+              esMiembroVerificado: false,
+              role: UserRole.user,
+              permissions: const {
+                'view_content',
+                'manage_profile',
+                'donate',
+              },
+              isReadOnly: false,
+            );
+          }
+        }
+        if (_currentUser != null) {
+          _api.defaultChurchId = _currentUser?.iglesiaId;
+          _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+          notifyListeners();
+          // Sincronizar token del dispositivo con Odoo en segundo plano
+          DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+        }
       }
     } catch (e) {
       debugPrint('[UserProvider] Restauración pasiva de sesión: $e');
@@ -59,7 +93,8 @@ class UserProvider extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get isAuthenticated => _api.isAuthenticated && _currentUser != null;
+  bool get isAuthenticated =>
+      _currentUser != null && (_api.isAuthenticated || _api.token != null);
 
   /// Acceso al cliente HTTP de Odoo con cabeceras y token configurados.
   AtrioApi get api => _api;
@@ -188,6 +223,131 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Inicia sesión mediante un proveedor social (Google o Apple).
+  /// Envía credenciales a Odoo vía AtrioApi, persiste tokens en almacenamiento seguro (flutter_secure_storage),
+  /// puebla el UserModel en el estado global reactivo de UserProvider y sincroniza SharedPreferences y SQLite.
+  Future<bool> loginWithSocial({
+    required String provider,
+    required String email,
+    required String nombre,
+    String? idToken,
+    String? accessToken,
+    String? serverAuthCode,
+    String? iglesiaActual,
+    String deviceName = 'Flutter App',
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _api.loginWithSocial(
+        provider: provider,
+        email: email,
+        name: nombre,
+        idToken: idToken,
+        accessToken: accessToken,
+        serverAuthCode: serverAuthCode,
+        deviceName: deviceName,
+      );
+
+      UserModel user;
+      try {
+        user = UserModel.fromOdooJson(data);
+      } catch (e) {
+        debugPrint(
+          '⚠️ [UserProvider] Parser de OdooJson adaptado a fallback social: $e',
+        );
+        user = UserModel(
+          id: (data['id'] ?? data['user']?['id'] ?? 9999) as int,
+          nombre: nombre,
+          email: email,
+          iglesiaActual: iglesiaActual ?? 'Sin iglesia seleccionada',
+          fechaRegistro: DateTime.now().toIso8601String().split('T').first,
+          avatarIniciales: nombre.trim().isNotEmpty
+              ? nombre.trim()[0].toUpperCase()
+              : 'U',
+          esMiembroVerificado: false,
+          role: UserRole.user,
+          permissions: const {
+            'view_content',
+            'register_events',
+            'create_offerings',
+            'create_requests',
+            'manage_profile',
+            'donate',
+          },
+          isReadOnly: false,
+        );
+      }
+
+      // Si tenemos una iglesia previa local o SQLite y el backend no devolvió iglesia
+      if ((user.iglesiaActual.isEmpty ||
+              user.iglesiaActual == 'Sin iglesia seleccionada' ||
+              user.iglesiaActual == 'Iglesia Atrio') &&
+          iglesiaActual != null &&
+          iglesiaActual.isNotEmpty &&
+          iglesiaActual != 'Sin iglesia seleccionada') {
+        user = user.copyWith(iglesiaActual: iglesiaActual);
+      }
+
+      _currentUser = user;
+      _api.defaultChurchId = _currentUser?.iglesiaId;
+      _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+
+      // Sincronizar SharedPreferences
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('user_email', _currentUser!.email);
+        await prefs.setString('user_name', _currentUser!.nombre);
+        await prefs.setString('userEmail', _currentUser!.email);
+        await prefs.setString('userName', _currentUser!.nombre);
+        await prefs.setString('auth_provider', provider);
+      } catch (e) {
+        debugPrint(
+          '⚠️ [UserProvider] Advertencia guardando en SharedPreferences: $e',
+        );
+      }
+
+      // Sincronizar SQLite (atrio.db)
+      try {
+        await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
+          'nombre': _currentUser!.nombre,
+          'email': _currentUser!.email,
+          'celular': _currentUser!.telefono ?? '',
+          'iglesia_nombre': _currentUser!.iglesiaActual,
+          'creado_en': DateTime.now().toIso8601String(),
+        });
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Advertencia guardando en SQLite: $e');
+      }
+
+      // Sincronizar token del dispositivo con Odoo (no bloqueante)
+      try {
+        await DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+      } catch (e) {
+        debugPrint(
+          'ℹ️ [UserProvider] Error no bloqueante al registrar dispositivo: $e',
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Error al iniciar sesión con $provider: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Intenta restaurar la sesión previa desde el almacenamiento seguro de tokens.
   /// Si hay token, consulta /me para refrescar el perfil del usuario.
   Future<bool> tryAutoLogin() async {
@@ -198,8 +358,40 @@ class UserProvider extends ChangeNotifier {
       }
 
       // El token existe en el almacenamiento seguro, obtenemos el perfil del servidor
-      final meData = await _api.me();
-      _currentUser = UserModel.fromOdooJson(meData);
+      try {
+        final meData = await _api.me();
+        _currentUser = UserModel.fromOdooJson(meData);
+      } catch (e) {
+        debugPrint(
+          'ℹ️ [UserProvider] /me no disponible en tryAutoLogin: $e. Restaurando desde SQLite...',
+        );
+        final localData = await AtrioDatabaseHelper.instance.getUsuario();
+        if (localData != null &&
+            ((localData['email'] as String?)?.isNotEmpty == true ||
+                (localData['nombre'] as String?)?.isNotEmpty == true)) {
+          final String name = (localData['nombre'] as String?) ?? 'Usuario';
+          _currentUser = UserModel(
+            id: 0,
+            nombre: name,
+            email: (localData['email'] as String?) ?? '',
+            telefono: localData['celular'] as String?,
+            iglesiaActual: (localData['iglesia_nombre'] as String?) ??
+                'Sin iglesia seleccionada',
+            fechaRegistro: (localData['creado_en'] as String?) ?? '',
+            avatarIniciales: name.trim().isNotEmpty
+                ? name.trim()[0].toUpperCase()
+                : 'U',
+            esMiembroVerificado: false,
+            role: UserRole.user,
+            permissions: const {
+              'view_content',
+              'manage_profile',
+              'donate',
+            },
+            isReadOnly: false,
+          );
+        }
+      }
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
@@ -326,8 +518,24 @@ class UserProvider extends ChangeNotifier {
             ? nombre.trim()[0].toUpperCase()
             : 'U',
       );
-      notifyListeners();
+    } else {
+      _currentUser = UserModel(
+        id: 0,
+        nombre: nombre,
+        email: email,
+        telefono: telefono.isNotEmpty ? telefono : null,
+        iglesiaActual: iglesiaActual,
+        fechaRegistro: DateTime.now().toIso8601String().split('T').first,
+        avatarIniciales: nombre.isNotEmpty
+            ? nombre.trim()[0].toUpperCase()
+            : 'U',
+        esMiembroVerificado: false,
+        role: UserRole.user,
+        permissions: const {'view_content', 'manage_profile', 'donate'},
+        isReadOnly: false,
+      );
     }
+    notifyListeners();
   }
 
   /// Traduce los códigos de error estándar de Odoo a mensajes claros y amigables.

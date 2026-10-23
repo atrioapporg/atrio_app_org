@@ -143,3 +143,4 @@ $RECYCLE.BIN/
 .svn/
 .swiftpm/
 migrate_working_dir/
+scratch/

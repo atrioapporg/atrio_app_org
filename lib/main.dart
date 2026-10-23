@@ -178,9 +178,7 @@ class MyApp extends StatelessWidget {
           scrollController: scrollController,
         );
       },
-      localizationsDelegates: [
-        GlobalFeedbackLocalizationsDelegate(),
-      ],
+      localizationsDelegates: [GlobalFeedbackLocalizationsDelegate()],
       localeOverride: ajustes.locale,
       child: MaterialApp(
         navigatorKey: navigatorKey,

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,9 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/data/atrio_database_helper.dart';
+import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
+import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
@@ -1124,6 +1127,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
     try {
       final userProvider = context.read<UserProvider>();
+      final iglesiaProvider = context.read<IglesiaProvider>();
       final ok = await userProvider.login(
         email,
         password,
@@ -1138,7 +1142,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           _isLoginSuccess = true;
         });
 
-        // Guardar también en la base de datos local SQLite para soporte offline
+        // Guardar en la base de datos local SQLite y sincronizar iglesia asignada de Odoo
         try {
           final user = userProvider.currentUser;
           if (user != null) {
@@ -1146,13 +1150,23 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                 await SharedPreferences.getInstance();
             final String? iglesiaGuardada =
                 prefs.getString('iglesia_guardada');
-            final String iglesiaNombre = (iglesiaGuardada != null &&
-                    iglesiaGuardada.trim().isNotEmpty)
-                ? (user.iglesiaActual.isNotEmpty &&
-                        user.iglesiaActual != 'Iglesia Atrio'
-                    ? user.iglesiaActual
-                    : 'Sin iglesia seleccionada')
-                : 'Sin iglesia seleccionada';
+
+            final bool tieneIglesiaOdoo = user.hasChurchAssigned ||
+                user.isMember ||
+                (user.iglesiaActual.trim().isNotEmpty &&
+                    user.iglesiaActual.trim() != 'Sin iglesia seleccionada' &&
+                    user.iglesiaActual.trim() != 'Iglesia Atrio');
+
+            final String iglesiaNombre = (user.iglesiaActual.trim().isNotEmpty &&
+                    user.iglesiaActual.trim() != 'Iglesia Atrio' &&
+                    user.iglesiaActual.trim() != 'Sin iglesia seleccionada')
+                ? user.iglesiaActual.trim()
+                : (tieneIglesiaOdoo
+                    ? 'Iglesia Asignada'
+                    : ((iglesiaGuardada != null &&
+                            iglesiaGuardada.trim().isNotEmpty)
+                        ? 'Iglesia Guardada'
+                        : 'Sin iglesia seleccionada'));
 
             await AtrioDatabaseHelper.instance.guardarUsuario({
               'email': user.email,
@@ -1161,6 +1175,46 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
               'iglesia_nombre': iglesiaNombre,
               'creado_en': DateTime.now().toIso8601String(),
             });
+
+            // Si el usuario ya cuenta con iglesia asignada en Odoo, la sincronizamos localmente
+            if (tieneIglesiaOdoo) {
+              if (iglesiaGuardada == null || iglesiaGuardada.trim().isEmpty) {
+                final Map<String, dynamic> datosIglesia = {
+                  "id": user.iglesiaId ?? 1,
+                  "nombre": iglesiaNombre,
+                  "denominacion": "Cristiana",
+                  "calificacion": 5.0,
+                  "total_resenas": 1,
+                  "distancia": "Asignada",
+                  "es_verificada": true,
+                  "direccion": "",
+                  "plus_code": "",
+                  "telefono": user.telefono ?? "",
+                  "sitio_web": "",
+                  "proximo_culto": {
+                    "titulo": "Culto de Adoración",
+                    "dia_hora": "Domingo",
+                    "estado": "Abierto",
+                  },
+                  "horarios": [],
+                  "aviso_actual": {
+                    "titulo": "Comunidad asignada",
+                    "descripcion": "Tu congregación asignada en Odoo.",
+                  },
+                };
+                try {
+                  await iglesiaProvider
+                      .guardarIglesiaLocal(jsonEncode(datosIglesia));
+                } catch (e) {
+                  debugPrint(
+                      '[AUTH] Advertencia guardando iglesia local en provider: $e');
+                  await prefs.setString(
+                      'iglesia_guardada', jsonEncode(datosIglesia));
+                }
+              }
+              await AtrioDatabaseHelper.instance
+                  .guardarIglesiaNombre(iglesiaNombre);
+            }
           }
         } catch (e) {
           debugPrint('[AUTH] Advertencia guardando en SQLite local: $e');
@@ -1414,6 +1468,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // REDIRECCIÓN INTELIGENTE POST LOGIN
   // ============================================================================
   Future<void> _redirigirUsuarioPostLogin({bool esAutoLogin = false}) async {
+    UserModel? currentUser;
+    try {
+      currentUser =
+          Provider.of<UserProvider>(context, listen: false).currentUser;
+    } catch (_) {}
+
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
     final bool tieneIglesiaLocal =
@@ -1429,21 +1489,30 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         usuario['iglesia_nombre'].toString().trim() !=
             'Iglesia Atrio';
 
-    final bool usuarioTieneIglesia = tieneIglesiaLocal || tieneIglesiaDb;
+    final bool tieneIglesiaOdoo = currentUser != null &&
+        (currentUser.hasChurchAssigned ||
+            currentUser.isMember ||
+            (currentUser.iglesiaActual.trim().isNotEmpty &&
+                currentUser.iglesiaActual.trim() !=
+                    'Sin iglesia seleccionada' &&
+                currentUser.iglesiaActual.trim() != 'Iglesia Atrio'));
+
+    final bool usuarioTieneIglesia =
+        tieneIglesiaOdoo || tieneIglesiaLocal || tieneIglesiaDb;
 
     if (!mounted) return;
 
-    // Solo si es una sesión pasiva previamente restaurada al iniciar la app
-    // y el usuario ya completó la selección de iglesia con anterioridad:
-    if (esAutoLogin && usuarioTieneIglesia) {
+    // Si el usuario ya cuenta con iglesia vinculada y/o asignada (en Odoo o localmente),
+    // entra directamente a InicioAtrioScreen sin pasar de forma redundante por TradicionCristianaScreen.
+    // Solo a los usuarios que NO tienen una iglesia vinculada y/o asignada todavía es que
+    // se les dirige a la pantalla "Queremos conocerte" (TradicionCristianaScreen).
+    if (usuarioTieneIglesia) {
       Navigator.pushNamedAndRemoveUntil(
         context,
         InicioAtrioScreen.routeName,
         (route) => false,
       );
     } else {
-      // Al iniciar sesión por primera vez o tras autenticarse con éxito,
-      // debe siempre enviar a TradicionCristianaScreen para seleccionar su iglesia.
       Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
     }
   }

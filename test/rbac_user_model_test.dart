@@ -225,6 +225,70 @@ void main() {
         'read_only',
       });
     });
+
+    test(
+      'Usuario rol member con church_id relacional tipo Odoo ([id, name]) preserva iglesia asignada',
+      () {
+        final odooJson = {
+          'user': {
+            'id': 50,
+            'name': 'Hermano Lenin',
+            'email': 'leningrado777@demo.app',
+            'role': 'member',
+            'church_id': [12, 'Iglesia Bautista de la Gracia'],
+          },
+          'permissions': ['view_content', 'create_offerings'],
+        };
+
+        final user = UserModel.fromOdooJson(odooJson);
+
+        expect(user.id, 50);
+        expect(user.role, UserRole.member);
+        expect(user.isMember, isTrue);
+        expect(user.iglesiaId, 12);
+        expect(user.iglesiaActual, 'Iglesia Bautista de la Gracia');
+        expect(user.hasChurchAssigned, isTrue);
+      },
+    );
+
+    test('Usuario rol member con payload plano church_name y church_id', () {
+      final odooJson = {
+        'id': 51,
+        'name': 'Hermano Lenin Plano',
+        'email': 'leningrado777@demo.app',
+        'role': 'member',
+        'church_id': 14,
+        'church_name': 'Comunidad de Fe Central',
+      };
+
+      final user = UserModel.fromOdooJson(odooJson);
+
+      expect(user.id, 51);
+      expect(user.role, UserRole.member);
+      expect(user.isMember, isTrue);
+      expect(user.iglesiaId, 14);
+      expect(user.iglesiaActual, 'Comunidad de Fe Central');
+      expect(user.hasChurchAssigned, isTrue);
+    });
+
+    test('Usuario sin iglesia asociada (church_id null) indica hasChurchAssigned == false', () {
+      final odooJson = {
+        'user': {
+          'id': 99,
+          'name': 'Visitante Nuevo',
+          'email': 'visitante@demo.app',
+          'role': 'user',
+        },
+      };
+
+      final user = UserModel.fromOdooJson(odooJson);
+
+      expect(user.id, 99);
+      expect(user.role, UserRole.user);
+      expect(user.isMember, isFalse);
+      expect(user.hasChurchAssigned, isFalse);
+    });
   });
 }
+
 

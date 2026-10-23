@@ -4985,6 +4985,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad.'**
   String get notificacionesInvitadoDesc;
+
+  /// No description provided for @omitir.
+  ///
+  /// In es, this message translates to:
+  /// **'Omitir'**
+  String get omitir;
+
+  /// No description provided for @errorConexionServidor.
+  ///
+  /// In es, this message translates to:
+  /// **'Error de conexión con el servidor'**
+  String get errorConexionServidor;
+
+  /// No description provided for @errorCargarSolicitudesDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.'**
+  String get errorCargarSolicitudesDesc;
+
+  /// No description provided for @reintentarConexionServidor.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar conexión con el servidor'**
+  String get reintentarConexionServidor;
+
+  /// No description provided for @modoLocalAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.'**
+  String get modoLocalAviso;
 }
 
 class _AppLocalizationsDelegate

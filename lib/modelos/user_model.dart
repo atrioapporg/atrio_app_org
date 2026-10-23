@@ -127,15 +127,58 @@ class UserModel {
         odooData['email'] ??
         '') as String;
     final telefono = (member['phone'] ?? user['phone'] ?? odooData['phone']) as String?;
-    final iglesiaActual = (church['name'] ??
-        church['public_name'] ??
-        odooData['church_name'] ??
-        'Iglesia Atrio') as String;
-    final iglesiaId = (church['id'] ??
-        user['church_id'] ??
-        user['iglesia_id'] ??
-        odooData['church_id'] ??
-        odooData['iglesia_id']) as int?;
+    // Extracción tolerante y tipada para Odoo 19 (enteros, listas [id, name], strings)
+    int? parseId(dynamic val) {
+      if (val == null) return null;
+      if (val is int) return val;
+      if (val is List && val.isNotEmpty && val[0] is int) return val[0] as int;
+      if (val is String) return int.tryParse(val);
+      return null;
+    }
+
+    String? parseName(dynamic val) {
+      if (val == null) return null;
+      if (val is String && val.trim().isNotEmpty) return val.trim();
+      if (val is List &&
+          val.length > 1 &&
+          val[1] is String &&
+          (val[1] as String).trim().isNotEmpty) {
+        return (val[1] as String).trim();
+      }
+      return null;
+    }
+
+    final int? iglesiaId = parseId(church['id']) ??
+        parseId(user['church_id']) ??
+        parseId(user['iglesia_id']) ??
+        parseId(member['church_id']) ??
+        parseId(member['iglesia_id']) ??
+        parseId(odooData['church_id']) ??
+        parseId(odooData['iglesia_id']);
+
+    final String? nombreIglesiaExtraido = parseName(church['name']) ??
+        parseName(church['public_name']) ??
+        parseName(odooData['church_name']) ??
+        parseName(user['church_name']) ??
+        parseName(member['church_name']) ??
+        parseName(odooData['iglesia_actual']) ??
+        parseName(user['iglesia_actual']) ??
+        parseName(odooData['iglesia_nombre']) ??
+        parseName(user['iglesia_nombre']) ??
+        parseName(member['iglesia_nombre']) ??
+        parseName(church['display_name']) ??
+        parseName(user['church_id']) ??
+        parseName(member['church_id']) ??
+        parseName(odooData['church_id']);
+
+    final String iglesiaActual = (nombreIglesiaExtraido != null &&
+            nombreIglesiaExtraido.isNotEmpty &&
+            nombreIglesiaExtraido != 'Iglesia Atrio' &&
+            nombreIglesiaExtraido != 'Sin iglesia seleccionada')
+        ? nombreIglesiaExtraido
+        : ((iglesiaId != null && iglesiaId > 0)
+            ? 'Iglesia Asignada'
+            : (odooData['iglesia_actual'] as String? ?? 'Iglesia Atrio'));
     final fechaRegistro =
         (user['create_date'] ?? DateTime.now().toIso8601String()) as String;
 

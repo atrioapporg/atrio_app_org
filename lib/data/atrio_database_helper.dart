@@ -5,8 +5,8 @@ import '../modelos/ajustes_model.dart';
 
 class AtrioDatabaseHelper {
   static const _databaseName = "atrio.db";
-  // Subimos a versión 3 para la tabla de ajustes generales e idioma
-  static const _databaseVersion = 3;
+  // Subimos a versión 4 para la tabla de solicitudes locales (caché y fallback offline)
+  static const _databaseVersion = 4;
 
   // Nombres de las tablas
   static const tableUsuario = 'usuario';
@@ -14,6 +14,7 @@ class AtrioDatabaseHelper {
   static const tableNotas = 'notas_biblia';
   static const tableFavoritos = 'favoritos_biblia';
   static const tableAjustes = 'ajustes_atrio';
+  static const tableSolicitudesLocales = 'solicitudes_locales';
 
   // Singleton
   AtrioDatabaseHelper._init();
@@ -135,6 +136,23 @@ class AtrioDatabaseHelper {
       )
     ''');
 
+    // 7. Tabla: solicitudes_locales (Caché y fallback offline de solicitudes pastorales/ministeriales)
+    await db.execute('''
+      CREATE TABLE $tableSolicitudesLocales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        odoo_id INTEGER,
+        referencia TEXT,
+        tipo TEXT NOT NULL,
+        titulo TEXT NOT NULL,
+        mensaje TEXT,
+        estado TEXT DEFAULT 'nueva',
+        estado_label TEXT DEFAULT 'Recibida',
+        fecha TEXT NOT NULL,
+        respuesta TEXT,
+        usuario_email TEXT
+      )
+    ''');
+
     // Configuración inicial por defecto
     await db.insert(tableConfig, {
       'tema_oscuro': 0,
@@ -237,6 +255,25 @@ class AtrioDatabaseHelper {
         'ALTER TABLE $tableAjustes ADD COLUMN tiempo_cooldown_notificaciones INTEGER DEFAULT 3',
       );
     } catch (_) {}
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $tableSolicitudesLocales (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          odoo_id INTEGER,
+          referencia TEXT,
+          tipo TEXT NOT NULL,
+          titulo TEXT NOT NULL,
+          mensaje TEXT,
+          estado TEXT DEFAULT 'nueva',
+          estado_label TEXT DEFAULT 'Recibida',
+          fecha TEXT NOT NULL,
+          respuesta TEXT,
+          usuario_email TEXT
+        )
+      ''');
+      debugPrint('[ATRIO_DB] Migración a v4 completada (tabla $tableSolicitudesLocales creada).');
+    }
   }
 
   // ============================================================
@@ -533,5 +570,81 @@ class AtrioDatabaseHelper {
       where: 'id = ?',
       whereArgs: [1],
     );
+  }
+
+  // ============================================================
+  // MÉTODOS CRUD: SOLICITUDES LOCALES (Caché y Fallback Offline)
+  // ============================================================
+  /// Guarda una nueva solicitud en caché local SQLite
+  Future<int> guardarSolicitudLocal(Map<String, dynamic> data) async {
+    final db = await instance.database;
+    // Asegurar existencia preventiva de la tabla
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $tableSolicitudesLocales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        odoo_id INTEGER,
+        referencia TEXT,
+        tipo TEXT NOT NULL,
+        titulo TEXT NOT NULL,
+        mensaje TEXT,
+        estado TEXT DEFAULT 'nueva',
+        estado_label TEXT DEFAULT 'Recibida',
+        fecha TEXT NOT NULL,
+        respuesta TEXT,
+        usuario_email TEXT
+      )
+    ''');
+    return await db.insert(
+      tableSolicitudesLocales,
+      data,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Obtiene las solicitudes guardadas localmente, filtradas opcionalmente por usuario
+  Future<List<Map<String, dynamic>>> getSolicitudesLocales({String? usuarioEmail}) async {
+    final db = await instance.database;
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $tableSolicitudesLocales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        odoo_id INTEGER,
+        referencia TEXT,
+        tipo TEXT NOT NULL,
+        titulo TEXT NOT NULL,
+        mensaje TEXT,
+        estado TEXT DEFAULT 'nueva',
+        estado_label TEXT DEFAULT 'Recibida',
+        fecha TEXT NOT NULL,
+        respuesta TEXT,
+        usuario_email TEXT
+      )
+    ''');
+
+    if (usuarioEmail != null && usuarioEmail.trim().isNotEmpty) {
+      final emailNormalizado = usuarioEmail.trim().toLowerCase();
+      return await db.query(
+        tableSolicitudesLocales,
+        where: 'LOWER(usuario_email) = ? OR usuario_email IS NULL OR usuario_email = ""',
+        whereArgs: [emailNormalizado],
+        orderBy: 'id DESC',
+      );
+    }
+    return await db.query(
+      tableSolicitudesLocales,
+      orderBy: 'id DESC',
+    );
+  }
+
+  /// Elimina solicitudes locales si se requiere limpiar
+  Future<int> eliminarSolicitudesLocales({String? usuarioEmail}) async {
+    final db = await instance.database;
+    if (usuarioEmail != null && usuarioEmail.trim().isNotEmpty) {
+      return await db.delete(
+        tableSolicitudesLocales,
+        where: 'LOWER(usuario_email) = ?',
+        whereArgs: [usuarioEmail.trim().toLowerCase()],
+      );
+    }
+    return await db.delete(tableSolicitudesLocales);
   }
 }

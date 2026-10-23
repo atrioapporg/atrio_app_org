@@ -2745,4 +2745,22 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get notificacionesInvitadoDesc =>
       'En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad.';
+
+  @override
+  String get omitir => 'Omitir';
+
+  @override
+  String get errorConexionServidor => 'Error de conexión con el servidor';
+
+  @override
+  String get errorCargarSolicitudesDesc =>
+      'Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.';
+
+  @override
+  String get reintentarConexionServidor =>
+      'Reintentar conexión con el servidor';
+
+  @override
+  String get modoLocalAviso =>
+      'Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.';
 }

@@ -188,8 +188,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     } catch (_) {}
 
     if (_ultimoChequeoNotificaciones != null) {
-      final diferenciaMinutos =
-          ahora.difference(_ultimoChequeoNotificaciones!).inMinutes;
+      final diferenciaMinutos = ahora
+          .difference(_ultimoChequeoNotificaciones!)
+          .inMinutes;
       if (diferenciaMinutos < cooldownMinutos) {
         // Aún en tiempo de cooldown: no saturamos la red ni el servidor
         return;
@@ -197,9 +198,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     }
 
     _ultimoChequeoNotificaciones = ahora;
-    await _cargarNotificacionesContador(
-      verificarEmergente: verificarEmergente,
-    );
+    await _cargarNotificacionesContador(verificarEmergente: verificarEmergente);
   }
 
   /// Verifica si la notificación más reciente aún no ha sido mostrada como modal emergente
@@ -225,7 +224,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         });
       }
     } catch (e) {
-      debugPrint('⚠️ [InicioAtrioScreen] Error verificando notificación emergente: $e');
+      debugPrint(
+        '⚠️ [InicioAtrioScreen] Error verificando notificación emergente: $e',
+      );
     }
   }
 
@@ -240,16 +241,19 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
 
-    final String titulo = noti['title']?.toString() ??
+    final String titulo =
+        noti['title']?.toString() ??
         noti['subject']?.toString() ??
         noti['name']?.toString() ??
         'Nuevo Comunicado';
-    final String mensaje = noti['message']?.toString() ??
+    final String mensaje =
+        noti['message']?.toString() ??
         noti['body']?.toString() ??
         noti['summary']?.toString() ??
         '';
     final String? imagePath = noti['image_url']?.toString();
-    final String remitente = noti['church_name']?.toString() ??
+    final String remitente =
+        noti['church_name']?.toString() ??
         noti['author']?.toString() ??
         'Comunidad ATRIO';
 
@@ -292,9 +296,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     horizontal: screenWidth * 0.045,
                     vertical: 14,
                   ),
-                  decoration: const BoxDecoration(
-                    color: azulFondo,
-                  ),
+                  decoration: const BoxDecoration(color: azulFondo),
                   child: Row(
                     children: [
                       Container(
@@ -367,7 +369,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                               width: double.infinity,
                               height: 160,
                               headers: userProvider.api.imageHeaders,
-                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.shrink(),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -410,7 +413,10 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: azulFondo, width: 1.3),
+                            side: const BorderSide(
+                              color: azulFondo,
+                              width: 1.3,
+                            ),
                             foregroundColor: azulFondo,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -683,9 +689,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
             }
             // Chequeo saludable de notificaciones con cooldown configurable (2-5 min).
             // Solo levanta el modal emergente si el usuario está en la pestaña de Inicio.
-            _chequearNotificacionesConCooldown(
-              verificarEmergente: index == 0,
-            );
+            _chequearNotificacionesConCooldown(verificarEmergente: index == 0);
           },
           destinations: [
             NavigationDestination(
@@ -786,8 +790,11 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     // Fin Encabezado Superior--------------------
                     Builder(
                       builder: (context) {
-                        final esAutenticado = context.watch<UserProvider>().isAuthenticated;
-                        final bool tieneNotis = esAutenticado && _notificacionesSinLeer > 0;
+                        final esAutenticado = context
+                            .watch<UserProvider>()
+                            .isAuthenticated;
+                        final bool tieneNotis =
+                            esAutenticado && _notificacionesSinLeer > 0;
 
                         return GestureDetector(
                           onTap: () {
@@ -809,7 +816,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                   top: -2,
                                   right: -2,
                                   child: Container(
-                                    padding: EdgeInsets.all(screenWidth * 0.008),
+                                    padding: EdgeInsets.all(
+                                      screenWidth * 0.008,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: amarilloOro,
                                       shape: BoxShape.circle,
@@ -1861,7 +1870,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n?.publicacionesIglesia ?? 'Publicaciones de la iglesia',
+                        l10n?.publicacionesIglesia ??
+                            'Publicaciones de la iglesia',
                         style: TextStyle(
                           color: azulFondo,
                           fontSize: screenWidth * 0.042,
@@ -2000,7 +2010,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         : null;
 
     return GestureDetector(
-      onTap: () => _mostrarDetallePublicacion(context, post, l10n, fullImageUrl),
+      onTap: () =>
+          _mostrarDetallePublicacion(context, post, l10n, fullImageUrl),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -2055,7 +2066,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          post.audience == 'todos' ? 'Comunidad' : post.audience,
+                          post.audience == 'todos'
+                              ? 'Comunidad'
+                              : post.audience,
                           style: TextStyle(
                             color: const Color(0xFF0055A5),
                             fontSize: screenWidth * 0.026,
@@ -2234,9 +2247,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     backgroundColor: azulFondo,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        screenWidth * 0.03,
-                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
                     ),
                   ),
                   onPressed: () => Navigator.pop(ctx),

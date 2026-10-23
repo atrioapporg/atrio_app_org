@@ -554,6 +554,39 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                             ),
                           ),
                         ),
+                        SizedBox(width: screenWidth * 0.02),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              'inicio_atrio_screen',
+                              (route) => false,
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.025,
+                              vertical: usableHeight * 0.006,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.04,
+                              ),
+                              border: Border.all(
+                                color: amarilloOro.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Text(
+                              l10n?.omitir ?? 'Omitir',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.028,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: usableHeight * 0.012),

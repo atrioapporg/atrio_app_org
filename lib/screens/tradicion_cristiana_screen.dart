@@ -2,6 +2,7 @@ import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/modelos/tradicion_cristiana_model.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
+import 'package:atrio/screens/inicio_atrio_screen.dart';
 import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -80,9 +81,65 @@ class _TradicionCristianaScreenState extends State {
     }
   }
 
+  /// Omite la selección de tradición e iglesia y navega directamente a la pantalla de inicio
+  Future<void> _omitirEIrAInicio() async {
+    if (_isSaving) return;
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final l10n = mounted ? AppLocalizations.of(context) : null;
+      final String titulo =
+          l10n?.prefieroIndicarloDespues ?? 'Prefiero indicarlo después';
+      await AtrioDatabaseHelper.instance.guardarFeReligiosa(titulo);
+      debugPrint('[SQLITE] Fe religiosa guardada como: $titulo');
+
+      // Si el usuario no tiene iglesia registrada aún, dejamos el indicador claro
+      final usuario = await AtrioDatabaseHelper.instance.getUsuario();
+      if (usuario == null ||
+          usuario['iglesia_nombre'] == null ||
+          usuario['iglesia_nombre'].toString().trim().isEmpty) {
+        await AtrioDatabaseHelper.instance
+            .guardarIglesiaNombre('Sin iglesia seleccionada');
+      }
+
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        InicioAtrioScreen.routeName,
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('[TRADICION] Error al omitir e ir a inicio: $e');
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          InicioAtrioScreen.routeName,
+          (route) => false,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
   Future _continuarYGuardar(dynamic provider) async {
     final tradicion = provider.tradicionSeleccionada;
     if (tradicion == null || _isSaving) return;
+
+    // Si el usuario seleccionó "Prefiero indicarlo después", ir directamente al inicio
+    if (tradicion.id == 'trad_despues' ||
+        tradicion.id == 'prefiero_indicarlo_despues' ||
+        tradicion.titulo.toLowerCase().contains('después') ||
+        tradicion.titulo.toLowerCase().contains('despues')) {
+      await _omitirEIrAInicio();
+      return;
+    }
+
     setState(() {
       _isSaving = true;
     });
@@ -177,34 +234,30 @@ class _TradicionCristianaScreenState extends State {
                         ),
                       ),
                     ),
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
+                    GestureDetector(
+                      onTap: _isSaving ? null : _omitirEIrAInicio,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.035,
+                          vertical: usableHeight * 0.008,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.04),
+                          border: Border.all(
+                            color: amarilloOro.withValues(alpha: 0.4),
                           ),
-                          child: Icon(
-                            Icons.notifications_none_rounded,
+                        ),
+                        child: Text(
+                          l10n?.omitir ?? 'Omitir',
+                          style: TextStyle(
                             color: Colors.white,
-                            size: screenWidth * 0.058,
+                            fontSize: screenWidth * 0.035,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Positioned(
-                          top: screenWidth * 0.015,
-                          right: screenWidth * 0.015,
-                          child: Container(
-                            width: screenWidth * 0.022,
-                            height: screenWidth * 0.022,
-                            decoration: const BoxDecoration(
-                              color: amarilloOro,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -288,7 +341,30 @@ class _TradicionCristianaScreenState extends State {
                                   ),
                           ),
                         ),
-                        SizedBox(height: usableHeight * 0.01),
+                        SizedBox(height: usableHeight * 0.008),
+                        Center(
+                          child: TextButton(
+                            onPressed: _isSaving ? null : _omitirEIrAInicio,
+                            style: TextButton.styleFrom(
+                              foregroundColor: azulFondo,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.03,
+                                vertical: usableHeight * 0.005,
+                              ),
+                            ),
+                            child: Text(
+                              l10n?.prefieroIndicarloDespues ??
+                                  'Prefiero indicarlo después',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.038,
+                                fontWeight: FontWeight.w600,
+                                color: azulFondo.withValues(alpha: 0.85),
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: usableHeight * 0.005),
                       ],
                     ),
                   ),
@@ -341,6 +417,8 @@ class _TradicionCristianaScreenState extends State {
       itemBuilder: (context, index) {
         final item = provider.tradiciones[index];
         final isSelected = provider.tradicionSeleccionada?.id == item.id;
+        final bool esIndicarDespues = item.id == 'trad_despues' ||
+            item.id == 'prefiero_indicarlo_despues';
         return _buildTraditionCard(
           title: _resolverTituloTradicion(l10n, item),
           icon: _resolverIcono(item.iconoNombre),
@@ -348,7 +426,12 @@ class _TradicionCristianaScreenState extends State {
           isSelected: isSelected,
           screenWidth: screenWidth,
           usableHeight: usableHeight,
-          onTap: () => provider.seleccionarTradicion(item),
+          onTap: () async {
+            provider.seleccionarTradicion(item);
+            if (esIndicarDespues) {
+              await _omitirEIrAInicio();
+            }
+          },
         );
       },
     );

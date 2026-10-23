@@ -1365,5 +1365,11 @@
   "sinDonacionesRegistradas": "No donations registered",
   "donacionesInvitadoDesc": "In guest mode, donations are not recorded. Sign in to contribute and view your donation history.",
   "pedidosInvitadoDesc": "In guest mode, orders are not recorded. Sign in to view your order history.",
-  "notificacionesInvitadoDesc": "In guest mode, personal notices and notifications are not available. Sign in to stay up to date with your community."
+  "notificacionesInvitadoDesc": "In guest mode, personal notices and notifications are not available. Sign in to stay up to date with your community.",
+  "omitir": "Skip",
+  "reintentar": "Retry",
+  "errorConexionServidor": "Server connection error",
+  "errorCargarSolicitudesDesc": "A temporary issue occurred while retrieving your requests from the server. You can try again.",
+  "reintentarConexionServidor": "Retry server connection",
+  "modoLocalAviso": "Showing requests saved on this device. Failed to sync with the server."
 }

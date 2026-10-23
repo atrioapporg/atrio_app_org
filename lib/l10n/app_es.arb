@@ -1456,5 +1456,11 @@
   "sinDonacionesRegistradas": "No tienes donaciones registradas",
   "donacionesInvitadoDesc": "En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.",
   "pedidosInvitadoDesc": "En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.",
-  "notificacionesInvitadoDesc": "En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad."
+  "notificacionesInvitadoDesc": "En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad.",
+  "omitir": "Omitir",
+  "reintentar": "Reintentar",
+  "errorConexionServidor": "Error de conexión con el servidor",
+  "errorCargarSolicitudesDesc": "Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.",
+  "reintentarConexionServidor": "Reintentar conexión con el servidor",
+  "modoLocalAviso": "Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor."
 }

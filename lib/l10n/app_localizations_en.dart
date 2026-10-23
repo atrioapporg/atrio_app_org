@@ -2726,4 +2726,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificacionesInvitadoDesc =>
       'In guest mode, personal notices and notifications are not available. Sign in to stay up to date with your community.';
+
+  @override
+  String get omitir => 'Skip';
+
+  @override
+  String get errorConexionServidor => 'Server connection error';
+
+  @override
+  String get errorCargarSolicitudesDesc =>
+      'A temporary issue occurred while retrieving your requests from the server. You can try again.';
+
+  @override
+  String get reintentarConexionServidor => 'Retry server connection';
+
+  @override
+  String get modoLocalAviso =>
+      'Showing requests saved on this device. Failed to sync with the server.';
 }

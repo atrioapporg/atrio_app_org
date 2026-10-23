@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../widgets/modal_restriccion_donacion.dart';
@@ -17,6 +18,8 @@ class SeguimientoSolicitudScreen extends StatefulWidget {
 
 class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen> {
   bool _isLoading = false;
+  bool _errorServidor = false;
+  bool _esModoLocal = false;
   List<Map<String, dynamic>> _solicitudesApi = [];
 
   @override
@@ -27,7 +30,91 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     });
   }
 
+  /// Transforma los datos de una solicitud (sea de Odoo API o SQLite local)
+  /// al formato estructurado para visualización de la UI.
+  Map<String, dynamic> _mapearSolicitud(Map<String, dynamic> m) {
+    final state = (m['state'] ?? m['estado'] ?? m['status'] ?? 'draft').toString().toLowerCase();
+    final type = (m['type'] ?? m['tipo'] ?? m['request_type'] ?? '').toString().toLowerCase();
+
+    // Determinar color y texto de estado
+    Color statusColor = const Color(0xFFE5A023);
+    String statusText = 'En revisión';
+    if (state == 'done' ||
+        state == 'completed' ||
+        state == 'confirmed' ||
+        state == 'approved' ||
+        state == 'resuelta' ||
+        state == 'atendida' ||
+        state == 'respondida') {
+      statusColor = const Color(0xFF2E7D32);
+      statusText = state == 'respondida' ? 'Respondida' : 'Completada';
+    } else if (state == 'pending' ||
+        state == 'draft' ||
+        state == 'received' ||
+        state == 'nueva' ||
+        state == 'new' ||
+        state == 'recibida') {
+      statusColor = const Color(0xFF0055A5);
+      statusText = 'Recibida';
+    } else if (state == 'in_progress' ||
+        state == 'scheduled' ||
+        state == 'proceso' ||
+        state == 'en_proceso' ||
+        state == 'en_progreso') {
+      statusColor = const Color(0xFFE5A023);
+      statusText = 'En proceso';
+    } else if (state == 'cancelled' ||
+        state == 'canceled' ||
+        state == 'rejected' ||
+        state == 'cancelada') {
+      statusColor = const Color(0xFFC62828);
+      statusText = 'Cancelada';
+    }
+
+    // Icono y color según tipo
+    IconData icon = Icons.assignment_outlined;
+    Color iconColor = const Color(0xFF0055A5);
+    if (type.contains('pastoral') || type.contains('consej')) {
+      icon = Icons.church_outlined;
+      iconColor = const Color(0xFF0055A5);
+    } else if (type.contains('oracion') || type.contains('prayer')) {
+      icon = Icons.pan_tool_alt_outlined;
+      iconColor = const Color(0xFF7A8B43);
+    } else if (type.contains('comunitaria') || type.contains('social') || type.contains('ayuda')) {
+      icon = Icons.groups_outlined;
+      iconColor = const Color(0xFF072B4F);
+    } else if (type.contains('familiar') || type.contains('family')) {
+      icon = Icons.family_restroom_rounded;
+      iconColor = const Color(0xFF072B4F);
+    } else if (type.contains('enfermo') || type.contains('salud')) {
+      icon = Icons.favorite_border_rounded;
+      iconColor = const Color(0xFF7A8B43);
+    } else if (type.contains('info')) {
+      icon = Icons.info_outline_rounded;
+      iconColor = const Color(0xFF0055A5);
+    }
+
+    final rawDate = m['created_at'] ?? m['date'] ?? m['create_date'] ?? m['fecha'];
+    String dateFormatted = 'Reciente';
+    if (rawDate != null) {
+      dateFormatted = rawDate.toString().split('T').first;
+    }
+
+    return {
+      'title': m['title'] ?? m['titulo'] ?? m['name'] ?? 'Solicitud Ministerial',
+      'status': m['status_label'] ?? m['estado_label'] ?? statusText,
+      'statusColor': statusColor,
+      'dateInfo': dateFormatted,
+      'icon': icon,
+      'iconColor': iconColor,
+      'referencia': m['reference'] ?? m['referencia'] ?? 'REQ-${m['id'] ?? m['odoo_id'] ?? '0000'}',
+      'detalle': m['message'] ?? m['mensaje'] ?? m['description'] ?? 'Solicitud registrada y asignada.',
+      'respuesta': m['response'] ?? m['respuesta'] ?? m['pastoral_notes'] ?? m['admin_notes'],
+    };
+  }
+
   /// Consulta las solicitudes del usuario en Odoo (GET /requests)
+  /// con fallback automático a la caché SQLite local si el servidor responde 500 u offline.
   Future<void> _cargarSolicitudes() async {
     if (!mounted) return;
     final userProvider = context.read<UserProvider>();
@@ -36,105 +123,59 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
         setState(() {
           _solicitudesApi = [];
           _isLoading = false;
+          _errorServidor = false;
+          _esModoLocal = false;
         });
       }
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorServidor = false;
+    });
 
+    final userEmail = userProvider.currentUser?.email.toLowerCase().trim();
+
+    // 1. Cargar solicitudes guardadas en caché local SQLite
+    List<Map<String, dynamic>> solicitudesLocales = [];
+    try {
+      final locales = await AtrioDatabaseHelper.instance.getSolicitudesLocales(usuarioEmail: userEmail);
+      solicitudesLocales = locales.map(_mapearSolicitud).toList();
+    } catch (eDb) {
+      debugPrint('[SOLICITUDES] Error leyendo SQLite local: $eDb');
+    }
+
+    // 2. Intentar consultar Odoo API
     try {
       final api = userProvider.api;
       final data = await api.requests();
       final dynamic raw = data['requests'] ?? data['items'] ?? data['data'];
 
-      if (raw is List && raw.isNotEmpty && mounted) {
+      if (raw is List && mounted) {
+        final solicitudesServidor = raw.map((r) => _mapearSolicitud(r as Map<String, dynamic>)).toList();
         setState(() {
-          _solicitudesApi = raw.map((r) {
-            final m = r as Map<String, dynamic>;
-            final state = (m['state'] ?? m['status'] ?? 'draft').toString().toLowerCase();
-            final type = (m['type'] ?? m['request_type'] ?? '').toString().toLowerCase();
-
-            // Determinar color y texto de estado
-            Color statusColor = const Color(0xFFE5A023);
-            String statusText = 'En revisión';
-            if (state == 'done' ||
-                state == 'completed' ||
-                state == 'confirmed' ||
-                state == 'approved' ||
-                state == 'resuelta' ||
-                state == 'atendida' ||
-                state == 'respondida') {
-              statusColor = const Color(0xFF2E7D32);
-              statusText = state == 'respondida' ? 'Respondida' : 'Completada';
-            } else if (state == 'pending' ||
-                state == 'draft' ||
-                state == 'received' ||
-                state == 'nueva' ||
-                state == 'new' ||
-                state == 'recibida') {
-              statusColor = const Color(0xFF0055A5);
-              statusText = 'Recibida';
-            } else if (state == 'in_progress' ||
-                state == 'scheduled' ||
-                state == 'proceso' ||
-                state == 'en_proceso' ||
-                state == 'en_progreso') {
-              statusColor = const Color(0xFFE5A023);
-              statusText = 'En proceso';
-            } else if (state == 'cancelled' ||
-                state == 'canceled' ||
-                state == 'rejected' ||
-                state == 'cancelada') {
-              statusColor = const Color(0xFFC62828);
-              statusText = 'Cancelada';
-            }
-
-            // Icono y color según tipo
-            IconData icon = Icons.assignment_outlined;
-            Color iconColor = const Color(0xFF0055A5);
-            if (type.contains('pastoral') || type.contains('consej')) {
-              icon = Icons.church_outlined;
-              iconColor = const Color(0xFF0055A5);
-            } else if (type.contains('oracion') || type.contains('prayer')) {
-              icon = Icons.pan_tool_alt_outlined;
-              iconColor = const Color(0xFF7A8B43);
-            } else if (type.contains('comunitaria') || type.contains('social') || type.contains('ayuda')) {
-              icon = Icons.groups_outlined;
-              iconColor = const Color(0xFF072B4F);
-            } else if (type.contains('familiar') || type.contains('family')) {
-              icon = Icons.family_restroom_rounded;
-              iconColor = const Color(0xFF072B4F);
-            } else if (type.contains('enfermo') || type.contains('salud')) {
-              icon = Icons.favorite_border_rounded;
-              iconColor = const Color(0xFF7A8B43);
-            } else if (type.contains('info')) {
-              icon = Icons.info_outline_rounded;
-              iconColor = const Color(0xFF0055A5);
-            }
-
-            final rawDate = m['created_at'] ?? m['date'] ?? m['create_date'];
-            String dateFormatted = 'Reciente';
-            if (rawDate != null) {
-              dateFormatted = rawDate.toString().split('T').first;
-            }
-
-            return {
-              'title': m['title'] ?? m['name'] ?? 'Solicitud Ministerial',
-              'status': m['status_label'] ?? statusText,
-              'statusColor': statusColor,
-              'dateInfo': dateFormatted,
-              'icon': icon,
-              'iconColor': iconColor,
-              'referencia': m['reference'] ?? 'REQ-${m['id'] ?? '0000'}',
-              'detalle': m['message'] ?? m['description'] ?? 'Solicitud registrada y asignada.',
-              'respuesta': m['response'] ?? m['pastoral_notes'] ?? m['admin_notes'],
-            };
-          }).toList();
+          _solicitudesApi = solicitudesServidor;
+          _errorServidor = false;
+          _esModoLocal = false;
         });
+        return;
       }
     } catch (e) {
-      debugPrint('[SOLICITUDES] Fallback local activo: $e');
+      debugPrint('[SOLICITUDES] Error en Odoo API (activando modo local/fallback): $e');
+      if (mounted) {
+        setState(() {
+          _errorServidor = true;
+          // Si hay solicitudes en caché local SQLite, mostrarlas
+          if (solicitudesLocales.isNotEmpty) {
+            _solicitudesApi = solicitudesLocales;
+            _esModoLocal = true;
+          } else {
+            _solicitudesApi = [];
+            _esModoLocal = false;
+          }
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -250,7 +291,7 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                 backgroundColor: Colors.transparent,
                               ),
                             ),
-                          // Lista de Solicitudes Desplazable o Estado Vacío
+                          // Lista de Solicitudes Desplazable o Estado Vacío / Error
                           Expanded(
                             child: solicitudes.isEmpty
                                 ? Center(
@@ -266,49 +307,41 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                         child: Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Container(
-                                              width: screenWidth * 0.18,
-                                              height: screenWidth * 0.18,
-                                              decoration: BoxDecoration(
-                                                color: azulFondo.withValues(alpha: 0.08),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                esInvitado
-                                                    ? Icons.account_circle_outlined
-                                                    : Icons.inbox_outlined,
-                                                color: azulFondo,
-                                                size: screenWidth * 0.09,
-                                              ),
-                                            ),
-                                            SizedBox(height: usableHeight * 0.02),
-                                            Text(
-                                              esInvitado
-                                                  ? (l10n?.modoInvitado ?? 'Modo invitado')
-                                                  : (l10n?.sinSolicitudesRegistradas ??
-                                                      'No tienes solicitudes registradas'),
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: azulFondo,
-                                                fontSize: screenWidth * 0.045,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            SizedBox(height: usableHeight * 0.01),
-                                            Text(
-                                              esInvitado
-                                                  ? (l10n?.solicitudesInvitadoDesc ??
-                                                      'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.')
-                                                  : (l10n?.sinSolicitudesRegistradas ??
-                                                      'Tus peticiones pastorales aparecerán aquí.'),
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: screenWidth * 0.034,
-                                                height: 1.35,
-                                              ),
-                                            ),
                                             if (esInvitado) ...[
+                                              Container(
+                                                width: screenWidth * 0.18,
+                                                height: screenWidth * 0.18,
+                                                decoration: BoxDecoration(
+                                                  color: azulFondo.withValues(alpha: 0.08),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.account_circle_outlined,
+                                                  color: azulFondo,
+                                                  size: screenWidth * 0.09,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.02),
+                                              Text(
+                                                l10n?.modoInvitado ?? 'Modo invitado',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: azulFondo,
+                                                  fontSize: screenWidth * 0.045,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.01),
+                                              Text(
+                                                l10n?.solicitudesInvitadoDesc ??
+                                                    'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: screenWidth * 0.034,
+                                                  height: 1.35,
+                                                ),
+                                              ),
                                               SizedBox(height: usableHeight * 0.025),
                                               ElevatedButton.icon(
                                                 onPressed: () {
@@ -343,51 +376,213 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   ),
                                                 ),
                                               ),
+                                            ] else if (_errorServidor) ...[
+                                              Container(
+                                                width: screenWidth * 0.18,
+                                                height: screenWidth * 0.18,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFFEF3C7),
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: const Color(0xFFFCD34D),
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                child: Icon(
+                                                  Icons.cloud_off_rounded,
+                                                  color: const Color(0xFFD97706),
+                                                  size: screenWidth * 0.09,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.02),
+                                              Text(
+                                                l10n?.errorConexionServidor ?? 'Error de conexión con el servidor',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: azulFondo,
+                                                  fontSize: screenWidth * 0.045,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.01),
+                                              Text(
+                                                l10n?.errorCargarSolicitudesDesc ??
+                                                    'Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: screenWidth * 0.034,
+                                                  height: 1.35,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.025),
+                                              ElevatedButton.icon(
+                                                onPressed: _cargarSolicitudes,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: azulFondo,
+                                                  foregroundColor: Colors.white,
+                                                  elevation: 0,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.05,
+                                                    vertical: usableHeight * 0.014,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(
+                                                      screenWidth * 0.03,
+                                                    ),
+                                                  ),
+                                                ),
+                                                icon: Icon(
+                                                  Icons.refresh_rounded,
+                                                  size: screenWidth * 0.045,
+                                                ),
+                                                label: Text(
+                                                  l10n?.reintentarConexionServidor ?? 'Reintentar conexión con el servidor',
+                                                  style: TextStyle(
+                                                    fontSize: screenWidth * 0.036,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ] else ...[
+                                              Container(
+                                                width: screenWidth * 0.18,
+                                                height: screenWidth * 0.18,
+                                                decoration: BoxDecoration(
+                                                  color: azulFondo.withValues(alpha: 0.08),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.inbox_outlined,
+                                                  color: azulFondo,
+                                                  size: screenWidth * 0.09,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.02),
+                                              Text(
+                                                l10n?.sinSolicitudesRegistradas ??
+                                                    'No tienes solicitudes registradas',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: azulFondo,
+                                                  fontSize: screenWidth * 0.045,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.01),
+                                              Text(
+                                                'Tus peticiones pastorales aparecerán aquí.',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: screenWidth * 0.034,
+                                                  height: 1.35,
+                                                ),
+                                              ),
                                             ],
                                           ],
                                         ),
                                       ),
                                     ),
                                   )
-                                : RefreshIndicator(
-                                    onRefresh: _cargarSolicitudes,
-                                    color: amarilloOro,
-                                    child: ListView.separated(
-                                      physics: const AlwaysScrollableScrollPhysics(
-                                        parent: BouncingScrollPhysics(),
+                                : Column(
+                                    children: [
+                                      if (_esModoLocal || _errorServidor)
+                                        Container(
+                                          margin: EdgeInsets.only(bottom: usableHeight * 0.014),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: screenWidth * 0.035,
+                                            vertical: usableHeight * 0.01,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFFBEB),
+                                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                            border: Border.all(color: const Color(0xFFFDE68A)),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.cloud_off_rounded,
+                                                color: const Color(0xFFB45309),
+                                                size: screenWidth * 0.05,
+                                              ),
+                                              SizedBox(width: screenWidth * 0.025),
+                                              Expanded(
+                                                child: Text(
+                                                  l10n?.modoLocalAviso ??
+                                                      'Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.',
+                                                  style: TextStyle(
+                                                    color: const Color(0xFF92400E),
+                                                    fontSize: screenWidth * 0.03,
+                                                    height: 1.25,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: _cargarSolicitudes,
+                                                style: TextButton.styleFrom(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.02,
+                                                    vertical: 0,
+                                                  ),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                                child: Text(
+                                                  l10n?.reintentar ?? 'Reintentar',
+                                                  style: TextStyle(
+                                                    color: const Color(0xFFB45309),
+                                                    fontSize: screenWidth * 0.032,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      Expanded(
+                                        child: RefreshIndicator(
+                                          onRefresh: _cargarSolicitudes,
+                                          color: amarilloOro,
+                                          child: ListView.separated(
+                                            physics: const AlwaysScrollableScrollPhysics(
+                                              parent: BouncingScrollPhysics(),
+                                            ),
+                                            itemCount: solicitudes.length,
+                                            separatorBuilder: (context, index) =>
+                                                SizedBox(height: usableHeight * 0.014),
+                                            itemBuilder: (context, index) {
+                                              final item = solicitudes[index];
+                                              return _buildRequestCard(
+                                                title: item['title'] as String,
+                                                status: item['status'] as String,
+                                                statusColor: item['statusColor'] as Color,
+                                                dateInfo: item['dateInfo'] as String?,
+                                                icon: item['icon'] as IconData,
+                                                iconColor: item['iconColor'] as Color,
+                                                screenWidth: screenWidth,
+                                                usableHeight: usableHeight,
+                                                azulFondo: azulFondo,
+                                                grisBorde: grisBorde,
+                                                onTap: () {
+                                                  _mostrarDetalleSolicitud(
+                                                    context: context,
+                                                    item: item,
+                                                    screenWidth: screenWidth,
+                                                    usableHeight: usableHeight,
+                                                    azulFondo: azulFondo,
+                                                    blancoFondo: blancoFondo,
+                                                    grisBorde: grisBorde,
+                                                    amarilloOro: amarilloOro,
+                                                    l10n: l10n,
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ),
                                       ),
-                                      itemCount: solicitudes.length,
-                                      separatorBuilder: (context, index) =>
-                                          SizedBox(height: usableHeight * 0.014),
-                                      itemBuilder: (context, index) {
-                                        final item = solicitudes[index];
-                                        return _buildRequestCard(
-                                          title: item['title'] as String,
-                                          status: item['status'] as String,
-                                          statusColor: item['statusColor'] as Color,
-                                          dateInfo: item['dateInfo'] as String?,
-                                          icon: item['icon'] as IconData,
-                                          iconColor: item['iconColor'] as Color,
-                                          screenWidth: screenWidth,
-                                          usableHeight: usableHeight,
-                                          azulFondo: azulFondo,
-                                          grisBorde: grisBorde,
-                                          onTap: () {
-                                            _mostrarDetalleSolicitud(
-                                              context: context,
-                                              item: item,
-                                              screenWidth: screenWidth,
-                                              usableHeight: usableHeight,
-                                              azulFondo: azulFondo,
-                                              blancoFondo: blancoFondo,
-                                              grisBorde: grisBorde,
-                                              amarilloOro: amarilloOro,
-                                              l10n: l10n,
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
+                                    ],
                                   ),
                           ),
 

@@ -111,14 +111,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
     final String nombre = estaAutenticado
         ? (currentUser?.nombre.isNotEmpty == true
-            ? currentUser!.nombre
-            : (_usuarioData?['nombre'] ?? (l10n?.usuario ?? 'Usuario')))
+              ? currentUser!.nombre
+              : (_usuarioData?['nombre'] ?? (l10n?.usuario ?? 'Usuario')))
         : (l10n?.usuarioInvitado ?? 'Usuario invitado');
 
     final String inicial = estaAutenticado
         ? (currentUser?.avatarIniciales.isNotEmpty == true
-            ? currentUser!.avatarIniciales
-            : (nombre.trim().isNotEmpty ? nombre.trim()[0].toUpperCase() : 'U'))
+              ? currentUser!.avatarIniciales
+              : (nombre.trim().isNotEmpty
+                    ? nombre.trim()[0].toUpperCase()
+                    : 'U'))
         : 'I';
 
     final String? nombreProvider =
@@ -188,8 +190,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
-                        l10n?.perfilInvitadoDesc ??
-                            'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
+                        l10n?.perfilInvitadoDesc ?? 'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
                         style: TextStyle(
                           color: const Color(0xFF5D3E00),
                           fontSize: screenWidth * 0.032,
@@ -263,22 +264,24 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           items: [
                             _MenuItemData(
                               icon: Icons.campaign_outlined,
-                              label: l10n?.gestionAvisos ??
+                              label:
+                                  l10n?.gestionAvisos ??
                                   'Avisos congregacionales',
                               route: null,
                               onCustomTap: () => _mostrarGestionAvisos(context),
                             ),
                             _MenuItemData(
                               icon: Icons.groups_outlined,
-                              label: l10n?.gestionGrupos ??
-                                  'Audiencias y grupos',
+                              label:
+                                  l10n?.gestionGrupos ?? 'Audiencias y grupos',
                               route: null,
                               onCustomTap: () =>
                                   _mostrarGruposAudiencia(context),
                             ),
                             _MenuItemData(
                               icon: Icons.volunteer_activism_outlined,
-                              label: l10n?.moderacionPeticiones ??
+                              label:
+                                  l10n?.moderacionPeticiones ??
                                   'Moderación de peticiones',
                               route: null,
                               onCustomTap: () =>
@@ -286,7 +289,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             ),
                             _MenuItemData(
                               icon: Icons.analytics_outlined,
-                              label: l10n?.metricasComunidad ??
+                              label:
+                                  l10n?.metricasComunidad ??
                                   'Estadísticas de comunidad',
                               route: null,
                               onCustomTap: () =>
@@ -382,9 +386,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   SizedBox(height: usableHeight * 0.02),
                   Center(
                     child: Text(
-                      _appVersion.isNotEmpty
-                          ? 'Atrio · $_appVersion'
-                          : 'Atrio',
+                      _appVersion.isNotEmpty ? 'Atrio · $_appVersion' : 'Atrio',
                       style: TextStyle(
                         color: Colors.grey.shade400,
                         fontSize: screenWidth * 0.03,
@@ -414,8 +416,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n?.perfilInvitadoDesc ??
-                'Estás navegando en modo invitado. Inicia sesión para acceder a tu perfil y datos.',
+            l10n?.perfilInvitadoDesc ?? 'Estás navegando en modo invitado. Inicia sesión para acceder a tu perfil y datos.',
           ),
           backgroundColor: azulFondo,
           action: SnackBarAction(
@@ -448,7 +449,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
             iglesiaActual !=
                 (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada'))
         ? iglesiaActual
-        : (currentUser?.iglesiaActual ?? (_usuarioData?['iglesia_nombre'] ?? ''));
+        : (currentUser?.iglesiaActual ??
+              (_usuarioData?['iglesia_nombre'] ?? ''));
 
     final iglesiaCtrl = TextEditingController(text: defaultIglesia);
 
@@ -575,8 +577,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        l10n?.accionRestringidaSoloLectura ??
-                            'Acción restringida: Modo de solo lectura activado.',
+                        l10n?.accionRestringidaSoloLectura ?? 'Acción restringida: Modo de solo lectura activado.',
                       ),
                       backgroundColor: Colors.red.shade700,
                     ),
@@ -836,7 +837,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             ),
                           ),
                         ),
-                        if (userProvider.isAuthenticated && userProvider.isReadOnly)
+                        if (userProvider.isAuthenticated &&
+                            userProvider.isReadOnly)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -1251,7 +1253,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
     if (!userProvider.isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Debes tener una sesión activa para probar la renovación de tokens.'),
+          content: Text(
+            'Debes tener una sesión activa para probar la renovación de tokens.',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -1296,10 +1300,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
-              Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 28),
+              Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF2E7D32),
+                size: 28,
+              ),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1337,10 +1347,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
-              Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 28),
+              Icon(
+                Icons.error_outline_rounded,
+                color: Colors.red.shade700,
+                size: 28,
+              ),
               const SizedBox(width: 10),
               const Text('Fallo en Renovación'),
             ],
@@ -1646,8 +1662,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   void _mostrarDialogoCrearAviso(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final usableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.of(context).padding.top;
+    final usableHeight =
+        MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;
     final l10n = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
     final titleCtrl = TextEditingController();
@@ -1688,12 +1704,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           controller: titleCtrl,
                           enabled: !isSubmitting,
                           decoration: InputDecoration(
-                            labelText:
-                                l10n?.tituloAviso ?? 'Título del aviso',
+                            labelText: l10n?.tituloAviso ?? 'Título del aviso',
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
-                              ? (l10n?.campoRequerido ?? 'Este campo es requerido')
+                              ? (l10n?.campoRequerido ??
+                                    'Este campo es requerido')
                               : null,
                         ),
                         SizedBox(height: usableHeight * 0.015),
@@ -1707,14 +1723,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             border: const OutlineInputBorder(),
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
-                              ? (l10n?.campoRequerido ?? 'Este campo es requerido')
+                              ? (l10n?.campoRequerido ??
+                                    'Este campo es requerido')
                               : null,
                         ),
                         SizedBox(height: usableHeight * 0.015),
                         DropdownButtonFormField<int?>(
                           initialValue: selectedGroupId,
                           decoration: InputDecoration(
-                            labelText: l10n?.seleccionarAudiencia ??
+                            labelText:
+                                l10n?.seleccionarAudiencia ??
                                 'Audiencia / Grupo',
                             border: const OutlineInputBorder(),
                           ),
@@ -1736,7 +1754,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           onChanged: isSubmitting
                               ? null
                               : (val) =>
-                                  setDialogState(() => selectedGroupId = val),
+                                    setDialogState(() => selectedGroupId = val),
                         ),
                         SizedBox(height: usableHeight * 0.01),
                         SwitchListTile(
@@ -1749,8 +1767,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           activeThumbColor: amarilloOro,
                           onChanged: isSubmitting
                               ? null
-                              : (val) =>
-                                  setDialogState(() => pinned = val),
+                              : (val) => setDialogState(() => pinned = val),
                         ),
                       ],
                     ),
@@ -1759,7 +1776,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSubmitting ? null : () => Navigator.pop(dialogCtx),
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.pop(dialogCtx),
                   child: Text(l10n?.cancelar ?? 'Cancelar'),
                 ),
                 ElevatedButton(
@@ -1797,7 +1816,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               );
                             } else {
                               setDialogState(() => isSubmitting = false);
-                              final errorMsg = adminProv.errorMessage ??
+                              final errorMsg =
+                                  adminProv.errorMessage ??
                                   (l10n?.errorPublicarAviso ??
                                       'No fue posible publicar el aviso');
                               scaffoldMessenger.showSnackBar(
@@ -1838,8 +1858,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   void _mostrarGruposAudiencia(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final usableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.of(context).padding.top;
+    final usableHeight =
+        MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;
     final l10n = AppLocalizations.of(context);
     final adminProv = context.read<AdminProvider>();
     adminProv.loadGroups();
@@ -1908,9 +1928,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             g.name,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text(g.description.isNotEmpty
-                              ? g.description
-                              : '${g.memberCount} miembros'),
+                          subtitle: Text(
+                            g.description.isNotEmpty
+                                ? g.description
+                                : '${g.memberCount} miembros',
+                          ),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -1943,8 +1965,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   void _mostrarModeracionPeticiones(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final usableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.of(context).padding.top;
+    final usableHeight =
+        MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;
     final l10n = AppLocalizations.of(context);
     final adminProv = context.read<AdminProvider>();
     final userProvider = context.read<UserProvider>();
@@ -2004,8 +2026,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         usableHeight: usableHeight,
                         icon: Icons.laptop_chromebook_rounded,
                         titulo: 'Gestión en Consola Web',
-                        descripcion:
-                            'Las solicitudes pastorales y peticiones de oración de tu congregación se responden y administran centralizadamente a través de la consola web:',
+                        descripcion: 'Las solicitudes pastorales y peticiones de oración de tu congregación se responden y administran centralizadamente a través de la consola web:',
                         url: 'https://atrioapp.odoo19rd.com/atrio/manage',
                       );
                     }
@@ -2085,8 +2106,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                         ),
                                       ),
                                       onPressed: () async {
-                                        final messenger =
-                                            ScaffoldMessenger.of(context);
+                                        final messenger = ScaffoldMessenger.of(
+                                          context,
+                                        );
                                         final ok = await prov
                                             .moderatePrayerRequest(
                                               requestId: r.id,
@@ -2105,9 +2127,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                           );
                                         }
                                       },
-                                      child: Text(
-                                        l10n?.rechazar ?? 'Rechazar',
-                                      ),
+                                      child: Text(l10n?.rechazar ?? 'Rechazar'),
                                     ),
                                     const SizedBox(width: 8),
                                     ElevatedButton(
@@ -2116,8 +2136,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                         foregroundColor: azulFondo,
                                       ),
                                       onPressed: () async {
-                                        final messenger =
-                                            ScaffoldMessenger.of(context);
+                                        final messenger = ScaffoldMessenger.of(
+                                          context,
+                                        );
                                         final ok = await prov
                                             .moderatePrayerRequest(
                                               requestId: r.id,
@@ -2135,9 +2156,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                           );
                                         }
                                       },
-                                      child: Text(
-                                        l10n?.aprobar ?? 'Aprobar',
-                                      ),
+                                      child: Text(l10n?.aprobar ?? 'Aprobar'),
                                     ),
                                   ],
                                 ),
@@ -2159,8 +2178,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   void _mostrarMetricasComunidad(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final usableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.of(context).padding.top;
+    final usableHeight =
+        MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;
     final l10n = AppLocalizations.of(context);
     final adminProv = context.read<AdminProvider>();
     adminProv.loadAnalytics();
@@ -2219,7 +2238,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       children: [
                         if (prov.isAnalyticsWebOnly)
                           Container(
-                            margin: EdgeInsets.only(bottom: usableHeight * 0.015),
+                            margin: EdgeInsets.only(
+                              bottom: usableHeight * 0.015,
+                            ),
                             padding: EdgeInsets.all(screenWidth * 0.03),
                             decoration: BoxDecoration(
                               color: azulFondo.withValues(alpha: 0.06),
@@ -2264,7 +2285,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               ),
                               _buildStatCard(
                                 icon: Icons.person_add_outlined,
-                                label: l10n?.nuevosMiembrosMes ?? 'Nuevos este mes',
+                                label:
+                                    l10n?.nuevosMiembrosMes ??
+                                    'Nuevos este mes',
                                 value: '+${m.newMembersThisMonth}',
                                 screenWidth: screenWidth,
                               ),
@@ -2276,7 +2299,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               ),
                               _buildStatCard(
                                 icon: Icons.volunteer_activism_outlined,
-                                label: l10n?.peticionesPendientes ??
+                                label:
+                                    l10n?.peticionesPendientes ??
                                     'Peticiones pend.',
                                 value: '${m.pendingModerationCount}',
                                 screenWidth: screenWidth,

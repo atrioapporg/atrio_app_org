@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 
@@ -232,8 +233,11 @@ class ModalConfirmacionSolicitud {
                         ),
                         onPressed: () async {
                           setStateModal(() => procesando = true);
+                          final userProvider = context.read<UserProvider>();
+                          final userEmail = userProvider.currentUser?.email.toLowerCase().trim();
+                          final fechaActual = DateTime.now().toIso8601String().split('T').first;
+
                           try {
-                            final userProvider = context.read<UserProvider>();
                             final res = await userProvider.api.createRequest(
                               tipoSolicitud.toLowerCase(),
                               asunto,
@@ -241,12 +245,48 @@ class ModalConfirmacionSolicitud {
                             );
                             final reqId = res['id'] ?? res['name'] ?? res['reference'] ?? '0012';
                             ordenOdoo = 'REQ-$reqId';
+
+                            // Guardar en almacenamiento local SQLite
+                            try {
+                              await AtrioDatabaseHelper.instance.guardarSolicitudLocal({
+                                'odoo_id': res['id'] is int ? res['id'] : int.tryParse('${res['id']}'),
+                                'referencia': ordenOdoo,
+                                'tipo': tipoSolicitud.toLowerCase(),
+                                'titulo': asunto,
+                                'mensaje': mensaje ?? asunto,
+                                'estado': 'nueva',
+                                'estado_label': 'Recibida',
+                                'fecha': fechaActual,
+                                'usuario_email': userEmail,
+                              });
+                            } catch (eDb) {
+                              debugPrint('[DB_SOLICITUD] Error guardando local: $eDb');
+                            }
+
                             setStateModal(() {
                               procesando = false;
                               completado = true;
                             });
                           } catch (e) {
                             debugPrint('[REQUEST_ODOO] Error creando solicitud (fallback activo): $e');
+                            ordenOdoo = 'REQ-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
+                            // Guardar en almacenamiento local SQLite aún si Odoo falla
+                            try {
+                              await AtrioDatabaseHelper.instance.guardarSolicitudLocal({
+                                'referencia': ordenOdoo,
+                                'tipo': tipoSolicitud.toLowerCase(),
+                                'titulo': asunto,
+                                'mensaje': mensaje ?? asunto,
+                                'estado': 'nueva',
+                                'estado_label': 'Recibida',
+                                'fecha': fechaActual,
+                                'usuario_email': userEmail,
+                              });
+                            } catch (eDb) {
+                              debugPrint('[DB_SOLICITUD] Error guardando local en fallback: $eDb');
+                            }
+
                             setStateModal(() {
                               procesando = false;
                               completado = true;

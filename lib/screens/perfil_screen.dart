@@ -248,58 +248,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   // Sección Administrativa Pastoral (Odoo 19 /admin/*)
                   PermissionGuard(
                     requireChurchAdmin: true,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _sectionLabel(
-                          l10n?.administracionPastoral ??
-                              'Administración Pastoral',
-                          screenWidth,
-                          usableHeight,
-                        ),
-                        _buildMenuGroup(
-                          context: context,
-                          screenWidth: screenWidth,
-                          usableHeight: usableHeight,
-                          items: [
-                            _MenuItemData(
-                              icon: Icons.campaign_outlined,
-                              label:
-                                  l10n?.gestionAvisos ??
-                                  'Avisos congregacionales',
-                              route: null,
-                              onCustomTap: () => _mostrarGestionAvisos(context),
-                            ),
-                            _MenuItemData(
-                              icon: Icons.groups_outlined,
-                              label:
-                                  l10n?.gestionGrupos ?? 'Audiencias y grupos',
-                              route: null,
-                              onCustomTap: () =>
-                                  _mostrarGruposAudiencia(context),
-                            ),
-                            _MenuItemData(
-                              icon: Icons.volunteer_activism_outlined,
-                              label:
-                                  l10n?.moderacionPeticiones ??
-                                  'Moderación de peticiones',
-                              route: null,
-                              onCustomTap: () =>
-                                  _mostrarModeracionPeticiones(context),
-                            ),
-                            _MenuItemData(
-                              icon: Icons.analytics_outlined,
-                              label:
-                                  l10n?.metricasComunidad ??
-                                  'Estadísticas de comunidad',
-                              route: null,
-                              onCustomTap: () =>
-                                  _mostrarMetricasComunidad(context),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: usableHeight * 0.025),
-                      ],
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: usableHeight * 0.025),
+                      child: _buildSeccionPastoralDestacada(
+                        context: context,
+                        screenWidth: screenWidth,
+                        usableHeight: usableHeight,
+                      ),
                     ),
                   ),
 
@@ -361,12 +316,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     screenWidth: screenWidth,
                     usableHeight: usableHeight,
                     items: [
-                      _MenuItemData(
-                        icon: Icons.sync_lock_rounded,
-                        label: 'Probar renovación de token (401)',
-                        route: null,
-                        onCustomTap: () => _probarRenovacionToken(context),
-                      ),
                       _MenuItemData(
                         icon: Icons.help_outline_rounded,
                         label: l10n?.ayudaYSoporte ?? 'Ayuda y soporte',
@@ -1073,6 +1022,268 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 
+  Widget _buildSeccionPastoralDestacada({
+    required BuildContext context,
+    required double screenWidth,
+    required double usableHeight,
+  }) {
+    final l10n = AppLocalizations.of(context);
+
+    final items = [
+      (
+        icon: Icons.campaign_rounded,
+        title: l10n?.gestionAvisos ?? 'Avisos congregacionales',
+        subtitle: 'Publicar comunicados y avisos clave',
+        onTap: () => _mostrarGestionAvisos(context),
+      ),
+      (
+        icon: Icons.groups_rounded,
+        title: l10n?.gestionGrupos ?? 'Audiencias y grupos',
+        subtitle: 'Segmentación de ministerios y membresía',
+        onTap: () => _mostrarGruposAudiencia(context),
+      ),
+      (
+        icon: Icons.volunteer_activism_rounded,
+        title: l10n?.moderacionPeticiones ?? 'Moderación de peticiones',
+        subtitle: 'Revisión y cuidado pastoral de oraciones',
+        onTap: () => _mostrarModeracionPeticiones(context),
+      ),
+      (
+        icon: Icons.insights_rounded,
+        title: l10n?.metricasComunidad ?? 'Estadísticas de comunidad',
+        subtitle: 'Métricas de crecimiento y participación',
+        onTap: () => _mostrarMetricasComunidad(context),
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [azulFondo, Color(0xFF0F3E6C)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: amarilloOro.withValues(alpha: 0.38),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: azulFondo.withValues(alpha: 0.28),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Sutil decoración de fondo de agua
+            Positioned(
+              top: -15,
+              right: -15,
+              child: Icon(
+                Icons.church_rounded,
+                size: screenWidth * 0.38,
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.045,
+                vertical: usableHeight * 0.022,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cabecera destacada de liderazgo pastoral
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: amarilloOro.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: amarilloOro.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.admin_panel_settings_rounded,
+                          color: amarilloOro,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    l10n?.administracionPastoral ??
+                                        'Administración Pastoral',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: screenWidth * 0.044,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: amarilloOro,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'LÍDER',
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Gestión y cuidado de la congregación',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.72),
+                                fontSize: screenWidth * 0.03,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: usableHeight * 0.018),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.09),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: List.generate(items.length, (idx) {
+                        final item = items[idx];
+                        final isLast = idx == items.length - 1;
+                        return Column(
+                          children: [
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.vertical(
+                                  top: idx == 0
+                                      ? const Radius.circular(14)
+                                      : Radius.zero,
+                                  bottom: isLast
+                                      ? const Radius.circular(14)
+                                      : Radius.zero,
+                                ),
+                                onTap: item.onTap,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.035,
+                                    vertical: usableHeight * 0.014,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          color: amarilloOro.withValues(
+                                            alpha: 0.16,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          item.icon,
+                                          color: amarilloOro,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.title,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: screenWidth * 0.037,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              item.subtitle,
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.65,
+                                                ),
+                                                fontSize: screenWidth * 0.029,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.38,
+                                        ),
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (!isLast)
+                              Divider(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                height: 1,
+                                thickness: 1,
+                                indent: screenWidth * 0.14,
+                                endIndent: screenWidth * 0.03,
+                              ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuGroup({
     required BuildContext context,
     required List<_MenuItemData> items,
@@ -1673,182 +1884,514 @@ class _PerfilScreenState extends State<PerfilScreen> {
     int? selectedGroupId;
     bool isSubmitting = false;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: !isSubmitting,
-      builder: (dialogCtx) {
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (dialogStateCtx, setDialogState) {
             final adminProv = dialogStateCtx.watch<AdminProvider>();
-            return AlertDialog(
-              backgroundColor: blancoFondo,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Text(
-                l10n?.publicarAviso ?? 'Publicar aviso',
-                style: const TextStyle(
-                  color: azulFondo,
-                  fontWeight: FontWeight.bold,
+            final keyboardHeight = MediaQuery.of(dialogStateCtx)
+                .viewInsets
+                .bottom;
+
+            return PopScope(
+              canPop: !isSubmitting,
+              child: Container(
+                constraints: BoxConstraints(maxHeight: usableHeight * 0.92),
+                decoration: BoxDecoration(
+                  color: blancoFondo,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(screenWidth * 0.06),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 20,
+                      offset: Offset(0, -4),
+                    ),
+                  ],
                 ),
-              ),
-              content: SizedBox(
-                width: screenWidth * 0.85,
-                child: Form(
-                  key: formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: titleCtrl,
-                          enabled: !isSubmitting,
-                          decoration: InputDecoration(
-                            labelText: l10n?.tituloAviso ?? 'Título del aviso',
-                            border: const OutlineInputBorder(),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: keyboardHeight),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Manija superior de arrastre
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 6),
+                        child: Center(
+                          child: Container(
+                            width: 44,
+                            height: 4.5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
                           ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? (l10n?.campoRequerido ??
-                                    'Este campo es requerido')
-                              : null,
                         ),
-                        SizedBox(height: usableHeight * 0.015),
-                        TextFormField(
-                          controller: contentCtrl,
-                          enabled: !isSubmitting,
-                          maxLines: 4,
-                          decoration: InputDecoration(
-                            labelText:
-                                l10n?.contenidoAviso ?? 'Contenido del aviso',
-                            border: const OutlineInputBorder(),
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? (l10n?.campoRequerido ??
-                                    'Este campo es requerido')
-                              : null,
+                      ),
+
+                      // Cabecera estilizada del modal
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: 6,
                         ),
-                        SizedBox(height: usableHeight * 0.015),
-                        DropdownButtonFormField<int?>(
-                          initialValue: selectedGroupId,
-                          decoration: InputDecoration(
-                            labelText:
-                                l10n?.seleccionarAudiencia ??
-                                'Audiencia / Grupo',
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: [
-                            DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text(
-                                l10n?.todasLasAudiencias ??
-                                    'Toda la congregación',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: amarilloOro.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.campaign_rounded,
+                                color: azulFondo,
+                                size: 24,
                               ),
                             ),
-                            ...adminProv.groups.map(
-                              (g) => DropdownMenuItem<int?>(
-                                value: g.id,
-                                child: Text('${g.name} (${g.memberCount})'),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n?.publicarAviso ?? 'Publicar aviso',
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.046,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Difunde comunicados clave a tu congregación',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: screenWidth * 0.03,
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              color: Colors.grey.shade700,
+                              tooltip: l10n?.cancelar ?? 'Cerrar',
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => Navigator.of(sheetCtx).pop(),
                             ),
                           ],
-                          onChanged: isSubmitting
-                              ? null
-                              : (val) =>
-                                    setDialogState(() => selectedGroupId = val),
                         ),
-                        SizedBox(height: usableHeight * 0.01),
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            l10n?.fijarAviso ?? 'Fijar al inicio',
-                            style: TextStyle(fontSize: screenWidth * 0.034),
+                      ),
+
+                      const Divider(height: 1, thickness: 1),
+
+                      // Formulario deslizable con uso óptimo del espacio
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.fromLTRB(
+                            screenWidth * 0.05,
+                            usableHeight * 0.02,
+                            screenWidth * 0.05,
+                            usableHeight * 0.025,
                           ),
-                          value: pinned,
-                          activeThumbColor: amarilloOro,
-                          onChanged: isSubmitting
-                              ? null
-                              : (val) => setDialogState(() => pinned = val),
+                          child: Form(
+                            key: formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Título
+                                Text(
+                                  l10n?.tituloAviso ?? 'Título del aviso',
+                                  style: TextStyle(
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.034,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: titleCtrl,
+                                  enabled: !isSubmitting,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.038,
+                                    color: Colors.black87,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        'Ej. Convocatoria a vigilia de oración',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: screenWidth * 0.033,
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.title_rounded,
+                                      color: azulFondo,
+                                      size: 20,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: azulFondo,
+                                        width: 1.6,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty)
+                                      ? (l10n?.campoRequerido ??
+                                            'Este campo es requerido')
+                                      : null,
+                                ),
+                                SizedBox(height: usableHeight * 0.018),
+
+                                // Contenido
+                                Text(
+                                  l10n?.contenidoAviso ?? 'Contenido del aviso',
+                                  style: TextStyle(
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.034,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: contentCtrl,
+                                  enabled: !isSubmitting,
+                                  maxLines: 4,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.038,
+                                    color: Colors.black87,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Describe fecha, hora, lugar y detalles del comunicado...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontSize: screenWidth * 0.033,
+                                    ),
+                                    prefixIcon: const Padding(
+                                      padding: EdgeInsets.only(bottom: 54),
+                                      child: Icon(
+                                        Icons.notes_rounded,
+                                        color: azulFondo,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: azulFondo,
+                                        width: 1.6,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || v.trim().isEmpty)
+                                      ? (l10n?.campoRequerido ??
+                                            'Este campo es requerido')
+                                      : null,
+                                ),
+                                SizedBox(height: usableHeight * 0.018),
+
+                                // Audiencia / Grupo
+                                Text(
+                                  l10n?.seleccionarAudiencia ??
+                                      'Audiencia / Grupo',
+                                  style: TextStyle(
+                                    color: azulFondo,
+                                    fontSize: screenWidth * 0.034,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<int?>(
+                                  initialValue: selectedGroupId,
+                                  decoration: InputDecoration(
+                                    prefixIcon: const Icon(
+                                      Icons.groups_rounded,
+                                      color: azulFondo,
+                                      size: 20,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: azulFondo,
+                                        width: 1.6,
+                                      ),
+                                    ),
+                                  ),
+                                  items: [
+                                    DropdownMenuItem<int?>(
+                                      value: null,
+                                      child: Text(
+                                        l10n?.todasLasAudiencias ??
+                                            'Toda la congregación',
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.036,
+                                        ),
+                                      ),
+                                    ),
+                                    ...adminProv.groups.map(
+                                      (g) => DropdownMenuItem<int?>(
+                                        value: g.id,
+                                        child: Text(
+                                          '${g.name} (${g.memberCount})',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.036,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: isSubmitting
+                                      ? null
+                                      : (val) => setDialogState(
+                                          () => selectedGroupId = val,
+                                        ),
+                                ),
+                                SizedBox(height: usableHeight * 0.016),
+
+                                // Fijar al inicio (Tarjeta con Switch y estilo distintivo)
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: pinned
+                                          ? amarilloOro.withValues(alpha: 0.6)
+                                          : Colors.grey.shade300,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: SwitchListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 2,
+                                    ),
+                                    secondary: Container(
+                                      padding: const EdgeInsets.all(7),
+                                      decoration: BoxDecoration(
+                                        color: pinned
+                                            ? amarilloOro.withValues(alpha: 0.2)
+                                            : Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.push_pin_rounded,
+                                        color: pinned
+                                            ? azulFondo
+                                            : Colors.grey.shade500,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      l10n?.fijarAviso ?? 'Fijar al inicio',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.035,
+                                        fontWeight: FontWeight.w600,
+                                        color: azulFondo,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      'Mantener en la parte superior del muro',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.029,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    value: pinned,
+                                    activeThumbColor: amarilloOro,
+                                    activeTrackColor: amarilloOro.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                    onChanged: isSubmitting
+                                        ? null
+                                        : (val) => setDialogState(
+                                            () => pinned = val,
+                                          ),
+                                  ),
+                                ),
+                                SizedBox(height: usableHeight * 0.024),
+
+                                // Botón principal de publicación a ancho completo
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: amarilloOro,
+                                      foregroundColor: azulFondo,
+                                      elevation: 2,
+                                      shadowColor: amarilloOro.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    onPressed: isSubmitting
+                                        ? null
+                                        : () async {
+                                            if (!formKey.currentState!
+                                                .validate()) {
+                                              return;
+                                            }
+                                            setDialogState(
+                                              () => isSubmitting = true,
+                                            );
+                                            final nav = Navigator.of(sheetCtx);
+                                            try {
+                                              final ok = await dialogStateCtx
+                                                  .read<AdminProvider>()
+                                                  .createAnnouncement(
+                                                    title: titleCtrl.text
+                                                        .trim(),
+                                                    content: contentCtrl.text
+                                                        .trim(),
+                                                    targetGroupIds:
+                                                        selectedGroupId != null
+                                                        ? [selectedGroupId!]
+                                                        : null,
+                                                    pinned: pinned,
+                                                  );
+                                              if (ok) {
+                                                nav.pop();
+                                                scaffoldMessenger.showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      l10n?.avisoPublicadoExito ?? 'Aviso publicado con éxito',
+                                                    ),
+                                                    backgroundColor: azulFondo,
+                                                  ),
+                                                );
+                                              } else {
+                                                setDialogState(
+                                                  () => isSubmitting = false,
+                                                );
+                                                final errorMsg =
+                                                    adminProv.errorMessage ??
+                                                    (l10n?.errorPublicarAviso ??
+                                                        'No fue posible publicar el aviso');
+                                                scaffoldMessenger.showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(errorMsg),
+                                                    backgroundColor:
+                                                        Colors.red.shade700,
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              setDialogState(
+                                                () => isSubmitting = false,
+                                              );
+                                              scaffoldMessenger.showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error: $e'),
+                                                  backgroundColor:
+                                                      Colors.red.shade700,
+                                                ),
+                                              );
+                                            }
+                                          },
+                                    child: isSubmitting
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: azulFondo,
+                                            ),
+                                          )
+                                        : Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.send_rounded,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                l10n?.publicar ??
+                                                    'Publicar aviso',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: screenWidth * 0.038,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () => Navigator.pop(dialogCtx),
-                  child: Text(l10n?.cancelar ?? 'Cancelar'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: amarilloOro,
-                    foregroundColor: azulFondo,
-                  ),
-                  onPressed: isSubmitting
-                      ? null
-                      : () async {
-                          if (!formKey.currentState!.validate()) return;
-                          setDialogState(() => isSubmitting = true);
-                          final nav = Navigator.of(dialogCtx);
-                          try {
-                            final ok = await dialogStateCtx
-                                .read<AdminProvider>()
-                                .createAnnouncement(
-                                  title: titleCtrl.text.trim(),
-                                  content: contentCtrl.text.trim(),
-                                  targetGroupIds: selectedGroupId != null
-                                      ? [selectedGroupId!]
-                                      : null,
-                                  pinned: pinned,
-                                );
-                            if (ok) {
-                              nav.pop();
-                              scaffoldMessenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l10n?.avisoPublicadoExito ??
-                                        'Aviso publicado con éxito',
-                                  ),
-                                  backgroundColor: azulFondo,
-                                ),
-                              );
-                            } else {
-                              setDialogState(() => isSubmitting = false);
-                              final errorMsg =
-                                  adminProv.errorMessage ??
-                                  (l10n?.errorPublicarAviso ??
-                                      'No fue posible publicar el aviso');
-                              scaffoldMessenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(errorMsg),
-                                  backgroundColor: Colors.red.shade700,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            setDialogState(() => isSubmitting = false);
-                            scaffoldMessenger.showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
-                                backgroundColor: Colors.red.shade700,
-                              ),
-                            );
-                          }
-                        },
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: azulFondo,
-                          ),
-                        )
-                      : Text(l10n?.publicar ?? 'Publicar'),
-                ),
-              ],
             );
           },
         );

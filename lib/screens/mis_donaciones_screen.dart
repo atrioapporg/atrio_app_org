@@ -19,6 +19,7 @@ class MisDonacionesScreen extends StatefulWidget {
 
 class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
   bool _isLoading = false;
+  bool _errorServidor = false;
   List<Map<String, dynamic>> _donacionesApi = [];
 
   @override
@@ -38,48 +39,161 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
         setState(() {
           _donacionesApi = [];
           _isLoading = false;
+          _errorServidor = false;
         });
       }
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorServidor = false;
+    });
 
     try {
       final api = userProvider.api;
       final data = await api.myDonations();
       final dynamic raw = data['donations'] ?? data['items'] ?? data['data'];
 
-      if (raw is List && raw.isNotEmpty && mounted) {
+      if (raw is List && mounted) {
         setState(() {
-          _donacionesApi = raw.map((d) {
-            final m = d as Map<String, dynamic>;
-            final amount = m['amount'] ?? m['monto'] ?? '0.00';
-            final currency = m['currency'] ?? 'DOP';
-            final state = (m['state'] ?? m['status'] ?? 'completed').toString().toLowerCase();
-            final isDone = state == 'completed' || state == 'done' || state == 'approved';
-
-            return {
-              'title': m['name'] ?? m['title'] ?? 'Aporte Ministerial',
-              'monto': '\$ $amount $currency',
-              'status': isDone ? 'Completada' : 'En proceso',
-              'statusColor': isDone ? const Color(0xFF2E7D32) : const Color(0xFF0055A5),
-              'dateInfo': m['date'] ?? m['create_date'] ?? 'Reciente',
-              'icon': Icons.favorite_border_rounded,
-              'iconColor': const Color(0xFFE5A023),
-              'referencia': m['reference'] ?? 'DON-${m['id'] ?? '0000'}',
-              'metodoPago': m['payment_method'] ?? 'Transferencia / Online',
-              'destino': m['church_name'] ?? 'Comunidad ATRIO',
-              'detalle': m['notes'] ?? 'Aporte voluntario para sostenimiento de la obra.',
-            };
-          }).toList();
+          _donacionesApi = raw
+              .map((d) => _mapearDonacion(d as Map<String, dynamic>))
+              .toList();
+          _errorServidor = false;
         });
       }
     } catch (e) {
-      debugPrint('[DONACIONES] Error al consultar donaciones: $e');
+      debugPrint('[DONACIONES] Error al consultar donaciones en Odoo: $e');
+      if (mounted) {
+        setState(() => _errorServidor = true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Mapea los registros devueltos por Odoo 19 normalizando estados, etiquetas y formatos.
+  Map<String, dynamic> _mapearDonacion(Map<String, dynamic> m) {
+    final rawAmount = m['amount'] ?? m['monto'] ?? 0.0;
+    final currency = (m['currency'] ?? 'DOP').toString().toUpperCase();
+    final state = (m['state'] ?? m['status'] ?? '').toString().toLowerCase().trim();
+    final stateLabel = m['state_label']?.toString();
+
+    // Determinación de estado, etiquetas y colores normalizados con Odoo 19
+    String statusText;
+    Color statusColor;
+    IconData icon;
+    Color iconColor;
+
+    if (state == 'processed' ||
+        state == 'procesada' ||
+        state == 'approved' ||
+        state == 'aprobada' ||
+        state == 'completed' ||
+        state == 'completada' ||
+        state == 'done') {
+      statusColor = const Color(0xFF2E7D32); // Verde Odoo
+      statusText = stateLabel ?? 'Procesada';
+      icon = Icons.check_circle_outline_rounded;
+      iconColor = const Color(0xFF2E7D32);
+    } else if (state == 'pending' ||
+        state == 'pendiente' ||
+        state == 'draft' ||
+        state == 'borrador') {
+      statusColor = const Color(0xFFE5A023); // Amarillo/Ámbar Odoo
+      statusText = stateLabel ?? 'Pendiente';
+      icon = Icons.hourglass_top_rounded;
+      iconColor = const Color(0xFFE5A023);
+    } else if (state == 'rejected' ||
+        state == 'denied' ||
+        state == 'rechazada' ||
+        state == 'denegada' ||
+        state == 'cancelled' ||
+        state == 'cancelada') {
+      statusColor = const Color(0xFFC62828); // Rojo
+      statusText = stateLabel ?? 'Denegada';
+      icon = Icons.cancel_outlined;
+      iconColor = const Color(0xFFC62828);
+    } else {
+      statusColor = const Color(0xFF0055A5); // Azul
+      statusText = stateLabel ?? (state.isNotEmpty ? state : 'En proceso');
+      icon = Icons.favorite_border_rounded;
+      iconColor = const Color(0xFF0055A5);
+    }
+
+    // Formateo del monto con separadores de miles (ej. DOP 55,777.00)
+    double numAmount = 0.0;
+    if (rawAmount is num) {
+      numAmount = rawAmount.toDouble();
+    } else if (rawAmount is String) {
+      numAmount = double.tryParse(rawAmount) ?? 0.0;
+    }
+    final partes = numAmount.toStringAsFixed(2).split('.');
+    final entero = partes[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match match) => '${match[1]},',
+    );
+    final montoFormateado = '$currency $entero.${partes[1]}';
+
+    // Formateo de fechas amigable
+    final rawDate = m['date'] ?? m['create_date'] ?? m['fecha'];
+    String fechaCorta = 'Reciente';
+    String fechaCompleta = 'Reciente';
+    if (rawDate != null) {
+      try {
+        final dt = DateTime.parse(rawDate.toString()).toLocal();
+        const meses = [
+          'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+          'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+        ];
+        final mes = meses[dt.month - 1];
+        final hora = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+        final ampm = dt.hour >= 12 ? 'p.m.' : 'a.m.';
+        final min = dt.minute.toString().padLeft(2, '0');
+        fechaCorta = '${dt.day} $mes ${dt.year}';
+        fechaCompleta = '${dt.day} de $mes de ${dt.year}, $hora:$min $ampm';
+      } catch (_) {
+        fechaCorta = rawDate.toString().split('T').first;
+        fechaCompleta = rawDate.toString();
+      }
+    }
+
+    // Método de pago amigable
+    final rawMethod = (m['payment_method'] ?? '').toString().toLowerCase();
+    String metodoLabel = m['payment_method_label']?.toString() ?? '';
+    if (metodoLabel.isEmpty) {
+      if (rawMethod.contains('transfer')) {
+        metodoLabel = 'Transferencia bancaria';
+      } else if (rawMethod.contains('paypal')) {
+        metodoLabel = 'PayPal';
+      } else {
+        metodoLabel = 'Transferencia / Online';
+      }
+    }
+
+    final String ref = m['reference']?.toString() ??
+        (m['id'] != null ? 'DON-${m['id']}' : 'DON-0000');
+
+    final String titulo = m['name']?.toString() ??
+        m['title']?.toString() ??
+        'Aporte ($metodoLabel)';
+
+    return {
+      'title': titulo,
+      'monto': montoFormateado,
+      'status': statusText,
+      'statusColor': statusColor,
+      'state': state,
+      'dateInfo': fechaCorta,
+      'fechaCompleta': fechaCompleta,
+      'icon': icon,
+      'iconColor': iconColor,
+      'referencia': ref,
+      'metodoPago': metodoLabel,
+      'destino': m['church_name'] ?? 'Comunidad ATRIO',
+      'detalle': m['notes'] ?? 'Aporte voluntario registrado y verificado en ATRIO.',
+    };
   }
 
   @override
@@ -216,7 +330,9 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                               child: Icon(
                                                 esInvitado
                                                     ? Icons.account_circle_outlined
-                                                    : Icons.volunteer_activism_outlined,
+                                                    : (_errorServidor
+                                                        ? Icons.cloud_off_rounded
+                                                        : Icons.volunteer_activism_outlined),
                                                 color: azulFondo,
                                                 size: screenWidth * 0.09,
                                               ),
@@ -225,8 +341,10 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                             Text(
                                               esInvitado
                                                   ? (l10n?.modoInvitado ?? 'Modo invitado')
-                                                  : (l10n?.sinDonacionesRegistradas ??
-                                                      'No tienes donaciones registradas'),
+                                                  : (_errorServidor
+                                                      ? 'Error de sincronización'
+                                                      : (l10n?.sinDonacionesRegistradas ??
+                                                          'No tienes donaciones registradas')),
                                               textAlign: TextAlign.center,
                                               style: TextStyle(
                                                 color: azulFondo,
@@ -239,8 +357,10 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                               esInvitado
                                                   ? (l10n?.donacionesInvitadoDesc ??
                                                       'En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.')
-                                                  : (l10n?.sinDonacionesRegistradas ??
-                                                      'Tus aportes ministeriales aparecerán aquí.'),
+                                                  : (_errorServidor
+                                                      ? 'No pudimos conectar con el servidor para actualizar tus aportes. Reintenta la conexión.'
+                                                      : (l10n?.sinDonacionesRegistradas ??
+                                                          'Tus aportes ministeriales aparecerán aquí.')),
                                               textAlign: TextAlign.center,
                                               style: TextStyle(
                                                 color: Colors.grey.shade600,
@@ -268,12 +388,36 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                                   ),
                                                 ),
                                                 onPressed: () {
-                                                  final nav = Navigator.maybeOf(context) ??
-                                                      MyApp.navigatorKey.currentState;
+                                                  final nav =
+                                                      MyApp.navigatorKey.currentState ??
+                                                      (context.mounted
+                                                          ? Navigator.maybeOf(context)
+                                                          : null);
                                                   nav?.pushNamed(
                                                     InicioSesionScreen.routeName,
                                                   );
                                                 },
+                                              ),
+                                            ] else if (_errorServidor) ...[
+                                              SizedBox(height: usableHeight * 0.025),
+                                              ElevatedButton.icon(
+                                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                                label: const Text(
+                                                  'Reintentar conexión',
+                                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: azulFondo,
+                                                  foregroundColor: Colors.white,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.06,
+                                                    vertical: usableHeight * 0.012,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                                  ),
+                                                ),
+                                                onPressed: _cargarDonaciones,
                                               ),
                                             ],
                                           ],
@@ -661,7 +805,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                       _buildDetailRow(
                         icon: Icons.calendar_today_rounded,
                         label: l10n?.fechaYHora ?? 'Fecha y hora:',
-                        value: item['dateInfo'] as String,
+                        value: item['fechaCompleta'] as String? ?? item['dateInfo'] as String,
                         screenWidth: screenWidth,
                         azulFondo: azulFondo,
                       ),

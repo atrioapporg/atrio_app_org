@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
@@ -18,6 +19,7 @@ class MisPedidosScreen extends StatefulWidget {
 
 class _MisPedidosScreenState extends State<MisPedidosScreen> {
   bool _isLoading = false;
+  bool _errorServidor = false;
   String _selectedScope = 'active'; // 'active' o 'past'
   List<PedidoModel> _pedidos = [];
   int _activeCount = 0;
@@ -42,12 +44,16 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
           _activeCount = 0;
           _pastCount = 0;
           _isLoading = false;
+          _errorServidor = false;
         });
       }
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorServidor = false;
+    });
 
     try {
       final api = userProvider.api;
@@ -68,13 +74,21 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
           }
 
           if (counts is Map) {
-            _activeCount = counts['active'] is int ? counts['active'] as int : _activeCount;
-            _pastCount = counts['past'] is int ? counts['past'] as int : _pastCount;
+            _activeCount = counts['active'] is int
+                ? counts['active'] as int
+                : _activeCount;
+            _pastCount = counts['past'] is int
+                ? counts['past'] as int
+                : _pastCount;
           }
+          _errorServidor = false;
         });
       }
     } catch (e) {
       debugPrint('[PEDIDOS] Error al consultar pedidos: $e');
+      if (mounted) {
+        setState(() => _errorServidor = true);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -84,16 +98,34 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     final status = pedido.estado.toLowerCase();
     final colorStr = pedido.colorEstado.toLowerCase();
 
-    if (colorStr == 'green' || status == 'done' || status == 'sale' || status == 'confirmed') {
+    if (colorStr == 'green' ||
+        status == 'done' ||
+        status == 'sale' ||
+        status == 'confirmed' ||
+        status == 'delivered' ||
+        status == 'paid' ||
+        status == 'approved' ||
+        status == 'completado' ||
+        status == 'entregado') {
       return const Color(0xFF2E7D32);
     }
-    if (colorStr == 'orange' || status == 'payment_review' || status == 'sent') {
+    if (colorStr == 'orange' ||
+        status == 'payment_review' ||
+        status == 'sent' ||
+        status == 'processing' ||
+        status == 'preparation' ||
+        status == 'en_proceso' ||
+        status == 'pendiente') {
       return const Color(0xFFE5A023);
     }
-    if (colorStr == 'blue' || status == 'draft') {
+    if (colorStr == 'blue' || status == 'draft' || status == 'borrador') {
       return const Color(0xFF0055A5);
     }
-    if (colorStr == 'red' || status == 'cancel' || status == 'cancelled') {
+    if (colorStr == 'red' ||
+        status == 'cancel' ||
+        status == 'cancelled' ||
+        status == 'cancelado' ||
+        status == 'denied') {
       return const Color(0xFFC62828);
     }
     return const Color(0xFF072B4F);
@@ -108,7 +140,12 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       case 'confirmed':
         return l10n?.estadoPedidoConfirmado ?? 'Confirmado';
       case 'done':
+      case 'completed':
         return l10n?.estadoPedidoCompletado ?? 'Completado';
+      case 'delivered':
+        return 'Entregado';
+      case 'paid':
+        return 'Pagado';
       case 'cancel':
       case 'cancelled':
         return l10n?.estadoPedidoCancelado ?? 'Cancelado';
@@ -117,7 +154,9 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       case 'sent':
         return l10n?.estadoPedidoEnviado ?? 'Enviado';
       default:
-        return pedido.estadoEtiqueta;
+        return pedido.estadoEtiqueta.isNotEmpty
+            ? pedido.estadoEtiqueta
+            : status;
     }
   }
 
@@ -138,11 +177,13 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     const Color grisBorde = Color(0xFFE5E5E5);
 
     final String textoActivos = _activeCount > 0
-        ? (l10n?.pedidosActivosConConteo(_activeCount) ?? 'Activos ($_activeCount)')
+        ? (l10n?.pedidosActivosConConteo(_activeCount) ??
+              'Activos ($_activeCount)')
         : (l10n?.pedidosActivos ?? 'Activos');
 
     final String textoHistorial = _pastCount > 0
-        ? (l10n?.pedidosHistorialConConteo(_pastCount) ?? 'Historial ($_pastCount)')
+        ? (l10n?.pedidosHistorialConConteo(_pastCount) ??
+              'Historial ($_pastCount)')
         : (l10n?.pedidosHistorial ?? 'Historial');
 
     return Scaffold(
@@ -204,7 +245,10 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                     ),
                     // Botón para refrescar
                     IconButton(
-                      icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                      ),
                       onPressed: _cargarPedidos,
                     ),
                   ],
@@ -238,7 +282,9 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                               color: _selectedScope == 'active'
                                   ? amarilloOro
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.03,
+                              ),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -267,7 +313,9 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                               color: _selectedScope == 'past'
                                   ? amarilloOro
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.03,
+                              ),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -334,13 +382,14 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                                         : ListView.separated(
                                             physics:
                                                 const AlwaysScrollableScrollPhysics(
-                                              parent: BouncingScrollPhysics(),
-                                            ),
+                                                  parent:
+                                                      BouncingScrollPhysics(),
+                                                ),
                                             itemCount: _pedidos.length,
                                             separatorBuilder:
                                                 (context, index) => SizedBox(
-                                              height: usableHeight * 0.014,
-                                            ),
+                                                  height: usableHeight * 0.014,
+                                                ),
                                             itemBuilder: (context, index) {
                                               final pedido = _pedidos[index];
                                               return _buildPedidoCard(
@@ -369,7 +418,9 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                               icon: const Icon(Icons.storefront_outlined),
                               label: Text(
                                 l10n?.explorarTienda ?? 'Explorar Tienda',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: amarilloOro,
@@ -416,21 +467,29 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
 
     final String tituloVacio = esInvitado
         ? (l10n?.modoInvitado ?? 'Modo invitado')
-        : (_selectedScope == 'active'
-            ? (l10n?.noTienesPedidosActivos ?? 'No tienes pedidos activos')
-            : (l10n?.noTienesPedidosAnteriores ?? 'No tienes pedidos anteriores'));
+        : (_errorServidor
+              ? 'Error de sincronización'
+              : (_selectedScope == 'active'
+                    ? (l10n?.noTienesPedidosActivos ??
+                          'No tienes pedidos activos')
+                    : (l10n?.noTienesPedidosAnteriores ??
+                          'No tienes pedidos anteriores')));
 
     final String descVacio = esInvitado
         ? (l10n?.pedidosInvitadoDesc ??
-            'En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.')
-        : (_selectedScope == 'active'
-            ? (l10n?.pedidosActivosDesc ??
-                'Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.')
-            : (l10n?.pedidosAnterioresDesc ??
-                'Cuando tus pedidos sean completados o entregados, podrás consultarlos en este historial.'));
+              'En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.')
+        : (_errorServidor
+              ? 'No pudimos conectar con el servidor para consultar tus pedidos. Reintenta la conexión.'
+              : (_selectedScope == 'active'
+                    ? (l10n?.pedidosActivosDesc ??
+                          'Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.')
+                    : (l10n?.pedidosAnterioresDesc ??
+                          'Cuando tus pedidos sean completados o entregados, podrás consultarlos en este historial.')));
 
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       children: [
         SizedBox(height: usableHeight * 0.12),
         Center(
@@ -444,7 +503,11 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  esInvitado ? Icons.account_circle_outlined : Icons.receipt_long_outlined,
+                  esInvitado
+                      ? Icons.account_circle_outlined
+                      : (_errorServidor
+                            ? Icons.cloud_off_rounded
+                            : Icons.receipt_long_outlined),
                   size: screenWidth * 0.16,
                   color: azulFondo.withValues(alpha: 0.5),
                 ),
@@ -491,12 +554,34 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                     ),
                   ),
                   onPressed: () {
-                    final nav = Navigator.maybeOf(context) ??
-                        MyApp.navigatorKey.currentState;
-                    nav?.pushNamed(
-                      'inicio_sesion_screen',
-                    );
+                    final nav =
+                        MyApp.navigatorKey.currentState ??
+                        (context.mounted
+                            ? Navigator.maybeOf(context)
+                            : null);
+                    nav?.pushNamed('inicio_sesion_screen');
                   },
+                ),
+              ] else if (_errorServidor) ...[
+                SizedBox(height: usableHeight * 0.025),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text(
+                    'Reintentar conexión',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azulFondo,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.06,
+                      vertical: usableHeight * 0.012,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
+                  ),
+                  onPressed: _cargarPedidos,
                 ),
               ],
             ],
@@ -811,6 +896,42 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
 
             SizedBox(height: usableHeight * 0.02),
 
+            // Enlace al portal web si está disponible en Odoo
+            if (pedido.portalUrl != null && pedido.portalUrl!.isNotEmpty) ...[
+              SizedBox(
+                width: double.infinity,
+                height: usableHeight * 0.052,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: azulFondo,
+                    side: BorderSide(color: azulFondo),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                  label: const Text(
+                    'Ver orden en Portal Odoo',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () async {
+                    try {
+                      final uri = Uri.parse(pedido.portalUrl!);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('[PEDIDOS] Error abriendo portal_url: $e');
+                    }
+                  },
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.012),
+            ],
+
             // Botón Cerrar
             SizedBox(
               width: double.infinity,
@@ -833,8 +954,12 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     );
   }
 
-  Widget _infoRow(String label, String value,
-      {bool isBold = false, Color? textColor}) {
+  Widget _infoRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? textColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

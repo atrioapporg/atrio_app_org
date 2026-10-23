@@ -273,6 +273,17 @@ class ExplorarProvider extends ChangeNotifier {
     buscar(ignorarDebounce: true);
   }
 
+  /// Limpia únicamente el término de búsqueda de texto, manteniendo el modo y la denominación actuales.
+  void limpiarTextoBusqueda({bool recargar = true}) {
+    _debounceTimer?.cancel();
+    _textoBusqueda = '';
+    if (recargar) {
+      buscar(ignorarDebounce: true);
+    } else {
+      notifyListeners();
+    }
+  }
+
   /// Maneja el cambio de texto con Debounce de 500 ms y longitud mínima de 3 caracteres
   void onTextoBusquedaCambiado(String nuevoTexto) {
     _textoBusqueda = nuevoTexto;

@@ -102,9 +102,16 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
         }
       }
 
-      // Sincronizar texto de búsqueda si ya existía en el provider
-      if (provider.textoBusqueda.isNotEmpty && _searchController.text.isEmpty) {
-        _searchController.text = provider.textoBusqueda;
+      // Asegurar que la barra de búsqueda siempre inicie vacía sin heredar filtros anteriores
+      _searchController.clear();
+      if (provider.textoBusqueda.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<ExplorarProvider>().limpiarTextoBusqueda(
+              recargar: true,
+            );
+          }
+        });
       }
 
       _isInit = false;

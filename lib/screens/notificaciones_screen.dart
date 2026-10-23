@@ -794,8 +794,11 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                           ),
                                         ),
                                         onPressed: () {
-                                          final nav = Navigator.maybeOf(context) ??
-                                              MyApp.navigatorKey.currentState;
+                                          final nav =
+                                              MyApp.navigatorKey.currentState ??
+                                              (context.mounted
+                                                  ? Navigator.maybeOf(context)
+                                                  : null);
                                           nav?.pushNamed(
                                             InicioSesionScreen.routeName,
                                           );

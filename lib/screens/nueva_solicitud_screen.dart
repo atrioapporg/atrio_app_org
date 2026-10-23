@@ -529,8 +529,10 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                           textColor: amarilloOro,
                                           onPressed: () {
                                             final nav =
-                                                Navigator.maybeOf(context) ??
-                                                MyApp.navigatorKey.currentState;
+                                                MyApp.navigatorKey.currentState ??
+                                                (context.mounted
+                                                    ? Navigator.maybeOf(context)
+                                                    : null);
                                             nav?.pushNamed(
                                               TradicionCristianaScreen
                                                   .routeName,

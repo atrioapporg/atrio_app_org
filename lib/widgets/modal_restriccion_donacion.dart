@@ -25,13 +25,19 @@ class ModalRestriccionDonacion {
     String? titulo,
     String? mensaje,
   }) {
-    final userProvider = context.read<UserProvider>();
+    final effectiveContext = context.mounted
+        ? context
+        : (MyApp.navigatorKey.currentContext?.mounted == true
+              ? MyApp.navigatorKey.currentContext!
+              : context);
+    if (!effectiveContext.mounted) return false;
+    final userProvider = effectiveContext.read<UserProvider>();
     if (userProvider.isAuthenticated) {
       return true;
     }
 
     mostrar(
-      context: context,
+      context: effectiveContext,
       tituloPersonalizado: titulo,
       mensajePersonalizado: mensaje,
       forzarModoInvitado: true,
@@ -48,10 +54,16 @@ class ModalRestriccionDonacion {
     String? titulo,
     String? mensaje,
   }) {
-    final userProvider = context.read<UserProvider>();
+    final effectiveContext = context.mounted
+        ? context
+        : (MyApp.navigatorKey.currentContext?.mounted == true
+              ? MyApp.navigatorKey.currentContext!
+              : context);
+    if (!effectiveContext.mounted) return true;
+    final userProvider = effectiveContext.read<UserProvider>();
     if (userProvider.isReadOnly) {
       mostrar(
-        context: context,
+        context: effectiveContext,
         tituloPersonalizado: titulo,
         mensajePersonalizado: mensaje,
       );
@@ -67,13 +79,19 @@ class ModalRestriccionDonacion {
     String? titulo,
     String? mensaje,
   }) {
-    final userProvider = context.read<UserProvider>();
+    final effectiveContext = context.mounted
+        ? context
+        : (MyApp.navigatorKey.currentContext?.mounted == true
+              ? MyApp.navigatorKey.currentContext!
+              : context);
+    if (!effectiveContext.mounted) return false;
+    final userProvider = effectiveContext.read<UserProvider>();
     if (userProvider.canDonate) {
       return true;
     }
 
     mostrar(
-      context: context,
+      context: effectiveContext,
       tituloPersonalizado: titulo,
       mensajePersonalizado: mensaje,
     );
@@ -87,24 +105,35 @@ class ModalRestriccionDonacion {
     String? mensajePersonalizado,
     bool forzarModoInvitado = false,
   }) {
-    final l10n = AppLocalizations.of(context);
-    final userProvider = context.read<UserProvider>();
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final usableHeight = MediaQuery.sizeOf(context).height -
-        MediaQuery.of(context).padding.top;
+    final effectiveContext = context.mounted
+        ? context
+        : (MyApp.navigatorKey.currentContext?.mounted == true
+              ? MyApp.navigatorKey.currentContext!
+              : context);
+    if (!effectiveContext.mounted) return;
+
+    final l10n = AppLocalizations.of(effectiveContext);
+    final userProvider = effectiveContext.read<UserProvider>();
+    final screenWidth = MediaQuery.sizeOf(effectiveContext).width;
+    final usableHeight =
+        MediaQuery.sizeOf(effectiveContext).height -
+        MediaQuery.of(effectiveContext).padding.top;
 
     final bool esInvitado = !userProvider.isAuthenticated || forzarModoInvitado;
     final bool esReadOnly = userProvider.isReadOnly;
     final bool sinIglesia = !userProvider.hasChurchAssigned;
-    final bool membresiaPendiente = userProvider.role == UserRole.user ||
+    final bool membresiaPendiente =
+        userProvider.role == UserRole.user ||
         (!userProvider.isMember && !userProvider.isChurchAdmin);
 
     IconData icono = Icons.lock_person_outlined;
     Color colorIcono = amarilloOro;
-    String titulo = tituloPersonalizado ??
+    String titulo =
+        tituloPersonalizado ??
         l10n?.inicioSesionRequerido ??
         'Inicio de sesión requerido';
-    String mensaje = mensajePersonalizado ??
+    String mensaje =
+        mensajePersonalizado ??
         l10n?.sesionRequeridaGenerica ??
         'Debes iniciar sesión con tu cuenta para acceder a esta función.';
     bool mostrarBotonLogin = false;
@@ -112,44 +141,40 @@ class ModalRestriccionDonacion {
     if (esInvitado) {
       icono = Icons.account_circle_outlined;
       colorIcono = amarilloOro;
-      titulo = tituloPersonalizado ??
+      titulo =
+          tituloPersonalizado ??
           l10n?.inicioSesionRequerido ??
           'Inicio de sesión requerido';
-      mensaje = mensajePersonalizado ??
+      mensaje =
+          mensajePersonalizado ??
           l10n?.sesionRequeridaGenerica ??
           'Debes iniciar sesión con tu cuenta para acceder a esta función.';
       mostrarBotonLogin = true;
     } else if (esReadOnly) {
       icono = Icons.lock_clock_outlined;
       colorIcono = Colors.amber.shade800;
-      titulo = tituloPersonalizado ??
-          l10n?.modoSoloLectura ??
-          'Solo lectura';
-      mensaje = mensajePersonalizado ??
+      titulo = tituloPersonalizado ?? l10n?.modoSoloLectura ?? 'Solo lectura';
+      mensaje =
+          mensajePersonalizado ??
           l10n?.accionRestringidaSoloLectura ??
           'Acción no disponible en modo solo lectura.';
     } else if (membresiaPendiente) {
       icono = Icons.hourglass_top_rounded;
       colorIcono = amarilloOro;
-      titulo = tituloPersonalizado ??
+      titulo =
+          tituloPersonalizado ??
           l10n?.membresiaPendiente ??
           'Membresía pendiente de aprobación';
-      mensaje = mensajePersonalizado ??
-          l10n?.donacionRequiereMembresia ??
-          'Tu cuenta está registrada pero aún está pendiente de asignación o aprobación de membresía por parte de tu congregación. Solo miembros activos pueden realizar donaciones.';
+      mensaje = mensajePersonalizado ?? l10n?.donacionRequiereMembresia ?? 'Tu cuenta está registrada pero aún está pendiente de asignación o aprobación de membresía por parte de tu congregación. Solo miembros activos pueden realizar donaciones.';
     } else if (sinIglesia) {
       icono = Icons.church_outlined;
       colorIcono = amarilloOro;
-      titulo = tituloPersonalizado ??
-          l10n?.iglesia ??
-          'Congregación requerida';
-      mensaje = mensajePersonalizado ??
-          l10n?.donacionRequiereIglesia ??
-          'Debes pertenecer a una congregación asignada para realizar donaciones.';
+      titulo = tituloPersonalizado ?? l10n?.iglesia ?? 'Congregación requerida';
+      mensaje = mensajePersonalizado ?? l10n?.donacionRequiereIglesia ?? 'Debes pertenecer a una congregación asignada para realizar donaciones.';
     }
 
     showDialog(
-      context: context,
+      context: effectiveContext,
       builder: (dialogCtx) {
         return AlertDialog(
           backgroundColor: blancoFondo,
@@ -167,11 +192,7 @@ class ModalRestriccionDonacion {
                   color: colorIcono.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icono,
-                  color: colorIcono,
-                  size: screenWidth * 0.09,
-                ),
+                child: Icon(icono, color: colorIcono, size: screenWidth * 0.09),
               ),
               SizedBox(height: usableHeight * 0.02),
               Text(
@@ -204,13 +225,30 @@ class ModalRestriccionDonacion {
                       foregroundColor: azulFondo,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.025,
+                        ),
                       ),
                     ),
                     onPressed: () {
-                      Navigator.of(dialogCtx).pop();
-                      final nav = Navigator.maybeOf(context) ??
-                          MyApp.navigatorKey.currentState;
+                      // 1. Obtener el Navigator de forma segura ANTES de cerrar el diálogo.
+                      // Priorizar MyApp.navigatorKey.currentState (global, inmune a contextos desactivados).
+                      // Si no está disponible (ej. pruebas unitarias), verificar context.mounted antes de acceder.
+                      final nav =
+                          MyApp.navigatorKey.currentState ??
+                          (effectiveContext.mounted
+                              ? Navigator.maybeOf(effectiveContext)
+                              : null) ??
+                          (dialogCtx.mounted
+                              ? Navigator.maybeOf(dialogCtx)
+                              : null);
+
+                      // 2. Cerrar el diálogo usando dialogCtx si sigue montado
+                      if (dialogCtx.mounted) {
+                        Navigator.of(dialogCtx).pop();
+                      }
+
+                      // 3. Navegar a la pantalla de inicio de sesión de forma segura
                       nav?.pushNamed(InicioSesionScreen.routeName);
                     },
                     child: Text(
@@ -221,7 +259,11 @@ class ModalRestriccionDonacion {
                 ),
                 SizedBox(height: usableHeight * 0.01),
                 TextButton(
-                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  onPressed: () {
+                    if (dialogCtx.mounted) {
+                      Navigator.of(dialogCtx).pop();
+                    }
+                  },
                   child: Text(
                     l10n?.cancelar ?? 'Cancelar',
                     style: TextStyle(color: Colors.grey.shade600),
@@ -237,10 +279,16 @@ class ModalRestriccionDonacion {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.025,
+                        ),
                       ),
                     ),
-                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                    onPressed: () {
+                      if (dialogCtx.mounted) {
+                        Navigator.of(dialogCtx).pop();
+                      }
+                    },
                     child: Text(
                       l10n?.entendido ?? 'Entendido',
                       style: const TextStyle(fontWeight: FontWeight.bold),

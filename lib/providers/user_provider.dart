@@ -175,6 +175,30 @@ class UserProvider extends ChangeNotifier {
   bool get hasChurchAssigned =>
       _currentUser?.iglesiaId != null && _currentUser!.iglesiaId! > 0;
 
+  /// Estatus canónico de la congregación/membresía del usuario en Odoo ('none', 'membership_pending', 'change_pending', 'approved', etc.)
+  String get churchStatus => _currentUser?.churchStatus ?? membershipStatus;
+
+  /// Indica si la solicitud de membresía a la congregación está en proceso de revisión/aprobación.
+  bool get isMembershipPending =>
+      isWaitingApproval ||
+      _currentUser?.isMembershipPending == true ||
+      membershipStatus == 'membership_pending';
+
+  /// Valida reactivamente si la congregación del usuario se encuentra debidamente asignada y aprobada por el backend.
+  /// Retorna false si el usuario es invitado, no tiene congregación o su membresía sigue pendiente de aprobación.
+  bool get isChurchApproved =>
+      isAuthenticated &&
+      hasChurchAssigned &&
+      !isMembershipPending &&
+      (_currentUser?.isChurchApproved ?? false);
+
+  /// Valida si el usuario está plenamente habilitado para acceder y enviar solicitudes o peticiones pastorales.
+  /// Requiere sesión activa, no operar en modo de solo lectura y contar con congregación aprobada.
+  bool get canSubmitSolicitud =>
+      isAuthenticated &&
+      !isReadOnly &&
+      isChurchApproved;
+
   /// Valida si el usuario está plenamente habilitado para realizar ofrendas congregacionales locales.
   /// Requiere membresía activa e iglesia asignada en Odoo.
   bool get canDonate =>

@@ -5,9 +5,11 @@ import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../providers/user_provider.dart';
+import '../screens/esperando_aprobacion_screen.dart';
 import '../screens/tradicion_cristiana_screen.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
 import '../widgets/modal_restriccion_donacion.dart';
+import '../widgets/modal_restriccion_solicitud.dart';
 import '../widgets/read_only_banner.dart';
 
 class NuevaSolicitudScreen extends StatefulWidget {
@@ -32,9 +34,13 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
     _cargarTelefonoUsuario();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ModalRestriccionDonacion.verificarAutenticacion(
+        ModalRestriccionSolicitud.verificarAcceso(
           context: context,
-          mensaje: AppLocalizations.of(context)?.solicitudRequiereSesion,
+          onDenegado: () {
+            if (mounted) {
+              Navigator.maybeOf(context)?.pop();
+            }
+          },
         );
       }
     });
@@ -223,19 +229,21 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      _selectedTipoSolicitud ??
-                                          (l10n?.seleccionaUnaOpcion ??
-                                              'Selecciona una opción'),
-                                      style: TextStyle(
-                                        color: _selectedTipoSolicitud != null
-                                            ? azulFondo
-                                            : Colors.grey.shade500,
-                                        fontSize: screenWidth * 0.036,
-                                        fontWeight:
-                                            _selectedTipoSolicitud != null
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
+                                    Expanded(
+                                      child: Text(
+                                        _selectedTipoSolicitud ??
+                                            (l10n?.seleccionaUnaOpcion ??
+                                                'Selecciona una opción'),
+                                        style: TextStyle(
+                                          color: _selectedTipoSolicitud != null
+                                              ? azulFondo
+                                              : Colors.grey.shade500,
+                                          fontSize: screenWidth * 0.036,
+                                          fontWeight:
+                                              _selectedTipoSolicitud != null
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                        ),
                                       ),
                                     ),
                                     Icon(
@@ -514,32 +522,26 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                     return;
                                   }
 
-                                  // Sin congregación asignada
-                                  if (!userProvider.hasChurchAssigned) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          l10n?.iglesiaRequeridaParaSolicitud ?? 'Debes tener una iglesia asignada para enviar solicitudes o peticiones pastorales.',
-                                        ),
-                                        backgroundColor: azulFondo,
-                                        action: SnackBarAction(
-                                          label:
-                                              l10n?.seleccionarIglesiaAccion ??
-                                              'Seleccionar iglesia',
-                                          textColor: amarilloOro,
-                                          onPressed: () {
-                                            final nav =
-                                                MyApp.navigatorKey.currentState ??
-                                                (context.mounted
-                                                    ? Navigator.maybeOf(context)
-                                                    : null);
-                                            nav?.pushNamed(
-                                              TradicionCristianaScreen
-                                                  .routeName,
-                                            );
-                                          },
-                                        ),
-                                      ),
+                                  // Iglesia en revisión / pendiente de aprobación pastoral
+                                  if (userProvider.isMembershipPending ||
+                                      userProvider.churchStatus == 'membership_pending') {
+                                    ModalRestriccionSolicitud.mostrarIglesiaPendiente(
+                                      context: context,
+                                      onRedirigir: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          EsperandoAprobacionScreen.routeName,
+                                        );
+                                      },
+                                    );
+                                    return;
+                                  }
+
+                                  // Sin congregación asignada o no aprobada
+                                  if (!userProvider.hasChurchAssigned || !userProvider.isChurchApproved) {
+                                    ModalRestriccionSolicitud.mostrarAlertaIglesiaRequerida(
+                                      context: context,
+                                      duracion: const Duration(seconds: 7),
                                     );
                                     return;
                                   }
@@ -616,27 +618,26 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
         ),
       );
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          text,
-          style: TextStyle(
-            color: azulFondo,
-            fontSize: screenWidth * 0.040,
-            fontWeight: FontWeight.bold,
-          ),
+    return RichText(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: azulFondo,
+          fontSize: screenWidth * 0.040,
+          fontWeight: FontWeight.bold,
         ),
-        SizedBox(width: screenWidth * 0.01),
-        Text(
-          '*',
-          style: TextStyle(
-            color: Colors.red.shade700,
-            fontSize: screenWidth * 0.042,
-            fontWeight: FontWeight.bold,
+        children: [
+          WidgetSpan(child: SizedBox(width: screenWidth * 0.01)),
+          TextSpan(
+            text: '*',
+            style: TextStyle(
+              color: Colors.red.shade700,
+              fontSize: screenWidth * 0.042,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

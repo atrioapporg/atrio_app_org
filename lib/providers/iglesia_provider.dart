@@ -14,6 +14,9 @@ class IglesiaProvider extends ChangeNotifier {
   bool _tieneIglesiaGuardada = false;
   bool get tieneIglesiaGuardada => _tieneIglesiaGuardada;
 
+  /// Indica si el usuario cuenta con una iglesia seleccionada y disponible en memoria/local.
+  bool get tieneIglesiaAsignada => _tieneIglesiaGuardada && _iglesiaActual != null;
+
   IglesiaModel? _iglesiaActual;
   bool _isLoading = false;
   String? _errorMessage;

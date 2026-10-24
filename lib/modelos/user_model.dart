@@ -77,6 +77,17 @@ class UserModel {
   /// Indica si el usuario cuenta con una congregación asignada válida.
   bool get hasChurchAssigned => iglesiaId != null && iglesiaId! > 0;
 
+  /// Estatus canónico de la congregación/membresía del usuario según Odoo.
+  /// Ejemplos: 'membership_pending', 'approved', 'none', 'change_pending'.
+  String get churchStatus => membershipStatus;
+
+  /// Indica si la congregación del usuario está plenamente asignada y aprobada por el backend.
+  /// No se considera aprobada si la membresía está pendiente ('membership_pending') o no tiene iglesia asignada.
+  bool get isChurchApproved =>
+      hasChurchAssigned &&
+      !isMembershipPending &&
+      membershipStatus != 'membership_pending';
+
   UserModel copyWith({
     int? id,
     String? nombre,

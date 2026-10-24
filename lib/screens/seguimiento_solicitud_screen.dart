@@ -5,6 +5,7 @@ import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../widgets/modal_restriccion_donacion.dart';
+import '../widgets/modal_restriccion_solicitud.dart';
 import 'inicio_sesion_screen.dart';
 
 class SeguimientoSolicitudScreen extends StatefulWidget {
@@ -604,9 +605,8 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                 ),
                               ),
                               onPressed: () async {
-                                if (!ModalRestriccionDonacion.verificarAutenticacion(
+                                if (!ModalRestriccionSolicitud.verificarAcceso(
                                   context: context,
-                                  mensaje: l10n?.solicitudRequiereSesion,
                                 )) {
                                   return;
                                 }

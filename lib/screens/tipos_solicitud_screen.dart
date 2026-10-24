@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../widgets/modal_restriccion_donacion.dart';
+import '../widgets/modal_restriccion_solicitud.dart';
 import 'seguimiento_solicitud_screen.dart';
 
 class TiposSolicitudScreen extends StatelessWidget {
@@ -191,9 +192,8 @@ class TiposSolicitudScreen extends StatelessWidget {
                                   azulFondo: azulFondo,
                                   grisBorde: grisBorde,
                                   onTap: () {
-                                    if (!ModalRestriccionDonacion.verificarAutenticacion(
+                                    if (!ModalRestriccionSolicitud.verificarAcceso(
                                       context: context,
-                                      mensaje: l10n?.solicitudRequiereSesion,
                                     )) {
                                       return;
                                     }

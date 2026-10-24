@@ -13,6 +13,10 @@ import 'package:feedback/feedback.dart';
 import 'package:atrio/theme/atrio_feedback_theme.dart';
 import 'package:atrio/widgets/atrio_better_feedback.dart';
 import 'package:atrio/widgets/atrio_feedback_form.dart';
+import 'package:atrio/atrio_api.dart';
+import 'package:atrio/data/app_config.dart';
+import 'package:atrio/modelos/app_stage.dart';
+import 'package:atrio/servicios/token_storage_service.dart';
 
 // Paquetes - Google Maps
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
@@ -38,6 +42,10 @@ import 'package:atrio/screens/crear_cuenta_screen.dart';
 import 'package:atrio/screens/recuperar_clave_screen.dart';
 import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
 import 'package:atrio/screens/tradicion_cristiana_screen.dart';
+import 'package:atrio/screens/elegir_camino_iglesia_screen.dart';
+import 'package:atrio/screens/esperando_aprobacion_screen.dart';
+import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
+import 'package:atrio/screens/crear_mi_iglesia_screen.dart';
 
 // Screens - Principal
 import 'package:atrio/screens/inicio_atrio_screen.dart';
@@ -116,11 +124,47 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final bool introVista = prefs.getBool('intro_vista') ?? false;
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  final String rutaInicial = !introVista
+  String rutaInicial = !introVista
       ? IntroEncuentraScreen.routeName
       : (isLoggedIn
             ? InicioAtrioScreen.routeName
             : InicioSesionScreen.routeName);
+
+  // Si hay sesión iniciada, resolver el stage exacto de Odoo 19
+  if (introVista && isLoggedIn) {
+    try {
+      final api = AtrioApi(
+        baseUrl: AppConfig.odooBaseUrl,
+        storageService: TokenStorageService(),
+      );
+      await api.initFromStorage();
+      if (api.isAuthenticated) {
+        final me = await api.me().timeout(const Duration(seconds: 3));
+        final stage = resolveStage(me);
+        switch (stage) {
+          case AppStage.chooseChurch:
+            rutaInicial = ElegirCaminoIglesiaScreen.routeName;
+            break;
+          case AppStage.waitingApproval:
+            rutaInicial = EsperandoAprobacionScreen.routeName;
+            break;
+          case AppStage.churchPendingActivation:
+            rutaInicial = IglesiaPendienteActivacionScreen.routeName;
+            break;
+          case AppStage.welcome:
+          case AppStage.memberHome:
+          case AppStage.adminHome:
+          case AppStage.platformAdmin:
+            rutaInicial = InicioAtrioScreen.routeName;
+            break;
+        }
+      }
+    } catch (e) {
+      debugPrint(
+        'ℹ️ [MAIN] No se pudo resolver AppStage en arranque: $e. Usando ruta por defecto.',
+      );
+    }
+  }
 
   //
   // Iniciar monitoreo de internet en toda la app
@@ -157,7 +201,7 @@ class AppState extends StatelessWidget {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -165,6 +209,60 @@ class MyApp extends StatelessWidget {
 
   final String initialRoute;
   const MyApp({super.key, required this.initialRoute});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('[LIFECYCLE] App resumed: sincronizando sesión con Odoo 19...');
+      try {
+        final userProvider = context.read<UserProvider>();
+        if (userProvider.isAuthenticated) {
+          userProvider.refreshUserProfile().then((_) {
+            if (!mounted) return;
+            final stage = userProvider.currentStage;
+            // Si el estado pasó a estar activo (aprobación de membresía o activación de congregación)
+            if (stage == AppStage.memberHome || stage == AppStage.adminHome) {
+              final nav = MyApp.navigatorKey.currentState;
+              final currentCtx = MyApp.navigatorKey.currentContext;
+              if (nav != null && currentCtx != null && currentCtx.mounted) {
+                final currentRoute =
+                    ModalRoute.of(currentCtx)?.settings.name;
+                if (currentRoute == EsperandoAprobacionScreen.routeName ||
+                    currentRoute ==
+                        IglesiaPendienteActivacionScreen.routeName) {
+                  nav.pushNamedAndRemoveUntil(
+                    InicioAtrioScreen.routeName,
+                    (r) => false,
+                  );
+                }
+              }
+            }
+          }).catchError((e) {
+            debugPrint('[LIFECYCLE] Error pasivo en refreshUserProfile: $e');
+          });
+        }
+      } catch (e) {
+        debugPrint('[LIFECYCLE] Error en didChangeAppLifecycleState: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,15 +279,15 @@ class MyApp extends StatelessWidget {
       localizationsDelegates: [GlobalFeedbackLocalizationsDelegate()],
       localeOverride: ajustes.locale,
       child: MaterialApp(
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
+        navigatorKey: MyApp.navigatorKey,
+        scaffoldMessengerKey: MyApp.scaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         title: 'ATRIO',
         locale: ajustes.locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         routes: _routes,
-        initialRoute: initialRoute,
+        initialRoute: widget.initialRoute,
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);
           return MediaQuery(
@@ -218,6 +316,11 @@ class MyApp extends StatelessWidget {
     RecuperarClaveScreen.routeName: (_) => const RecuperarClaveScreen(),
     SeleccionarIglesiaScreen.routeName: (_) => const SeleccionarIglesiaScreen(),
     TradicionCristianaScreen.routeName: (_) => const TradicionCristianaScreen(),
+    ElegirCaminoIglesiaScreen.routeName: (_) => const ElegirCaminoIglesiaScreen(),
+    EsperandoAprobacionScreen.routeName: (_) => const EsperandoAprobacionScreen(),
+    IglesiaPendienteActivacionScreen.routeName: (_) =>
+        const IglesiaPendienteActivacionScreen(),
+    CrearMiIglesiaScreen.routeName: (_) => const CrearMiIglesiaScreen(),
 
     // ---------- Principal ----------
     InicioAtrioScreen.routeName: (_) => const InicioAtrioScreen(),

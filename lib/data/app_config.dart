@@ -25,10 +25,18 @@ class AppConfig {
     defaultValue: '/api/v1/user/delete_account',
   );
 
-  static const String googleServerClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com',
-  );
+  static String get googleServerClientId {
+    const fromEnv = String.fromEnvironment(
+      'GOOGLE_SERVER_CLIENT_ID',
+      defaultValue: '',
+    );
+    if (fromEnv.isNotEmpty &&
+        !fromEnv.contains('mock') &&
+        !fromEnv.contains('TU_GOOGLE')) {
+      return fromEnv;
+    }
+    return '641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com';
+  }
 
   static const String appleServiceId = String.fromEnvironment(
     'APPLE_SERVICE_ID',

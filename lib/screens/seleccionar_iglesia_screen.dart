@@ -13,7 +13,10 @@ import '../modelos/iglesia_explorar_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/explorar_provider.dart';
 import '../providers/iglesia_provider.dart';
+import '../providers/user_provider.dart';
 import '../servicios/map_style_service.dart';
+import 'esperando_aprobacion_screen.dart';
+import 'inicio_atrio_screen.dart';
 
 /// Pantalla SeleccionarIglesiaScreen: Permite al usuario explorar y seleccionar su iglesia
 /// en el mapa interactivo con soporte de persistencia en ambos modos (Modo Radio 10/25/50 km
@@ -343,22 +346,45 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
         },
       };
 
-      final String jsonString = jsonEncode(datosParaGuardar);
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
       final iglesiaProvider = Provider.of<IglesiaProvider>(
         context,
         listen: false,
       );
-      await iglesiaProvider.guardarIglesiaLocal(jsonString);
 
       final String nombreIglesia = iglesia.nombre.trim();
       if (nombreIglesia.isNotEmpty) {
         await AtrioDatabaseHelper.instance.guardarIglesiaNombre(nombreIglesia);
       }
 
+      if (userProvider.isAuthenticated) {
+        final churchId = int.tryParse(iglesia.id) ?? 0;
+        if (churchId > 0) {
+          await userProvider.solicitarMembresia(
+            churchId,
+            churchName: nombreIglesia,
+          );
+        }
+        final String jsonString = jsonEncode(datosParaGuardar);
+        await iglesiaProvider.guardarIglesiaLocal(jsonString);
+
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          EsperandoAprobacionScreen.routeName,
+          (route) => false,
+        );
+        return;
+      }
+
+      // Si el usuario es un invitado no autenticado:
+      final String jsonString = jsonEncode(datosParaGuardar);
+      await iglesiaProvider.guardarIglesiaLocal(jsonString);
+
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(
         context,
-        'inicio_atrio_screen',
+        InicioAtrioScreen.routeName,
         (route) => false,
       );
     } catch (e) {

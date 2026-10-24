@@ -17,6 +17,7 @@ class UserProvider extends ChangeNotifier {
   final TokenStorageService _storageService;
 
   UserModel? _currentUser;
+  Map<String, dynamic>? _rawMeData;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -31,6 +32,7 @@ class UserProvider extends ChangeNotifier {
     // Configurar callback cuando la sesión expire definitivamente
     _api.onSessionExpired = () {
       _currentUser = null;
+      _rawMeData = null;
       _errorMessage = 'Tu sesión ha expirado. Por favor, ingresa de nuevo.';
       notifyListeners();
     };
@@ -45,6 +47,7 @@ class UserProvider extends ChangeNotifier {
       if (_api.isAuthenticated && _currentUser == null) {
         try {
           final meData = await _api.me();
+          _rawMeData = meData;
           _currentUser = UserModel.fromOdooJson(meData);
         } catch (meError) {
           debugPrint(
@@ -103,7 +106,61 @@ class UserProvider extends ChangeNotifier {
   TokenStorageService get storageService => _storageService;
 
   // ===========================================================================
-  // RBAC & PERMISOS GRANULARES (ETAPA 1)
+  // MÁQUINA DE ESTADOS & MEMBRESÍA ODOO 19 (ETAPA 1)
+  // ===========================================================================
+
+  /// Payload JSON original recibido en la última llamada a /me o login.
+  Map<String, dynamic>? get rawMeData => _rawMeData;
+
+  /// Estado actual del flujo de navegación (máquina de estados de ATRIO).
+  AppStage get currentStage {
+    if (_currentUser == null) return AppStage.welcome;
+    if (_rawMeData != null && _rawMeData!.isNotEmpty) {
+      return resolveStage(_rawMeData);
+    }
+    return resolveStage({
+      'role': _currentUser!.role.toOdooString(),
+      'membership_status': _currentUser!.membershipStatus,
+      'church': {
+        'id': _currentUser!.iglesiaId,
+        'has_active_subscription': _currentUser!.hasActiveSubscription,
+      },
+    });
+  }
+
+  /// Estado de membresía en Odoo 19 ('none', 'membership_pending', 'change_pending', etc.)
+  String get membershipStatus => _currentUser?.membershipStatus ?? 'none';
+
+  /// ID de la congregación a la que se solicitó ingreso
+  int? get requestedChurchId => _currentUser?.requestedChurchId;
+
+  /// Datos informativos de la congregación solicitada
+  Map<String, dynamic>? get requestedChurchData =>
+      _currentUser?.requestedChurchData;
+
+  /// Indica si la iglesia del usuario tiene suscripción activa en ATRIO
+  bool get hasActiveSubscription =>
+      _currentUser?.hasActiveSubscription ?? false;
+
+  /// Indica si el usuario está en espera de aprobación pastoral
+  bool get isWaitingApproval => currentStage == AppStage.waitingApproval;
+
+  /// Indica si la iglesia creada está pendiente de activación por el equipo de ATRIO
+  bool get isChurchPendingActivation =>
+      currentStage == AppStage.churchPendingActivation;
+
+  /// Indica si el usuario debe elegir congregación o dar de alta su propia iglesia
+  bool get isChooseChurch => currentStage == AppStage.chooseChurch;
+
+  /// Verifica y refresca el estado actual del usuario con el servidor
+  Future<AppStage> checkCurrentStage() async {
+    if (!_api.isAuthenticated) return AppStage.welcome;
+    await refreshUserProfile();
+    return currentStage;
+  }
+
+  // ===========================================================================
+  // RBAC & PERMISOS GRANULARES
   // ===========================================================================
 
   UserRole get role => _currentUser?.role ?? UserRole.user;
@@ -145,8 +202,12 @@ class UserProvider extends ChangeNotifier {
 
   /// Asigna directamente el usuario actual para pruebas unitarias y de widgets.
   @visibleForTesting
-  void setCurrentUserForTesting(UserModel? user) {
+  void setCurrentUserForTesting(
+    UserModel? user, {
+    Map<String, dynamic>? rawMeData,
+  }) {
     _currentUser = user;
+    _rawMeData = rawMeData;
     _api.defaultChurchId = user?.iglesiaId;
     _api.isReadOnly = user?.isReadOnly ?? false;
     notifyListeners();
@@ -157,12 +218,106 @@ class UserProvider extends ChangeNotifier {
     if (!_api.isAuthenticated) return;
     try {
       final meData = await _api.me();
+      _rawMeData = meData;
+      final prevRequestedChurch = _currentUser?.requestedChurchData;
+      final prevRequestedId = _currentUser?.requestedChurchId;
+      final prevIglesia = _currentUser?.iglesiaActual;
+
       _currentUser = UserModel.fromOdooJson(meData);
+
+      // Si la membresía sigue en revisión pero el servidor no adjuntó requested_church con nombre:
+      if (_currentUser != null &&
+          _currentUser!.isMembershipPending &&
+          (_currentUser!.requestedChurchData == null ||
+              _currentUser!.requestedChurchData!['name'] == null)) {
+        if (prevRequestedChurch != null) {
+          _currentUser = _currentUser!.copyWith(
+            requestedChurchData: prevRequestedChurch,
+            requestedChurchId: prevRequestedId ?? _currentUser!.requestedChurchId,
+            iglesiaActual: prevRequestedChurch['name'] as String? ??
+                prevIglesia ??
+                _currentUser!.iglesiaActual,
+          );
+        }
+      }
+
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
       notifyListeners();
     } catch (e) {
       debugPrint('[UserProvider] Error al refrescar perfil: $e');
+    }
+  }
+
+  /// Registra la solicitud de ingreso a una congregación (POST /membership/request)
+  /// y actualiza inmediatamente el modelo de usuario y la persistencia local.
+  Future<void> solicitarMembresia(
+    int churchId, {
+    required String churchName,
+    String? logoUrl,
+  }) async {
+    // 1. Persistir localmente en SQLite para disponibilidad offline
+    try {
+      await AtrioDatabaseHelper.instance.guardarIglesiaNombre(churchName);
+    } catch (e) {
+      debugPrint('[UserProvider] Error guardando iglesia en SQLite: $e');
+    }
+
+    final churchData = <String, dynamic>{
+      'id': churchId,
+      'name': churchName,
+      if (logoUrl != null && logoUrl.isNotEmpty) 'logo_url': logoUrl,
+    };
+
+    // 2. Actualizar estado reactivo en memoria de inmediato
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(
+        membershipStatus: 'membership_pending',
+        requestedChurchId: churchId,
+        requestedChurchData: churchData,
+        iglesiaActual: churchName,
+      );
+    }
+
+    if (_rawMeData != null) {
+      _rawMeData!['membership_status'] = 'membership_pending';
+      _rawMeData!['requested_church_id'] = churchId;
+      _rawMeData!['requested_church'] = churchData;
+    } else {
+      _rawMeData = {
+        'membership_status': 'membership_pending',
+        'requested_church_id': churchId,
+        'requested_church': churchData,
+      };
+    }
+
+    notifyListeners();
+
+    // 3. Enviar solicitud formal a la API de Odoo
+    if (_api.isAuthenticated) {
+      try {
+        await _api.requestMembership(churchId);
+      } catch (e) {
+        debugPrint('[UserProvider] Error enviando requestMembership a Odoo: $e');
+      }
+
+      try {
+        await refreshUserProfile();
+        // Si el endpoint /me de Odoo no retornó el nombre en requested_church:
+        if (_currentUser != null &&
+            (_currentUser!.requestedChurchData == null ||
+                _currentUser!.requestedChurchData!['name'] == null)) {
+          _currentUser = _currentUser!.copyWith(
+            requestedChurchData: churchData,
+            iglesiaActual: churchName,
+            membershipStatus: 'membership_pending',
+            requestedChurchId: churchId,
+          );
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('[UserProvider] Error refrescando tras solicitar membresía: $e');
+      }
     }
   }
 
@@ -188,6 +343,7 @@ class UserProvider extends ChangeNotifier {
         deviceName: deviceName,
       );
 
+      _rawMeData = data;
       // Crear el modelo de usuario a partir del payload completo de Odoo
       _currentUser = UserModel.fromOdooJson(data);
       _api.defaultChurchId = _currentUser?.iglesiaId;
@@ -251,6 +407,7 @@ class UserProvider extends ChangeNotifier {
         deviceName: deviceName,
       );
 
+      _rawMeData = data;
       UserModel user;
       try {
         user = UserModel.fromOdooJson(data);
@@ -348,6 +505,106 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Inicia sesión o registra usuario mediante Google Sign-In oficial (POST /auth/google).
+  /// Guarda tokens en almacenamiento seguro y puebla UserModel y rawMeData.
+  /// Devuelve el payload completo (que incluye data['created'] == true si es usuario nuevo) o null si falla.
+  Future<Map<String, dynamic>?> loginWithGoogle({
+    required String idToken,
+    String deviceName = 'Flutter App',
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _api.loginWithGoogle(
+        idToken: idToken,
+        deviceName: deviceName,
+      );
+
+      _rawMeData = data;
+      _currentUser = UserModel.fromOdooJson(data);
+      _api.defaultChurchId = _currentUser?.iglesiaId;
+      _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+
+      // Sincronizar SharedPreferences
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('user_email', _currentUser!.email);
+        await prefs.setString('user_name', _currentUser!.nombre);
+        await prefs.setString('userEmail', _currentUser!.email);
+        await prefs.setString('userName', _currentUser!.nombre);
+        await prefs.setString('auth_provider', 'google');
+      } catch (e) {
+        debugPrint('[UserProvider] Advertencia guardando en SharedPreferences: $e');
+      }
+
+      // Sincronizar SQLite (atrio.db)
+      try {
+        await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
+          'nombre': _currentUser!.nombre,
+          'email': _currentUser!.email,
+          'celular': _currentUser!.telefono ?? '',
+          'iglesia_nombre': _currentUser!.iglesiaActual,
+          'creado_en': DateTime.now().toIso8601String(),
+        });
+      } catch (e) {
+        debugPrint('[UserProvider] Advertencia guardando en SQLite: $e');
+      }
+
+      // Sincronizar token del dispositivo con Odoo (no bloqueante)
+      try {
+        await DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+      } catch (e) {
+        debugPrint('[UserProvider] Error no bloqueante al registrar dispositivo: $e');
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return data;
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _errorMessage = 'Error al iniciar sesión con Google: $e';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Registra una nueva iglesia en Odoo para el usuario actual (POST /me/church).
+  /// Transiciona el rol del usuario a 'church_admin' con church.has_active_subscription == false.
+  Future<Map<String, dynamic>> createMyChurch(Map<String, dynamic> churchData) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await _api.createMyChurch(churchData);
+      _rawMeData = data;
+      _currentUser = UserModel.fromOdooJson(data);
+      _api.defaultChurchId = _currentUser?.iglesiaId;
+      _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+      _isLoading = false;
+      notifyListeners();
+      return data;
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    } catch (e) {
+      _errorMessage = 'Error registrando congregación: $e';
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Intenta restaurar la sesión previa desde el almacenamiento seguro de tokens.
   /// Si hay token, consulta /me para refrescar el perfil del usuario.
   Future<bool> tryAutoLogin() async {
@@ -360,6 +617,7 @@ class UserProvider extends ChangeNotifier {
       // El token existe en el almacenamiento seguro, obtenemos el perfil del servidor
       try {
         final meData = await _api.me();
+        _rawMeData = meData;
         _currentUser = UserModel.fromOdooJson(meData);
       } catch (e) {
         debugPrint(
@@ -421,6 +679,7 @@ class UserProvider extends ChangeNotifier {
       debugPrint('[UserProvider] Error al revocar token en servidor: $e');
       await _api.logoutLocal();
     } finally {
+      _rawMeData = null;
       _currentUser = null;
       _api.defaultChurchId = null;
       _api.isReadOnly = false;
@@ -470,6 +729,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Limpia la sesión únicamente en memoria local (compatibilidad).
   void clearSession() {
+    _rawMeData = null;
     _currentUser = null;
     _api.logoutLocal();
     notifyListeners();
@@ -555,6 +815,26 @@ class UserProvider extends ChangeNotifier {
         return 'Por favor completa todos los campos requeridos.';
       case 'invalid_email':
         return 'El formato del correo electrónico no es válido.';
+      case 'email_taken':
+        return 'Ese correo ya tiene una cuenta registrada. Inicia sesión o recupera tu contraseña.';
+      case 'weak_password':
+        return 'La contraseña debe tener un mínimo de 8 caracteres.';
+      case 'church_not_found':
+        return 'La iglesia seleccionada ya no está disponible. Por favor elige otra.';
+      case 'already_member':
+        return 'Ya perteneces a una congregación activa.';
+      case 'account_exists':
+        return 'Ya tienes una cuenta registrada con este correo. Ingresa con tu contraseña.';
+      case 'email_not_verified':
+        return 'Tu cuenta de Google no tiene el correo electrónico verificado.';
+      case 'invalid_google_token':
+        return 'El token de Google no es válido o ha expirado. Por favor reintenta.';
+      case 'signup_disabled':
+        return 'El registro de nuevas cuentas no está disponible en este momento.';
+      case 'google_disabled':
+        return 'El inicio de sesión con Google está temporalmente desactivado.';
+      case 'church_deactivated':
+        return 'Esta congregación ha sido desactivada por administración. Contacta a soporte.';
       case 'invalid_token':
       case 'invalid_refresh_token':
       case 'unauthorized':
@@ -565,7 +845,7 @@ class UserProvider extends ChangeNotifier {
       case 'no_church':
         return 'Tu usuario no tiene una iglesia asociada en el sistema.';
       case 'membership_pending':
-        return 'Tu solicitud de membresía aún está pendiente de aprobación.';
+        return 'Tu solicitud de membresía aún está pendiente de aprobación pastoral.';
       case 'subscription_required':
         return 'Esta función requiere una suscripción activa de tu iglesia.';
       case 'validation_error':
@@ -578,6 +858,8 @@ class UserProvider extends ChangeNotifier {
         return 'Acción no permitida: Modo de solo lectura activo.';
       case 'church_required':
         return 'Se requiere especificar una iglesia para esta operación.';
+      case 'server_error':
+        return 'Error en el servidor. Por favor inténtalo más tarde.';
       default:
         if (e.status == 400) {
           return e.message.isNotEmpty

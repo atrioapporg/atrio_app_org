@@ -18,6 +18,8 @@ import '../providers/user_provider.dart';
 import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
 import '../widgets/read_only_banner.dart';
+import '../widgets/change_pending_banner.dart';
+import '../widgets/membership_pending_banner.dart';
 import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
@@ -849,21 +851,31 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               ),
               SizedBox(height: usableHeight * 0.010),
               // Botón interactivo: Nombre de la iglesia y cambio rápido de comunidad
-              Consumer<IglesiaProvider>(
-                builder: (context, provider, child) {
+              Consumer2<IglesiaProvider, UserProvider>(
+                builder: (context, provider, userProvider, child) {
                   final String sinIglesia =
                       l10n?.sinIglesiaSeleccionada ??
                       'Sin iglesia seleccionada';
+                  final String? requestedName =
+                      userProvider.requestedChurchData?['name'] as String? ??
+                      userProvider.currentUser?.requestedChurchData?['name'] as String?;
+                  final bool isPending = userProvider.isAuthenticated &&
+                      (userProvider.isWaitingApproval ||
+                          userProvider.currentUser?.isMembershipPending == true ||
+                          userProvider.membershipStatus == 'membership_pending');
+
                   final String nombreIglesia =
                       (provider.tieneIglesiaGuardada &&
                           provider.iglesiaActual != null &&
                           provider.iglesiaActual!.nombre.trim().isNotEmpty)
                       ? provider.iglesiaActual!.nombre.trim()
-                      : ((_iglesiaLocal != null &&
-                                _iglesiaLocal!.trim().isNotEmpty &&
-                                _iglesiaLocal != 'Sin iglesia seleccionada')
-                            ? _iglesiaLocal!.trim()
-                            : sinIglesia);
+                      : ((requestedName != null && requestedName.trim().isNotEmpty)
+                            ? requestedName.trim()
+                            : ((_iglesiaLocal != null &&
+                                      _iglesiaLocal!.trim().isNotEmpty &&
+                                      _iglesiaLocal != 'Sin iglesia seleccionada')
+                                  ? _iglesiaLocal!.trim()
+                                  : sinIglesia));
 
                   return SizedBox(
                     width: double.infinity,
@@ -906,6 +918,27 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
+                                        if (isPending) ...[
+                                          SizedBox(width: screenWidth * 0.015),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 1.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEF3C7),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'Pendiente',
+                                              style: TextStyle(
+                                                color: Color(0xFFB45309),
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                         SizedBox(width: screenWidth * 0.015),
                                         Text(
                                           l10n?.tocaParaCambiar ??
@@ -954,6 +987,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 },
               ),
               const ReadOnlyBanner(),
+              const ChangePendingBanner(),
+              const MembershipPendingBanner(),
               SizedBox(height: usableHeight * 0.008),
             ],
           ),

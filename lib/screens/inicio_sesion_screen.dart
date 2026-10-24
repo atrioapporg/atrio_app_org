@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -16,10 +17,15 @@ import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
+import 'package:atrio/atrio_api.dart';
+import 'package:atrio/modelos/app_stage.dart';
+
 import 'crear_cuenta_screen.dart';
+import 'elegir_camino_iglesia_screen.dart';
+import 'esperando_aprobacion_screen.dart';
+import 'iglesia_pendiente_activacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'recuperar_clave_screen.dart';
-import 'tradicion_cristiana_screen.dart';
 
 /// ==============================================================================
 /// PANTALLA DE ACCESO ATRIO (INICIO DE SESIÓN / REGISTRO)
@@ -1316,114 +1322,142 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
     try {
       final l10n = AppLocalizations.of(context);
-      String email = 'usuario.google@gmail.com';
-      String nombre = l10n?.usuarioGoogle ?? 'Usuario Google';
-      String? idToken;
-      String? accessToken;
-      String? serverAuthCode;
+      GoogleSignInAccount? googleUser;
 
       try {
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-        if (googleUser == null) {
-          debugPrint('[AUTH] Inicio de sesión cancelado por el usuario.');
-          if (mounted) setState(() => _isLoadingGoogle = false);
-          return;
-        }
-
-        email = googleUser.email;
-        if (googleUser.displayName != null &&
-            googleUser.displayName!.trim().isNotEmpty) {
-          nombre = googleUser.displayName!.trim();
-        }
-
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
-        idToken = googleAuth.idToken;
-        accessToken = googleAuth.accessToken;
-        serverAuthCode = googleUser.serverAuthCode;
+        googleUser = await _googleSignIn.signIn();
+      } on PlatformException catch (pe) {
         debugPrint(
-          '[AUTH] Google Sign-In autenticado. idToken: ${idToken != null ? "ok" : "null"}',
+          '[AUTH_ERROR] PlatformException en Google Sign-In: code=${pe.code}, message=${pe.message}',
         );
+        if (!mounted) return;
+        if (pe.code == 'sign_in_failed' &&
+            (pe.message?.contains('10') == true ||
+                pe.toString().contains('10'))) {
+          _mostrarMensajeError(
+            'Error de configuración en Google Sign-In (ApiException 10). Verifica que la huella digital SHA-1 y el paquete com.atrio.atrio_app estén registrados en Google Cloud Console.',
+          );
+        } else if (pe.code != 'sign_in_canceled') {
+          _mostrarMensajeError(
+            'Error al iniciar sesión con Google: ${pe.message ?? pe.code}',
+          );
+        }
+        return;
       } catch (e) {
-        debugPrint(
-          '[AUTH_INFO] Google Sign-In nativo no disponible en este entorno: $e. Procediendo con inicio de sesión simulado.',
-        );
-      }
-
-      // Verificamos si ya existe una iglesia previa configurada en SQLite
-      final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
-      final String iglesiaExistente =
-          (usuarioExistente != null &&
-              usuarioExistente['iglesia_nombre'] != null &&
-              usuarioExistente['iglesia_nombre'].toString().trim().isNotEmpty &&
-              usuarioExistente['iglesia_nombre'].toString().trim() !=
-                  'Sin iglesia seleccionada')
-          ? usuarioExistente['iglesia_nombre'].toString().trim()
-          : 'Sin iglesia seleccionada';
-
-      if (!mounted) return;
-
-      // Sincronizar e iniciar sesión en UserProvider (gestiona tokens seguros y persistencia)
-      final userProvider = context.read<UserProvider>();
-      final ok = await userProvider.loginWithSocial(
-        provider: 'google',
-        email: email,
-        nombre: nombre,
-        idToken: idToken,
-        accessToken: accessToken,
-        serverAuthCode: serverAuthCode,
-        iglesiaActual: iglesiaExistente,
-        deviceName: 'App Atrio Flutter',
-      );
-
-      if (!mounted) return;
-
-      if (!ok) {
-        _mostrarMensajeError(
-          userProvider.errorMessage ??
-              'Error al procesar el inicio de sesión con Google.',
-        );
+        debugPrint('[AUTH_ERROR] Error invocando Google Sign-In: $e');
+        if (mounted) {
+          _mostrarMensajeError('No se pudo conectar con los servicios de Google.');
+        }
         return;
       }
 
-      // Feedback amigable
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '¡Bienvenido ${userProvider.currentUser?.nombre ?? nombre}!',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: verdeExito,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 2),
-        ),
+      if (googleUser == null) {
+        debugPrint('[AUTH] Inicio de sesión cancelado por el usuario.');
+        return;
+      }
+
+      final String email = googleUser.email;
+      final String nombre = (googleUser.displayName != null &&
+              googleUser.displayName!.trim().isNotEmpty)
+          ? googleUser.displayName!.trim()
+          : (l10n?.usuarioGoogle ?? 'Usuario Google');
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      debugPrint(
+        '[AUTH] Google Sign-In autenticado para $email. idToken: ${idToken != null ? "ok" : "null"}',
       );
 
-      // Redirigir según el estado del usuario
-      await _redirigirUsuarioPostLogin();
+      if (idToken == null || idToken.isEmpty) {
+        debugPrint('[AUTH_ERROR] Google Sign-In no generó idToken.');
+        if (mounted) {
+          _mostrarMensajeError(
+            'Google no devolvió un token de identidad (idToken). Verifica la configuración de OAuth Web Client en Google Cloud Console.',
+          );
+        }
+        await _googleSignIn.signOut();
+        return;
+      }
+
+      if (!mounted) return;
+      final userProvider = context.read<UserProvider>();
+
+      // Flujo Oficial Odoo 19: POST /auth/google
+      try {
+        final res = await userProvider.loginWithGoogle(idToken: idToken);
+        if (!mounted) return;
+
+        final bool created = res?['created'] == true;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    created
+                        ? '¡Bienvenido a ATRIO, ${userProvider.currentUser?.nombre ?? nombre}!'
+                        : '¡Bienvenido de nuevo, ${userProvider.currentUser?.nombre ?? nombre}!',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: verdeExito,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        await _redirigirUsuarioPostLogin();
+      } on AtrioApiException catch (apiEx) {
+        await _googleSignIn.signOut();
+        if (!mounted) return;
+        String mensaje;
+        switch (apiEx.code) {
+          case 'account_exists':
+            mensaje =
+                'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
+            break;
+          case 'email_not_verified':
+            mensaje =
+                'Tu cuenta de Google no tiene el correo electrónico verificado.';
+            break;
+          case 'invalid_google_token':
+            mensaje =
+                'El token de autenticación de Google no es válido o ha expirado.';
+            break;
+          case 'google_disabled':
+            mensaje =
+                'El inicio de sesión con Google está temporalmente desactivado.';
+            break;
+          default:
+            mensaje = userProvider.errorMessage ?? apiEx.message;
+        }
+        _mostrarMensajeError(mensaje);
+      }
     } catch (error) {
-      debugPrint('[AUTH_ERROR] Error en Google Sign-In: $error');
-      _mostrarMensajeError(
-        'No se pudo conectar con Google. Revisa tu conexión.',
-      );
+      debugPrint('[AUTH_ERROR] Error general en Google Sign-In: $error');
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
+      if (mounted) {
+        _mostrarMensajeError(
+          'No se pudo conectar con Google. Revisa tu conexión a internet.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoadingGoogle = false);
     }
@@ -1542,18 +1576,66 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     }
   }
 
+  void _navegarSegunStage(AppStage stage) {
+    if (!mounted) return;
+    switch (stage) {
+      case AppStage.welcome:
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          InicioAtrioScreen.routeName,
+          (route) => false,
+        );
+        break;
+      case AppStage.chooseChurch:
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          ElegirCaminoIglesiaScreen.routeName,
+          (route) => false,
+        );
+        break;
+      case AppStage.waitingApproval:
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          EsperandoAprobacionScreen.routeName,
+          (route) => false,
+        );
+        break;
+      case AppStage.churchPendingActivation:
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          IglesiaPendienteActivacionScreen.routeName,
+          (route) => false,
+        );
+        break;
+      case AppStage.memberHome:
+      case AppStage.adminHome:
+      case AppStage.platformAdmin:
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          InicioAtrioScreen.routeName,
+          (route) => false,
+        );
+        break;
+    }
+  }
+
   // ============================================================================
   // REDIRECCIÓN INTELIGENTE POST LOGIN
   // ============================================================================
   Future<void> _redirigirUsuarioPostLogin({bool esAutoLogin = false}) async {
-    UserModel? currentUser;
-    try {
-      currentUser = Provider.of<UserProvider>(
-        context,
-        listen: false,
-      ).currentUser;
-    } catch (_) {}
+    if (!mounted) return;
+    final userProvider = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    );
 
+    // Si tiene sesión activa autenticada en Odoo, la máquina de estados AppStage resuelve el destino
+    if (userProvider.isAuthenticated) {
+      _navegarSegunStage(userProvider.currentStage);
+      return;
+    }
+
+    // Fallback para usuarios offline o basados exclusivamente en persistencia SQLite
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
     final bool tieneIglesiaLocal =
@@ -1568,24 +1650,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             'Sin iglesia seleccionada' &&
         usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio';
 
-    final bool tieneIglesiaOdoo =
-        currentUser != null &&
-        (currentUser.hasChurchAssigned ||
-            currentUser.isMember ||
-            (currentUser.iglesiaActual.trim().isNotEmpty &&
-                currentUser.iglesiaActual.trim() !=
-                    'Sin iglesia seleccionada' &&
-                currentUser.iglesiaActual.trim() != 'Iglesia Atrio'));
-
-    final bool usuarioTieneIglesia =
-        tieneIglesiaOdoo || tieneIglesiaLocal || tieneIglesiaDb;
+    final bool usuarioTieneIglesia = tieneIglesiaLocal || tieneIglesiaDb;
 
     if (!mounted) return;
 
-    // Si el usuario ya cuenta con iglesia vinculada y/o asignada (en Odoo o localmente),
-    // entra directamente a InicioAtrioScreen sin pasar de forma redundante por TradicionCristianaScreen.
-    // Solo a los usuarios que NO tienen una iglesia vinculada y/o asignada todavía es que
-    // se les dirige a la pantalla "Queremos conocerte" (TradicionCristianaScreen).
     if (usuarioTieneIglesia) {
       Navigator.pushNamedAndRemoveUntil(
         context,
@@ -1593,7 +1661,11 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         (route) => false,
       );
     } else {
-      Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        ElegirCaminoIglesiaScreen.routeName,
+        (route) => false,
+      );
     }
   }
 

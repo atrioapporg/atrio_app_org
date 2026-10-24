@@ -3,9 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../atrio_api.dart';
 import '../l10n/app_localizations.dart';
+import '../modelos/user_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
+import 'elegir_camino_iglesia_screen.dart';
+import 'esperando_aprobacion_screen.dart';
+import 'iglesia_pendiente_activacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'terminos_privacidad_screen.dart';
@@ -197,12 +201,12 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
             l10n?.errorContrasenaMinima ??
-                'La contraseña debe tener al menos 6 caracteres.',
+                'La contraseña debe tener al menos 8 caracteres.',
           ),
           backgroundColor: Colors.red.shade700,
         ),
@@ -236,21 +240,34 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
       return;
     }
 
-    // 2. Determinar iglesia vinculada
-    final iglesiaProvider = context.read<IglesiaProvider>();
-    final int churchId = iglesiaProvider.iglesiaActual?.id ?? 1;
+    // 2. Determinar iglesia vinculada (argumentos de ruta opcionales o provider)
+    int? churchId;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is int && args > 0) {
+      churchId = args;
+    } else if (args is Map && args['church_id'] != null) {
+      churchId = int.tryParse(args['church_id'].toString());
+    }
+    if (churchId == null || churchId <= 0) {
+      final iglesiaProvider = context.read<IglesiaProvider>();
+      churchId = iglesiaProvider.iglesiaActual?.id;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final userProvider = context.read<UserProvider>();
-      final res = await userProvider.api.registerMember({
+      final payload = <String, dynamic>{
         'name': nombre,
         'email': correo,
         'phone': telefono,
         'password': password,
-        'church_id': churchId,
-      });
+      };
+      if (churchId != null && churchId > 0) {
+        payload['church_id'] = churchId;
+      }
+
+      final res = await userProvider.api.registerMember(payload);
 
       if (!mounted) return;
 
@@ -273,8 +290,10 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Text(
-              l10n?.registroExitosoMensaje ??
-                  'Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.',
+              churchId != null && churchId > 0
+                  ? (l10n?.registroExitosoMensaje ??
+                      'Tu cuenta ha sido creada exitosamente. Tu solicitud de membresía está en revisión por la congregación.')
+                  : 'Tu cuenta ha sido creada exitosamente. Elige el camino de tu iglesia para comenzar.',
             ),
             actions: [
               ElevatedButton(
@@ -289,11 +308,40 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
                       await userProvider.login(correo, password);
                   if (!mounted) return;
                   if (loginOk) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      InicioAtrioScreen.routeName,
-                      (route) => false,
-                    );
+                    final stage = userProvider.currentStage;
+                    switch (stage) {
+                      case AppStage.chooseChurch:
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          ElegirCaminoIglesiaScreen.routeName,
+                          (route) => false,
+                        );
+                        break;
+                      case AppStage.waitingApproval:
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          EsperandoAprobacionScreen.routeName,
+                          (route) => false,
+                        );
+                        break;
+                      case AppStage.churchPendingActivation:
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          IglesiaPendienteActivacionScreen.routeName,
+                          (route) => false,
+                        );
+                        break;
+                      case AppStage.welcome:
+                      case AppStage.memberHome:
+                      case AppStage.adminHome:
+                      case AppStage.platformAdmin:
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          InicioAtrioScreen.routeName,
+                          (route) => false,
+                        );
+                        break;
+                    }
                   } else {
                     Navigator.pushReplacementNamed(
                       context,
@@ -311,9 +359,16 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
       }
     } on AtrioApiException catch (e) {
       if (!mounted) return;
+      String errorMsg = e.message;
+      if (e.code == 'email_taken') {
+        errorMsg =
+            'Ese correo ya tiene una cuenta registrada. Inicia sesión o recupera tu contraseña.';
+      } else if (e.code == 'weak_password') {
+        errorMsg = 'La contraseña debe tener un mínimo de 8 caracteres.';
+      }
       messenger.showSnackBar(
         SnackBar(
-          content: Text(e.message),
+          content: Text(errorMsg),
           backgroundColor: Colors.red.shade700,
         ),
       );
@@ -734,8 +789,9 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
 
                           // 8. Link ¿Ya tienes una cuenta? Iniciar sesión
                           Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   l10n?.yaTienesCuenta ??

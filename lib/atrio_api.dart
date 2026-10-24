@@ -55,6 +55,9 @@ class AtrioApi {
   /// Cuando es true, AtrioApi previene peticiones HTTP de mutación (POST, PUT, PATCH, DELETE) hacia endpoints de contenido.
   bool isReadOnly;
 
+  /// Cliente HTTP opcional para inyección en pruebas unitarias y entornos simulados.
+  final http.Client? client;
+
   AtrioApi({
     required this.baseUrl,
     this.database,
@@ -64,6 +67,7 @@ class AtrioApi {
     this.onSessionExpired,
     this.defaultChurchId,
     this.isReadOnly = false,
+    this.client,
   });
 
   bool _storageInitialized = false;
@@ -107,7 +111,9 @@ class AtrioApi {
     Map<String, String>? extraHeaders,
   }) {
     final isPublicAuth = path == '/auth/login' ||
+        path == '/auth/google' ||
         path == '/auth/refresh' ||
+        path == '/auth/password/reset' ||
         path.contains('/auth/social_login') ||
         path.endsWith('/social_login') ||
         path == AppConfig.odooSocialAuthEndpoint;
@@ -207,7 +213,10 @@ class AtrioApi {
       request.body = jsonEncode(body);
     }
 
-    final streamedResponse = await request.send().timeout(
+    final streamedResponse = await (client != null
+            ? client!.send(request)
+            : request.send())
+        .timeout(
       const Duration(seconds: 15),
     );
     final response = await http.Response.fromStream(streamedResponse);
@@ -260,9 +269,11 @@ class AtrioApi {
       }
     }
 
-    // Si el servidor responde con un código de error (400-599), disparamos la excepción tipada.
     if (response.statusCode >= 400) {
-      final rawCode = data['code'];
+      dynamic rawCode = data['code'];
+      if (rawCode == null && data['error'] is Map) {
+        rawCode = (data['error'] as Map)['code'];
+      }
       final code = rawCode != null
           ? rawCode.toString()
           : 'error_${response.statusCode}';
@@ -310,6 +321,36 @@ class AtrioApi {
     );
 
     token = (data['access_token'] ?? data['token']) as String?;
+    refreshToken = data['refresh_token'] as String?;
+
+    if (storageService != null && token != null && refreshToken != null) {
+      await storageService!.saveTokens(
+        accessToken: token!,
+        refreshToken: refreshToken!,
+      );
+    }
+
+    return data;
+  }
+
+  /// Inicia sesión o registra al usuario mediante Google OAuth (POST /auth/google).
+  /// Envía el id_token obtenido directamente desde GoogleSignIn.
+  /// Guarda tokens de acceso y refresco de forma segura en flutter_secure_storage.
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+    String deviceName = 'Flutter App',
+  }) async {
+    final data = await _send(
+      'POST',
+      '/auth/google',
+      body: {
+        'id_token': idToken,
+        'device_name': deviceName,
+      },
+      retryAuth: false,
+    );
+
+    token = (data['token'] ?? data['access_token']) as String?;
     refreshToken = data['refresh_token'] as String?;
 
     if (storageService != null && token != null && refreshToken != null) {
@@ -553,6 +594,12 @@ class AtrioApi {
     }
     return _send('POST', '/membership/request', body: body);
   }
+
+  /// Registra una nueva iglesia para el usuario actual autenticado (POST /me/church).
+  /// Quien crea la iglesia queda automáticamente con rol 'church_admin'.
+  /// La congregación queda pendiente de asignación de plan por parte de ATRIO.
+  Future<Map<String, dynamic>> createMyChurch(Map<String, dynamic> churchData) =>
+      _send('POST', '/me/church', body: churchData);
 
   /// Registrar token o información del dispositivo para notificaciones push.
   Future<Map<String, dynamic>> registerDevice(

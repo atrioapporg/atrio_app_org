@@ -1,5 +1,6 @@
 import 'auth_permissions.dart';
 
+export 'app_stage.dart';
 export 'auth_permissions.dart';
 
 class UserModel {
@@ -15,6 +16,18 @@ class UserModel {
   final UserRole role;
   final Set<String> permissions;
   final bool isReadOnly;
+
+  /// Estado de membresía en Odoo 19: 'none', 'membership_pending', 'change_pending', etc.
+  final String membershipStatus;
+
+  /// ID de la congregación a la que se solicitó ingreso (cuando membershipStatus == 'membership_pending').
+  final int? requestedChurchId;
+
+  /// Datos informativos de la congregación solicitada (nombre, logo, etc.).
+  final Map<String, dynamic>? requestedChurchData;
+
+  /// Indica si la iglesia a la que pertenece el usuario cuenta con una suscripción/plan activo en ATRIO.
+  final bool hasActiveSubscription;
 
   // Objeto anidado de estadísticas
   final UserStats estadisticas;
@@ -32,6 +45,10 @@ class UserModel {
     this.role = UserRole.user,
     this.permissions = const {},
     this.isReadOnly = false,
+    this.membershipStatus = 'none',
+    this.requestedChurchId,
+    this.requestedChurchData,
+    this.hasActiveSubscription = false,
     this.estadisticas = const UserStats(),
   });
 
@@ -47,13 +64,18 @@ class UserModel {
   /// Indica si el usuario cuenta con estatus de miembro regular o líder.
   bool get isMember => role == UserRole.member || role == UserRole.churchAdmin;
 
+  /// Indica si la solicitud de membresía está pendiente de aprobación por el pastor o admin.
+  bool get isMembershipPending => membershipStatus == 'membership_pending';
+
+  /// Indica si el usuario tiene una solicitud de cambio de congregación en curso.
+  bool get isChangePending => membershipStatus == 'change_pending';
+
   /// Indica si el usuario puede realizar operaciones de escritura según rol y bandera read_only.
   bool get canWrite =>
       !isReadOnly && (role == UserRole.churchAdmin || role == UserRole.member);
 
   /// Indica si el usuario cuenta con una congregación asignada válida.
   bool get hasChurchAssigned => iglesiaId != null && iglesiaId! > 0;
-
 
   UserModel copyWith({
     int? id,
@@ -68,6 +90,10 @@ class UserModel {
     UserRole? role,
     Set<String>? permissions,
     bool? isReadOnly,
+    String? membershipStatus,
+    int? requestedChurchId,
+    Map<String, dynamic>? requestedChurchData,
+    bool? hasActiveSubscription,
     UserStats? estadisticas,
   }) {
     return UserModel(
@@ -83,6 +109,11 @@ class UserModel {
       role: role ?? this.role,
       permissions: permissions ?? this.permissions,
       isReadOnly: isReadOnly ?? this.isReadOnly,
+      membershipStatus: membershipStatus ?? this.membershipStatus,
+      requestedChurchId: requestedChurchId ?? this.requestedChurchId,
+      requestedChurchData: requestedChurchData ?? this.requestedChurchData,
+      hasActiveSubscription:
+          hasActiveSubscription ?? this.hasActiveSubscription,
       estadisticas: estadisticas ?? this.estadisticas,
     );
   }
@@ -106,9 +137,25 @@ class UserModel {
       role: UserRole.fromString(rawRole),
       permissions: permsSet,
       isReadOnly: (json['is_read_only'] ?? json['read_only']) as bool? ?? false,
+      membershipStatus:
+          (json['membership_status'] ?? json['membershipStatus']) as String? ??
+          'none',
+      requestedChurchId:
+          json['requested_church_id'] as int? ??
+          json['requestedChurchId'] as int?,
+      requestedChurchData:
+          json['requested_church_data'] as Map<String, dynamic>?,
+      hasActiveSubscription:
+          (json['has_active_subscription'] ?? json['hasActiveSubscription'])
+              as bool? ??
+          false,
       estadisticas: json['estadisticas'] is Map<String, dynamic>
           ? UserStats.fromJson(json['estadisticas'] as Map<String, dynamic>)
-          : UserStats(solicitudesActivas: 0, donacionesMes: 0, notasBiblia: 0),
+          : const UserStats(
+              solicitudesActivas: 0,
+              donacionesMes: 0,
+              notasBiblia: 0,
+            ),
     );
   }
 
@@ -120,13 +167,18 @@ class UserModel {
 
     final id = (user['id'] ?? member['id'] ?? odooData['id'] ?? 0) as int;
     final nombre =
-        (user['name'] ?? member['name'] ?? odooData['name'] ?? 'Usuario') as String;
-    final email = (user['email'] ??
-        user['login'] ??
-        member['email'] ??
-        odooData['email'] ??
-        '') as String;
-    final telefono = (member['phone'] ?? user['phone'] ?? odooData['phone']) as String?;
+        (user['name'] ?? member['name'] ?? odooData['name'] ?? 'Usuario')
+            as String;
+    final email =
+        (user['email'] ??
+                user['login'] ??
+                member['email'] ??
+                odooData['email'] ??
+                '')
+            as String;
+    final telefono =
+        (member['phone'] ?? user['phone'] ?? odooData['phone']) as String?;
+
     // Extracción tolerante y tipada para Odoo 19 (enteros, listas [id, name], strings)
     int? parseId(dynamic val) {
       if (val == null) return null;
@@ -148,7 +200,8 @@ class UserModel {
       return null;
     }
 
-    final int? iglesiaId = parseId(church['id']) ??
+    final int? iglesiaId =
+        parseId(church['id']) ??
         parseId(user['church_id']) ??
         parseId(user['iglesia_id']) ??
         parseId(member['church_id']) ??
@@ -156,7 +209,28 @@ class UserModel {
         parseId(odooData['church_id']) ??
         parseId(odooData['iglesia_id']);
 
-    final String? nombreIglesiaExtraido = parseName(church['name']) ??
+    // Extracción de membresía y suscripción de Odoo 19
+    final String membershipStatus =
+        (odooData['membership_status'] ??
+                member['membership_status'] ??
+                member['status'] ??
+                user['membership_status'] ??
+                'none')
+            as String;
+
+    final int? requestedChurchId =
+        parseId(odooData['requested_church_id']) ??
+        parseId(user['requested_church_id']) ??
+        parseId(member['requested_church_id']);
+
+    final Map<String, dynamic>? requestedChurchData =
+        (odooData['requested_church'] as Map<String, dynamic>?) ??
+        (church.isNotEmpty && membershipStatus == 'membership_pending'
+            ? church
+            : null);
+
+    final String? nombreIglesiaExtraido =
+        parseName(church['name']) ??
         parseName(church['public_name']) ??
         parseName(odooData['church_name']) ??
         parseName(user['church_name']) ??
@@ -167,45 +241,66 @@ class UserModel {
         parseName(user['iglesia_nombre']) ??
         parseName(member['iglesia_nombre']) ??
         parseName(church['display_name']) ??
+        parseName(requestedChurchData?['name']) ??
+        parseName(requestedChurchData?['public_name']) ??
+        parseName(odooData['requested_church_name']) ??
+        parseName(user['requested_church_name']) ??
         parseName(user['church_id']) ??
         parseName(member['church_id']) ??
         parseName(odooData['church_id']);
 
-    final String iglesiaActual = (nombreIglesiaExtraido != null &&
+    final String iglesiaActual =
+        (nombreIglesiaExtraido != null &&
             nombreIglesiaExtraido.isNotEmpty &&
             nombreIglesiaExtraido != 'Iglesia Atrio' &&
             nombreIglesiaExtraido != 'Sin iglesia seleccionada')
         ? nombreIglesiaExtraido
         : ((iglesiaId != null && iglesiaId > 0)
-            ? 'Iglesia Asignada'
-            : (odooData['iglesia_actual'] as String? ?? 'Iglesia Atrio'));
+              ? 'Iglesia Asignada'
+              : ((requestedChurchData?['name'] != null &&
+                        (requestedChurchData!['name'] as String)
+                            .trim()
+                            .isNotEmpty)
+                    ? (requestedChurchData['name'] as String).trim()
+                    : (odooData['iglesia_actual'] as String? ??
+                          'Iglesia Atrio')));
     final fechaRegistro =
         (user['create_date'] ?? DateTime.now().toIso8601String()) as String;
 
     final avatarIniciales = nombre.trim().isNotEmpty
         ? nombre
-            .trim()
-            .split(' ')
-            .map((e) => e.isNotEmpty ? e[0] : '')
-            .take(2)
-            .join()
-            .toUpperCase()
+              .trim()
+              .split(' ')
+              .map((e) => e.isNotEmpty ? e[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : 'U';
 
     // Parseo de Rol, Permisos y Modo de solo lectura
     final rawRole =
-        (odooData['role'] ?? user['role'] ?? member['role'] ?? 'user') as String?;
+        (odooData['role'] ?? user['role'] ?? member['role'] ?? 'user')
+            as String?;
     final role = UserRole.fromString(rawRole);
 
     final rawPerms =
-        (odooData['permissions'] ?? user['permissions'] ?? []) as List<dynamic>?;
-    final permissions = rawPerms?.map((e) => e.toString()).toSet() ?? <String>{};
+        (odooData['permissions'] ?? user['permissions'] ?? [])
+            as List<dynamic>?;
+    final permissions =
+        rawPerms?.map((e) => e.toString()).toSet() ?? <String>{};
 
     final isReadOnly =
         (odooData['read_only'] ?? user['read_only'] ?? false) as bool;
 
     final isMemberVerified =
-        role == UserRole.member || role == UserRole.churchAdmin || member.isNotEmpty;
+        role == UserRole.member ||
+        role == UserRole.churchAdmin ||
+        member.isNotEmpty;
+
+    final bool hasActiveSubscription =
+        (church['has_active_subscription'] as bool?) ??
+        (odooData['has_active_subscription'] as bool?) ??
+        false;
 
     final statsMap = odooData['estadisticas'] as Map<String, dynamic>? ?? {};
 
@@ -222,6 +317,10 @@ class UserModel {
       role: role,
       permissions: permissions,
       isReadOnly: isReadOnly,
+      membershipStatus: membershipStatus,
+      requestedChurchId: requestedChurchId,
+      requestedChurchData: requestedChurchData,
+      hasActiveSubscription: hasActiveSubscription,
       estadisticas: UserStats.fromJson(statsMap),
     );
   }
@@ -242,6 +341,10 @@ class UserModel {
       'permissions': permissions.toList(),
       'read_only': isReadOnly,
       'is_read_only': isReadOnly,
+      'membership_status': membershipStatus,
+      'requested_church_id': requestedChurchId,
+      'requested_church_data': requestedChurchData,
+      'has_active_subscription': hasActiveSubscription,
       'estadisticas': {
         'solicitudes_activas': estadisticas.solicitudesActivas,
         'donaciones_mes': estadisticas.donacionesMes,

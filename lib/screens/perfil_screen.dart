@@ -16,6 +16,7 @@ import '../providers/user_provider.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
 import 'ayuda_soporte_screen.dart';
+import 'esperando_aprobacion_screen.dart';
 import 'mis_donaciones_screen.dart';
 import 'mis_pedidos_screen.dart';
 import 'inicio_sesion_screen.dart';
@@ -139,6 +140,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     : 'U'))
         : 'I';
 
+    final bool isMembershipPending = estaAutenticado &&
+        (userProvider.isWaitingApproval ||
+            currentUser?.isMembershipPending == true ||
+            userProvider.membershipStatus == 'membership_pending');
+
+    final String? nombreRequested =
+        (userProvider.requestedChurchData?['name'] as String?)?.trim() ??
+        (currentUser?.requestedChurchData?['name'] as String?)?.trim();
+
     final String? nombreProvider =
         (iglesiaProvider.tieneIglesiaGuardada &&
             iglesiaProvider.iglesiaActual != null)
@@ -149,19 +159,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final String? nombreSqlite = (_usuarioData?['iglesia_nombre'] as String?)
         ?.trim();
 
-    final String iglesia = (nombreProvider != null && nombreProvider.isNotEmpty)
-        ? nombreProvider
-        : ((nombreUserOdoo != null &&
-                  nombreUserOdoo.isNotEmpty &&
-                  nombreUserOdoo != 'Sin iglesia seleccionada' &&
-                  nombreUserOdoo != sinIglesiaTexto)
-              ? nombreUserOdoo
-              : ((nombreSqlite != null &&
-                        nombreSqlite.isNotEmpty &&
-                        nombreSqlite != 'Sin iglesia seleccionada' &&
-                        nombreSqlite != sinIglesiaTexto)
-                    ? nombreSqlite
-                    : sinIglesiaTexto));
+    final String iglesia = (isMembershipPending &&
+            nombreRequested != null &&
+            nombreRequested.isNotEmpty)
+        ? nombreRequested
+        : ((nombreProvider != null && nombreProvider.isNotEmpty)
+            ? nombreProvider
+            : ((nombreUserOdoo != null &&
+                      nombreUserOdoo.isNotEmpty &&
+                      nombreUserOdoo != 'Sin iglesia seleccionada' &&
+                      nombreUserOdoo != sinIglesiaTexto)
+                  ? nombreUserOdoo
+                  : ((nombreRequested != null && nombreRequested.isNotEmpty)
+                      ? nombreRequested
+                      : ((nombreSqlite != null &&
+                                nombreSqlite.isNotEmpty &&
+                                nombreSqlite != 'Sin iglesia seleccionada' &&
+                                nombreSqlite != sinIglesiaTexto)
+                            ? nombreSqlite
+                            : sinIglesiaTexto))));
 
     return Container(
       color: blancoFondo,
@@ -178,6 +194,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
               iglesia: iglesia,
               iniciales: inicial,
               ajustesProvider: ajustesProvider,
+              isMembershipPending: isMembershipPending,
             ),
             if (!estaAutenticado)
               Container(
@@ -206,7 +223,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
-                        l10n?.perfilInvitadoDesc ?? 'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
+                        l10n?.perfilInvitadoDesc ??
+                            'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
                         style: TextStyle(
                           color: const Color(0xFF5D3E00),
                           fontSize: screenWidth * 0.032,
@@ -219,6 +237,131 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 ),
               ),
             const ReadOnlyBanner(),
+            if (isMembershipPending)
+              Container(
+                margin: EdgeInsets.fromLTRB(
+                  screenWidth * 0.05,
+                  usableHeight * 0.015,
+                  screenWidth * 0.05,
+                  0,
+                ),
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.hourglass_top_rounded,
+                            color: Color(0xFFB45309),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Solicitud de membresía',
+                                style: TextStyle(
+                                  color: Color(0xFF0F172A),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                              Text(
+                                iglesia,
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Pendiente',
+                            style: TextStyle(
+                              color: Color(0xFFB45309),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Has solicitado unirte a esta congregación. Tu acceso está en espera de validación por parte del pastor o administrador.',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 38,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: azulFondo, width: 1.2),
+                          foregroundColor: azulFondo,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            EsperandoAprobacionScreen.routeName,
+                          );
+                        },
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: const Text(
+                          'Ver estado de solicitud',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
@@ -686,6 +829,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required String iglesia,
     required String iniciales,
     required AjustesProvider ajustesProvider,
+    bool isMembershipPending = false,
   }) {
     final l10n = AppLocalizations.of(context);
     final userProvider = Provider.of<UserProvider>(context);
@@ -784,6 +928,42 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ],
                     ),
+                    if (isMembershipPending) ...[
+                      SizedBox(height: usableHeight * 0.005),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.hourglass_top_rounded,
+                              size: 11,
+                              color: Color(0xFFB45309),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Pendiente de aprobación',
+                              style: TextStyle(
+                                color: Color(0xFFB45309),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     SizedBox(height: usableHeight * 0.007),
                     // Badges de Rol y Estado de Lectura (RBAC Odoo 19)
                     Wrap(

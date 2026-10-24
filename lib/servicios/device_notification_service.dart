@@ -1,8 +1,11 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atrio/atrio_api.dart';
+import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/screens/inicio_atrio_screen.dart';
 
 /// Servicio encargado de gestionar el token de notificación del dispositivo
 /// y sincronizarlo automáticamente con el backend Odoo 19 (endpoints /devices).
@@ -148,6 +151,43 @@ class DeviceNotificationService {
         '⚠️ [DeviceNotificationService] Error inesperado desregistrando dispositivo: $e',
       );
       return false;
+    }
+  }
+
+  /// Procesa los datos recibidos en una notificación push de Odoo 19.
+  /// Cuando `type == 'membership'` y `status == 'approved'`:
+  /// 1. Sincroniza inmediatamente el perfil del usuario llamando a `refreshUserProfile()`.
+  /// 2. Navega dinámicamente a `InicioAtrioScreen`.
+  Future<void> handlePushMessage(
+    Map<String, dynamic> data, {
+    UserProvider? userProvider,
+    GlobalKey<NavigatorState>? navigatorKey,
+  }) async {
+    final type = data['type'] as String?;
+    final status = data['status'] as String?;
+
+    if (type == 'membership') {
+      if (status == 'approved') {
+        debugPrint(
+          '🔔 [DeviceNotificationService] Notificación de membresía aprobada recibida. Actualizando perfil...',
+        );
+        if (userProvider != null) {
+          try {
+            await userProvider.refreshUserProfile();
+          } catch (e) {
+            debugPrint(
+              '⚠️ [DeviceNotificationService] Error refrescando perfil tras push: $e',
+            );
+          }
+        }
+        final navState = navigatorKey?.currentState;
+        if (navState != null) {
+          navState.pushNamedAndRemoveUntil(
+            InicioAtrioScreen.routeName,
+            (route) => false,
+          );
+        }
+      }
     }
   }
 }

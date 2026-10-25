@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
-import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
 import 'seguimiento_solicitud_screen.dart';
 

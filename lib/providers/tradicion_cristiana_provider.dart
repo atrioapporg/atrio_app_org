@@ -61,6 +61,32 @@ class TradicionCristianaProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Índice de denominación compatible con el filtro de [ExplorarProvider] y [SeleccionarIglesiaScreen]:
+  /// 0: Todas, 1: Católica, 2: Evangélica, 3: Pentecostal, 4: Bautista, 5: Adventista
+  int get denominacionFiltroIndex {
+    if (_tradicionSeleccionada == null) return 0;
+    final combinado =
+        '${_tradicionSeleccionada!.id} ${_tradicionSeleccionada!.titulo}'
+            .toLowerCase();
+    if (combinado.contains('catolica') || combinado.contains('católica')) {
+      return 1;
+    }
+    if (combinado.contains('evangelica') || combinado.contains('evangélica')) {
+      return 2;
+    }
+    if (combinado.contains('pentecostal')) return 3;
+    if (combinado.contains('bautista')) return 4;
+    if (combinado.contains('adventista')) return 5;
+    return 0;
+  }
+
+  void seleccionarTradicionPorId(String id) {
+    final index = _tradiciones.indexWhere((t) => t.id == id);
+    if (index != -1) {
+      seleccionarTradicion(_tradiciones[index]);
+    }
+  }
+
   void limpiarSeleccion() {
     _tradicionSeleccionada = null;
     _iglesiaPertenencia = null;

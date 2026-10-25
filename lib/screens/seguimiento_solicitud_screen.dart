@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
-import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
+import 'esperando_aprobacion_screen.dart';
 import 'inicio_sesion_screen.dart';
 
 class SeguimientoSolicitudScreen extends StatefulWidget {
@@ -147,6 +147,22 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
       debugPrint('[SOLICITUDES] Error leyendo SQLite local: $eDb');
     }
 
+    // Si la congregación del usuario aún se encuentra en revisión o aprobación,
+    // bloquear preventivamente la consulta a Odoo para evitar fallos de conexión o errores 403.
+    if (!userProvider.isChurchApproved ||
+        userProvider.isMembershipPending ||
+        userProvider.churchStatus == 'membership_pending') {
+      if (mounted) {
+        setState(() {
+          _solicitudesApi = solicitudesLocales;
+          _isLoading = false;
+          _errorServidor = false;
+          _esModoLocal = solicitudesLocales.isNotEmpty;
+        });
+      }
+      return;
+    }
+
     // 2. Intentar consultar Odoo API
     try {
       final api = userProvider.api;
@@ -245,13 +261,17 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                         ),
                         // Fin botón de retroceso (Back <-)
                         SizedBox(width: screenWidth * 0.035),
-                        Text(
-                          l10n?.misSolicitudes ?? 'Mis solicitudes',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.065,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.3,
+                        Expanded(
+                          child: Text(
+                            l10n?.misSolicitudes ?? 'Mis solicitudes',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.065,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.3,
+                            ),
                           ),
                         ),
                       ],
@@ -373,6 +393,86 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   l10n?.iniciarSesion ?? 'Iniciar sesión',
                                                   style: TextStyle(
                                                     fontSize: screenWidth * 0.038,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ] else if (!userProvider.isChurchApproved ||
+                                                userProvider.isMembershipPending ||
+                                                userProvider.churchStatus ==
+                                                    'membership_pending') ...[
+                                              Container(
+                                                width: screenWidth * 0.18,
+                                                height: screenWidth * 0.18,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFFEF3C7),
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: const Color(0xFFFCD34D),
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                child: Icon(
+                                                  Icons.hourglass_top_rounded,
+                                                  color: const Color(0xFFD97706),
+                                                  size: screenWidth * 0.09,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.02),
+                                              Text(
+                                                'Iglesia en revisión',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: azulFondo,
+                                                  fontSize: screenWidth * 0.045,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.01),
+                                              Text(
+                                                (userProvider.requestedChurchData?['name'] != null ||
+                                                        (userProvider.currentUser?.iglesiaActual != null &&
+                                                            userProvider.currentUser?.iglesiaActual != 'Sin iglesia seleccionada' &&
+                                                            userProvider.currentUser?.iglesiaActual != 'Iglesia Atrio'))
+                                                    ? 'Perteneces a ${userProvider.requestedChurchData?['name'] ?? userProvider.currentUser?.iglesiaActual}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'
+                                                    : 'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: screenWidth * 0.034,
+                                                  height: 1.35,
+                                                ),
+                                              ),
+                                              SizedBox(height: usableHeight * 0.025),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.pushNamed(
+                                                    context,
+                                                    EsperandoAprobacionScreen.routeName,
+                                                  );
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: azulFondo,
+                                                  foregroundColor: Colors.white,
+                                                  elevation: 0,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.05,
+                                                    vertical: usableHeight * 0.014,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(
+                                                      screenWidth * 0.03,
+                                                    ),
+                                                  ),
+                                                ),
+                                                icon: Icon(
+                                                  Icons.refresh_rounded,
+                                                  size: screenWidth * 0.045,
+                                                ),
+                                                label: const Text(
+                                                  'Ver estado de solicitud',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),

@@ -80,9 +80,53 @@ class IglesiaExplorarModel {
     }
 
     final formattedAddress = place['formattedAddress'] as String? ?? '';
-    final denom = formattedAddress.isNotEmpty
-        ? formattedAddress.split(',').first
-        : 'Comunidad cristiana';
+    final nombreLugar = place['displayName']?['text'] as String? ?? 'Sin nombre';
+    final nombreLower = nombreLugar.toLowerCase();
+    final addressLower = formattedAddress.toLowerCase();
+    final textoCompleto = '$nombreLower $addressLower';
+
+    final textoNormalizado = textoCompleto
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n');
+
+    String denom;
+    final esTerminoCatolico = textoNormalizado.contains('parroquia') ||
+        textoNormalizado.contains('catedral') ||
+        textoNormalizado.contains('basilica') ||
+        textoNormalizado.contains('santuario') ||
+        textoNormalizado.contains('capilla') ||
+        textoNormalizado.contains('catolica') ||
+        textoNormalizado.contains('arquidiocesis') ||
+        textoNormalizado.contains('diocesis') ||
+        textoNormalizado.contains('nuestra senora') ||
+        textoNormalizado.contains('virgen') ||
+        textoNormalizado.contains('sagrado corazon') ||
+        textoNormalizado.contains('santisimo sacramento');
+
+    final esNoCatolicaExplicita = textoNormalizado.contains('adventista') ||
+        textoNormalizado.contains('bautista') ||
+        textoNormalizado.contains('pentecostal') ||
+        textoNormalizado.contains('evangelica');
+
+    if (esTerminoCatolico && !esNoCatolicaExplicita) {
+      denom = 'Católica';
+    } else if (textoNormalizado.contains('adventista')) {
+      denom = 'Adventista';
+    } else if (textoNormalizado.contains('bautista')) {
+      denom = 'Bautista';
+    } else if (textoNormalizado.contains('pentecostal')) {
+      denom = 'Pentecostal';
+    } else if (textoNormalizado.contains('evangelica')) {
+      denom = 'Evangélica';
+    } else if (formattedAddress.isNotEmpty) {
+      denom = formattedAddress.split(',').first;
+    } else {
+      denom = 'Comunidad cristiana';
+    }
 
     final hex =
         '#${brandColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';

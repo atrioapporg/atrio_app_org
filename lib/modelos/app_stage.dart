@@ -33,12 +33,18 @@ AppStage resolveStage(Map<String, dynamic>? me) {
   if (me == null || me.isEmpty) return AppStage.welcome;
 
   final role = me['role'] as String?;
-  final status = (me['membership_status'] ?? me['member']?['status']) as String?;
+  final status = (me['membership_status'] ??
+          me['church_status'] ??
+          me['member']?['status'] ??
+          me['member']?['state'] ??
+          me['user']?['membership_status']) as String?;
   final church = me['church'] as Map<String, dynamic>?;
   final bool activeSubscription = church?['has_active_subscription'] == true;
 
   if (role == 'platform_admin') return AppStage.platformAdmin;
-  if (status == 'membership_pending') return AppStage.waitingApproval;
+  if (status == 'membership_pending' || status == 'pending') {
+    return AppStage.waitingApproval;
+  }
   if (role == 'church_admin') {
     return activeSubscription ? AppStage.adminHome : AppStage.churchPendingActivation;
   }

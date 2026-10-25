@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,24 @@ import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 
+/// Evento reactivo que se dispara inmediatamente cuando el estatus de la iglesia
+/// o membresía del usuario es aprobado o cambia de estado en Odoo 19.
+class ChurchStatusChangeEvent {
+  final String previousStatus;
+  final String newStatus;
+  final bool isApprovedNow;
+  final String churchName;
+  final DateTime timestamp;
+
+  ChurchStatusChangeEvent({
+    required this.previousStatus,
+    required this.newStatus,
+    required this.isApprovedNow,
+    required this.churchName,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
 /// Provider central para la gestión del usuario autenticado,
 /// persistencia de sesión segura y comunicación con la API de Odoo.
 class UserProvider extends ChangeNotifier {
@@ -20,6 +39,14 @@ class UserProvider extends ChangeNotifier {
   Map<String, dynamic>? _rawMeData;
   bool _isLoading = false;
   String? _errorMessage;
+
+  final StreamController<ChurchStatusChangeEvent> _churchStatusChangeController =
+      StreamController<ChurchStatusChangeEvent>.broadcast();
+
+  /// Flujo reactivo que emite eventos inmediatamente cuando la iglesia del usuario
+  /// es aprobada o cambia de estatus en Odoo 19.
+  Stream<ChurchStatusChangeEvent> get onChurchStatusChanged =>
+      _churchStatusChangeController.stream;
 
   UserProvider({AtrioApi? api, TokenStorageService? storageService})
       : _storageService = storageService ?? TokenStorageService(),
@@ -182,13 +209,22 @@ class UserProvider extends ChangeNotifier {
   bool get isMembershipPending =>
       isWaitingApproval ||
       _currentUser?.isMembershipPending == true ||
-      membershipStatus == 'membership_pending';
+      membershipStatus == 'membership_pending' ||
+      membershipStatus == 'pending' ||
+      churchStatus == 'membership_pending' ||
+      churchStatus == 'pending';
+
+  /// Indica si el usuario tiene una solicitud de cambio/traslado de iglesia en proceso.
+  bool get isChangePending =>
+      _currentUser?.isChangePending == true ||
+      membershipStatus == 'change_pending';
 
   /// Valida reactivamente si la congregación del usuario se encuentra debidamente asignada y aprobada por el backend.
   /// Retorna false si el usuario es invitado, no tiene congregación o su membresía sigue pendiente de aprobación.
   bool get isChurchApproved =>
       isAuthenticated &&
       hasChurchAssigned &&
+      (isMember || membershipStatus == 'approved') &&
       !isMembershipPending &&
       (_currentUser?.isChurchApproved ?? false);
 
@@ -229,12 +265,42 @@ class UserProvider extends ChangeNotifier {
   void setCurrentUserForTesting(
     UserModel? user, {
     Map<String, dynamic>? rawMeData,
+    bool emitStatusEvent = false,
   }) {
+    final prevApproved = _currentUser?.isChurchApproved ?? false;
+    final prevStatus = _currentUser?.membershipStatus ?? 'none';
     _currentUser = user;
     _rawMeData = rawMeData;
     _api.defaultChurchId = user?.iglesiaId;
     _api.isReadOnly = user?.isReadOnly ?? false;
     notifyListeners();
+
+    if (emitStatusEvent && user != null) {
+      final isApprovedNow = (!prevApproved && user.isChurchApproved);
+      _churchStatusChangeController.add(
+        ChurchStatusChangeEvent(
+          previousStatus: prevStatus,
+          newStatus: user.membershipStatus,
+          isApprovedNow: isApprovedNow,
+          churchName: user.iglesiaActual,
+        ),
+      );
+    }
+  }
+
+  /// Emite manualmente una notificación de cambio de estado de congregación (ej. tras push notification).
+  void notifyChurchStatusChanged({
+    required String status,
+    required String churchName,
+    bool isApproved = false,
+  }) {
+    final event = ChurchStatusChangeEvent(
+      previousStatus: _currentUser?.membershipStatus ?? 'none',
+      newStatus: status,
+      isApprovedNow: isApproved,
+      churchName: churchName,
+    );
+    _churchStatusChangeController.add(event);
   }
 
   /// Refresca el perfil del usuario actual consultando GET /me a Odoo.
@@ -246,6 +312,8 @@ class UserProvider extends ChangeNotifier {
       final prevRequestedChurch = _currentUser?.requestedChurchData;
       final prevRequestedId = _currentUser?.requestedChurchId;
       final prevIglesia = _currentUser?.iglesiaActual;
+      final prevStatus = _currentUser?.membershipStatus ?? 'none';
+      final prevApproved = _currentUser?.isChurchApproved ?? false;
 
       _currentUser = UserModel.fromOdooJson(meData);
 
@@ -268,6 +336,22 @@ class UserProvider extends ChangeNotifier {
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
       notifyListeners();
+
+      // Detección automática y emisión inmediata si cambió de estado o fue aprobada
+      final newStatus = _currentUser?.membershipStatus ?? 'none';
+      final newApproved = _currentUser?.isChurchApproved ?? false;
+      if ((prevStatus != newStatus || prevApproved != newApproved) && _currentUser != null) {
+        final isApprovedNow = (!prevApproved && newApproved) ||
+            (prevStatus == 'membership_pending' &&
+                (newStatus == 'approved' || newApproved));
+        final event = ChurchStatusChangeEvent(
+          previousStatus: prevStatus,
+          newStatus: newStatus,
+          isApprovedNow: isApprovedNow,
+          churchName: _currentUser!.iglesiaActual,
+        );
+        _churchStatusChangeController.add(event);
+      }
     } catch (e) {
       debugPrint('[UserProvider] Error al refrescar perfil: $e');
     }
@@ -892,5 +976,11 @@ class UserProvider extends ChangeNotifier {
         }
         return e.message.isNotEmpty ? e.message : 'Error en el servidor (${e.status}).';
     }
+  }
+
+  @override
+  void dispose() {
+    _churchStatusChangeController.close();
+    super.dispose();
   }
 }

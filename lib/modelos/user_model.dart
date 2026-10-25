@@ -65,7 +65,11 @@ class UserModel {
   bool get isMember => role == UserRole.member || role == UserRole.churchAdmin;
 
   /// Indica si la solicitud de membresía está pendiente de aprobación por el pastor o admin.
-  bool get isMembershipPending => membershipStatus == 'membership_pending';
+  bool get isMembershipPending =>
+      membershipStatus == 'membership_pending' ||
+      membershipStatus == 'pending' ||
+      membershipStatus == 'waiting' ||
+      membershipStatus == 'in_review';
 
   /// Indica si el usuario tiene una solicitud de cambio de congregación en curso.
   bool get isChangePending => membershipStatus == 'change_pending';
@@ -85,8 +89,10 @@ class UserModel {
   /// No se considera aprobada si la membresía está pendiente ('membership_pending') o no tiene iglesia asignada.
   bool get isChurchApproved =>
       hasChurchAssigned &&
+      (isMember || membershipStatus == 'approved') &&
       !isMembershipPending &&
-      membershipStatus != 'membership_pending';
+      membershipStatus != 'membership_pending' &&
+      membershipStatus != 'pending';
 
   UserModel copyWith({
     int? id,
@@ -223,9 +229,14 @@ class UserModel {
     // Extracción de membresía y suscripción de Odoo 19
     final String membershipStatus =
         (odooData['membership_status'] ??
+                odooData['church_status'] ??
                 member['membership_status'] ??
+                member['church_status'] ??
                 member['status'] ??
+                member['state'] ??
                 user['membership_status'] ??
+                user['church_status'] ??
+                user['status'] ??
                 'none')
             as String;
 
@@ -236,7 +247,9 @@ class UserModel {
 
     final Map<String, dynamic>? requestedChurchData =
         (odooData['requested_church'] as Map<String, dynamic>?) ??
-        (church.isNotEmpty && membershipStatus == 'membership_pending'
+        (church.isNotEmpty &&
+                (membershipStatus == 'membership_pending' ||
+                    membershipStatus == 'pending')
             ? church
             : null);
 

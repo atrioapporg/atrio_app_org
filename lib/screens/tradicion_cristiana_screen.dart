@@ -1,6 +1,7 @@
 import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/modelos/tradicion_cristiana_model.dart';
+import 'package:atrio/providers/explorar_provider.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
 import 'package:atrio/screens/inicio_atrio_screen.dart';
 import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
@@ -99,8 +100,9 @@ class _TradicionCristianaScreenState extends State {
       if (usuario == null ||
           usuario['iglesia_nombre'] == null ||
           usuario['iglesia_nombre'].toString().trim().isEmpty) {
-        await AtrioDatabaseHelper.instance
-            .guardarIglesiaNombre('Sin iglesia seleccionada');
+        await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+          'Sin iglesia seleccionada',
+        );
       }
 
       if (!mounted) return;
@@ -144,15 +146,33 @@ class _TradicionCristianaScreenState extends State {
       _isSaving = true;
     });
     try {
-      await AtrioDatabaseHelper.instance.guardarFeReligiosa(tradicion.titulo);
-      debugPrint('[SQLITE] fe_religiosa guardada: ${tradicion.titulo}');
+      final l10n = mounted ? AppLocalizations.of(context) : null;
+      final tituloResuelto = _resolverTituloTradicion(l10n, tradicion);
+      await AtrioDatabaseHelper.instance.guardarFeReligiosa(tituloResuelto);
+      debugPrint('[SQLITE] fe_religiosa guardada: $tituloResuelto');
+
+      // Sincronizar inmediatamente el filtro de denominación en ExplorarProvider
+      if (mounted) {
+        try {
+          final explorarProvider = context.read<ExplorarProvider>();
+          final int filtroIdx = provider is TradicionCristianaProvider
+              ? provider.denominacionFiltroIndex
+              : 0;
+          if (filtroIdx > 0) {
+            explorarProvider.cambiarDenominacion(filtroIdx, recargar: false);
+          }
+        } catch (e) {
+          debugPrint('[ExplorarProvider] Error sincronizando denominación: $e');
+        }
+      }
+
       if (!mounted) return;
       Navigator.pushNamed(
         context,
         SeleccionarIglesiaScreen.routeName,
         arguments: {
           'tradicionId': tradicion.id,
-          'tradicionTitulo': tradicion.titulo,
+          'tradicionTitulo': tituloResuelto,
         },
       );
     } catch (e) {
@@ -243,8 +263,9 @@ class _TradicionCristianaScreenState extends State {
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius:
-                              BorderRadius.circular(screenWidth * 0.04),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.04,
+                          ),
                           border: Border.all(
                             color: amarilloOro.withValues(alpha: 0.4),
                           ),
@@ -417,7 +438,8 @@ class _TradicionCristianaScreenState extends State {
       itemBuilder: (context, index) {
         final item = provider.tradiciones[index];
         final isSelected = provider.tradicionSeleccionada?.id == item.id;
-        final bool esIndicarDespues = item.id == 'trad_despues' ||
+        final bool esIndicarDespues =
+            item.id == 'trad_despues' ||
             item.id == 'prefiero_indicarlo_despues';
         return _buildTraditionCard(
           title: _resolverTituloTradicion(l10n, item),

@@ -165,8 +165,9 @@ class DeviceNotificationService {
   }) async {
     final type = data['type'] as String?;
     final status = data['status'] as String?;
+    final churchName = data['church_name'] as String? ?? 'tu congregación';
 
-    if (type == 'membership') {
+    if (type == 'membership' || type == 'church') {
       if (status == 'approved') {
         debugPrint(
           '🔔 [DeviceNotificationService] Notificación de membresía aprobada recibida. Actualizando perfil...',
@@ -174,6 +175,11 @@ class DeviceNotificationService {
         if (userProvider != null) {
           try {
             await userProvider.refreshUserProfile();
+            userProvider.notifyChurchStatusChanged(
+              status: 'approved',
+              churchName: userProvider.currentUser?.iglesiaActual ?? churchName,
+              isApproved: true,
+            );
           } catch (e) {
             debugPrint(
               '⚠️ [DeviceNotificationService] Error refrescando perfil tras push: $e',
@@ -186,6 +192,24 @@ class DeviceNotificationService {
             InicioAtrioScreen.routeName,
             (route) => false,
           );
+        }
+      } else if (status != null && status.isNotEmpty) {
+        debugPrint(
+          '🔔 [DeviceNotificationService] Notificación de cambio de estado de congregación ($status). Actualizando...',
+        );
+        if (userProvider != null) {
+          try {
+            await userProvider.refreshUserProfile();
+            userProvider.notifyChurchStatusChanged(
+              status: status,
+              churchName: userProvider.currentUser?.iglesiaActual ?? churchName,
+              isApproved: status == 'approved',
+            );
+          } catch (e) {
+            debugPrint(
+              '⚠️ [DeviceNotificationService] Error refrescando perfil tras push: $e',
+            );
+          }
         }
       }
     }

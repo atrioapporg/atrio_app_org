@@ -93,7 +93,6 @@ class _AlertaAutoDismissState extends State<AlertaAutoDismiss>
         position: _slideAnimation,
         child: SizeTransition(
           sizeFactor: _fadeAnimation,
-          axisAlignment: 0.0,
           child: Container(
             margin: widget.margin ??
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:atrio/screens/mis_notas_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -35,7 +37,8 @@ class PerfilScreen extends StatefulWidget {
   State<PerfilScreen> createState() => _PerfilScreenState();
 }
 
-class _PerfilScreenState extends State<PerfilScreen> {
+class _PerfilScreenState extends State<PerfilScreen>
+    with WidgetsBindingObserver {
   static const Color azulFondo = Color(0xFF072B4F);
   static const Color amarilloOro = Color(0xFFE5A023);
   static const Color blancoFondo = Color(0xFFFAF7F0);
@@ -44,12 +47,127 @@ class _PerfilScreenState extends State<PerfilScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _usuarioData;
   String _appVersion = '';
+  Timer? _periodicStatusTimer;
+  StreamSubscription<ChurchStatusChangeEvent>? _statusSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cargarDatosUsuario();
     _cargarVersionApp();
+    _iniciarEscuchaEstadoIglesia();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _periodicStatusTimer?.cancel();
+    _statusSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (userProvider.isAuthenticated) {
+        userProvider.refreshUserProfile();
+      }
+    }
+  }
+
+  void _iniciarEscuchaEstadoIglesia() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      // Escuchar eventos reactivos de aprobación o cambio de estado
+      _statusSub = userProvider.onChurchStatusChanged.listen((event) {
+        if (!mounted) return;
+        _mostrarNotificacionCambioEstado(event);
+      });
+
+      // Chequeo periódico preventivo cada 20s para usuarios en revisión
+      _periodicStatusTimer?.cancel();
+      _periodicStatusTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        if (!mounted) return;
+        final p = Provider.of<UserProvider>(context, listen: false);
+        if (p.isAuthenticated &&
+            (p.isMembershipPending || p.isWaitingApproval)) {
+          p.refreshUserProfile();
+        }
+      });
+    });
+  }
+
+  void _mostrarNotificacionCambioEstado(ChurchStatusChangeEvent event) {
+    if (!mounted) return;
+    if (event.isApprovedNow) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF16A34A),
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          content: Row(
+            children: [
+              const Icon(Icons.verified_rounded, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '¡Tu iglesia ha sido aprobada!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'Ya eres miembro activo de ${event.churchName}. Acceso completo desbloqueado.',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF0F172A),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'El estado de tu congregación (${event.churchName}) ha cambiado a: ${event.newStatus}.',
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _cargarVersionApp() async {
@@ -85,7 +203,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
         }
       }
     } catch (e) {
-      debugPrint('[PerfilScreen] Error leyendo usuario de base de datos local: $e');
+      debugPrint(
+        '[PerfilScreen] Error leyendo usuario de base de datos local: $e',
+      );
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -140,11 +260,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     : 'U'))
         : 'I';
 
-    final bool isMembershipPending = estaAutenticado &&
-        (userProvider.isWaitingApproval ||
-            currentUser?.isMembershipPending == true ||
-            userProvider.membershipStatus == 'membership_pending');
-
     final String? nombreRequested =
         (userProvider.requestedChurchData?['name'] as String?)?.trim() ??
         (currentUser?.requestedChurchData?['name'] as String?)?.trim();
@@ -159,363 +274,440 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final String? nombreSqlite = (_usuarioData?['iglesia_nombre'] as String?)
         ?.trim();
 
-    final String iglesia = (isMembershipPending &&
-            nombreRequested != null &&
-            nombreRequested.isNotEmpty)
+    final String iglesia = (nombreRequested != null && nombreRequested.isNotEmpty)
         ? nombreRequested
         : ((nombreProvider != null && nombreProvider.isNotEmpty)
-            ? nombreProvider
-            : ((nombreUserOdoo != null &&
-                      nombreUserOdoo.isNotEmpty &&
-                      nombreUserOdoo != 'Sin iglesia seleccionada' &&
-                      nombreUserOdoo != sinIglesiaTexto)
-                  ? nombreUserOdoo
-                  : ((nombreRequested != null && nombreRequested.isNotEmpty)
-                      ? nombreRequested
-                      : ((nombreSqlite != null &&
-                                nombreSqlite.isNotEmpty &&
-                                nombreSqlite != 'Sin iglesia seleccionada' &&
-                                nombreSqlite != sinIglesiaTexto)
-                            ? nombreSqlite
-                            : sinIglesiaTexto))));
+              ? nombreProvider
+              : ((nombreUserOdoo != null &&
+                        nombreUserOdoo.isNotEmpty &&
+                        nombreUserOdoo != 'Sin iglesia seleccionada' &&
+                        nombreUserOdoo != sinIglesiaTexto &&
+                        nombreUserOdoo != 'Iglesia Atrio')
+                    ? nombreUserOdoo
+                    : ((nombreRequested != null && nombreRequested.isNotEmpty)
+                          ? nombreRequested
+                          : ((nombreSqlite != null &&
+                                    nombreSqlite.isNotEmpty &&
+                                    nombreSqlite !=
+                                        'Sin iglesia seleccionada' &&
+                                    nombreSqlite != sinIglesiaTexto &&
+                                    nombreSqlite != 'Iglesia Atrio')
+                                ? nombreSqlite
+                                : sinIglesiaTexto))));
+
+    final bool hasChurchSelected = estaAutenticado &&
+        iglesia.isNotEmpty &&
+        iglesia != sinIglesiaTexto &&
+        iglesia != 'Sin iglesia seleccionada' &&
+        iglesia != 'Sin congregación' &&
+        iglesia != 'Iglesia Atrio';
+
+    final bool isChangePending = estaAutenticado &&
+        (userProvider.isChangePending ||
+            currentUser?.isChangePending == true ||
+            userProvider.membershipStatus == 'change_pending');
+
+    final bool isChurchApproved = estaAutenticado &&
+        userProvider.isChurchApproved &&
+        !userProvider.isMembershipPending &&
+        userProvider.membershipStatus != 'pending';
+
+    final bool isMembershipPending = estaAutenticado &&
+        !isChurchApproved &&
+        !isChangePending &&
+        (userProvider.isWaitingApproval ||
+            currentUser?.isMembershipPending == true ||
+            userProvider.isMembershipPending ||
+            userProvider.membershipStatus == 'membership_pending' ||
+            userProvider.membershipStatus == 'pending' ||
+            userProvider.churchStatus == 'pending' ||
+            userProvider.churchStatus == 'membership_pending' ||
+            hasChurchSelected);
+
+    final bool hasChurchAssigned = estaAutenticado &&
+        (userProvider.hasChurchAssigned || hasChurchSelected) &&
+        iglesia != sinIglesiaTexto &&
+        iglesia.isNotEmpty;
 
     return Container(
       color: blancoFondo,
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(
-              context: context,
-              screenWidth: screenWidth,
-              usableHeight: usableHeight,
-              nombre: nombre,
-              iglesia: iglesia,
-              iniciales: inicial,
-              ajustesProvider: ajustesProvider,
-              isMembershipPending: isMembershipPending,
-            ),
-            if (!estaAutenticado)
-              Container(
-                margin: EdgeInsets.fromLTRB(
-                  screenWidth * 0.05,
-                  usableHeight * 0.015,
-                  screenWidth * 0.05,
-                  0,
-                ),
-                padding: EdgeInsets.all(screenWidth * 0.035),
-                decoration: BoxDecoration(
-                  color: amarilloOro.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                  border: Border.all(
-                    color: amarilloOro.withValues(alpha: 0.4),
-                    width: 1.0,
+      child: RefreshIndicator(
+        color: amarilloOro,
+        onRefresh: () async {
+          if (userProvider.isAuthenticated) {
+            await userProvider.refreshUserProfile();
+          }
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(
+                context: context,
+                screenWidth: screenWidth,
+                usableHeight: usableHeight,
+                nombre: nombre,
+                iglesia: iglesia,
+                iniciales: inicial,
+                ajustesProvider: ajustesProvider,
+                isMembershipPending: isMembershipPending,
+                isChurchApproved: isChurchApproved,
+                isChangePending: isChangePending,
+                hasChurchAssigned: hasChurchAssigned,
+              ),
+              if (!estaAutenticado)
+                Container(
+                  margin: EdgeInsets.fromLTRB(
+                    screenWidth * 0.05,
+                    usableHeight * 0.015,
+                    screenWidth * 0.05,
+                    0,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      color: const Color(0xFF8A5B00),
-                      size: screenWidth * 0.055,
+                  padding: EdgeInsets.all(screenWidth * 0.035),
+                  decoration: BoxDecoration(
+                    color: amarilloOro.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    border: Border.all(
+                      color: amarilloOro.withValues(alpha: 0.4),
+                      width: 1.0,
                     ),
-                    SizedBox(width: screenWidth * 0.03),
-                    Expanded(
-                      child: Text(
-                        l10n?.perfilInvitadoDesc ??
-                            'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
-                        style: TextStyle(
-                          color: const Color(0xFF5D3E00),
-                          fontSize: screenWidth * 0.032,
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: const Color(0xFF8A5B00),
+                        size: screenWidth * 0.055,
+                      ),
+                      SizedBox(width: screenWidth * 0.03),
+                      Expanded(
+                        child: Text(
+                          l10n?.perfilInvitadoDesc ?? 'Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.',
+                          style: TextStyle(
+                            color: const Color(0xFF5D3E00),
+                            fontSize: screenWidth * 0.032,
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+              const ReadOnlyBanner(),
+              _buildTarjetaEstadoIglesia(
+                context: context,
+                screenWidth: screenWidth,
+                usableHeight: usableHeight,
+                iglesia: iglesia,
+                isChurchApproved: isChurchApproved,
+                isMembershipPending: isMembershipPending,
+                isChangePending: isChangePending,
+                hasChurchAssigned: hasChurchAssigned,
+                estaAutenticado: estaAutenticado,
               ),
-            const ReadOnlyBanner(),
-            if (isMembershipPending)
-              Container(
-                margin: EdgeInsets.fromLTRB(
-                  screenWidth * 0.05,
-                  usableHeight * 0.015,
-                  screenWidth * 0.05,
-                  0,
-                ),
-                padding: EdgeInsets.all(screenWidth * 0.04),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.hourglass_top_rounded,
-                            color: Color(0xFFB45309),
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Solicitud de membresía',
-                                style: TextStyle(
-                                  color: Color(0xFF0F172A),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13.5,
+                    SizedBox(height: usableHeight * 0.025),
+                    _sectionLabel(
+                      l10n?.miActividad ?? 'Mi actividad',
+                      screenWidth,
+                      usableHeight,
+                    ),
+                    _buildMenuGroup(
+                      context: context,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      items: [
+                        _MenuItemData(
+                          icon: Icons.edit_note_outlined,
+                          label: l10n?.misSolicitudes ?? 'Mis solicitudes',
+                          badge: (!isChurchApproved && estaAutenticado)
+                              ? 'Pendiente'
+                              : null,
+                          route: isChurchApproved
+                              ? SeguimientoSolicitudScreen.routeName
+                              : null,
+                          onCustomTap: isChurchApproved
+                              ? null
+                              : () => _mostrarAvisoIglesiaPendiente(
+                                  context: context,
+                                  screenWidth: screenWidth,
+                                  usableHeight: usableHeight,
+                                  iglesiaNombre: iglesia,
                                 ),
-                              ),
-                              Text(
-                                iglesia,
-                                style: const TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Pendiente',
-                            style: TextStyle(
-                              color: Color(0xFFB45309),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        _MenuItemData(
+                          icon: Icons.favorite_border_rounded,
+                          label: l10n?.misDonaciones ?? 'Mis donaciones',
+                          route: MisDonacionesScreen.routeName,
+                        ),
+                        _MenuItemData(
+                          icon: Icons.receipt_long_outlined,
+                          label: l10n?.misPedidos ?? 'Mis pedidos',
+                          route: MisPedidosScreen.routeName,
+                        ),
+                        _MenuItemData(
+                          icon: Icons.menu_book_outlined,
+                          label:
+                              l10n?.misNotasDeLaBiblia ??
+                              'Mis notas de la Biblia',
+                          route: MisNotasScreen.routeName,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Has solicitado unirte a esta congregación. Tu acceso está en espera de validación por parte del pastor o administrador.',
-                      style: TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 12,
-                        height: 1.3,
+                    SizedBox(height: usableHeight * 0.025),
+
+                    // Sección Administrativa Pastoral (Odoo 19 /admin/*)
+                    PermissionGuard(
+                      requireChurchAdmin: true,
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: usableHeight * 0.025),
+                        child: _buildSeccionPastoralDestacada(
+                          context: context,
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 38,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: azulFondo, width: 1.2),
-                          foregroundColor: azulFondo,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.zero,
-                        ),
-                        onPressed: () {
-                          Navigator.pushNamed(
+
+                    _sectionLabel(
+                      l10n?.cuenta ?? 'Cuenta',
+                      screenWidth,
+                      usableHeight,
+                    ),
+                    _buildMenuGroup(
+                      context: context,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      items: [
+                        _MenuItemData(
+                          icon: Icons.person_outline_rounded,
+                          label: l10n?.misDatos ?? 'Mis datos',
+                          route: null,
+                          onCustomTap: () => _mostrarDialogoEditarDatos(
                             context,
-                            EsperandoAprobacionScreen.routeName,
-                          );
-                        },
-                        icon: const Icon(Icons.refresh_rounded, size: 16),
-                        label: const Text(
-                          'Ver estado de solicitud',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            screenWidth,
+                            usableHeight,
+                            iglesiaActual: iglesia,
                           ),
+                        ),
+                        _MenuItemData(
+                          icon: Icons.church_outlined,
+                          label: l10n?.cambiarDeIglesia ?? 'Cambiar de iglesia',
+                          route: TradicionCristianaScreen.routeName,
+                        ),
+                        _MenuItemData(
+                          icon: Icons.notifications_none_rounded,
+                          label: l10n?.notificaciones ?? 'Notificaciones',
+                          route: NotificacionesScreen.routeName,
+                        ),
+                        _MenuItemData(
+                          icon: Icons.settings_outlined,
+                          label: l10n?.ajustesDeLaApp ?? 'Ajustes de la app',
+                          route: ConfiguracionScreen.routeName,
+                        ),
+                        if (AppConfig.appEnvironment != 'production')
+                          _MenuItemData(
+                            icon: Icons.sync_lock_rounded,
+                            label: 'Diagnóstico Token Odoo',
+                            customColor: Colors.deepPurple,
+                            route: null,
+                            onCustomTap: () => _probarRenovacionToken(context),
+                          ),
+                        _MenuItemData(
+                          icon: Icons.delete_forever_outlined,
+                          label:
+                              l10n?.eliminarCuentaYDatos ??
+                              'Eliminar cuenta y datos',
+                          customColor: Colors.red.shade700,
+                          route: null,
+                          onCustomTap: () => _confirmarEliminarCuenta(context),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: usableHeight * 0.025),
+                    _sectionLabel(
+                      l10n?.soporte ?? 'Soporte',
+                      screenWidth,
+                      usableHeight,
+                    ),
+                    _buildMenuGroup(
+                      context: context,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      items: [
+                        _MenuItemData(
+                          icon: Icons.help_outline_rounded,
+                          label: l10n?.ayudaYSoporte ?? 'Ayuda y soporte',
+                          route: AyudaSoporteScreen.routeName,
+                        ),
+                        _MenuItemData(
+                          icon: Icons.privacy_tip_outlined,
+                          label:
+                              l10n?.terminosYPrivacidad ??
+                              'Términos y privacidad',
+                          route: TerminosPrivacidadScreen.routeName,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: usableHeight * 0.03),
+                    _buildLogoutButton(context, screenWidth, usableHeight),
+                    SizedBox(height: usableHeight * 0.02),
+                    Center(
+                      child: Text(
+                        _appVersion.isNotEmpty
+                            ? 'Atrio · $_appVersion'
+                            : 'Atrio',
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: screenWidth * 0.03,
                         ),
                       ),
                     ),
+                    SizedBox(height: usableHeight * 0.03),
                   ],
                 ),
               ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _mostrarAvisoIglesiaPendiente({
+    required BuildContext context,
+    required double screenWidth,
+    required double usableHeight,
+    String? iglesiaNombre,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final String nombreMostrar = (iglesiaNombre != null &&
+            iglesiaNombre.trim().isNotEmpty &&
+            iglesiaNombre.trim() != 'Sin iglesia seleccionada' &&
+            iglesiaNombre.trim() !=
+                (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada') &&
+            iglesiaNombre.trim() != 'Sin congregación')
+        ? iglesiaNombre.trim()
+        : '';
+
+    final String prefixAviso = (nombreMostrar.toLowerCase().startsWith('el ') ||
+            nombreMostrar.toLowerCase().startsWith('templo '))
+        ? 'al '
+        : (nombreMostrar.toLowerCase().startsWith('la ') ? '' : 'a la ');
+
+    final String mensajeAviso = nombreMostrar.isNotEmpty
+        ? 'Perteneces $prefixAviso$nombreMostrar, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'
+        : 'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            child: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: usableHeight * 0.025),
-                  _sectionLabel(
-                    l10n?.miActividad ?? 'Mi actividad',
-                    screenWidth,
-                    usableHeight,
-                  ),
-                  _buildMenuGroup(
-                    context: context,
-                    screenWidth: screenWidth,
-                    usableHeight: usableHeight,
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.edit_note_outlined,
-                        label: l10n?.misSolicitudes ?? 'Mis solicitudes',
-                        route: SeguimientoSolicitudScreen.routeName,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.favorite_border_rounded,
-                        label: l10n?.misDonaciones ?? 'Mis donaciones',
-                        route: MisDonacionesScreen.routeName,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.receipt_long_outlined,
-                        label: l10n?.misPedidos ?? 'Mis pedidos',
-                        route: MisPedidosScreen.routeName,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.menu_book_outlined,
-                        label:
-                            l10n?.misNotasDeLaBiblia ??
-                            'Mis notas de la Biblia',
-                        route: MisNotasScreen.routeName,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: usableHeight * 0.025),
-
-                  // Sección Administrativa Pastoral (Odoo 19 /admin/*)
-                  PermissionGuard(
-                    requireChurchAdmin: true,
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: usableHeight * 0.025),
-                      child: _buildSeccionPastoralDestacada(
-                        context: context,
-                        screenWidth: screenWidth,
-                        usableHeight: usableHeight,
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFCD34D),
+                        width: 1.5,
                       ),
                     ),
+                    child: const Icon(
+                      Icons.hourglass_top_rounded,
+                      color: Color(0xFFD97706),
+                      size: 30,
+                    ),
                   ),
-
-                  _sectionLabel(
-                    l10n?.cuenta ?? 'Cuenta',
-                    screenWidth,
-                    usableHeight,
+                  const SizedBox(height: 16),
+                  Text(
+                    'Iglesia en revisión',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  _buildMenuGroup(
-                    context: context,
-                    screenWidth: screenWidth,
-                    usableHeight: usableHeight,
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.person_outline_rounded,
-                        label: l10n?.misDatos ?? 'Mis datos',
-                        route: null,
-                        onCustomTap: () => _mostrarDialogoEditarDatos(
+                  const SizedBox(height: 10),
+                  Text(
+                    mensajeAviso,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: azulFondo,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text(
+                        'Ver estado de solicitud',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetCtx);
+                        Navigator.pushNamed(
                           context,
-                          screenWidth,
-                          usableHeight,
-                          iglesiaActual: iglesia,
-                        ),
-                      ),
-                      _MenuItemData(
-                        icon: Icons.church_outlined,
-                        label: l10n?.cambiarDeIglesia ?? 'Cambiar de iglesia',
-                        route: TradicionCristianaScreen.routeName,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.notifications_none_rounded,
-                        label: l10n?.notificaciones ?? 'Notificaciones',
-                        route: NotificacionesScreen.routeName,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.settings_outlined,
-                        label: l10n?.ajustesDeLaApp ?? 'Ajustes de la app',
-                        route: ConfiguracionScreen.routeName,
-                      ),
-                      if (AppConfig.appEnvironment != 'production')
-                        _MenuItemData(
-                          icon: Icons.sync_lock_rounded,
-                          label: 'Diagnóstico Token Odoo',
-                          customColor: Colors.deepPurple,
-                          route: null,
-                          onCustomTap: () => _probarRenovacionToken(context),
-                        ),
-                      _MenuItemData(
-                        icon: Icons.delete_forever_outlined,
-                        label:
-                            l10n?.eliminarCuentaYDatos ??
-                            'Eliminar cuenta y datos',
-                        customColor: Colors.red.shade700,
-                        route: null,
-                        onCustomTap: () => _confirmarEliminarCuenta(context),
-                      ),
-                    ],
+                          EsperandoAprobacionScreen.routeName,
+                        );
+                      },
+                    ),
                   ),
-                  SizedBox(height: usableHeight * 0.025),
-                  _sectionLabel(
-                    l10n?.soporte ?? 'Soporte',
-                    screenWidth,
-                    usableHeight,
-                  ),
-                  _buildMenuGroup(
-                    context: context,
-                    screenWidth: screenWidth,
-                    usableHeight: usableHeight,
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.help_outline_rounded,
-                        label: l10n?.ayudaYSoporte ?? 'Ayuda y soporte',
-                        route: AyudaSoporteScreen.routeName,
-                      ),
-                      _MenuItemData(
-                        icon: Icons.privacy_tip_outlined,
-                        label:
-                            l10n?.terminosYPrivacidad ??
-                            'Términos y privacidad',
-                        route: TerminosPrivacidadScreen.routeName,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: usableHeight * 0.03),
-                  _buildLogoutButton(context, screenWidth, usableHeight),
-                  SizedBox(height: usableHeight * 0.02),
-                  Center(
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetCtx),
                     child: Text(
-                      _appVersion.isNotEmpty ? 'Atrio · $_appVersion' : 'Atrio',
+                      l10n?.entendido ?? 'Entendido',
                       style: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: screenWidth * 0.03,
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  SizedBox(height: usableHeight * 0.03),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -830,6 +1022,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
     required String iniciales,
     required AjustesProvider ajustesProvider,
     bool isMembershipPending = false,
+    bool isChurchApproved = false,
+    bool isChangePending = false,
+    bool hasChurchAssigned = false,
   }) {
     final l10n = AppLocalizations.of(context);
     final userProvider = Provider.of<UserProvider>(context);
@@ -928,42 +1123,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ],
                     ),
-                    if (isMembershipPending) ...[
-                      SizedBox(height: usableHeight * 0.005),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xFFF59E0B),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.hourglass_top_rounded,
-                              size: 11,
-                              color: Color(0xFFB45309),
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Pendiente de aprobación',
-                              style: TextStyle(
-                                color: Color(0xFFB45309),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    SizedBox(height: usableHeight * 0.005),
+                    _buildHeaderChurchStatusBadge(
+                      isChurchApproved: isChurchApproved,
+                      isMembershipPending: isMembershipPending,
+                      isChangePending: isChangePending,
+                      hasChurchAssigned: hasChurchAssigned,
+                    ),
                     SizedBox(height: usableHeight * 0.007),
                     // Badges de Rol y Estado de Lectura (RBAC Odoo 19)
                     Wrap(
@@ -994,8 +1160,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             ),
                           ),
                         ),
-                        if (estaAutenticado &&
-                            userProvider.isReadOnly)
+                        if (estaAutenticado && userProvider.isReadOnly)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -1037,9 +1202,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   }
                 },
                 icon: Icon(
-                  estaAutenticado
-                      ? Icons.edit_outlined
-                      : Icons.login_rounded,
+                  estaAutenticado ? Icons.edit_outlined : Icons.login_rounded,
                   color: Colors.white,
                   size: screenWidth * 0.055,
                 ),
@@ -1047,6 +1210,393 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Badge compacto de alta visibilidad para el encabezado superior
+  Widget _buildHeaderChurchStatusBadge({
+    required bool isChurchApproved,
+    required bool isMembershipPending,
+    required bool isChangePending,
+    required bool hasChurchAssigned,
+  }) {
+    Color bg;
+    Color border;
+    Color textCol;
+    IconData icon;
+    String label;
+
+    if (isChurchApproved) {
+      bg = const Color(0xFFDCFCE7);
+      border = const Color(0xFF22C55E);
+      textCol = const Color(0xFF15803D);
+      icon = Icons.verified_rounded;
+      label = 'Iglesia aprobada';
+    } else if (isMembershipPending) {
+      bg = const Color(0xFFFEF3C7);
+      border = const Color(0xFFF59E0B);
+      textCol = const Color(0xFFB45309);
+      icon = Icons.hourglass_top_rounded;
+      label = 'Pendiente de aprobación';
+    } else if (isChangePending) {
+      bg = const Color(0xFFE0E7FF);
+      border = const Color(0xFF6366F1);
+      textCol = const Color(0xFF4338CA);
+      icon = Icons.swap_horiz_rounded;
+      label = 'Cambio en revisión';
+    } else {
+      bg = Colors.white.withValues(alpha: 0.15);
+      border = Colors.white.withValues(alpha: 0.35);
+      textCol = Colors.white;
+      icon = Icons.church_outlined;
+      label = 'Sin congregación';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: border, width: 0.8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: textCol),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: textCol,
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tarjeta de estatus de iglesia SIEMPRE visible a simple vista en el cuerpo de PerfilScreen
+  Widget _buildTarjetaEstadoIglesia({
+    required BuildContext context,
+    required double screenWidth,
+    required double usableHeight,
+    required String iglesia,
+    required bool isChurchApproved,
+    required bool isMembershipPending,
+    required bool isChangePending,
+    required bool hasChurchAssigned,
+    required bool estaAutenticado,
+  }) {
+    Color cardBorder;
+    Color iconBg;
+    Color iconColor;
+    IconData iconData;
+    String badgeText;
+    Color badgeBg;
+    Color badgeTextCol;
+    String headerTitle;
+    String description;
+    final String buttonText;
+    final IconData buttonIcon;
+    final VoidCallback onButtonTap;
+
+    if (isChurchApproved) {
+      cardBorder = const Color(0xFFBBF7D0);
+      iconBg = const Color(0xFFDCFCE7);
+      iconColor = const Color(0xFF16A34A);
+      iconData = Icons.verified_rounded;
+      badgeText = 'Aprobada';
+      badgeBg = const Color(0xFFDCFCE7);
+      badgeTextCol = const Color(0xFF15803D);
+      headerTitle = 'Congregación activa';
+      description = 'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.';
+      buttonText = 'Ver detalles de iglesia';
+      buttonIcon = Icons.info_outline_rounded;
+      onButtonTap = () {
+        _mostrarDetallesIglesiaAprobada(context, iglesia);
+      };
+    } else if (isMembershipPending) {
+      cardBorder = const Color(0xFFFDE68A);
+      iconBg = const Color(0xFFFEF3C7);
+      iconColor = const Color(0xFFB45309);
+      iconData = Icons.hourglass_top_rounded;
+      badgeText = 'En revisión';
+      badgeBg = const Color(0xFFFEF3C7);
+      badgeTextCol = const Color(0xFFB45309);
+      headerTitle = 'Solicitud de membresía';
+      final String prefix = (iglesia.toLowerCase().startsWith('el ') ||
+              iglesia.toLowerCase().startsWith('templo '))
+          ? 'al '
+          : (iglesia.toLowerCase().startsWith('la ') ? '' : 'a la ');
+      description =
+          'Perteneces $prefix$iglesia, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
+      buttonText = 'Ver estado de solicitud';
+      buttonIcon = Icons.hourglass_top_rounded;
+      onButtonTap = () {
+        Navigator.pushNamed(context, EsperandoAprobacionScreen.routeName);
+      };
+    } else if (isChangePending) {
+      cardBorder = const Color(0xFFC7D2FE);
+      iconBg = const Color(0xFFE0E7FF);
+      iconColor = const Color(0xFF4338CA);
+      iconData = Icons.swap_horiz_rounded;
+      badgeText = 'Traslado en curso';
+      badgeBg = const Color(0xFFE0E7FF);
+      badgeTextCol = const Color(0xFF4338CA);
+      headerTitle = 'Cambio de congregación';
+      description = 'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.';
+      buttonText = 'Consultar estado';
+      buttonIcon = Icons.visibility_outlined;
+      onButtonTap = () {
+        Navigator.pushNamed(context, EsperandoAprobacionScreen.routeName);
+      };
+    } else {
+      cardBorder = const Color(0xFFE2E8F0);
+      iconBg = const Color(0xFFF1F5F9);
+      iconColor = const Color(0xFF475569);
+      iconData = Icons.church_outlined;
+      badgeText = 'Sin vincular';
+      badgeBg = const Color(0xFFF1F5F9);
+      badgeTextCol = const Color(0xFF475569);
+      headerTitle = 'Sin congregación';
+      description = 'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.';
+      buttonText = 'Buscar y unirse a una iglesia';
+      buttonIcon = Icons.search_rounded;
+      onButtonTap = () {
+        Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
+      };
+    }
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        screenWidth * 0.05,
+        usableHeight * 0.015,
+        screenWidth * 0.05,
+        0,
+      ),
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(iconData, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      headerTitle,
+                      style: TextStyle(
+                        color: const Color(0xFF0F172A),
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.036,
+                      ),
+                    ),
+                    Text(
+                      iglesia,
+                      style: TextStyle(
+                        color: isChurchApproved
+                            ? azulFondo
+                            : const Color(0xFF64748B),
+                        fontSize: screenWidth * 0.033,
+                        fontWeight: isChurchApproved
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    color: badgeTextCol,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            description,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 12.5,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: isChurchApproved ? const Color(0xFF16A34A) : azulFondo,
+                  width: 1.2,
+                ),
+                foregroundColor: isChurchApproved
+                    ? const Color(0xFF15803D)
+                    : azulFondo,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              onPressed: onButtonTap,
+              icon: Icon(buttonIcon, size: 16),
+              label: Text(
+                buttonText,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDetallesIglesiaAprobada(
+    BuildContext context,
+    String iglesiaNombre,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF22C55E),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.verified_rounded,
+                    color: Color(0xFF16A34A),
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  iglesiaNombre,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: azulFondo,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Estado: Membresía aprobada y activa',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF15803D),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: azulFondo,
+                      side: const BorderSide(color: azulFondo, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: const Text(
+                      'Cambiar de congregación',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.pushNamed(
+                        context,
+                        TradicionCristianaScreen.routeName,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Cerrar',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1547,6 +2097,31 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ),
                     ),
+                    if (item.badge != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFFCD34D),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          item.badge!,
+                          style: const TextStyle(
+                            color: Color(0xFFB45309),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     Icon(
                       Icons.chevron_right_rounded,
                       color: Colors.grey.shade400,
@@ -3217,6 +3792,7 @@ class _MenuItemData {
   final String? route;
   final VoidCallback? onCustomTap;
   final Color? customColor;
+  final String? badge;
 
   const _MenuItemData({
     required this.icon,
@@ -3224,5 +3800,6 @@ class _MenuItemData {
     this.route,
     this.onCustomTap,
     this.customColor,
+    this.badge,
   });
 }

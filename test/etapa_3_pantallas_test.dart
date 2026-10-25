@@ -9,6 +9,7 @@ import 'package:atrio/screens/esperando_aprobacion_screen.dart';
 import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
 import 'package:atrio/screens/crear_mi_iglesia_screen.dart';
 import 'package:atrio/screens/inicio_atrio_screen.dart';
+import 'package:atrio/screens/tradicion_cristiana_screen.dart';
 
 Widget createTestApp(Widget child, UserProvider userProvider) {
   return MultiProvider(
@@ -21,6 +22,8 @@ Widget createTestApp(Widget child, UserProvider userProvider) {
         InicioAtrioScreen.routeName: (_) =>
             const Scaffold(body: Text('Inicio Atrio Mock')),
         ElegirCaminoIglesiaScreen.routeName: (_) => const ElegirCaminoIglesiaScreen(),
+        TradicionCristianaScreen.routeName: (_) =>
+            const Scaffold(body: Text('Tradición Cristiana Mock')),
         EsperandoAprobacionScreen.routeName: (_) => const EsperandoAprobacionScreen(),
         IglesiaPendienteActivacionScreen.routeName: (_) =>
             const IglesiaPendienteActivacionScreen(),
@@ -34,7 +37,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Etapa 3 - Pantallas de Estado y Espera', () {
-    testWidgets('ElegirCaminoIglesiaScreen muestra saludo y opciones de unirse y registrar', (tester) async {
+    testWidgets('ElegirCaminoIglesiaScreen muestra saludo, opción de unirse y aviso web para líderes', (tester) async {
       final userProvider = UserProvider(api: AtrioApi(baseUrl: 'https://test.atrioapp.org'));
       userProvider.setCurrentUserForTesting(
         UserModel(
@@ -54,9 +57,34 @@ void main() {
 
       expect(find.textContaining('¡Paz y bien, Mateo!'), findsOneWidget);
       expect(find.text('Unirme a una iglesia'), findsOneWidget);
-      expect(find.text('Registrar mi iglesia'), findsOneWidget);
       expect(find.text('Buscar mi iglesia'), findsOneWidget);
-      expect(find.text('Crear congregación'), findsOneWidget);
+      expect(find.text('Registrar mi iglesia'), findsNothing);
+      expect(find.text('Crear congregación'), findsNothing);
+      expect(find.textContaining('¿Eres pastor o líder ministerial?'), findsOneWidget);
+    });
+
+    testWidgets('ElegirCaminoIglesiaScreen navega a TradicionCristianaScreen al presionar Buscar mi iglesia', (tester) async {
+      final userProvider = UserProvider(api: AtrioApi(baseUrl: 'https://test.atrioapp.org'));
+      userProvider.setCurrentUserForTesting(
+        UserModel(
+          id: 1,
+          nombre: 'Mateo',
+          email: 'mateo@correo.com',
+          iglesiaActual: 'Sin iglesia seleccionada',
+          fechaRegistro: '2026-01-01',
+          avatarIniciales: 'M',
+          esMiembroVerificado: false,
+          role: UserRole.user,
+        ),
+      );
+
+      await tester.pumpWidget(createTestApp(const ElegirCaminoIglesiaScreen(), userProvider));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Buscar mi iglesia'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tradición Cristiana Mock'), findsOneWidget);
     });
 
     testWidgets('EsperandoAprobacionScreen muestra congregación solicitada y estado pendiente', (tester) async {

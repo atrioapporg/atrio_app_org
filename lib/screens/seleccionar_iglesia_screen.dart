@@ -13,6 +13,7 @@ import '../modelos/iglesia_explorar_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/explorar_provider.dart';
 import '../providers/iglesia_provider.dart';
+import '../providers/tradicion_cristiana_provider.dart';
 import '../providers/user_provider.dart';
 import '../servicios/map_style_service.dart';
 import 'esperando_aprobacion_screen.dart';
@@ -84,39 +85,53 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       // Sincronizar país de residencia actual desde ajustes (no llama notifyListeners)
       provider.sincronizarPais(ajustes.paisRegion);
 
-      // Si se pasa tradición como argumento de ruta (desde registro / selección de tradición)
+      // Si se pasa tradición como argumento de ruta o existe previamente en TradicionCristianaProvider
       final args = ModalRoute.of(context)?.settings.arguments;
+      String rawId = '';
+      String rawTitulo = '';
+
       if (args is Map) {
-        final rawId = (args['tradicionId'] ?? '').toString().toLowerCase();
-        final rawTitulo = (args['tradicionTitulo'] ?? '')
-            .toString()
-            .toLowerCase();
-        final textoCombinado = '$rawId $rawTitulo';
+        rawId = (args['tradicionId'] ?? '').toString();
+        rawTitulo = (args['tradicionTitulo'] ?? '').toString();
+      }
 
-        int? nuevaDenominacion;
-        if (textoCombinado.contains('catolica') ||
-            textoCombinado.contains('católica')) {
-          nuevaDenominacion = 1;
-        } else if (textoCombinado.contains('evangelica') ||
-            textoCombinado.contains('evangélica')) {
-          nuevaDenominacion = 2;
-        } else if (textoCombinado.contains('pentecostal')) {
-          nuevaDenominacion = 3;
-        } else if (textoCombinado.contains('bautista')) {
-          nuevaDenominacion = 4;
-        } else if (textoCombinado.contains('adventista')) {
-          nuevaDenominacion = 5;
-        }
+      // Si no vino en argumentos, verificar si ya está seleccionada en TradicionCristianaProvider
+      if (rawId.isEmpty && rawTitulo.isEmpty) {
+        try {
+          final tradicionProvider = context.read<TradicionCristianaProvider>();
+          if (tradicionProvider.tradicionSeleccionada != null) {
+            rawId = tradicionProvider.tradicionSeleccionada!.id;
+            rawTitulo = tradicionProvider.tradicionSeleccionada!.titulo;
+          }
+        } catch (_) {}
+      }
 
-        if (nuevaDenominacion != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              context.read<ExplorarProvider>().cambiarDenominacion(
-                nuevaDenominacion!,
-              );
-            }
-          });
-        }
+      final textoCombinado = '$rawId $rawTitulo'.toLowerCase();
+
+      int? nuevaDenominacion;
+      if (textoCombinado.contains('catolica') ||
+          textoCombinado.contains('católica')) {
+        nuevaDenominacion = 1;
+      } else if (textoCombinado.contains('evangelica') ||
+          textoCombinado.contains('evangélica')) {
+        nuevaDenominacion = 2;
+      } else if (textoCombinado.contains('pentecostal')) {
+        nuevaDenominacion = 3;
+      } else if (textoCombinado.contains('bautista')) {
+        nuevaDenominacion = 4;
+      } else if (textoCombinado.contains('adventista')) {
+        nuevaDenominacion = 5;
+      }
+
+      if (nuevaDenominacion != null && nuevaDenominacion > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<ExplorarProvider>().cambiarDenominacion(
+              nuevaDenominacion!,
+              recargar: false,
+            );
+          }
+        });
       }
 
       // Sincronizar texto de búsqueda si ya existía en el provider
@@ -141,7 +156,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        provider.buscar(ignorarDebounce: true);
+        provider.buscar(ignorarDebounce: true, forzarRecarga: true);
         return;
       }
 
@@ -149,13 +164,13 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          provider.buscar(ignorarDebounce: true);
+          provider.buscar(ignorarDebounce: true, forzarRecarga: true);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        provider.buscar(ignorarDebounce: true);
+        provider.buscar(ignorarDebounce: true, forzarRecarga: true);
         return;
       }
 
@@ -177,9 +192,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
         );
       }
 
-      if (provider.iglesiasMostradas.isEmpty) {
-        await provider.buscar(ignorarDebounce: true);
-      }
+      await provider.buscar(ignorarDebounce: true, forzarRecarga: true);
 
       _ajustarCamaraSegunResultados(
         provider.iglesiasMostradas,

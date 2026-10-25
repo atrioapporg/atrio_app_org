@@ -164,6 +164,7 @@ class ExplorarProvider extends ChangeNotifier {
 
   /// Actualiza la posición GPS y detecta automáticamente el país estricto según coordenadas
   void setUbicacion(Position posicion) {
+    final bool esPrimeraUbicacion = _currentPosition == null;
     _currentPosition = posicion;
     final paisDetectado = _detectarPaisPorCoordenadas(
       posicion.latitude,
@@ -172,6 +173,10 @@ class ExplorarProvider extends ChangeNotifier {
     if (paisDetectado != null && paisDetectado != _paisCodigo) {
       _paisCodigo = paisDetectado;
       debugPrint('[ExplorarProvider] País detectado por GPS: $_paisCodigo');
+    }
+    // Si es la primera vez que se adquiere la ubicación GPS, limpiar caché huérfano sin GPS
+    if (esPrimeraUbicacion) {
+      _cache.removeWhere((k, _) => k.contains('sin_gps'));
     }
   }
 
@@ -222,11 +227,70 @@ class ExplorarProvider extends ChangeNotifier {
   }
 
   /// Cambia el filtro de denominación (0: Todas, 1: Católica, 2: Evangélica, etc.)
-  void cambiarDenominacion(int index) {
+  void cambiarDenominacion(int index, {bool recargar = true}) {
     if (_filtroDenominacionIndex == index) return;
     _filtroDenominacionIndex = index;
     notifyListeners();
-    buscar(ignorarDebounce: true);
+    if (recargar) {
+      buscar(ignorarDebounce: true);
+    }
+  }
+
+  /// Términos sinónimos y jerárquicos del catolicismo para búsquedas eclesiásticas inclusivas
+  static const List<String> terminosEclesiasticosCatolicos = [
+    'iglesia',
+    'parroquia',
+    'capilla',
+    'catedral',
+    'santuario',
+    'basílica',
+    'basilica',
+    'católica',
+    'catolica',
+    'arquidiócesis',
+    'arquidiocesis',
+    'diócesis',
+    'diocesis',
+  ];
+
+  /// Comprueba si el nombre o dirección corresponden a una institución o templo católico
+  static bool esLugarCatolico(String nombre, [String formattedAddress = '']) {
+    final n = normalizarTexto(nombre);
+    final a = normalizarTexto(formattedAddress);
+    final combinado = '$n $a';
+
+    // Descartar de inmediato si contiene términos explícitos de otras confesiones
+    if (combinado.contains('adventista') ||
+        combinado.contains('bautista') ||
+        combinado.contains('pentecostal') ||
+        combinado.contains('evangelica') ||
+        combinado.contains('mormon') ||
+        combinado.contains('testigos de jehova') ||
+        combinado.contains('asamblea de dios') ||
+        combinado.contains('asambleas de dios')) {
+      return false;
+    }
+
+    // Comprobar términos jerárquicos eclesiásticos específicos (excluyendo 'iglesia' que es genérica)
+    for (final termino in terminosEclesiasticosCatolicos) {
+      if (termino == 'iglesia') continue;
+      final normalizado = normalizarTexto(termino);
+      if (combinado.contains(normalizado)) {
+        return true;
+      }
+    }
+
+    // Invocaciones marianas y patronales típicamente católicas
+    if (combinado.contains('catolica') ||
+        combinado.contains('nuestra senora') ||
+        combinado.contains('nuestra senor') ||
+        combinado.contains('virgen') ||
+        combinado.contains('sagrado corazon') ||
+        combinado.contains('santisimo sacramento')) {
+      return true;
+    }
+
+    return false;
   }
 
   /// Normaliza texto para búsqueda insensible a mayúsculas, minúsculas y tildes
@@ -243,11 +307,14 @@ class ExplorarProvider extends ChangeNotifier {
         .trim();
   }
 
-  /// Verifica si el nombre de la iglesia contiene estrictamente el término buscado
+  /// Verifica si el nombre de la iglesia contiene el término buscado,
+  /// contemplando sinónimos eclesiásticos cuando corresponda o cuando
+  /// la búsqueda activa sea sobre la fe católica.
   static bool contieneTerminoEnNombre(
     String nombreIglesia,
-    String terminoBuscado,
-  ) {
+    String terminoBuscado, {
+    int filtroDenominacionIndex = 0,
+  }) {
     final termino = normalizarTexto(terminoBuscado);
     if (termino.isEmpty) return true;
 
@@ -259,6 +326,29 @@ class ExplorarProvider extends ChangeNotifier {
         termino.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (palabras.length > 1 && palabras.every((p) => nombre.contains(p))) {
       return true;
+    }
+
+    // Si el filtro de denominación es Católica (1) o el término de búsqueda es "iglesia"
+    // y el lugar posee una denominación o título eclesiástico católico (parroquia, capilla, catedral, etc.),
+    // debe ser inclusivo y no descartar el registro.
+    final esFiltroCatolico = filtroDenominacionIndex == 1;
+    if (esFiltroCatolico || termino == 'iglesia') {
+      final coincideEclesiastico = terminosEclesiasticosCatolicos.any(
+        (e) => nombre.contains(normalizarTexto(e)),
+      );
+      if (coincideEclesiastico) {
+        // Si el usuario buscó "iglesia", cualquier parroquia/capilla/catedral es válida
+        if (termino == 'iglesia') return true;
+        // Si el usuario buscó un término específico más allá de "iglesia" (ej. "amparo"),
+        // verificar si alguna de las palabras específicas coincide
+        final palabrasEspecificas = palabras
+            .where((p) => !terminosEclesiasticosCatolicos.contains(p))
+            .toList();
+        if (palabrasEspecificas.isEmpty ||
+            palabrasEspecificas.any((p) => nombre.contains(p))) {
+          return true;
+        }
+      }
     }
 
     return false;
@@ -319,59 +409,109 @@ class ExplorarProvider extends ChangeNotifier {
     }
   }
 
-  /// Resuelve la clave de consulta para la API de Google Places, vinculándola estrictamente al país
-  String _construirQueryApi() {
-    String terminoDenominacion = '';
+  /// Verifica que el templo cumpla estrictamente con la denominación seleccionada
+  bool cumpleFiltroDenominacion(IglesiaExplorarModel iglesia) {
+    if (_filtroDenominacionIndex == 1) {
+      // Filtro Católico: Parroquias, capillas, catedrales, santuarios, basílicas o catalogadas como Católicas
+      return esLugarCatolico(iglesia.nombre, iglesia.direccion) ||
+          iglesia.denominacion.toLowerCase() == 'católica' ||
+          iglesia.denominacion.toLowerCase() == 'catolica';
+    } else if (_filtroDenominacionIndex == 2) {
+      return (iglesia.denominacion.toLowerCase().contains('evang') ||
+              iglesia.nombre.toLowerCase().contains('evang')) &&
+          !esLugarCatolico(iglesia.nombre, iglesia.direccion);
+    } else if (_filtroDenominacionIndex == 3) {
+      return (iglesia.denominacion.toLowerCase().contains('pentecost') ||
+              iglesia.nombre.toLowerCase().contains('pentecost')) &&
+          !esLugarCatolico(iglesia.nombre, iglesia.direccion);
+    } else if (_filtroDenominacionIndex == 4) {
+      return (iglesia.denominacion.toLowerCase().contains('bautist') ||
+              iglesia.nombre.toLowerCase().contains('bautist')) &&
+          !esLugarCatolico(iglesia.nombre, iglesia.direccion);
+    } else if (_filtroDenominacionIndex == 5) {
+      return (iglesia.denominacion.toLowerCase().contains('adventist') ||
+              iglesia.nombre.toLowerCase().contains('adventist')) &&
+          !esLugarCatolico(iglesia.nombre, iglesia.direccion);
+    }
+    return true; // 0: Todas
+  }
+
+  /// Construye las consultas textuales concurrentes para Google Places API (New).
+  /// Google Places Text Search NO soporta sintaxis booleana 'OR'. Por ello,
+  /// se construyen consultas atómicas especializadas que se ejecutan en paralelo.
+  List<String> _construirQueriesApi() {
+    final texto = _textoBusqueda.trim();
+    final List<String> queries = [];
+
     switch (_filtroDenominacionIndex) {
       case 1:
-        terminoDenominacion = 'católica';
+        // Denominación Católica:
+        // Aseguramos consultas para "parroquia", "iglesia católica" y en radio "iglesia"
+        // para garantizar que templos locales como "Parroquia Nuestra Señora del Amparo"
+        // aparezcan siempre en el mapa.
+        if (texto.isNotEmpty) {
+          queries.add('$texto parroquia $paisNombre');
+          queries.add('$texto iglesia católica $paisNombre');
+          queries.add('$texto $paisNombre');
+        } else {
+          queries.add('parroquia $paisNombre');
+          queries.add('iglesia católica $paisNombre');
+          if (_modo == ModoExploracion.radio) {
+            queries.add('iglesia $paisNombre');
+          }
+        }
         break;
       case 2:
-        terminoDenominacion = 'evangélica';
+        if (texto.isNotEmpty) {
+          queries.add('$texto iglesia evangélica $paisNombre');
+          queries.add('$texto evangélica $paisNombre');
+        } else {
+          queries.add('iglesia evangélica $paisNombre');
+        }
         break;
       case 3:
-        terminoDenominacion = 'pentecostal';
+        if (texto.isNotEmpty) {
+          queries.add('$texto iglesia pentecostal $paisNombre');
+          queries.add('$texto pentecostal $paisNombre');
+        } else {
+          queries.add('iglesia pentecostal $paisNombre');
+        }
         break;
       case 4:
-        terminoDenominacion = 'bautista';
+        if (texto.isNotEmpty) {
+          queries.add('$texto iglesia bautista $paisNombre');
+          queries.add('$texto bautista $paisNombre');
+        } else {
+          queries.add('iglesia bautista $paisNombre');
+        }
         break;
       case 5:
-        terminoDenominacion = 'adventista';
+        if (texto.isNotEmpty) {
+          queries.add('$texto iglesia adventista $paisNombre');
+          queries.add('$texto adventista $paisNombre');
+        } else {
+          queries.add('iglesia adventista $paisNombre');
+        }
         break;
       case 0:
       default:
-        terminoDenominacion = '';
+        if (texto.isNotEmpty) {
+          queries.add('$texto iglesia $paisNombre');
+          queries.add('$texto parroquia $paisNombre');
+          queries.add('$texto $paisNombre');
+        } else {
+          queries.add('iglesia $paisNombre');
+          queries.add('parroquia $paisNombre');
+        }
         break;
     }
+    return queries;
+  }
 
-    final texto = _textoBusqueda.trim();
-
-    if (_modo == ModoExploracion.nacional) {
-      // Modo Nacional: Búsqueda estricta en todo el país actual del usuario
-      final partes = <String>[];
-      if (texto.isNotEmpty) {
-        partes.add(texto);
-      }
-      if (terminoDenominacion.isNotEmpty) {
-        partes.add(terminoDenominacion);
-      }
-      partes.add('iglesia');
-      // Forzar explícitamente el país actual
-      partes.add(paisNombre);
-      return partes.join(' ');
-    } else {
-      // Modo Radio: Búsqueda local reforzada con el país actual (priorizando el término de búsqueda)
-      final partes = <String>[];
-      if (texto.isNotEmpty) {
-        partes.add(texto);
-      }
-      partes.add('iglesia');
-      if (terminoDenominacion.isNotEmpty) {
-        partes.add(terminoDenominacion);
-      }
-      partes.add(paisNombre);
-      return partes.join(' ');
-    }
+  /// Resuelve la consulta textual principal para la API de Google Places
+  String _construirQueryApi() {
+    final queries = _construirQueriesApi();
+    return queries.isNotEmpty ? queries.first : 'iglesia $paisNombre';
   }
 
   /// Verifica estrictamente que la dirección del lugar pertenezca al país actual
@@ -414,9 +554,15 @@ class ExplorarProvider extends ChangeNotifier {
     }
   }
 
-  /// Clave única para la caché en memoria
+  /// Clave única para la caché en memoria vinculada a la geolocalización aproximada
   String _generarClaveCache() {
-    return '${_modo.name}_${_radioKm}_${_paisCodigo}_${_filtroDenominacionIndex}_${_textoBusqueda.trim().toLowerCase()}';
+    final latStr = _currentPosition != null
+        ? _currentPosition!.latitude.toStringAsFixed(2)
+        : 'sin_gps';
+    final lngStr = _currentPosition != null
+        ? _currentPosition!.longitude.toStringAsFixed(2)
+        : 'sin_gps';
+    return '${_modo.name}_${_radioKm}_${_paisCodigo}_${_filtroDenominacionIndex}_${_textoBusqueda.trim().toLowerCase()}_${latStr}_$lngStr';
   }
 
   /// Realiza la búsqueda principal controlando estados y caché
@@ -455,7 +601,7 @@ class ExplorarProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final query = _construirQueryApi();
+      final queries = _construirQueriesApi();
       final uri = Uri.parse(
         'https://places.googleapis.com/v1/places:searchText',
       );
@@ -464,12 +610,64 @@ class ExplorarProvider extends ChangeNotifier {
           'places.id,places.displayName,places.formattedAddress,'
           'places.location,places.rating,places.userRatingCount,nextPageToken';
 
+      final Map<String, dynamic> vistos = {};
       final List<Map<String, dynamic>> rawPlaces = [];
 
+      Future<List<Map<String, dynamic>>> ejecutarSubconsulta(
+        String queryText, {
+        double? lat,
+        double? lng,
+        double? radiusMeters,
+      }) async {
+        try {
+          final Map<String, dynamic> bodyJson = {
+            "textQuery": queryText,
+            "includedType": "church",
+            "languageCode": "es",
+            "regionCode": _paisCodigo.toLowerCase(),
+            "pageSize": 20,
+          };
+
+          if (_modo == ModoExploracion.radio) {
+            final centerLat = lat ?? _currentPosition?.latitude;
+            final centerLng = lng ?? _currentPosition?.longitude;
+            final r = radiusMeters ?? (_radioKm * 1000.0);
+            if (centerLat != null && centerLng != null) {
+              bodyJson["locationBias"] = {
+                "circle": {
+                  "center": {"latitude": centerLat, "longitude": centerLng},
+                  "radius": r,
+                },
+              };
+            }
+          }
+
+          final res = await http.post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': _googleApiKey,
+              'X-Goog-FieldMask': fieldMask,
+            },
+            body: jsonEncode(bodyJson),
+          );
+
+          if (res.statusCode == 200) {
+            final d = jsonDecode(res.body) as Map<String, dynamic>;
+            final List items = d['places'] ?? [];
+            if (_nextPageToken == null && d['nextPageToken'] != null) {
+              _nextPageToken = d['nextPageToken'] as String?;
+            }
+            return items.cast<Map<String, dynamic>>();
+          }
+        } catch (e) {
+          debugPrint('Aviso en subconsulta Places API ($queryText): $e');
+        }
+        return [];
+      }
+
       // Cuando estamos en Modo Radio y el usuario selecciona 25 km o 50 km,
-      // Google Places por defecto solo retorna 20 lugares concentrados en el centro (< 5 km).
-      // Realizamos un muestreo radial distribuido en anillos concéntricos para abarcar
-      // y traer efectivamente TODAS las iglesias de la denominación en ese radio geográfico.
+      // realizamos un muestreo radial distribuido en anillos concéntricos
       if (_modo == ModoExploracion.radio &&
           _currentPosition != null &&
           _radioKm >= 25.0) {
@@ -510,91 +708,42 @@ class ExplorarProvider extends ChangeNotifier {
           ]);
         }
 
-        final futures = puntosMuestreo.map((pt) async {
-          try {
-            final bodyJson = {
-              "textQuery": query,
-              "includedType": "church",
-              "languageCode": "es",
-              "regionCode": _paisCodigo.toLowerCase(),
-              "pageSize": 20,
-              "locationBias": {
-                "circle": {
-                  "center": {"latitude": pt['lat'], "longitude": pt['lng']},
-                  "radius": pt['radius'],
-                },
-              },
-            };
-
-            final res = await http.post(
-              uri,
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': _googleApiKey,
-                'X-Goog-FieldMask': fieldMask,
-              },
-              body: jsonEncode(bodyJson),
-            );
-
-            if (res.statusCode == 200) {
-              final d = jsonDecode(res.body) as Map<String, dynamic>;
-              return d['places'] as List? ?? [];
-            }
-          } catch (e) {
-            debugPrint('Aviso en subconsulta de muestreo radial: $e');
+        final subconsultas = <Future<List<Map<String, dynamic>>>>[];
+        for (final q in queries) {
+          for (final pt in puntosMuestreo) {
+            subconsultas.add(ejecutarSubconsulta(
+              q,
+              lat: pt['lat'] as double,
+              lng: pt['lng'] as double,
+              radiusMeters: pt['radius'] as double,
+            ));
           }
-          return [];
-        });
+        }
 
-        final resultadosPorPunto = await Future.wait(futures);
-        final Map<String, dynamic> vistos = {};
+        final resultadosPorPunto = await Future.wait(subconsultas);
         for (final lista in resultadosPorPunto) {
           for (final place in lista) {
             final id =
                 place['id'] as String? ?? place['displayName']?['text'] ?? '';
             if (id.isNotEmpty && !vistos.containsKey(id)) {
               vistos[id] = place;
-              rawPlaces.add(place as Map<String, dynamic>);
+              rawPlaces.add(place);
             }
           }
         }
       } else {
-        // Consulta estándar (10 km o Modo Nacional)
-        final Map<String, dynamic> bodyJson = {
-          "textQuery": query,
-          "includedType": "church",
-          "languageCode": "es",
-          "regionCode": _paisCodigo.toLowerCase(),
-          "pageSize": 20,
-        };
-
-        if (_modo == ModoExploracion.radio && _currentPosition != null) {
-          bodyJson["locationBias"] = {
-            "circle": {
-              "center": {
-                "latitude": _currentPosition!.latitude,
-                "longitude": _currentPosition!.longitude,
-              },
-              "radius": _radioKm * 1000.0,
-            },
-          };
-        }
-
-        final response = await http.post(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': _googleApiKey,
-            'X-Goog-FieldMask': fieldMask,
-          },
-          body: jsonEncode(bodyJson),
-        );
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final List resultados = data['places'] ?? [];
-          _nextPageToken = data['nextPageToken'] as String?;
-          rawPlaces.addAll(resultados.cast<Map<String, dynamic>>());
+        // Consulta estándar (10 km o Modo Nacional): ejecutar consultas concurrentes
+        final subconsultas = queries.map((q) => ejecutarSubconsulta(q));
+        final resultados = await Future.wait(subconsultas);
+        for (final lista in resultados) {
+          for (final place in lista) {
+            final id =
+                place['id'] as String? ?? place['displayName']?['text'] ?? '';
+            if (id.isNotEmpty && !vistos.containsKey(id)) {
+              vistos[id] = place;
+              rawPlaces.add(place);
+            }
+          }
         }
       }
 
@@ -616,11 +765,20 @@ class ExplorarProvider extends ChangeNotifier {
           _brandColors[colorIdx % _brandColors.length],
         );
 
+        // FILTRO ESTRICTO POR DENOMINACIÓN:
+        if (!cumpleFiltroDenominacion(iglesia)) {
+          continue;
+        }
+
         // FILTRO ESTRICTO POR NOMBRE:
-        // Si el usuario especificó un término de búsqueda (ej. "lima"),
+        // Si el usuario especificó un término de búsqueda (ej. "amparo"),
         // deben aparecer única y exclusivamente las iglesias que contengan dicho término en su nombre.
         if (terminoFiltro.isNotEmpty &&
-            !contieneTerminoEnNombre(iglesia.nombre, terminoFiltro)) {
+            !contieneTerminoEnNombre(
+              iglesia.nombre,
+              terminoFiltro,
+              filtroDenominacionIndex: _filtroDenominacionIndex,
+            )) {
           continue;
         }
 
@@ -774,9 +932,18 @@ class ExplorarProvider extends ChangeNotifier {
               _brandColors[colorIdx % _brandColors.length],
             );
 
+            // FILTRO ESTRICTO POR DENOMINACIÓN
+            if (!cumpleFiltroDenominacion(iglesia)) {
+              continue;
+            }
+
             // FILTRO ESTRICTO POR NOMBRE
             if (terminoFiltro.isNotEmpty &&
-                !contieneTerminoEnNombre(iglesia.nombre, terminoFiltro)) {
+                !contieneTerminoEnNombre(
+                  iglesia.nombre,
+                  terminoFiltro,
+                  filtroDenominacionIndex: _filtroDenominacionIndex,
+                )) {
               continue;
             }
 

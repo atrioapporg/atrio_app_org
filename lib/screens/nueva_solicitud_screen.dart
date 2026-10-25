@@ -3,10 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
-import '../main.dart';
 import '../providers/user_provider.dart';
 import '../screens/esperando_aprobacion_screen.dart';
-import '../screens/tradicion_cristiana_screen.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
 import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
@@ -523,8 +521,19 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   }
 
                                   // Iglesia en revisión / pendiente de aprobación pastoral
-                                  if (userProvider.isMembershipPending ||
-                                      userProvider.churchStatus == 'membership_pending') {
+                                  final bool tieneIglesiaPendiente = userProvider.isMembershipPending ||
+                                      userProvider.churchStatus == 'membership_pending' ||
+                                      userProvider.churchStatus == 'pending' ||
+                                      (!userProvider.isChurchApproved &&
+                                          (userProvider.hasChurchAssigned ||
+                                              userProvider.requestedChurchId != null ||
+                                              (userProvider.currentUser?.iglesiaActual != null &&
+                                                  userProvider.currentUser?.iglesiaActual !=
+                                                      'Sin iglesia seleccionada' &&
+                                                  userProvider.currentUser?.iglesiaActual !=
+                                                      'Iglesia Atrio')));
+
+                                  if (tieneIglesiaPendiente) {
                                     ModalRestriccionSolicitud.mostrarIglesiaPendiente(
                                       context: context,
                                       onRedirigir: () {

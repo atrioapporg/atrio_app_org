@@ -70,8 +70,19 @@ class ModalRestriccionSolicitud {
     }
 
     // 3. Estatus de iglesia pendiente de aprobación en backend
-    if (userProvider.isMembershipPending ||
-        userProvider.churchStatus == 'membership_pending') {
+    final bool tieneIglesiaPendiente = userProvider.isMembershipPending ||
+        userProvider.churchStatus == 'membership_pending' ||
+        userProvider.churchStatus == 'pending' ||
+        (!userProvider.isChurchApproved &&
+            (userProvider.hasChurchAssigned ||
+                userProvider.requestedChurchId != null ||
+                (userProvider.currentUser?.iglesiaActual != null &&
+                    userProvider.currentUser?.iglesiaActual !=
+                        'Sin iglesia seleccionada' &&
+                    userProvider.currentUser?.iglesiaActual !=
+                        'Iglesia Atrio')));
+
+    if (tieneIglesiaPendiente) {
       mostrarIglesiaPendiente(
         context: effectiveContext,
         onCerrar: onDenegado,
@@ -108,8 +119,32 @@ class ModalRestriccionSolicitud {
 
     final l10n = AppLocalizations.of(effectiveContext);
     final screenWidth = MediaQuery.sizeOf(effectiveContext).width;
-    final usableHeight = MediaQuery.sizeOf(effectiveContext).height -
-        MediaQuery.of(effectiveContext).padding.top;
+    final userProvider =
+        Provider.of<UserProvider>(effectiveContext, listen: false);
+
+    final String? nombreReq =
+        userProvider.requestedChurchData?['name'] as String? ??
+        userProvider.currentUser?.requestedChurchData?['name'] as String?;
+    final String? nombreAct =
+        (userProvider.currentUser?.iglesiaActual != null &&
+                userProvider.currentUser?.iglesiaActual !=
+                    'Sin iglesia seleccionada' &&
+                userProvider.currentUser?.iglesiaActual != 'Iglesia Atrio')
+            ? userProvider.currentUser?.iglesiaActual
+            : null;
+    final String churchName = (nombreReq != null && nombreReq.isNotEmpty)
+        ? nombreReq
+        : (nombreAct ?? '');
+
+    final String prefix = (churchName.toLowerCase().startsWith('el ') ||
+            churchName.toLowerCase().startsWith('templo '))
+        ? 'al '
+        : (churchName.toLowerCase().startsWith('la ') ? '' : 'a la ');
+
+    final String mensajeDesc = churchName.isNotEmpty
+        ? 'Perteneces $prefix$churchName, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Una vez aprobada por el pastor o administrador, podrás enviar solicitudes y peticiones pastorales.'
+        : (l10n?.solicitudRequiereMembresia ??
+            'Tu cuenta está pendiente de asignación o aprobación de membresía por parte de tu congregación para enviar solicitudes.');
 
     showDialog(
       context: effectiveContext,
@@ -150,8 +185,7 @@ class ModalRestriccionSolicitud {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  l10n?.solicitudRequiereMembresia ??
-                      'Tu cuenta está pendiente de asignación o aprobación de membresía por parte de tu congregación para enviar solicitudes.',
+                  mensajeDesc,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade700,

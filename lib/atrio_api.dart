@@ -1247,6 +1247,80 @@ class AtrioApi {
     churchId: churchId,
   );
 
+  /// Lista todos los eventos administrables de la iglesia (GET /admin/events).
+  Future<Map<String, dynamic>> adminEvents({
+    int limit = 50,
+    int offset = 0,
+    int? churchId,
+  }) => _send(
+    'GET',
+    '/admin/events',
+    query: {'limit': '$limit', 'offset': '$offset'},
+    churchId: churchId,
+  );
+
+  /// Detalle administrativo de un evento específico (GET /admin/events/{id}).
+  Future<Map<String, dynamic>> adminEventDetail(
+    int eventId, {
+    int? churchId,
+  }) => _send('GET', '/admin/events/$eventId', churchId: churchId);
+
+  /// Crea un nuevo evento en Odoo 19 (POST /admin/events).
+  Future<Map<String, dynamic>> adminCreateEvent(
+    Map<String, dynamic> eventData, {
+    int? churchId,
+  }) => _send('POST', '/admin/events', body: eventData, churchId: churchId);
+
+  /// Actualiza un evento existente en Odoo 19 (PUT /admin/events/{id}).
+  Future<Map<String, dynamic>> adminUpdateEvent(
+    int eventId,
+    Map<String, dynamic> eventData, {
+    int? churchId,
+  }) => _send('PUT', '/admin/events/$eventId', body: eventData, churchId: churchId);
+
+  /// Elimina un evento de la congregación (DELETE /admin/events/{id}).
+  Future<Map<String, dynamic>> adminDeleteEvent(
+    int eventId, {
+    int? churchId,
+  }) => _send('DELETE', '/admin/events/$eventId', churchId: churchId);
+
+  /// Consulta todas las publicaciones y prédicas de la iglesia (GET /admin/posts).
+  Future<Map<String, dynamic>> adminPosts({
+    int limit = 50,
+    int offset = 0,
+    int? churchId,
+  }) => _send(
+    'GET',
+    '/admin/posts',
+    query: {'limit': '$limit', 'offset': '$offset'},
+    churchId: churchId,
+  );
+
+  /// Detalle de una publicación en panel administrativo (GET /admin/posts/{id}).
+  Future<Map<String, dynamic>> adminPostDetail(
+    int postId, {
+    int? churchId,
+  }) => _send('GET', '/admin/posts/$postId', churchId: churchId);
+
+  /// Crea una publicación, prédica o stream en vivo en Odoo (POST /admin/posts).
+  Future<Map<String, dynamic>> adminCreatePost(
+    Map<String, dynamic> postData, {
+    int? churchId,
+  }) => _send('POST', '/admin/posts', body: postData, churchId: churchId);
+
+  /// Actualiza una publicación o prédica en Odoo (PUT /admin/posts/{id}).
+  Future<Map<String, dynamic>> adminUpdatePost(
+    int postId,
+    Map<String, dynamic> postData, {
+    int? churchId,
+  }) => _send('PUT', '/admin/posts/$postId', body: postData, churchId: churchId);
+
+  /// Elimina una publicación de la iglesia (DELETE /admin/posts/{id}).
+  Future<Map<String, dynamic>> adminDeletePost(
+    int postId, {
+    int? churchId,
+  }) => _send('DELETE', '/admin/posts/$postId', churchId: churchId);
+
   // ===========================================================================
   // 14. ENDPOINTS DE PLATAFORMA / SUPER ADMIN (platform_admin)
   // ===========================================================================

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/utils/media_validator.dart';
 import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/widgets/odoo_pago_dialog.dart';
 import 'package:atrio/widgets/read_only_banner.dart';
@@ -35,6 +36,16 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
       );
       if (image != null) {
         final bytes = await image.readAsBytes();
+        final validation = MediaValidator.validateImageBytes(bytes);
+        if (!validation.isValid) {
+          if (!mounted) return;
+          await MediaValidator.showImageSizeExceededModal(
+            context,
+            sizeInMB: validation.sizeInMB,
+          );
+          return;
+        }
+
         setState(() {
           _comprobanteFile = image;
           _receiptFilename = image.name;

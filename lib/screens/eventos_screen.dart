@@ -5,10 +5,12 @@ import '../atrio_api.dart';
 import '../providers/user_provider.dart';
 import '../l10n/app_localizations.dart';
 
+import '../modelos/auth_permissions.dart';
 import '../modelos/evento_model.dart';
 import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
+import 'crear_evento_screen.dart';
 
 class EventosScreen extends StatefulWidget {
   static const routeName = 'eventos_screen';
@@ -293,6 +295,15 @@ class _EventosScreenState extends State<EventosScreen> {
     }
   }
 
+  /// Despliega el formulario de creación de nuevo evento congregacional (exclusivo church_admin).
+  Future<void> _abrirFormularioCrearEvento(BuildContext context) async {
+    final result = await Navigator.pushNamed(context, CrearEventoScreen.routeName);
+    if (!mounted) return;
+    if (result == true) {
+      _cargarEventosOdoo();
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -510,6 +521,24 @@ class _EventosScreenState extends State<EventosScreen> {
 
     return Scaffold(
       backgroundColor: azulFondo,
+      floatingActionButton: PermissionGuard(
+        requireChurchAdmin: true,
+        requiredPermission: AppPermissions.manageEvents,
+        disallowReadOnly: true,
+        child: FloatingActionButton.extended(
+          onPressed: () => _abrirFormularioCrearEvento(context),
+          backgroundColor: amarilloOro,
+          foregroundColor: azulFondo,
+          icon: const Icon(Icons.add_rounded, fontWeight: FontWeight.bold),
+          label: Text(
+            '+ Nuevo Evento',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: screenWidth * 0.034,
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         bottom: true,
         child: SizedBox(
@@ -554,37 +583,46 @@ class _EventosScreenState extends State<EventosScreen> {
                         const Spacer(),
                         PermissionGuard(
                           requireChurchAdmin: true,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: amarilloOro.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: amarilloOro.withValues(alpha: 0.8),
-                                width: 1,
+                          requiredPermission: AppPermissions.manageEvents,
+                          disallowReadOnly: true,
+                          child: GestureDetector(
+                            onTap: () => _abrirFormularioCrearEvento(context),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.03,
+                                vertical: usableHeight * 0.008,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.admin_panel_settings_rounded,
-                                  color: amarilloOro,
-                                  size: screenWidth * 0.04,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n?.administracionPastoral ?? 'Admin',
-                                  style: TextStyle(
-                                    color: amarilloOro,
-                                    fontSize: screenWidth * 0.028,
-                                    fontWeight: FontWeight.bold,
+                              decoration: BoxDecoration(
+                                color: amarilloOro,
+                                borderRadius:
+                                    BorderRadius.circular(screenWidth * 0.03),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.18),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_circle_outline_rounded,
+                                    color: azulFondo,
+                                    size: screenWidth * 0.042,
+                                  ),
+                                  SizedBox(width: screenWidth * 0.012),
+                                  Text(
+                                    '+ Evento',
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.030,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

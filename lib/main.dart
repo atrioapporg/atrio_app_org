@@ -80,6 +80,8 @@ import 'package:atrio/screens/tienda_screen.dart';
 import 'package:atrio/screens/mis_pedidos_screen.dart';
 import 'package:atrio/screens/libros_screen.dart';
 import 'package:atrio/screens/videos_transmisiones_screen.dart';
+import 'package:atrio/screens/crear_evento_screen.dart';
+import 'package:atrio/screens/crear_predica_screen.dart';
 
 // Screens - Pruebas
 import 'package:atrio/screens/test_pago_screen.dart';
@@ -362,6 +364,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     MisNotasScreen.routeName: (_) => const MisNotasScreen(),
     VideosTransmisionesScreen.routeName: (_) =>
         const VideosTransmisionesScreen(),
+    CrearEventoScreen.routeName: (_) => const CrearEventoScreen(),
+    CrearPredicaScreen.routeName: (_) => const CrearPredicaScreen(),
 
     // ---------- Pruebas ----------
     TestPagoScreen.routeName: (_) => const TestPagoScreen(),

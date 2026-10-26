@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../modelos/auth_permissions.dart';
 import '../modelos/video_model.dart';
+import '../providers/admin_provider.dart';
+import '../widgets/permission_guard.dart';
+import '../widgets/reproductor_streaming_modal.dart';
+import 'crear_predica_screen.dart';
 
 class VideosTransmisionesScreen extends StatefulWidget {
   static const routeName = 'videos_transmisiones_screen';
@@ -49,12 +54,12 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
   final VideoModel _featuredLiveVideo = VideoModel(
     id: '1',
     titulo: 'Culto Dominical en Vivo',
-    canalOIglesia: 'Iglesia MMM Apartadó · Esperanza de Vida',
+    canalOIglesia: 'Atrio Iglesia (@AtrioIglesia)',
     predicador: 'Pastor de la Comunidad',
     thumbnailUrl: 'https://img.youtube.com/vi/uE53d7_-Unc/maxresdefault.jpg',
-    videoUrl: 'https://youtu.be/uE53d7_-Unc',
+    videoUrl: 'https://www.youtube.com/@AtrioIglesia/live',
     categoria: 'En vivo',
-    sinopsis: 'Acompáñanos en la transmisión en directo de nuestro servicio dominical principal. Tiempo de adoración comunitaria, alabanza congregacional y el mensaje transformador de la Palabra de Dios.',
+    sinopsis: 'Acompáñanos en la transmisión en directo del canal oficial de YouTube @AtrioIglesia (ID: UCuW2ZM9B8MEm5FiKBQENjTw). Tiempo de alabanza congregacional, adoración comunitaria y la Palabra de Dios.',
     esEnVivo: true,
     horario: 'Domingo · 10:00 a. m.',
     estadisticas: '1,450 conectados',
@@ -66,10 +71,10 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     VideoModel(
       id: '2',
       titulo: 'La fe que mueve montañas',
-      canalOIglesia: 'Iglesia Comunidad de Esperanza',
+      canalOIglesia: 'Atrio Iglesia (@AtrioIglesia)',
       predicador: 'Pastor Andrés Gómez',
       thumbnailUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=sermon_1',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       categoria: 'Prédicas',
       sinopsis: 'Un mensaje inspirador y práctico sobre cómo activar una fe perseverante ante los momentos de incertidumbre, temor y pruebas cotidianas.',
       esEnVivo: false,
@@ -80,12 +85,12 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     VideoModel(
       id: '3',
       titulo: 'Noche de Clamor y Avivamiento',
-      canalOIglesia: 'Centro Cristiano Atrio Central',
-      predicador: 'Ministerio de Intercesión',
+      canalOIglesia: 'Atrio Iglesia (@AtrioIglesia)',
+      predicador: 'Ministerio de Intercesión Atrio',
       thumbnailUrl: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=live_clamor',
+      videoUrl: 'https://youtube.com/live/uE53d7_-Unc',
       categoria: 'En vivo',
-      sinopsis: 'Transmisión en directo del culto especial de clamor, oración ferviente e intercesión por las familias, los enfermos y la comunidad.',
+      sinopsis: 'Transmisión especial de clamor, intercesión y avivamiento desde el canal oficial @AtrioIglesia.',
       esEnVivo: true,
       horario: 'En vivo ahora',
       estadisticas: '420 en vivo',
@@ -97,7 +102,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
       canalOIglesia: 'Instituto Teológico Atrio',
       predicador: 'Dr. Carlos Morales',
       thumbnailUrl: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=estudio_romanos',
+      videoUrl: 'https://www.youtube.com/watch?v=7Pq-S557XQU',
       categoria: 'Estudios',
       sinopsis: 'Un análisis exegético y teológico versículo a versículo acerca de la justificación por la fe, la soberanía divina y la gracia redentora en Romanos.',
       esEnVivo: false,
@@ -111,7 +116,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
       canalOIglesia: 'Atrio Worship Band',
       predicador: 'Banda de Alabanza',
       thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=worship_session',
+      videoUrl: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
       categoria: 'Música',
       sinopsis: 'Sesión acústica de adoración congregacional con cantos de alabanza, gratitud y exaltación al Creador para acompañar tus devocionales diarios.',
       esEnVivo: false,
@@ -127,6 +132,16 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     _searchController.addListener(() {
       setState(() {});
     });
+  }
+
+  /// Despliega el formulario de publicación de prédica o transmisión en vivo (exclusivo church_admin).
+  Future<void> _abrirFormularioCrearPredica() async {
+    final result = await Navigator.pushNamed(context, CrearPredicaScreen.routeName);
+    if (!mounted) return;
+    if (result == true) {
+      final adminProvider = context.read<AdminProvider>();
+      await adminProvider.loadAdminSermons();
+    }
   }
 
   @override
@@ -173,6 +188,24 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
 
     return Scaffold(
       backgroundColor: azulFondo,
+      floatingActionButton: PermissionGuard(
+        requireChurchAdmin: true,
+        requiredPermission: AppPermissions.managePosts,
+        disallowReadOnly: true,
+        child: FloatingActionButton.extended(
+          onPressed: _abrirFormularioCrearPredica,
+          backgroundColor: amarilloOro,
+          foregroundColor: azulFondo,
+          icon: const Icon(Icons.live_tv_rounded, fontWeight: FontWeight.bold),
+          label: Text(
+            '+ Transmitir / Prédica',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: screenWidth * 0.034,
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         bottom: true,
         child: SizedBox(
@@ -188,7 +221,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: usableHeight * 0.01),
-                    // Título de la pantalla con botón de retroceso (Back <-)
+                    // Título de la pantalla con botón de retroceso (Back <-) y acción de Admin
                     Row(
                       children: [
                         GestureDetector(
@@ -216,8 +249,56 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                 'Videos y transmisiones',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: screenWidth * 0.060,
+                              fontSize: screenWidth * 0.055,
                               fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.02),
+                        PermissionGuard(
+                          requireChurchAdmin: true,
+                          requiredPermission: AppPermissions.managePosts,
+                          disallowReadOnly: true,
+                          child: GestureDetector(
+                            onTap: _abrirFormularioCrearPredica,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.03,
+                                vertical: usableHeight * 0.008,
+                              ),
+                              decoration: BoxDecoration(
+                                color: amarilloOro,
+                                borderRadius:
+                                    BorderRadius.circular(screenWidth * 0.03),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.18),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_circle_outline_rounded,
+                                    color: azulFondo,
+                                    size: screenWidth * 0.042,
+                                  ),
+                                  SizedBox(width: screenWidth * 0.012),
+                                  Text(
+                                    '+ Prédica',
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.030,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -443,7 +524,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
       onTap: onTap,
       child: Container(
         width: screenWidth,
-        height: usableHeight * 0.19,
+        height: usableHeight * 0.22,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(screenWidth * 0.045),
           boxShadow: [
@@ -467,7 +548,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                   if (progress == null) return child;
                   return _ShimmerPlaceholder(
                     width: screenWidth,
-                    height: usableHeight * 0.19,
+                    height: usableHeight * 0.22,
                     borderRadius: screenWidth * 0.045,
                   );
                 },
@@ -493,7 +574,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.05,
-                  vertical: usableHeight * 0.018,
+                  vertical: usableHeight * 0.012,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -810,377 +891,9 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     );
   }
 
-  // Modal Inferior de Detalle Rápido y Reproducción del Video (Bottom Sheet moderno)
+  // Modal Inferior de Reproducción Embebida (youtube_player_flutter) y Detalle de Streaming
   void _showVideoDetailsModal(BuildContext context, VideoModel video) {
-    final l10n = AppLocalizations.of(context);
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final usableHeight = screenHeight - MediaQuery.of(context).padding.top;
-
-    const Color azulFondo = Color(0xFF072B4F);
-    const Color amarilloOro = Color(0xFFE5A023);
-    const Color blancoFondo = Color(0xFFFAF7F0);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: blancoFondo,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(screenWidth * 0.06),
-              topRight: Radius.circular(screenWidth * 0.06),
-            ),
-          ),
-          padding: EdgeInsets.only(
-            left: screenWidth * 0.06,
-            right: screenWidth * 0.06,
-            top: usableHeight * 0.018,
-            bottom:
-                MediaQuery.of(modalContext).padding.bottom +
-                usableHeight * 0.02,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Indicador de arrastre superior
-              Center(
-                child: Container(
-                  width: screenWidth * 0.12,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.02),
-
-              // Miniatura 16:9 grande con botón de Play superpuesto
-              Container(
-                width: screenWidth,
-                height: usableHeight * 0.22,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        video.thumbnailUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return _ShimmerPlaceholder(
-                            width: screenWidth,
-                            height: usableHeight * 0.22,
-                            borderRadius: screenWidth * 0.035,
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Color(int.parse(video.fallbackBgColor)),
-                          child: const Icon(
-                            Icons.videocam_rounded,
-                            color: Colors.white54,
-                            size: 48,
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      Center(
-                        child: Container(
-                          padding: EdgeInsets.all(screenWidth * 0.035),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: amarilloOro, width: 2),
-                          ),
-                          child: Icon(
-                            Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.09,
-                          ),
-                        ),
-                      ),
-                      if (video.esEnVivo)
-                        Positioned(
-                          top: usableHeight * 0.015,
-                          left: screenWidth * 0.035,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.03,
-                              vertical: usableHeight * 0.005,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE53935),
-                              borderRadius: BorderRadius.circular(
-                                screenWidth * 0.015,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: screenWidth * 0.018,
-                                  height: screenWidth * 0.018,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                SizedBox(width: screenWidth * 0.015),
-                                Text(
-                                  l10n?.enVivoBadge ?? 'EN VIVO',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      if (video.duracion != null)
-                        Positioned(
-                          bottom: usableHeight * 0.015,
-                          right: screenWidth * 0.035,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.025,
-                              vertical: usableHeight * 0.004,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black87,
-                              borderRadius: BorderRadius.circular(
-                                screenWidth * 0.012,
-                              ),
-                            ),
-                            child: Text(
-                              video.duracion!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.02),
-
-              // Categoría y Estadísticas
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.025,
-                      vertical: usableHeight * 0.004,
-                    ),
-                    decoration: BoxDecoration(
-                      color: azulFondo.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.015),
-                    ),
-                    child: Text(
-                      _getLocalizedCategory(video.categoria, l10n),
-                      style: TextStyle(
-                        color: azulFondo,
-                        fontSize: screenWidth * 0.028,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  if (video.estadisticas != null) ...[
-                    SizedBox(width: screenWidth * 0.025),
-                    Text(
-                      video.estadisticas!,
-                      style: TextStyle(
-                        color: video.esEnVivo
-                            ? const Color(0xFFE53935)
-                            : Colors.grey.shade600,
-                        fontSize: screenWidth * 0.028,
-                        fontWeight: video.esEnVivo
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              SizedBox(height: usableHeight * 0.008),
-
-              Text(
-                video.titulo,
-                style: TextStyle(
-                  color: azulFondo,
-                  fontSize: screenWidth * 0.048,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.004),
-
-              Text(
-                video.predicador != null
-                    ? '${video.predicador!} · ${video.canalOIglesia}'
-                    : video.canalOIglesia,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: screenWidth * 0.032,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.015),
-
-              // Descripción / Sinopsis
-              if (video.sinopsis.isNotEmpty) ...[
-                Text(
-                  l10n?.descripcion ?? 'Descripción',
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontSize: screenWidth * 0.038,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: usableHeight * 0.005),
-                Text(
-                  video.sinopsis,
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: screenWidth * 0.031,
-                    height: 1.35,
-                  ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: usableHeight * 0.02),
-              ],
-
-              // Botones de Acción
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: amarilloOro,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(
-                          vertical: usableHeight * 0.015,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            screenWidth * 0.025,
-                          ),
-                        ),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(modalContext);
-                        final uri = Uri.tryParse(video.videoUrl);
-                        if (uri != null && await canLaunchUrl(uri)) {
-                          await launchUrl(
-                            uri,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        } else {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  video.esEnVivo
-                                      ? (l10n?.conectandoTransmision(
-                                              video.titulo,
-                                            ) ??
-                                          'Conectando a transmisión "${video.titulo}"...')
-                                      : (l10n?.reproduciendoVideo(
-                                              video.titulo,
-                                            ) ??
-                                          'Reproduciendo "${video.titulo}"...'),
-                                ),
-                                backgroundColor: azulFondo,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: Icon(
-                        video.esEnVivo
-                            ? Icons.sensors_rounded
-                            : Icons.play_arrow_rounded,
-                        size: screenWidth * 0.05,
-                      ),
-                      label: Text(
-                        video.esEnVivo
-                            ? (l10n?.verTransmisionEnVivo ??
-                                'Ver transmisión en vivo')
-                            : (l10n?.reproducirAhora ?? 'Reproducir ahora'),
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.034,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.03),
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: azulFondo,
-                      side: BorderSide(color: azulFondo, width: 1.2),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: usableHeight * 0.015,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.025,
-                        ),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(modalContext);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            l10n?.enlaceCopiadoPortapapeles(video.titulo) ??
-                                'Enlace de "${video.titulo}" copiado al portapapeles',
-                          ),
-                          backgroundColor: azulFondo,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    child: Icon(
-                      Icons.share_outlined,
-                      size: screenWidth * 0.05,
-                      color: azulFondo,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    ReproductorStreamingModal.mostrar(context, video: video);
   }
 }
 

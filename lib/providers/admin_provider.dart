@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/modelos/admin_models.dart';
+import 'package:atrio/models/event_dto.dart';
+import 'package:atrio/models/sermon_dto.dart';
 
 /// Provider para la gestión administrativa de la iglesia (Odoo 19 /admin/*)
 /// Utilizado por roles church_admin y usuarios con permisos pastorales.
@@ -11,6 +13,8 @@ class AdminProvider extends ChangeNotifier {
   List<AdminAnnouncementModel> _announcements = [];
   List<AdminGroupModel> _groups = [];
   List<AdminPrayerRequestModel> _prayerRequests = [];
+  List<EventDto> _adminEvents = [];
+  List<SermonDto> _adminSermons = [];
   AdminAnalyticsModel? _analytics;
 
   bool _isLoading = false;
@@ -23,6 +27,8 @@ class AdminProvider extends ChangeNotifier {
   List<AdminAnnouncementModel> get announcements => _announcements;
   List<AdminGroupModel> get groups => _groups;
   List<AdminPrayerRequestModel> get prayerRequests => _prayerRequests;
+  List<EventDto> get adminEvents => _adminEvents;
+  List<SermonDto> get adminSermons => _adminSermons;
   AdminAnalyticsModel? get analytics => _analytics;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -284,6 +290,226 @@ class AdminProvider extends ChangeNotifier {
   }
 
   // ===========================================================================
+  // 5. GESTIÓN ADMINISTRATIVA DE EVENTOS (/admin/events)
+  // ===========================================================================
+
+  /// Carga todos los eventos administrables de la congregación activa.
+  Future<void> loadAdminEvents({int limit = 50, int offset = 0}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminEvents(limit: limit, offset: offset);
+      final rawList = res['events'] ?? res['items'] ?? res['data'] ?? [];
+      if (rawList is List) {
+        _adminEvents = rawList
+            .map((e) => EventDto.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      debugPrint('[AdminProvider] Error al cargar eventos admin: $e');
+    } catch (e) {
+      _errorMessage = 'Error inesperado al cargar eventos: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Crea un nuevo evento en Odoo 19 con soporte para streaming y modalidad.
+  Future<bool> createEvent(EventDto event) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminCreateEvent(event.toJson());
+      final rawItem = res['event'] ?? res['data'] ?? res;
+      if (rawItem is Map) {
+        final newEvent = EventDto.fromJson(Map<String, dynamic>.from(rawItem));
+        _adminEvents.insert(0, newEvent);
+      } else {
+        await loadAdminEvents();
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al publicar evento: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Actualiza un evento existente en Odoo 19.
+  Future<bool> updateEvent(EventDto event) async {
+    if (event.id == null) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminUpdateEvent(event.id!, event.toJson());
+      final rawItem = res['event'] ?? res['data'] ?? res;
+      final updatedEvent = rawItem is Map
+          ? EventDto.fromJson(Map<String, dynamic>.from(rawItem))
+          : event;
+
+      final index = _adminEvents.indexWhere((e) => e.id == event.id);
+      if (index != -1) {
+        _adminEvents[index] = updatedEvent;
+      } else {
+        _adminEvents.insert(0, updatedEvent);
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al actualizar evento: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Elimina un evento en Odoo 19.
+  Future<bool> deleteEvent(int eventId) async {
+    try {
+      await _api.adminDeleteEvent(eventId);
+      _adminEvents.removeWhere((e) => e.id == eventId);
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ===========================================================================
+  // 6. GESTIÓN ADMINISTRATIVA DE PRÉDICAS Y LIVES (/admin/posts)
+  // ===========================================================================
+
+  /// Carga todas las prédicas y transmisiones en vivo administrables de la iglesia.
+  Future<void> loadAdminSermons({int limit = 50, int offset = 0}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminPosts(limit: limit, offset: offset);
+      final rawList = res['posts'] ?? res['items'] ?? res['data'] ?? [];
+      if (rawList is List) {
+        _adminSermons = rawList
+            .map((e) => SermonDto.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      debugPrint('[AdminProvider] Error al cargar prédicas admin: $e');
+    } catch (e) {
+      _errorMessage = 'Error inesperado al cargar prédicas: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Publica una nueva prédica o transmisión en vivo en Odoo 19.
+  Future<bool> createSermon(SermonDto sermon) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminCreatePost(sermon.toJson());
+      final rawItem = res['post'] ?? res['sermon'] ?? res['data'] ?? res;
+      if (rawItem is Map) {
+        final newSermon = SermonDto.fromJson(Map<String, dynamic>.from(rawItem));
+        _adminSermons.insert(0, newSermon);
+      } else {
+        await loadAdminSermons();
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al publicar prédica o stream: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Actualiza una prédica o transmisión en Odoo 19.
+  Future<bool> updateSermon(SermonDto sermon) async {
+    if (sermon.id == null) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminUpdatePost(sermon.id!, sermon.toJson());
+      final rawItem = res['post'] ?? res['sermon'] ?? res['data'] ?? res;
+      final updatedSermon = rawItem is Map
+          ? SermonDto.fromJson(Map<String, dynamic>.from(rawItem))
+          : sermon;
+
+      final index = _adminSermons.indexWhere((s) => s.id == sermon.id);
+      if (index != -1) {
+        _adminSermons[index] = updatedSermon;
+      } else {
+        _adminSermons.insert(0, updatedSermon);
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al actualizar prédica: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Elimina una prédica o transmisión de la iglesia en Odoo 19.
+  Future<bool> deleteSermon(int sermonId) async {
+    try {
+      await _api.adminDeletePost(sermonId);
+      _adminSermons.removeWhere((s) => s.id == sermonId);
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ===========================================================================
   // TRADUCCIÓN DE ERRORES ODOO 19
   // ===========================================================================
 
@@ -293,6 +519,9 @@ class AdminProvider extends ChangeNotifier {
     }
     if (e.code == 'validation_error') {
       return 'Error de validación de permisos en la iglesia.';
+    }
+    if (e.code == 'required_fields') {
+      return 'Por favor completa todos los campos requeridos para la publicación.';
     }
     if (e.code == 'church_required' || (e.status == 400 && e.message.toLowerCase().contains('church'))) {
       return 'Se requiere tener una iglesia asignada para esta acción pastoral.';

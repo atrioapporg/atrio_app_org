@@ -274,7 +274,8 @@ class _PerfilScreenState extends State<PerfilScreen>
     final String? nombreSqlite = (_usuarioData?['iglesia_nombre'] as String?)
         ?.trim();
 
-    final String iglesia = (nombreRequested != null && nombreRequested.isNotEmpty)
+    final String iglesia =
+        (nombreRequested != null && nombreRequested.isNotEmpty)
         ? nombreRequested
         : ((nombreProvider != null && nombreProvider.isNotEmpty)
               ? nombreProvider
@@ -295,24 +296,28 @@ class _PerfilScreenState extends State<PerfilScreen>
                                 ? nombreSqlite
                                 : sinIglesiaTexto))));
 
-    final bool hasChurchSelected = estaAutenticado &&
+    final bool hasChurchSelected =
+        estaAutenticado &&
         iglesia.isNotEmpty &&
         iglesia != sinIglesiaTexto &&
         iglesia != 'Sin iglesia seleccionada' &&
         iglesia != 'Sin congregación' &&
         iglesia != 'Iglesia Atrio';
 
-    final bool isChangePending = estaAutenticado &&
+    final bool isChangePending =
+        estaAutenticado &&
         (userProvider.isChangePending ||
             currentUser?.isChangePending == true ||
             userProvider.membershipStatus == 'change_pending');
 
-    final bool isChurchApproved = estaAutenticado &&
+    final bool isChurchApproved =
+        estaAutenticado &&
         userProvider.isChurchApproved &&
         !userProvider.isMembershipPending &&
         userProvider.membershipStatus != 'pending';
 
-    final bool isMembershipPending = estaAutenticado &&
+    final bool isMembershipPending =
+        estaAutenticado &&
         !isChurchApproved &&
         !isChangePending &&
         (userProvider.isWaitingApproval ||
@@ -324,7 +329,8 @@ class _PerfilScreenState extends State<PerfilScreen>
             userProvider.churchStatus == 'membership_pending' ||
             hasChurchSelected);
 
-    final bool hasChurchAssigned = estaAutenticado &&
+    final bool hasChurchAssigned =
+        estaAutenticado &&
         (userProvider.hasChurchAssigned || hasChurchSelected) &&
         iglesia != sinIglesiaTexto &&
         iglesia.isNotEmpty;
@@ -589,7 +595,8 @@ class _PerfilScreenState extends State<PerfilScreen>
     String? iglesiaNombre,
   }) {
     final l10n = AppLocalizations.of(context);
-    final String nombreMostrar = (iglesiaNombre != null &&
+    final String nombreMostrar =
+        (iglesiaNombre != null &&
             iglesiaNombre.trim().isNotEmpty &&
             iglesiaNombre.trim() != 'Sin iglesia seleccionada' &&
             iglesiaNombre.trim() !=
@@ -598,7 +605,8 @@ class _PerfilScreenState extends State<PerfilScreen>
         ? iglesiaNombre.trim()
         : '';
 
-    final String prefixAviso = (nombreMostrar.toLowerCase().startsWith('el ') ||
+    final String prefixAviso =
+        (nombreMostrar.toLowerCase().startsWith('el ') ||
             nombreMostrar.toLowerCase().startsWith('templo '))
         ? 'al '
         : (nombreMostrar.toLowerCase().startsWith('la ') ? '' : 'a la ');
@@ -1327,7 +1335,8 @@ class _PerfilScreenState extends State<PerfilScreen>
       badgeBg = const Color(0xFFFEF3C7);
       badgeTextCol = const Color(0xFFB45309);
       headerTitle = 'Solicitud de membresía';
-      final String prefix = (iglesia.toLowerCase().startsWith('el ') ||
+      final String prefix =
+          (iglesia.toLowerCase().startsWith('el ') ||
               iglesia.toLowerCase().startsWith('templo '))
           ? 'al '
           : (iglesia.toLowerCase().startsWith('la ') ? '' : 'a la ');

@@ -10,16 +10,22 @@ import 'inicio_sesion_screen.dart';
 import 'recomendar_iglesia_mapa_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 
-/// Pantalla donde un usuario autenticado sin congregación vinculada
+/// Pantalla optimizada donde un usuario sin congregación vinculada
 /// selecciona su camino de participación en la plataforma ATRIO:
-/// 1. Unirme a una iglesia (Búsqueda in-app por tradición / mapa local)
-/// 2. Mi iglesia no está en Atrio (Recomendación in-app mediante Google Maps)
-/// 3. Registrar una congregación (Delegada exclusivamente al portal web de Odoo)
-class ElegirCaminoIglesiaScreen extends StatelessWidget {
+/// 1. Acción Principal: Unirme a una congregación (Búsqueda por tradición/cercanía)
+/// 2. Alternativas secundarias compactas: Recomendar en Google Maps o Registro Web Odoo.
+/// Si el usuario ya posee una iglesia seleccionada o vinculada, se ejecuta bypass inmediato al HomeScreen.
+class ElegirCaminoIglesiaScreen extends StatefulWidget {
   static const String routeName = 'elegir_camino_iglesia_screen';
 
   const ElegirCaminoIglesiaScreen({super.key});
 
+  @override
+  State<ElegirCaminoIglesiaScreen> createState() =>
+      _ElegirCaminoIglesiaScreenState();
+}
+
+class _ElegirCaminoIglesiaScreenState extends State<ElegirCaminoIglesiaScreen> {
   static const Color azulFondo = Color(0xFF072B4F);
   static const Color azulOscuro = Color(0xFF03182E);
   static const Color azulMedio = Color(0xFF0F4C81);
@@ -30,6 +36,30 @@ class ElegirCaminoIglesiaScreen extends StatelessWidget {
   static const Color textoGris = Color(0xFF64748B);
 
   static const String webRegistroUrl = 'https://atrioapp.odoo19rd.com/#inicio';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _comprobarBypassIglesia();
+    });
+  }
+
+  Future<void> _comprobarBypassIglesia() async {
+    final userProvider = context.read<UserProvider>();
+    // Regla estricta: Si ya tiene iglesia seleccionada o vinculada, bypass inmediato al HomeScreen
+    if (userProvider.hasSelectedOrLinkedChurch) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, InicioAtrioScreen.routeName);
+      }
+      return;
+    }
+
+    final tienePrevia = await userProvider.verificarIglesiaPrevia();
+    if (tienePrevia && mounted) {
+      Navigator.pushReplacementNamed(context, InicioAtrioScreen.routeName);
+    }
+  }
 
   Future<void> _abrirPortalWeb(BuildContext context) async {
     final uri = Uri.parse(webRegistroUrl);
@@ -69,12 +99,12 @@ class ElegirCaminoIglesiaScreen extends StatelessWidget {
       backgroundColor: blancoFondo,
       body: Stack(
         children: [
-          // Fondo superior con degradado corporativo ATRIO
+          // Fondo superior degradado corporativo ATRIO
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.32,
+            height: screenHeight * 0.28,
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -83,302 +113,342 @@ class ElegirCaminoIglesiaScreen extends StatelessWidget {
                   colors: [azulOscuro, azulFondo, azulMedio],
                 ),
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(36),
-                  bottomRight: Radius.circular(36),
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
                 ),
               ),
             ),
           ),
 
           SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.05,
-                    vertical: 12,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth > 600 ? 32 : screenWidth * 0.05,
+                vertical: 10,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Barra superior: Identificador ATRIO + Cerrar sesión
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Barra superior: Identificador ATRIO + Cerrar sesión
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.church_rounded,
+                              color: amarilloOro,
+                              size: 16,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.2),
+                            SizedBox(width: 8),
+                            Text(
+                              'ATRIO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        onPressed: () async {
+                          await userProvider.logout();
+                          if (context.mounted) {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              InicioSesionScreen.routeName,
+                              (route) => false,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: Text(
+                          l10n?.cerrarSesion ?? 'Cerrar sesión',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Encabezado de Bienvenida
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          '¡Bienvenido a Atrio, $userName!',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Elige cómo deseas participar en la comunidad:',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // =========================================================
+                  // ACCIÓN PRINCIPAL (HERO CARD): UNIRME A UNA IGLESIA
+                  // =========================================================
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: grisBorde, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: azulFondo.withValues(alpha: 0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.diversity_3_rounded,
+                                color: azulMedio,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Unirme a una iglesia',
+                                    style: TextStyle(
+                                      color: textoOscuro,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Para miembros y servidores',
+                                    style: TextStyle(
+                                      color: textoGris,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Conéctate a tu iglesia local para acceder a devocionales, eventos, oraciones y la vida de tu comunidad.',
+                          style: TextStyle(
+                            color: textoGris,
+                            fontSize: 13.5,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: azulFondo,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                TradicionCristianaScreen.routeName,
+                              );
+                            },
                             child: const Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.church_rounded,
-                                  color: amarilloOro,
-                                  size: 16,
-                                ),
+                                Icon(Icons.church_rounded, size: 19),
                                 SizedBox(width: 8),
                                 Text(
-                                  'ATRIO',
+                                  'Conectarme a mi iglesia',
                                   style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.2,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                SizedBox(width: 6),
+                                Icon(Icons.arrow_forward_rounded, size: 16),
                               ],
                             ),
                           ),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white.withValues(
-                                alpha: 0.9,
-                              ),
-                            ),
-                            onPressed: () async {
-                              await userProvider.logout();
-                              if (context.mounted) {
-                                Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  InicioSesionScreen.routeName,
-                                  (route) => false,
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.logout_rounded, size: 18),
-                            label: Text(
-                              l10n?.cerrarSesion ?? 'Cerrar sesión',
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Separador de opciones secundarias
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      'Otras opciones',
+                      style: TextStyle(
+                        color: textoOscuro.withValues(alpha: 0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                  ),
 
-                      const SizedBox(height: 18),
+                  const SizedBox(height: 10),
 
-                      // Encabezado de Bienvenida
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              '¡Bienvenido a Atrio, $userName!',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'Para comenzar a personalizar tu experiencia, selecciona cómo deseas participar en la plataforma:',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.92),
-                                  fontSize: 14,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                  // OPCIÓN SECUNDARIA 1: RECOMENDAR EN GOOGLE MAPS
+                  _buildSecondaryOptionTile(
+                    icon: Icons.add_location_alt_rounded,
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    iconColor: const Color(0xFFD97706),
+                    title: 'Mi iglesia no está en Atrio',
+                    subtitle: 'Búscala en Google Maps y recomiéndala para incorporarla.',
+                    trailingIcon: Icons.arrow_forward_ios_rounded,
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        RecomendarIglesiaMapaScreen.routeName,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // OPCIÓN SECUNDARIA 2: REGISTRO WEB ODOO
+                  _buildSecondaryOptionTile(
+                    icon: Icons.domain_rounded,
+                    iconBgColor: const Color(0xFFF1F5F9),
+                    iconColor: const Color(0xFF475569),
+                    title: 'Registrar una congregación',
+                    subtitle: 'Portal web oficial para Pastores y Líderes de iglesia.',
+                    trailingIcon: Icons.open_in_new_rounded,
+                    onTap: () => _abrirPortalWeb(context),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Opción alternativa: Explorar como invitado
+                  Center(
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: azulFondo,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
                       ),
-
-                      const SizedBox(height: 24),
-
-                      // =======================================================
-                      // TARJETA 1: UNIRME A UNA IGLESIA (MIEMBROS & SERVIDORES)
-                      // =======================================================
-                      _buildPathCard(
-                        context: context,
-                        badgeText: 'MIEMBROS & SERVIDORES',
-                        badgeIcon: Icons.people_alt_rounded,
-                        badgeBgColor: const Color(0xFFEFF6FF),
-                        badgeTextColor: const Color(0xFF1D4ED8),
-                        iconData: Icons.diversity_3_rounded,
-                        iconGradientColors: const [
-                          Color(0xFFDBEAFE),
-                          Color(0xFFBFDBFE),
-                        ],
-                        iconColor: const Color(0xFF1D4ED8),
-                        title: 'Unirme a una iglesia',
-                        description: 'Busca y conéctate a tu congregación para acceder a noticias, eventos, grupos de discipulado, oraciones y ofrendas.',
-                        bulletPoints: const [
-                          'Conexión directa con tu congregación',
-                          'Contenidos y devocionales exclusivos',
-                        ],
-                        buttonText: 'Conectarme a mi iglesia',
-                        buttonColor: Colors.white,
-                        buttonTextColor: azulFondo,
-                        isButtonOutlined: true,
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            TradicionCristianaScreen.routeName,
-                          );
-                        },
+                      onPressed: () {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          InicioAtrioScreen.routeName,
+                          (route) => false,
+                        );
+                      },
+                      icon: const Icon(Icons.explore_outlined, size: 18),
+                      label: const Text(
+                        'Explorar contenido público por ahora',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                    ),
+                  ),
 
-                      const SizedBox(height: 18),
+                  const SizedBox(height: 10),
 
-                      // =======================================================
-                      // TARJETA 2: MI IGLESIA NO ESTÁ EN ATRIO (GOOGLE MAPS)
-                      // =======================================================
-                      _buildPathCard(
-                        context: context,
-                        isHighlighted: true,
-                        badgeText: 'GOOGLE MAPS',
-                        badgeIcon: Icons.location_on_rounded,
-                        badgeBgColor: const Color(0xFFFEF3C7),
-                        badgeTextColor: const Color(0xFFB45309),
-                        iconData: Icons.place_rounded,
-                        iconGradientColors: const [
-                          Color(0xFFFEF3C7),
-                          Color(0xFFFDE68A),
-                        ],
-                        iconColor: const Color(0xFFD97706),
-                        title: 'Mi iglesia no está en Atrio',
-                        description: 'Buscala en el mapa y recomendala. Atrio la contacta para sumarla y tu pedido de ingreso queda listo.',
-                        bulletPoints: const [
-                          'Elegí tu iglesia en Google Maps',
-                          'Te avisamos cuando se inscriba (plazo 30 días)',
-                        ],
-                        buttonText: 'Recomendar mi iglesia',
-                        buttonColor: azulFondo,
-                        buttonTextColor: Colors.white,
-                        isButtonOutlined: false,
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            RecomendarIglesiaMapaScreen.routeName,
-                          );
-                        },
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      // =======================================================
-                      // TARJETA 3: REGISTRAR UNA IGLESIA (DELEGADA A WEB ODOO)
-                      // =======================================================
-                      _buildPathCard(
-                        context: context,
-                        badgeText: 'REGISTRO WEB (ODOO)',
-                        badgeIcon: Icons.open_in_browser_rounded,
-                        badgeBgColor: const Color(0xFFF1F5F9),
-                        badgeTextColor: const Color(0xFF475569),
-                        iconData: Icons.domain_rounded,
-                        iconGradientColors: const [
-                          Color(0xFFF1F5F9),
-                          Color(0xFFE2E8F0),
-                        ],
-                        iconColor: const Color(0xFF334155),
-                        title: 'Registrar una congregación',
-                        description: 'Crea la ficha de tu iglesia. Para Pastores, Líderes y Administradores: el alta y gestión de módulos se realiza exclusivamente en nuestro portal web.',
-                        bulletPoints: const [
-                          'Gestión completa de miembros, eventos y tienda',
-                          'Registro habilitado exclusivamente en web oficial',
-                        ],
-                        buttonText: 'Ir al portal web oficial',
-                        buttonTrailingIcon: Icons.arrow_outward_rounded,
-                        buttonColor: Colors.white,
-                        buttonTextColor: const Color(0xFF334155),
-                        isButtonOutlined: true,
-                        onTap: () => _abrirPortalWeb(context),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Opción alternativa: Explorar como invitado
-                      Center(
-                        child: TextButton.icon(
-                          style: TextButton.styleFrom(
-                            foregroundColor: azulFondo,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.pushNamedAndRemoveUntil(
+                  // Footer de Asistencia
+                  Center(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        const Text(
+                          '¿Tienes dudas? ',
+                          style: TextStyle(color: textoGris, fontSize: 12),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
                               context,
-                              InicioAtrioScreen.routeName,
-                              (route) => false,
+                              AyudaSoporteScreen.routeName,
                             );
                           },
-                          icon: const Icon(Icons.explore_outlined, size: 18),
-                          label: const Text(
-                            'Explorar contenido público por ahora',
+                          child: const Text(
+                            'Contacta a soporte',
                             style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
+                              color: azulMedio,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Footer de Asistencia
-                      Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            const Text(
-                              '¿Tienes dudas? ',
-                              style: TextStyle(
-                                color: textoGris,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AyudaSoporteScreen.routeName,
-                                );
-                              },
-                              child: const Text(
-                                'Contacta a soporte',
-                                style: TextStyle(
-                                  color: azulMedio,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              ' o consulta nuestras Preguntas Frecuentes',
-                              style: TextStyle(
-                                color: textoGris,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
+                      ],
+                    ),
                   ),
-                );
-              },
+
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
         ],
@@ -386,215 +456,80 @@ class ElegirCaminoIglesiaScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPathCard({
-    required BuildContext context,
-    required String badgeText,
-    required IconData badgeIcon,
-    required Color badgeBgColor,
-    required Color badgeTextColor,
-    required IconData iconData,
-    required List<Color> iconGradientColors,
+  Widget _buildSecondaryOptionTile({
+    required IconData icon,
+    required Color iconBgColor,
     required Color iconColor,
     required String title,
-    required String description,
-    required List<String> bulletPoints,
-    required String buttonText,
-    required Color buttonColor,
-    required Color buttonTextColor,
-    required bool isButtonOutlined,
+    required String subtitle,
+    required IconData trailingIcon,
     required VoidCallback onTap,
-    IconData buttonTrailingIcon = Icons.arrow_forward_rounded,
-    bool isHighlighted = false,
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isHighlighted ? amarilloOro : grisBorde,
-          width: isHighlighted ? 2.0 : 1.2,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: grisBorde, width: 1.1),
         boxShadow: [
           BoxShadow(
-            color: isHighlighted
-                ? amarilloOro.withValues(alpha: 0.12)
-                : azulFondo.withValues(alpha: 0.05),
-            blurRadius: isHighlighted ? 18 : 12,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Badge Superior
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: badgeBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(badgeIcon, color: badgeTextColor, size: 13),
-                    const SizedBox(width: 5),
-                    Text(
-                      badgeText,
-                      style: TextStyle(
-                        color: badgeTextColor,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: iconGradientColors),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(iconData, color: iconColor, size: 18),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // Título
-          Text(
-            title,
-            style: const TextStyle(
-              color: textoOscuro,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.2,
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          // Descripción
-          Text(
-            description,
-            style: const TextStyle(
-              color: textoGris,
-              fontSize: 13.5,
-              height: 1.4,
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          // Puntos clave / Checkmarks
-          ...bulletPoints.map(
-            (point) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 2),
-                    width: 16,
-                    height: 16,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFECFDF5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: Color(0xFF10B981),
-                      size: 11,
-                    ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      point,
-                      style: const TextStyle(
-                        color: Color(0xFF334155),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Botón CTA
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: isButtonOutlined
-                ? OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: buttonTextColor,
-                      side: BorderSide(color: grisBorde, width: 1.3),
-                      backgroundColor: buttonColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: onTap,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          buttonText,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: textoOscuro,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 8),
-                        Icon(buttonTrailingIcon, size: 16),
-                      ],
-                    ),
-                  )
-                : ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonColor,
-                      foregroundColor: buttonTextColor,
-                      elevation: 2,
-                      shadowColor: buttonColor.withValues(alpha: 0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    onPressed: onTap,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          buttonText,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: textoGris,
+                          fontSize: 12,
+                          height: 1.3,
                         ),
-                        const SizedBox(width: 8),
-                        Icon(buttonTrailingIcon, size: 16),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
+                Icon(
+                  trailingIcon,
+                  color: textoGris.withValues(alpha: 0.7),
+                  size: 16,
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

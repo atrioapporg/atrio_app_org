@@ -105,6 +105,30 @@ class UserModel {
       membershipStatus != 'membership_pending' &&
       membershipStatus != 'pending';
 
+  /// Indica si el usuario ya cuenta con una congregación seleccionada o vinculada
+  /// en su perfil (asignada formalmente, solicitada/pendiente de aprobación, o guardada en perfil),
+  /// independientemente del estatus de aprobación en backend ('pending', 'approved', etc.).
+  bool get hasSelectedOrLinkedChurch {
+    if (hasChurchAssigned) return true;
+    if (requestedChurchId != null && requestedChurchId! > 0) return true;
+    if (requestedChurchData != null && requestedChurchData!.isNotEmpty) {
+      return true;
+    }
+    if (isMembershipPending || isChangePending) return true;
+    if (membershipStatus.isNotEmpty &&
+        membershipStatus != 'none' &&
+        membershipStatus != 'draft') {
+      return true;
+    }
+    final nombre = iglesiaActual.trim();
+    if (nombre.isNotEmpty &&
+        nombre != 'Sin iglesia seleccionada' &&
+        nombre != 'Iglesia Atrio') {
+      return true;
+    }
+    return false;
+  }
+
   UserModel copyWith({
     int? id,
     String? nombre,
@@ -179,7 +203,8 @@ class UserModel {
           (json['has_active_subscription'] ?? json['hasActiveSubscription'])
               as bool? ??
           false,
-      churchRecommendation: json['church_recommendation'] is Map<String, dynamic>
+      churchRecommendation:
+          json['church_recommendation'] is Map<String, dynamic>
           ? ChurchRecommendationModel.fromJson(
               json['church_recommendation'] as Map<String, dynamic>,
             )

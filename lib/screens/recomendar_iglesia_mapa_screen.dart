@@ -1,11 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../atrio_api.dart';
 import '../modelos/church_recommendation_model.dart';
+import '../providers/ajustes_provider.dart';
 import '../providers/recomendacion_iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/modal_ayuda_maps.dart';
@@ -46,10 +50,29 @@ class _RecomendarIglesiaMapaScreenState
   static const Color textoOscuro = Color(0xFF0F172A);
   static const Color textoGris = Color(0xFF64748B);
 
-  static const CameraPosition _posicionDefecto = CameraPosition(
-    target: LatLng(14.6349, -90.5069), // Ciudad de Guatemala / Centroamérica
-    zoom: 12.0,
-  );
+  // Coordenadas canónicas de referencia por país (fase de pruebas: RD y Honduras)
+  static const LatLng _coordSantoDomingo = LatLng(18.4812, -69.9158);
+  static const LatLng _coordTegucigalpa = LatLng(14.0818, -87.2068);
+
+  static LatLng _obtenerCoordenadasIniciales(BuildContext context) {
+    try {
+      final ajustes = context.read<AjustesProvider>();
+      if (ajustes.paisRegion.toUpperCase() == 'HN') {
+        return _coordTegucigalpa;
+      }
+      if (ajustes.paisRegion.toUpperCase() == 'DO') {
+        return _coordSantoDomingo;
+      }
+    } catch (_) {}
+
+    final deviceCountry =
+        PlatformDispatcher.instance.locale.countryCode?.toUpperCase();
+    if (deviceCountry == 'HN') {
+      return _coordTegucigalpa;
+    }
+
+    return _coordSantoDomingo;
+  }
 
   @override
   void initState() {
@@ -57,6 +80,41 @@ class _RecomendarIglesiaMapaScreenState
     _searchFocusNode.addListener(() {
       setState(() {});
     });
+    _determinarUbicacionGPS();
+  }
+
+  Future<void> _determinarUbicacionGPS() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+
+      // 1. Detección ultrarrápida desde la última ubicación conocida del sistema operativo
+      final lastPos = await Geolocator.getLastKnownPosition();
+      if (lastPos != null && mounted) {
+        _animarCamara(LatLng(lastPos.latitude, lastPos.longitude));
+      }
+
+      // 2. Refinamiento en tiempo real vía GPS de alta precisión
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 4),
+        ),
+      );
+
+      if (mounted) {
+        _animarCamara(LatLng(pos.latitude, pos.longitude));
+      }
+    } catch (e) {
+      debugPrint('[RecomendarIglesiaMapaScreen] Error geolocalización GPS: $e');
+    }
   }
 
   @override
@@ -462,15 +520,14 @@ class _RecomendarIglesiaMapaScreenState
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(15),
                             child: GoogleMap(
-                              initialCameraPosition: selectedLoc != null
-                                  ? CameraPosition(
-                                      target: selectedLoc,
-                                      zoom: 16.5,
-                                    )
-                                  : _posicionDefecto,
+                              initialCameraPosition: CameraPosition(
+                                target: selectedLoc ??
+                                    _obtenerCoordenadasIniciales(context),
+                                zoom: selectedLoc != null ? 16.5 : 12.5,
+                              ),
                               markers: markers,
-                              myLocationEnabled: false,
-                              myLocationButtonEnabled: false,
+                              myLocationEnabled: true,
+                              myLocationButtonEnabled: true,
                               zoomControlsEnabled: true,
                               mapToolbarEnabled: false,
                               gestureRecognizers: <Factory<

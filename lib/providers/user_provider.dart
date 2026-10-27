@@ -236,6 +236,52 @@ class UserProvider extends ChangeNotifier {
       !isMembershipPending &&
       (_currentUser?.isChurchApproved ?? false);
 
+  /// Valida de forma estricta si el usuario ya posee una congregación seleccionada o vinculada
+  /// en su perfil (asignada formalmente, pendiente de aprobación o guardada),
+  /// independientemente del estatus en el backend ('pending', 'approved', etc.).
+  bool get hasSelectedOrLinkedChurch {
+    if (_currentUser != null && _currentUser!.hasSelectedOrLinkedChurch) {
+      return true;
+    }
+    if (hasChurchAssigned) return true;
+    if (requestedChurchId != null && requestedChurchId! > 0) return true;
+    if (requestedChurchData != null && requestedChurchData!.isNotEmpty) return true;
+    if (isMembershipPending || isChangePending) return true;
+    if (membershipStatus.isNotEmpty &&
+        membershipStatus != 'none' &&
+        membershipStatus != 'draft') {
+      return true;
+    }
+    return false;
+  }
+
+  /// Verifica de forma exhaustiva (incluyendo persistencia local SQLite y SharedPreferences)
+  /// si el usuario ya posee una congregación seleccionada previamente.
+  Future<bool> verificarIglesiaPrevia() async {
+    if (hasSelectedOrLinkedChurch) return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final iglesiaGuardada = prefs.getString('iglesia_guardada');
+      if (iglesiaGuardada != null && iglesiaGuardada.trim().isNotEmpty) {
+        return true;
+      }
+
+      final localUser = await AtrioDatabaseHelper.instance.getUsuario();
+      if (localUser != null) {
+        final iglesiaNombre = (localUser['iglesia_nombre'] as String?)?.trim();
+        if (iglesiaNombre != null &&
+            iglesiaNombre.isNotEmpty &&
+            iglesiaNombre != 'Sin iglesia seleccionada' &&
+            iglesiaNombre != 'Iglesia Atrio') {
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('[UserProvider] Error verificando iglesia previa: $e');
+    }
+    return false;
+  }
+
   /// Valida si el usuario está plenamente habilitado para acceder y enviar solicitudes o peticiones pastorales.
   /// Requiere sesión activa, no operar en modo de solo lectura y contar con congregación aprobada.
   bool get canSubmitSolicitud =>

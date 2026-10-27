@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,7 +17,6 @@ import '../providers/iglesia_provider.dart';
 import '../providers/tradicion_cristiana_provider.dart';
 import '../providers/user_provider.dart';
 import '../servicios/map_style_service.dart';
-import 'esperando_aprobacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 
 /// Pantalla SeleccionarIglesiaScreen: Permite al usuario explorar y seleccionar su iglesia
@@ -57,10 +57,20 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     'adventista',
   ];
 
-  static const CameraPosition _posicionInicial = CameraPosition(
-    target: LatLng(18.4812, -69.9158),
-    zoom: 12.5,
-  );
+  static const LatLng _coordSantoDomingo = LatLng(18.4812, -69.9158);
+  static const LatLng _coordTegucigalpa = LatLng(14.0818, -87.2068);
+
+  static LatLng _obtenerCoordenadasIniciales(BuildContext context) {
+    try {
+      final ajustes = context.read<AjustesProvider>();
+      if (ajustes.paisRegion.toUpperCase() == 'HN') return _coordTegucigalpa;
+      if (ajustes.paisRegion.toUpperCase() == 'DO') return _coordSantoDomingo;
+    } catch (_) {}
+    if (PlatformDispatcher.instance.locale.countryCode?.toUpperCase() == 'HN') {
+      return _coordTegucigalpa;
+    }
+    return _coordSantoDomingo;
+  }
 
   @override
   void initState() {
@@ -384,7 +394,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
-          EsperandoAprobacionScreen.routeName,
+          InicioAtrioScreen.routeName,
           (route) => false,
         );
         return;
@@ -677,7 +687,10 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                           style: MapStyleService.esDeNoche(context)
                               ? _mapDarkStyle
                               : null,
-                          initialCameraPosition: _posicionInicial,
+                          initialCameraPosition: CameraPosition(
+                            target: _obtenerCoordenadasIniciales(context),
+                            zoom: 12.5,
+                          ),
                           myLocationEnabled: _permisoUbicacionConcedido,
                           myLocationButtonEnabled: false,
                           zoomControlsEnabled: false,

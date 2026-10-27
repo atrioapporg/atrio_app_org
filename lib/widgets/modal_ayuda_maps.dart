@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -94,9 +95,12 @@ class _ModalAyudaMapsState extends State<ModalAyudaMaps> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final ajustes = context.watch<AjustesProvider>();
-    final paisActual = ajustes.paisRegion.isNotEmpty
-        ? ajustes.paisRegion
-        : 'Guatemala';
+    final String codigoPais = ajustes.paisRegion.isNotEmpty
+        ? ajustes.paisRegion.toUpperCase()
+        : (PlatformDispatcher.instance.locale.countryCode?.toUpperCase() ?? 'DO');
+    final String paisActual = codigoPais == 'HN'
+        ? 'Honduras'
+        : (codigoPais == 'DO' ? 'República Dominicana' : codigoPais);
 
     return Container(
       constraints: BoxConstraints(

@@ -47,6 +47,7 @@ class ExplorarProvider extends ChangeNotifier {
 
   static const Map<String, String> paisesNombres = {
     'DO': 'República Dominicana',
+    'HN': 'Honduras',
     'CO': 'Colombia',
     'MX': 'México',
     'VE': 'Venezuela',
@@ -64,6 +65,7 @@ class ExplorarProvider extends ChangeNotifier {
 
   static const Map<String, String> paisesNombresEn = {
     'DO': 'Dominican Republic',
+    'HN': 'Honduras',
     'CO': 'Colombia',
     'MX': 'Mexico',
     'VE': 'Venezuela',
@@ -81,6 +83,7 @@ class ExplorarProvider extends ChangeNotifier {
 
   static const Map<String, String> paisesBanderas = {
     'DO': '🇩🇴',
+    'HN': '🇭🇳',
     'CO': '🇨🇴',
     'MX': '🇲🇽',
     'VE': '🇻🇪',
@@ -185,6 +188,10 @@ class ExplorarProvider extends ChangeNotifier {
     // República Dominicana
     if (lat >= 17.4 && lat <= 20.1 && lng >= -72.1 && lng <= -68.2) {
       return 'DO';
+    }
+    // Honduras
+    if (lat >= 12.9 && lat <= 16.6 && lng >= -89.5 && lng <= -83.0) {
+      return 'HN';
     }
     // Colombia
     if (lat >= -4.3 && lat <= 13.5 && lng >= -79.2 && lng <= -66.8) {

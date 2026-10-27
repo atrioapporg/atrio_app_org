@@ -8,7 +8,6 @@ import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import 'elegir_camino_iglesia_screen.dart';
-import 'esperando_aprobacion_screen.dart';
 import 'iglesia_pendiente_activacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'inicio_sesion_screen.dart';
@@ -308,19 +307,39 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
                       await userProvider.login(correo, password);
                   if (!mounted) return;
                   if (loginOk) {
+                    if (userProvider.hasSelectedOrLinkedChurch) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        InicioAtrioScreen.routeName,
+                        (route) => false,
+                      );
+                      return;
+                    }
                     final stage = userProvider.currentStage;
                     switch (stage) {
                       case AppStage.chooseChurch:
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          ElegirCaminoIglesiaScreen.routeName,
-                          (route) => false,
-                        );
+                        userProvider.verificarIglesiaPrevia().then((tienePrevia) {
+                          if (!mounted) return;
+                          if (tienePrevia) {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              InicioAtrioScreen.routeName,
+                              (route) => false,
+                            );
+                          } else {
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              ElegirCaminoIglesiaScreen.routeName,
+                              (route) => false,
+                            );
+                          }
+                        });
                         break;
                       case AppStage.waitingApproval:
+                        // Redirigir de inmediato al HomeScreen
                         Navigator.pushNamedAndRemoveUntil(
                           context,
-                          EsperandoAprobacionScreen.routeName,
+                          InicioAtrioScreen.routeName,
                           (route) => false,
                         );
                         break;

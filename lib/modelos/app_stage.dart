@@ -41,6 +41,28 @@ AppStage resolveStage(Map<String, dynamic>? me) {
   final church = me['church'] as Map<String, dynamic>?;
   final bool activeSubscription = church?['has_active_subscription'] == true;
 
+  // Extracción robusta de identificadores de iglesia asignada o vinculada
+  final dynamic rawChurchId = church?['id'] ??
+      me['church_id'] ??
+      me['iglesia_id'] ??
+      me['requested_church_id'] ??
+      me['user']?['church_id'] ??
+      me['member']?['church_id'];
+
+  int? parsedChurchId;
+  if (rawChurchId is int) {
+    parsedChurchId = rawChurchId;
+  } else if (rawChurchId is List && rawChurchId.isNotEmpty && rawChurchId[0] is int) {
+    parsedChurchId = rawChurchId[0] as int;
+  } else if (rawChurchId is String) {
+    parsedChurchId = int.tryParse(rawChurchId);
+  }
+
+  final bool hasChurchData = (parsedChurchId != null && parsedChurchId > 0) ||
+      (church != null &&
+          church.isNotEmpty &&
+          (church['id'] != null || church['name'] != null));
+
   if (role == 'platform_admin') return AppStage.platformAdmin;
   if (status == 'membership_pending' || status == 'pending') {
     return AppStage.waitingApproval;
@@ -55,6 +77,13 @@ AppStage resolveStage(Map<String, dynamic>? me) {
     return AppStage.memberHome;
   }
 
-  // role == 'user', o iglesia sin suscripción activa para un miembro regular
+  // Si el usuario ya tiene congregación vinculada/seleccionada en su perfil
+  // (incluso si su rol es 'user' o la iglesia está en proceso de suscripción),
+  // accede directamente al Home de miembro.
+  if (hasChurchData) {
+    return AppStage.memberHome;
+  }
+
+  // Únicamente si el usuario no tiene ninguna iglesia seleccionada
   return AppStage.chooseChurch;
 }

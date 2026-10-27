@@ -22,7 +22,6 @@ import 'package:atrio/modelos/app_stage.dart';
 
 import 'crear_cuenta_screen.dart';
 import 'elegir_camino_iglesia_screen.dart';
-import 'esperando_aprobacion_screen.dart';
 import 'iglesia_pendiente_activacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'recuperar_clave_screen.dart';
@@ -1578,6 +1577,19 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
   void _navegarSegunStage(AppStage stage) {
     if (!mounted) return;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    // Regla estricta: Si el usuario ya tiene congregación vinculada o seleccionada,
+    // omite cualquier pantalla intermedia y entra directo al HomeScreen.
+    if (userProvider.hasSelectedOrLinkedChurch) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        InicioAtrioScreen.routeName,
+        (route) => false,
+      );
+      return;
+    }
+
     switch (stage) {
       case AppStage.welcome:
         Navigator.pushNamedAndRemoveUntil(
@@ -1587,16 +1599,30 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         );
         break;
       case AppStage.chooseChurch:
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          ElegirCaminoIglesiaScreen.routeName,
-          (route) => false,
-        );
+        // Validación asíncrona local de respaldo
+        userProvider.verificarIglesiaPrevia().then((tienePrevia) {
+          if (!mounted) return;
+          if (tienePrevia) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              InicioAtrioScreen.routeName,
+              (route) => false,
+            );
+          } else {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              ElegirCaminoIglesiaScreen.routeName,
+              (route) => false,
+            );
+          }
+        });
         break;
       case AppStage.waitingApproval:
+        // Solicitud pendiente de aprobación: Enrutamiento directo al HomeScreen
+        // donde se presenta de inmediato el MembershipPendingBanner
         Navigator.pushNamedAndRemoveUntil(
           context,
-          EsperandoAprobacionScreen.routeName,
+          InicioAtrioScreen.routeName,
           (route) => false,
         );
         break;
@@ -1629,8 +1655,16 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       listen: false,
     );
 
-    // Si tiene sesión activa autenticada en Odoo, la máquina de estados AppStage resuelve el destino
+    // Si tiene sesión activa autenticada en Odoo, validar primero si ya cuenta con iglesia
     if (userProvider.isAuthenticated) {
+      if (userProvider.hasSelectedOrLinkedChurch) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          InicioAtrioScreen.routeName,
+          (route) => false,
+        );
+        return;
+      }
       _navegarSegunStage(userProvider.currentStage);
       return;
     }
@@ -1650,7 +1684,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             'Sin iglesia seleccionada' &&
         usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio';
 
-    final bool usuarioTieneIglesia = tieneIglesiaLocal || tieneIglesiaDb;
+    final bool usuarioTieneIglesia =
+        tieneIglesiaLocal || tieneIglesiaDb || userProvider.hasSelectedOrLinkedChurch;
 
     if (!mounted) return;
 

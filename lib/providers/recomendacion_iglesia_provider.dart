@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart'
     as places_sdk;
@@ -20,7 +21,8 @@ class RecomendacionIglesiaProvider extends ChangeNotifier {
   AtrioApi get _api => api;
   places_sdk.FlutterGooglePlacesSdk? placesClient;
   places_sdk.FlutterGooglePlacesSdk? get _placesClient => placesClient;
-  set _placesClient(places_sdk.FlutterGooglePlacesSdk? val) => placesClient = val;
+  set _placesClient(places_sdk.FlutterGooglePlacesSdk? val) =>
+      placesClient = val;
   Timer? _debounceTimer;
 
   // ===========================================================================
@@ -65,10 +67,7 @@ class RecomendacionIglesiaProvider extends ChangeNotifier {
   String? _errorMessage;
   String? _errorCode;
 
-  RecomendacionIglesiaProvider({
-    required this.api,
-    this.placesClient,
-  }) {
+  RecomendacionIglesiaProvider({required this.api, this.placesClient}) {
     _initPlacesClient();
   }
 
@@ -155,12 +154,15 @@ class RecomendacionIglesiaProvider extends ChangeNotifier {
     try {
       final response = await _placesClient!.findAutocompletePredictions(
         text,
+        countries: const ['do', 'hn'],
         placeTypesFilter: const [places_sdk.PlaceTypeFilter.ESTABLISHMENT],
       );
 
       _predictions = response.predictions;
     } catch (e) {
-      debugPrint('⚠️ [RecomendacionIglesiaProvider] Error en Places Autocomplete: $e');
+      debugPrint(
+        '⚠️ [RecomendacionIglesiaProvider] Error en Places Autocomplete: $e',
+      );
       _predictions = [];
       _errorMessage = 'No se pudieron cargar sugerencias de lugares.';
     } finally {
@@ -229,8 +231,11 @@ class RecomendacionIglesiaProvider extends ChangeNotifier {
       _errorMessage = apiErr.message;
       _errorCode = apiErr.code;
     } catch (e) {
-      debugPrint('💥 [RecomendacionIglesiaProvider] Error inesperado en selección: $e');
-      _errorMessage = 'No se pudo verificar el estado de la iglesia seleccionada.';
+      debugPrint(
+        '💥 [RecomendacionIglesiaProvider] Error inesperado en selección: $e',
+      );
+      _errorMessage =
+          'No se pudo verificar el estado de la iglesia seleccionada.';
     } finally {
       _isValidatingPlace = false;
       notifyListeners();
@@ -296,7 +301,8 @@ class RecomendacionIglesiaProvider extends ChangeNotifier {
       _errorCode = e.code;
       rethrow;
     } catch (e) {
-      _errorMessage = 'No se pudo registrar la recomendación. Intenta de nuevo.';
+      _errorMessage =
+          'No se pudo registrar la recomendación. Intenta de nuevo.';
       throw AtrioApiException(500, 'client_error', _errorMessage!);
     } finally {
       _isSubmitting = false;

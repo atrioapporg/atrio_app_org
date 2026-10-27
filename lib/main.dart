@@ -148,10 +148,27 @@ Future<void> main() async {
         final stage = resolveStage(me);
         switch (stage) {
           case AppStage.chooseChurch:
-            rutaInicial = ElegirCaminoIglesiaScreen.routeName;
+            // Regla de bypass: si el usuario ya seleccionó una iglesia localmente en SQLite o SharedPreferences,
+            // omitir la pantalla de elección y entrar directo a HomeScreen.
+            final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
+            final usuario = await AtrioDatabaseHelper.instance.getUsuario();
+            final bool tieneIglesiaLocal =
+                (iglesiaGuardada != null && iglesiaGuardada.trim().isNotEmpty) ||
+                (usuario != null &&
+                    usuario['iglesia_nombre'] != null &&
+                    usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
+                    usuario['iglesia_nombre'].toString().trim() !=
+                        'Sin iglesia seleccionada' &&
+                    usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio');
+
+            rutaInicial = tieneIglesiaLocal
+                ? InicioAtrioScreen.routeName
+                : ElegirCaminoIglesiaScreen.routeName;
             break;
           case AppStage.waitingApproval:
-            rutaInicial = EsperandoAprobacionScreen.routeName;
+            // Regla estricta: Si la solicitud está pendiente de aprobación,
+            // redirigir de inmediato al HomeScreen (InicioAtrioScreen), donde se presenta el banner reactivo.
+            rutaInicial = InicioAtrioScreen.routeName;
             break;
           case AppStage.churchPendingActivation:
             rutaInicial = IglesiaPendienteActivacionScreen.routeName;

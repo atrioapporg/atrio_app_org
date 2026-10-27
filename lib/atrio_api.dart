@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:atrio/data/app_config.dart';
+import 'package:atrio/modelos/church_recommendation_model.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 
 /// Excepción personalizada para capturar y clasificar los errores devueltos por la API de Odoo.
@@ -21,6 +22,13 @@ class AtrioApiException implements Exception {
   bool get isNotFound => status == 404;
   bool get isConflict => status == 409;
   bool get isServerError => status >= 500;
+
+  // Errores específicos del flujo de recomendación y mapas
+  bool get isChurchInAtrio => code == 'church_in_atrio';
+  bool get isChurchDeclined => code == 'church_declined';
+  bool get isChurchUnavailable => code == 'church_unavailable';
+  bool get isMapsNotConfigured => code == 'maps_not_configured';
+  bool get isMapsUnavailable => code == 'maps_unavailable';
 
   @override
   String toString() => 'AtrioApiException($status, $code): $message';
@@ -561,6 +569,77 @@ class AtrioApi {
   /// Registro de un nuevo miembro.
   Future<Map<String, dynamic>> registerMember(Map<String, dynamic> data) =>
       _send('POST', '/register', body: data, retryAuth: false);
+
+  // ===========================================================================
+  // 2.1 RECOMENDACIÓN DE IGLESIAS Y MAPAS (ODOO 19)
+  // ===========================================================================
+
+  /// Consulta el estado de un lugar por su Google Place ID (GET /churches/by-place?place_id=...).
+  /// No requiere sesión obligatoria (pero si se envía token, Odoo informa si recommended_by_me es true).
+  Future<PlaceLookupResult> getChurchByPlace(String placeId) async {
+    final data = await _send(
+      'GET',
+      '/churches/by-place',
+      query: {'place_id': placeId},
+      retryAuth: false,
+    );
+    return PlaceLookupResult.fromJson(data);
+  }
+
+  /// Recomienda una iglesia no presente en Atrio o se suma a una recomendación existente (POST /churches/recommend).
+  /// Requiere sesión activa. Deja el pedido de ingreso de la persona vinculado a la futura iglesia.
+  Future<Map<String, dynamic>> recommendChurch({
+    required String placeId,
+    String? contactName,
+    String? contactPhone,
+  }) async {
+    final body = <String, dynamic>{
+      'place_id': placeId,
+      if (contactName != null && contactName.trim().isNotEmpty)
+        'contact_name': contactName.trim(),
+      if (contactPhone != null && contactPhone.trim().isNotEmpty)
+        'contact_phone': contactPhone.trim(),
+    };
+    return await _send('POST', '/churches/recommend', body: body);
+  }
+
+  /// Obtiene el listado histórico de iglesias recomendadas por el usuario actual (GET /me/church-recommendations).
+  /// Requiere sesión activa. Devuelve hasta 50 recomendaciones ordenadas de más reciente a más antigua.
+  Future<List<ChurchRecommendationModel>> getMyChurchRecommendations() async {
+    final data = await _send('GET', '/me/church-recommendations');
+    final rawList = data['recommendations'];
+    if (rawList is List) {
+      return rawList
+          .whereType<Map<String, dynamic>>()
+          .map((item) => ChurchRecommendationModel.fromJson(item))
+          .toList();
+    }
+    return [];
+  }
+
+  /// Solicita ayuda a Atrio para publicar una iglesia que no aparece en Google Maps (POST /churches/maps-help).
+  /// Crea un ticket de soporte en Odoo. Solo 'name' es estrictamente obligatorio.
+  Future<Map<String, dynamic>> submitMapsHelp({
+    required String name,
+    String? city,
+    int? countryId,
+    String? contactName,
+    String? contactPhone,
+    String? message,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name.trim(),
+      if (city != null && city.trim().isNotEmpty) 'city': city.trim(),
+      'country_id': ?countryId,
+      if (contactName != null && contactName.trim().isNotEmpty)
+        'contact_name': contactName.trim(),
+      if (contactPhone != null && contactPhone.trim().isNotEmpty)
+        'contact_phone': contactPhone.trim(),
+      if (message != null && message.trim().isNotEmpty)
+        'message': message.trim(),
+    };
+    return await _send('POST', '/churches/maps-help', body: body);
+  }
 
   // ===========================================================================
   // 3. PERFIL Y DISPOSITIVOS

@@ -169,6 +169,14 @@ class UserProvider extends ChangeNotifier {
   bool get hasActiveSubscription =>
       _currentUser?.hasActiveSubscription ?? false;
 
+  /// Información de la recomendación de iglesia activa del usuario (Odoo 19)
+  ChurchRecommendationModel? get currentRecommendation =>
+      _currentUser?.churchRecommendation;
+
+  /// Indica si el usuario tiene una recomendación de iglesia en proceso de gestión
+  bool get hasActiveRecommendation =>
+      _currentUser?.hasActiveRecommendation ?? false;
+
   /// Indica si el usuario está en espera de aprobación pastoral
   bool get isWaitingApproval => currentStage == AppStage.waitingApproval;
 

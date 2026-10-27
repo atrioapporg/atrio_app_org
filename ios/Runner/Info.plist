@@ -74,5 +74,7 @@
 		<string>ATRIO necesita acceder a tu ubicación para encontrar iglesias cercanas a ti.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>ATRIO necesita acceder a tu ubicación para encontrar iglesias cercanas a ti.</string>
+		<key>GMSApiKey</key>
+		<string>$(MAPS_API_KEY)</string>
 	</dict>
 </plist>

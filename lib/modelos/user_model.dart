@@ -1,7 +1,9 @@
 import 'auth_permissions.dart';
+import 'church_recommendation_model.dart';
 
 export 'app_stage.dart';
 export 'auth_permissions.dart';
+export 'church_recommendation_model.dart';
 
 class UserModel {
   final int id;
@@ -29,6 +31,9 @@ class UserModel {
   /// Indica si la iglesia a la que pertenece el usuario cuenta con una suscripción/plan activo en ATRIO.
   final bool hasActiveSubscription;
 
+  /// Información de la iglesia recomendada por el usuario en proceso de incorporación (Odoo 19).
+  final ChurchRecommendationModel? churchRecommendation;
+
   // Objeto anidado de estadísticas
   final UserStats estadisticas;
 
@@ -49,6 +54,7 @@ class UserModel {
     this.requestedChurchId,
     this.requestedChurchData,
     this.hasActiveSubscription = false,
+    this.churchRecommendation,
     this.estadisticas = const UserStats(),
   });
 
@@ -73,6 +79,11 @@ class UserModel {
 
   /// Indica si el usuario tiene una solicitud de cambio de congregación en curso.
   bool get isChangePending => membershipStatus == 'change_pending';
+
+  /// Indica si el usuario tiene una recomendación de iglesia en curso activa en Atrio.
+  bool get hasActiveRecommendation =>
+      churchRecommendation != null &&
+      churchRecommendation!.status == ChurchRecommendationStatus.recommended;
 
   /// Indica si el usuario puede realizar operaciones de escritura según rol y bandera read_only.
   bool get canWrite =>
@@ -111,6 +122,7 @@ class UserModel {
     int? requestedChurchId,
     Map<String, dynamic>? requestedChurchData,
     bool? hasActiveSubscription,
+    ChurchRecommendationModel? churchRecommendation,
     UserStats? estadisticas,
   }) {
     return UserModel(
@@ -131,6 +143,7 @@ class UserModel {
       requestedChurchData: requestedChurchData ?? this.requestedChurchData,
       hasActiveSubscription:
           hasActiveSubscription ?? this.hasActiveSubscription,
+      churchRecommendation: churchRecommendation ?? this.churchRecommendation,
       estadisticas: estadisticas ?? this.estadisticas,
     );
   }
@@ -166,6 +179,11 @@ class UserModel {
           (json['has_active_subscription'] ?? json['hasActiveSubscription'])
               as bool? ??
           false,
+      churchRecommendation: json['church_recommendation'] is Map<String, dynamic>
+          ? ChurchRecommendationModel.fromJson(
+              json['church_recommendation'] as Map<String, dynamic>,
+            )
+          : null,
       estadisticas: json['estadisticas'] is Map<String, dynamic>
           ? UserStats.fromJson(json['estadisticas'] as Map<String, dynamic>)
           : const UserStats(
@@ -326,6 +344,12 @@ class UserModel {
         (odooData['has_active_subscription'] as bool?) ??
         false;
 
+    ChurchRecommendationModel? churchRecommendation;
+    final rawRec = odooData['church_recommendation'];
+    if (rawRec is Map<String, dynamic>) {
+      churchRecommendation = ChurchRecommendationModel.fromJson(rawRec);
+    }
+
     final statsMap = odooData['estadisticas'] as Map<String, dynamic>? ?? {};
 
     return UserModel(
@@ -345,6 +369,7 @@ class UserModel {
       requestedChurchId: requestedChurchId,
       requestedChurchData: requestedChurchData,
       hasActiveSubscription: hasActiveSubscription,
+      churchRecommendation: churchRecommendation,
       estadisticas: UserStats.fromJson(statsMap),
     );
   }
@@ -369,6 +394,7 @@ class UserModel {
       'requested_church_id': requestedChurchId,
       'requested_church_data': requestedChurchData,
       'has_active_subscription': hasActiveSubscription,
+      'church_recommendation': churchRecommendation?.toJson(),
       'estadisticas': {
         'solicitudes_activas': estadisticas.solicitudesActivas,
         'donaciones_mes': estadisticas.donacionesMes,

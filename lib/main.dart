@@ -33,6 +33,7 @@ import 'package:atrio/providers/biblia_provider.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/admin_provider.dart';
+import 'package:atrio/providers/recomendacion_iglesia_provider.dart';
 
 // Screens - Autenticación / Onboarding
 import 'package:atrio/screens/intro_encuentra_screen.dart';
@@ -46,6 +47,8 @@ import 'package:atrio/screens/elegir_camino_iglesia_screen.dart';
 import 'package:atrio/screens/esperando_aprobacion_screen.dart';
 import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
 import 'package:atrio/screens/crear_mi_iglesia_screen.dart';
+import 'package:atrio/screens/recomendar_iglesia_mapa_screen.dart';
+import 'package:atrio/screens/exito_recomendacion_screen.dart';
 
 // Screens - Principal
 import 'package:atrio/screens/inicio_atrio_screen.dart';
@@ -197,6 +200,13 @@ class AppState extends StatelessWidget {
           update: (ctx, userProvider, previous) =>
               previous ?? AdminProvider(api: userProvider.api),
         ),
+        ChangeNotifierProxyProvider<UserProvider, RecomendacionIglesiaProvider>(
+          create: (ctx) =>
+              RecomendacionIglesiaProvider(api: ctx.read<UserProvider>().api),
+          update: (ctx, userProvider, previous) =>
+              previous ??
+              RecomendacionIglesiaProvider(api: userProvider.api),
+        ),
       ],
       child: MyApp(initialRoute: initialRoute),
     );
@@ -323,6 +333,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     IglesiaPendienteActivacionScreen.routeName: (_) =>
         const IglesiaPendienteActivacionScreen(),
     CrearMiIglesiaScreen.routeName: (_) => const CrearMiIglesiaScreen(),
+    RecomendarIglesiaMapaScreen.routeName: (_) =>
+        const RecomendarIglesiaMapaScreen(),
+    ExitoRecomendacionScreen.routeName: (_) => const ExitoRecomendacionScreen(),
 
     // ---------- Principal ----------
     InicioAtrioScreen.routeName: (_) => const InicioAtrioScreen(),

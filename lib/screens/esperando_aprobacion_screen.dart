@@ -173,19 +173,23 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
             : null;
     final String? nombreIglesiaProvider = iglesiaProvider?.iglesiaActual?.nombre;
 
-    final iglesiaNombre = (nombreRequested != null &&
-            nombreRequested.trim().isNotEmpty)
-        ? nombreRequested.trim()
-        : ((nombreUserRequested != null &&
-                nombreUserRequested.trim().isNotEmpty)
-            ? nombreUserRequested.trim()
-            : ((nombreUserActual != null &&
-                    nombreUserActual.trim().isNotEmpty)
-                ? nombreUserActual.trim()
-                : ((nombreIglesiaProvider != null &&
-                        nombreIglesiaProvider.trim().isNotEmpty)
-                    ? nombreIglesiaProvider.trim()
-                    : 'Congregación seleccionada')));
+    final bool esRecomendada = userProvider.hasActiveRecommendation;
+    final rec = userProvider.currentRecommendation;
+
+    final iglesiaNombre = esRecomendada
+        ? (rec?.name ?? 'Iglesia recomendada')
+        : ((nombreRequested != null && nombreRequested.trim().isNotEmpty)
+            ? nombreRequested.trim()
+            : ((nombreUserRequested != null &&
+                    nombreUserRequested.trim().isNotEmpty)
+                ? nombreUserRequested.trim()
+                : ((nombreUserActual != null &&
+                        nombreUserActual.trim().isNotEmpty)
+                    ? nombreUserActual.trim()
+                    : ((nombreIglesiaProvider != null &&
+                            nombreIglesiaProvider.trim().isNotEmpty)
+                        ? nombreIglesiaProvider.trim()
+                        : 'Congregación seleccionada'))));
 
     final logoUrl =
         (userProvider.requestedChurchData?['logo_url'] as String?) ??
@@ -281,11 +285,13 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
                       const SizedBox(height: 24),
 
                       // Título
-                      const Text(
-                        'Solicitud en Revisión',
-                        style: TextStyle(
+                      Text(
+                        esRecomendada
+                            ? 'Iglesia en Proceso de Incorporación'
+                            : 'Solicitud en Revisión',
+                        style: const TextStyle(
                           color: textoOscuro,
-                          fontSize: 24,
+                          fontSize: 23,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.3,
                         ),
@@ -294,11 +300,13 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
                       const SizedBox(height: 12),
 
                       // Explicación
-                      const Text(
-                        'Tu petición de ingreso ha sido enviada con éxito. El pastor o administrador debe validar tu acceso a la congregación:',
-                        style: TextStyle(
+                      Text(
+                        esRecomendada
+                            ? 'Recomendaste esta congregación mediante Google Maps. Atrio tiene un plazo de ${rec?.daysLeft ?? 30} días para contactarla e inscribirla. Cuando se sume, tu ingreso será automático:'
+                            : 'Tu petición de ingreso ha sido enviada con éxito. El pastor o administrador debe validar tu acceso a la congregación:',
+                        style: const TextStyle(
                           color: textoGris,
-                          fontSize: 14.5,
+                          fontSize: 14,
                           height: 1.45,
                         ),
                         textAlign: TextAlign.center,
@@ -355,9 +363,11 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Iglesia solicitada',
-                                    style: TextStyle(
+                                  Text(
+                                    esRecomendada
+                                        ? 'Iglesia recomendada (Google Maps)'
+                                        : 'Iglesia solicitada',
+                                    style: const TextStyle(
                                       color: textoGris,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
@@ -386,9 +396,11 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
                                 color: const Color(0xFFFEF3C7),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Text(
-                                'Pendiente',
-                                style: TextStyle(
+                              child: Text(
+                                esRecomendada
+                                    ? '${rec?.daysLeft ?? 30} días'
+                                    : 'Pendiente',
+                                style: const TextStyle(
                                   color: Color(0xFFB45309),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,

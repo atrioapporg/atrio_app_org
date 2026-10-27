@@ -3,6 +3,11 @@ allprojects {
         google()
         mavenCentral()
     }
+    configurations.all {
+        resolutionStrategy {
+            force("com.google.android.libraries.places:places:3.5.0")
+        }
+    }
 }
 
 val newBuildDir: Directory =

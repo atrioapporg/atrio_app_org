@@ -14,6 +14,7 @@ import '../modelos/admin_models.dart';
 import '../providers/admin_provider.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
+import '../providers/recomendacion_iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
@@ -2446,33 +2447,114 @@ class _PerfilScreenState extends State<PerfilScreen>
             onPressed: () async {
               Navigator.pop(ctx);
 
-              // ===============================================================
-              // TODO: ODOO 19 BACKEND INTEGRATION - SOLICITUD DE BORRADO DE CUENTA
-              // ===============================================================
+              final userProvider = Provider.of<UserProvider>(
+                context,
+                listen: false,
+              );
 
-              // 1. Purgar datos personales en la base de datos local SQLite
-              await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
-
-              // 2. Limpiar estado en memoria de UserProvider
+              // Modal de progreso no cancelable para evitar interrupciones o doble tap
               if (context.mounted) {
-                await Provider.of<UserProvider>(
-                  context,
-                  listen: false,
-                ).logout();
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (loadingCtx) => PopScope(
+                    canPop: false,
+                    child: AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      content: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 8,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFFC0392B),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              'Eliminando cuenta y datos personales...',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Notificando a Odoo, revocando Google Sign-In y restableciendo estado virgen...',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
               }
 
-              // 3. Redirigir a la pantalla de Inicio de Sesión
+              // ===============================================================
+              // EJECUCIÓN INTEGRAL POR ETAPAS (1, 2 y 3)
+              // ===============================================================
+              await userProvider.eliminarCuentaDefinitiva();
+
+              // Reseteo complementario de Providers en memoria
               if (context.mounted) {
+                try {
+                  context.read<IglesiaProvider>().limpiarIglesia();
+                } catch (_) {}
+                try {
+                  context.read<AdminProvider>().reset();
+                } catch (_) {}
+                try {
+                  context.read<RecomendacionIglesiaProvider>().clearSelection();
+                } catch (_) {}
+
+                // Cerrar modal de progreso
+                Navigator.of(context, rootNavigator: true).pop();
+
+                // SnackBar de confirmación
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      l10n?.cuentaEliminadaExito ?? 'Tu cuenta y datos personales han sido eliminados satisfactoriamente.',
+                    content: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            l10n?.cuentaEliminadaExito ??
+                                'Tu cuenta y datos personales han sido eliminados satisfactoriamente. Se ha enviado una confirmación a tu correo.',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
                     ),
                     backgroundColor: const Color(0xFF072B4F),
                     duration: const Duration(seconds: 4),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    margin: const EdgeInsets.all(16),
                   ),
                 );
 
+                // ===============================================================
+                // ETAPA 4: REINICIO DE RUTA RAÍZ (Navigator.pushAndRemoveUntil)
+                // ===============================================================
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   InicioSesionScreen.routeName,

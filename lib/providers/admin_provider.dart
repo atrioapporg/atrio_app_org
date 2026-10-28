@@ -40,6 +40,21 @@ class AdminProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Restablece todo el estado administrativo en memoria a su valor virgen por defecto
+  void reset() {
+    _announcements = [];
+    _groups = [];
+    _prayerRequests = [];
+    _adminEvents = [];
+    _adminSermons = [];
+    _analytics = null;
+    _isLoading = false;
+    _errorMessage = null;
+    _isPrayerRequestsWebOnly = false;
+    _isAnalyticsWebOnly = false;
+    notifyListeners();
+  }
+
   // ===========================================================================
   // 1. AVISOS CONGREGACIONALES (/admin/announcements)
   // ===========================================================================

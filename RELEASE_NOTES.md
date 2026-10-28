@@ -3,6 +3,7 @@
 ## [2026-10-27] - Optimización de Navegación, Enrutamiento Estricto de Iglesia y Soporte Regional RD/HN
 
 ### 📌 Resumen Ejecutivo
+
 Esta entrega resuelve la fricción en el flujo de usuario (User Journey) de ATRIO, eliminando bucles y pantallas innecesarias cuando un usuario ya cuenta con una congregación vinculada o solicitada. Asimismo, se adaptó la infraestructura de geolocalización y el servicio de Google Places para dar soporte simultáneo a las pruebas activas en **República Dominicana** y **Honduras**, preparando la arquitectura para la futura expansión en toda América.
 
 ---
@@ -10,6 +11,7 @@ Esta entrega resuelve la fricción en el flujo de usuario (User Journey) de ATRI
 ### 🌟 Principales Mejoras y Novedades
 
 #### 1. 🛡️ Enrutamiento Estricto & Bypass de Selección de Iglesia
+
 - **Bypass Automático al Home (`HomeScreen` / `InicioAtrioScreen`):**
   - Si un usuario ya seleccionó, vinculó o solicitó una congregación (incluso en estados `membership_pending`, `change_pending` o guardada localmente), se omite por completo la pantalla de selección y el mapa interactivo.
   - El usuario ingresa directamente a `InicioAtrioScreen`.
@@ -24,16 +26,18 @@ Esta entrega resuelve la fricción en el flujo de usuario (User Journey) de ATRI
   - Puntos de entrada protegidos: Inicio de sesión (`InicioSesionScreen`), Registro (`CrearCuentaScreen`) y arranque en `main.dart`.
 
 #### 2. 🎨 Rediseño UX/UI de «Elegir Camino de Iglesia»
+
 - **Archivo:** `lib/screens/elegir_camino_iglesia_screen.dart`
 - **Eliminación de sobrecarga cognitiva:** Se eliminaron las tarjetas redundantes y muros de texto denso.
 - **Jerarquía visual optimizada:**
-  - **Tarjeta Héroe Principal:** *"Unirme a una iglesia"* con llamada a la acción clara (*"Conectarme a mi iglesia"*) hacia el catálogo.
+  - **Tarjeta Héroe Principal:** _"Unirme a una iglesia"_ con llamada a la acción clara (_"Conectarme a mi iglesia"_) hacia el catálogo.
   - **Opciones Secundarias Compactas:**
-    - *"Mi iglesia no está en Atrio"*: Acceso directo al flujo con Google Places.
-    - *"Registrar una congregación"*: Información dirigida a pastores y líderes para el portal web Odoo.
+    - _"Mi iglesia no está en Atrio"_: Acceso directo al flujo con Google Places.
+    - _"Registrar una congregación"_: Información dirigida a pastores y líderes para el portal web Odoo.
 - **Guardia de Navegación Asíncrona:** Si la vista es abierta por error teniendo ya una iglesia asignada, redirige automáticamente sin parpadeos visuales.
 
 #### 3. 🗺️ Soporte Geográfico Multi-Región (República Dominicana & Honduras)
+
 - **Filtro Nacional Ampliado en Google Places Autocomplete:**
   - En `RecomendacionIglesiaProvider._executePlacesSearch`, se amplió la búsqueda a `countries: const ['do', 'hn']`.
   - Permite a los desarrolladores del backend de Odoo y usuarios de prueba en Honduras buscar y autocompletar congregaciones locales sin bloqueos regionales.
@@ -53,6 +57,12 @@ Esta entrega resuelve la fricción en el flujo de usuario (User Journey) de ATRI
 ---
 
 ### 🧪 Pruebas y Validación Técnica
+rio adapta dinámicamente la etiqueta de país para los reportes locales.
+
+---
+
+### 🧪 Pruebas y Validación Técnica
+
 - **Análisis Estático:** `flutter analyze` (**0 issues, 100% limpio**).
 - **Pruebas Automatizadas:**
   - `test/bypass_iglesia_routing_test.dart` (4/4 tests pasados).

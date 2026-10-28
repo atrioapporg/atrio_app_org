@@ -345,7 +345,31 @@ class AtrioDatabaseHelper {
     await db.delete(tableUsuario);
     await db.delete(tableNotas);
     await db.delete(tableFavoritos);
+    await db.delete(tableSolicitudesLocales);
+    try {
+      await db.delete('favoritos_emisoras');
+    } catch (_) {}
     debugPrint('[ATRIO_DB] Datos personales y tablas de usuario purgadas.');
+  }
+
+  /// Realiza un restablecimiento absoluto de SQLite simulando una instalación limpia de cero.
+  /// Purga todos los datos de usuario y restablece las tablas de configuración base.
+  Future<void> purgarBaseDeDatosCompleta() async {
+    final db = await instance.database;
+    debugPrint('[ATRIO_DB] Iniciando purga total de la base de datos local (estado virgen)...');
+    await eliminarUsuarioYDatos();
+    await db.delete(tableConfig);
+    await db.delete(tableAjustes);
+
+    // Reinsertar configuración inicial por defecto de fábrica
+    await db.insert(tableConfig, {
+      'tema_oscuro': 0,
+      'version_app': '1.0.0',
+      'url_app': 'https://atrioapp.com',
+      'url_privacidad': 'https://atrioapp.com/privacidad',
+      'actualizado_en': DateTime.now().toIso8601String(),
+    });
+    debugPrint('[ATRIO_DB] Base de datos SQLite restablecida a estado virgen con éxito.');
   }
 
   // ============================================================

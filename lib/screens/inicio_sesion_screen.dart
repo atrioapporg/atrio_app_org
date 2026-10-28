@@ -15,6 +15,7 @@ import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
 import 'package:atrio/atrio_api.dart';
@@ -74,13 +75,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   bool get _isProcessing =>
       _isLoadingGoogle || _isLoadingApple || _isLoadingCredentials;
 
-  // Instancia de GoogleSignIn oficial
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    serverClientId: AppConfig.googleServerClientId.isNotEmpty
-        ? AppConfig.googleServerClientId
-        : '641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com',
-  );
+  // Instancia de GoogleSignIn centralizada y unificada
+  GoogleSignIn get _googleSignIn => AuthService.googleSignIn;
 
   @override
   void initState() {
@@ -1376,7 +1372,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
             'Google no devolvió un token de identidad (idToken). Verifica la configuración de OAuth Web Client en Google Cloud Console.',
           );
         }
-        await _googleSignIn.signOut();
+        await AuthService.revokeGoogleSession();
         return;
       }
 

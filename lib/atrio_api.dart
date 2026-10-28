@@ -541,6 +541,75 @@ class AtrioApi {
     }
   }
 
+  /// Pesa y borra absolutamente todo el almacenamiento seguro y credenciales en memoria (estado virgen).
+  Future<void> clearAllStorage() async {
+    token = null;
+    refreshToken = null;
+    defaultChurchId = null;
+    isReadOnly = false;
+    _storageInitialized = true;
+    if (storageService != null) {
+      await storageService!.clearAll();
+    }
+  }
+
+  /// Solicita la eliminación definitiva de la cuenta y supresión de datos del usuario en el backend Odoo 19,
+  /// desencadenando la cancelación de registros y el envío del correo de confirmación de baja.
+  ///
+  /// Soporta el endpoint formal configurado en [AppConfig.odooDeleteAccountEndpoint]
+  /// con fallback automático hacia 'DELETE /auth/account' o 'POST /auth/delete_account'.
+  Future<Map<String, dynamic>> deleteAccount({
+    required int userId,
+    required String email,
+    String? reason,
+  }) async {
+    final payload = <String, dynamic>{
+      'user_id': userId,
+      'email': email,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
+      if (database != null && database!.isNotEmpty) 'db': database,
+    };
+
+    final configuredEndpoint = AppConfig.odooDeleteAccountEndpoint;
+    debugPrint(
+      '🚀 [AtrioApi] Disparando solicitud de eliminación definitiva a Odoo: userId=$userId, email=$email, endpoint=$configuredEndpoint',
+    );
+
+    try {
+      return await _send(
+        'POST',
+        configuredEndpoint,
+        body: payload,
+        retryAuth: true,
+      );
+    } on AtrioApiException catch (e) {
+      debugPrint(
+        '⚠️ [AtrioApi] Falló POST a $configuredEndpoint (${e.status} ${e.code}). Probando endpoint alternativo...',
+      );
+      if (e.statusCode == 404 || e.statusCode == 405) {
+        try {
+          return await _send(
+            'DELETE',
+            '/auth/account',
+            body: payload,
+            retryAuth: true,
+          );
+        } on AtrioApiException catch (e2) {
+          if (e2.statusCode == 404 || e2.statusCode == 405) {
+            return await _send(
+              'POST',
+              '/auth/delete_account',
+              body: payload,
+              retryAuth: true,
+            );
+          }
+          rethrow;
+        }
+      }
+      rethrow;
+    }
+  }
+
   // ===========================================================================
   // 2. ENDPOINTS PÚBLICOS
   // ===========================================================================

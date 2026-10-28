@@ -50,6 +50,12 @@ class TokenStorageService {
     await _storage.delete(key: _keyRefreshToken);
   }
 
+  /// Borra absolutamente todos los registros y llaves de flutter_secure_storage
+  /// (simulando una instalación limpia de cero en Android Keystore y iOS Keychain).
+  Future<void> clearAll() async {
+    await _storage.deleteAll();
+  }
+
   /// Comprueba si existe al menos un token guardado.
   Future<bool> hasToken() async {
     final token = await getAccessToken();

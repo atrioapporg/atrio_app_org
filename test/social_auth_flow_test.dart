@@ -44,6 +44,12 @@ class MockTokenStorageService extends TokenStorageService {
   }
 
   @override
+  Future<void> clearAll() async {
+    _accessToken = null;
+    _refreshToken = null;
+  }
+
+  @override
   Future<bool> hasToken() async => _accessToken != null && _accessToken!.isNotEmpty;
 }
 

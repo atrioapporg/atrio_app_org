@@ -116,5 +116,13 @@ class IglesiaProvider extends ChangeNotifier {
       return false;
     }
   }
-  //
+
+  /// Limpia y restablece el estado de la iglesia en memoria (estado virgen)
+  void limpiarIglesia() {
+    _tieneIglesiaGuardada = false;
+    _iglesiaActual = null;
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

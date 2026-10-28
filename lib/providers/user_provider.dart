@@ -8,6 +8,7 @@ import 'package:atrio/atrio_api.dart';
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/data/atrio_database_helper.dart';
 import 'package:atrio/modelos/user_model.dart';
+import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 
@@ -841,6 +842,9 @@ class UserProvider extends ChangeNotifier {
       debugPrint('[UserProvider] Error al revocar token en servidor: $e');
       await _api.logoutLocal();
     } finally {
+      // Revocar sesión de Google para evitar autorelogueo en logout
+      await AuthService.revokeGoogleSession();
+
       _rawMeData = null;
       _currentUser = null;
       _api.defaultChurchId = null;
@@ -851,12 +855,86 @@ class UserProvider extends ChangeNotifier {
         await prefs.setBool('isLoggedIn', false);
         await prefs.remove('user_email');
         await prefs.remove('user_name');
+        await prefs.remove('iglesia_guardada');
         await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
       } catch (e) {
         debugPrint('[UserProvider] Error limpiando datos locales en logout: $e');
       }
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Flujo integral de eliminación definitiva de cuenta y datos personales:
+  /// - ETAPA 3: Envía la solicitud formal al backend de Odoo 19 para supresión de registros y disparo de correo.
+  /// - ETAPA 2: Revoca la sesión OAuth de Google Sign-In de forma estricta (disconnect() + signOut()).
+  /// - ETAPA 1: Limpieza exhaustiva de FlutterSecureStorage (clearAll), SharedPreferences (clear) y SQLite (purgarBaseDeDatosCompleta).
+  /// - Reseteo en memoria a estado virgen absoluto.
+  Future<bool> eliminarCuentaDefinitiva({String? razon}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final user = _currentUser;
+    final int? userId = user?.id;
+    final String? email = user?.email;
+
+    try {
+      // ETAPA 3: Integración y notificación al Backend de Odoo 19
+      if (userId != null && email != null) {
+        try {
+          // Desregistrar notificaciones push antes de suprimir la cuenta
+          await DeviceNotificationService.instance.unregisterDeviceFromBackend(_api);
+          await _api.deleteAccount(
+            userId: userId,
+            email: email,
+            reason: razon,
+          );
+          debugPrint('✅ [UserProvider] Solicitud de eliminación formal aceptada por backend Odoo.');
+        } catch (e) {
+          debugPrint('⚠️ [UserProvider] Advertencia al contactar Odoo para eliminación: $e');
+          // Continuamos para garantizar que la app móvil cumpla con la purga local estricta
+        }
+      }
+
+      // ETAPA 2: Revocación de Sesión OAuth (Google Sign-In)
+      await AuthService.revokeGoogleSession();
+
+      // ETAPA 1: Limpieza Exhaustiva de Almacenamiento Local
+      // 1. FlutterSecureStorage
+      await _api.clearAllStorage();
+
+      // 2. SharedPreferences (Wipe total: estado virgen)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Error limpiando SharedPreferences: $e');
+      }
+
+      // 3. Purga y restablecimiento de SQLite a estado de fábrica
+      try {
+        await AtrioDatabaseHelper.instance.purgarBaseDeDatosCompleta();
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Error purgando SQLite: $e');
+      }
+
+      // 4. Limpieza del estado reactivo en memoria
+      _rawMeData = null;
+      _currentUser = null;
+      _api.defaultChurchId = null;
+      _api.isReadOnly = false;
+      _errorMessage = null;
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('💥 [UserProvider] Excepción crítica eliminando cuenta: $e');
+      _errorMessage = 'Error eliminando la cuenta: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 

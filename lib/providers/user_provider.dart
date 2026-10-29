@@ -372,20 +372,42 @@ class UserProvider extends ChangeNotifier {
 
       _currentUser = UserModel.fromOdooJson(meData);
 
-      // Si la membresía sigue en revisión pero el servidor no adjuntó requested_church con nombre:
-      if (_currentUser != null &&
-          _currentUser!.isMembershipPending &&
-          (_currentUser!.requestedChurchData == null ||
-              _currentUser!.requestedChurchData!['name'] == null)) {
-        if (prevRequestedChurch != null) {
+      // Preservar la iglesia solicitada / previa si Odoo todavía no la vinculó o devolvió null en /me
+      if (_currentUser != null && !_currentUser!.hasChurchAssigned) {
+        if (prevRequestedChurch != null && prevRequestedChurch.isNotEmpty) {
+          final String preservedName = prevRequestedChurch['name'] as String? ??
+              prevIglesia ??
+              _currentUser!.iglesiaActual;
           _currentUser = _currentUser!.copyWith(
             requestedChurchData: prevRequestedChurch,
             requestedChurchId: prevRequestedId ?? _currentUser!.requestedChurchId,
-            iglesiaActual: prevRequestedChurch['name'] as String? ??
-                prevIglesia ??
-                _currentUser!.iglesiaActual,
+            iglesiaActual: preservedName,
+            membershipStatus: _currentUser!.isMembershipPending
+                ? _currentUser!.membershipStatus
+                : 'membership_pending',
+          );
+        } else if (prevIglesia != null &&
+            prevIglesia.isNotEmpty &&
+            prevIglesia != 'Sin iglesia seleccionada' &&
+            prevIglesia != 'Iglesia Atrio') {
+          _currentUser = _currentUser!.copyWith(
+            iglesiaActual: prevIglesia,
+            membershipStatus: _currentUser!.isMembershipPending
+                ? _currentUser!.membershipStatus
+                : 'membership_pending',
           );
         }
+      }
+
+      if (_currentUser != null &&
+          _currentUser!.requestedChurchData != null &&
+          _rawMeData != null &&
+          (_rawMeData!['requested_church'] == null ||
+              _rawMeData!['church'] == null)) {
+        _rawMeData!['requested_church'] = _currentUser!.requestedChurchData;
+        _rawMeData!['requested_church_id'] = _currentUser!.requestedChurchId;
+        _rawMeData!['membership_status'] = _currentUser!.membershipStatus;
+        _rawMeData!['iglesia_actual'] = _currentUser!.iglesiaActual;
       }
 
       _api.defaultChurchId = _currentUser?.iglesiaId;
@@ -414,29 +436,46 @@ class UserProvider extends ChangeNotifier {
 
   /// Registra la solicitud de ingreso a una congregación (POST /membership/request)
   /// y actualiza inmediatamente el modelo de usuario y la persistencia local.
-  Future<void> solicitarMembresia(
-    int churchId, {
+  /// Soporta tanto ID numérico de Odoo [churchId] como identificador de Google Maps [placeId],
+  /// nombre de la iglesia [churchName], denominación de fe [denominacion] y logotipo [logoUrl].
+  Future<void> solicitarMembresia({
+    int? churchId,
+    String? placeId,
     required String churchName,
+    String? denominacion,
     String? logoUrl,
   }) async {
-    // 1. Persistir localmente en SQLite para disponibilidad offline
+    int? effectiveChurchId = churchId;
+
+    // 1. Persistir localmente en SQLite y SharedPreferences para disponibilidad inmediata
     try {
       await AtrioDatabaseHelper.instance.guardarIglesiaNombre(churchName);
+      if (denominacion != null && denominacion.trim().isNotEmpty) {
+        await AtrioDatabaseHelper.instance.guardarFeReligiosa(denominacion.trim());
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('iglesia_guardada', churchName);
     } catch (e) {
-      debugPrint('[UserProvider] Error guardando iglesia en SQLite: $e');
+      debugPrint('[UserProvider] Error guardando iglesia/denominación local: $e');
     }
 
     final churchData = <String, dynamic>{
-      'id': churchId,
+      if (effectiveChurchId != null && effectiveChurchId > 0)
+        'id': effectiveChurchId,
       'name': churchName,
+      if (placeId != null && placeId.isNotEmpty) 'place_id': placeId,
+      if (denominacion != null && denominacion.isNotEmpty)
+        'denominacion': denominacion,
       if (logoUrl != null && logoUrl.isNotEmpty) 'logo_url': logoUrl,
     };
 
-    // 2. Actualizar estado reactivo en memoria de inmediato
+    // 2. Actualizar estado reactivo en memoria de inmediato (Optimistic UI)
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
         membershipStatus: 'membership_pending',
-        requestedChurchId: churchId,
+        requestedChurchId: (effectiveChurchId != null && effectiveChurchId > 0)
+            ? effectiveChurchId
+            : 0,
         requestedChurchData: churchData,
         iglesiaActual: churchName,
       );
@@ -444,29 +483,100 @@ class UserProvider extends ChangeNotifier {
 
     if (_rawMeData != null) {
       _rawMeData!['membership_status'] = 'membership_pending';
-      _rawMeData!['requested_church_id'] = churchId;
+      if (effectiveChurchId != null && effectiveChurchId > 0) {
+        _rawMeData!['requested_church_id'] = effectiveChurchId;
+      }
       _rawMeData!['requested_church'] = churchData;
+      _rawMeData!['iglesia_actual'] = churchName;
     } else {
       _rawMeData = {
         'membership_status': 'membership_pending',
-        'requested_church_id': churchId,
+        if (effectiveChurchId != null && effectiveChurchId > 0)
+          'requested_church_id': effectiveChurchId,
         'requested_church': churchData,
+        'iglesia_actual': churchName,
       };
     }
 
     notifyListeners();
 
-    // 3. Enviar solicitud formal a la API de Odoo
+    // 3. Enviar solicitud formal al backend de Odoo 19
     if (_api.isAuthenticated) {
-      try {
-        await _api.requestMembership(churchId);
-      } catch (e) {
-        debugPrint('[UserProvider] Error enviando requestMembership a Odoo: $e');
+      // Si tenemos placeId pero no ID de Odoo, consultar si ya está dada de alta en Atrio
+      if ((effectiveChurchId == null || effectiveChurchId <= 0) &&
+          placeId != null &&
+          placeId.isNotEmpty) {
+        try {
+          final lookup = await _api.getChurchByPlace(placeId);
+          if (lookup.church != null && lookup.church!['id'] != null) {
+            effectiveChurchId = int.tryParse(lookup.church!['id'].toString());
+            if (effectiveChurchId != null && effectiveChurchId > 0) {
+              churchData['id'] = effectiveChurchId;
+              if (_currentUser != null) {
+                _currentUser = _currentUser!.copyWith(
+                  requestedChurchId: effectiveChurchId,
+                  requestedChurchData: churchData,
+                );
+              }
+              if (_rawMeData != null) {
+                _rawMeData!['requested_church_id'] = effectiveChurchId;
+                _rawMeData!['requested_church'] = churchData;
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('ℹ️ [UserProvider] getChurchByPlace ($placeId): $e');
+        }
       }
 
+      // Enviar /membership/request a Odoo con ID de iglesia, place_id y denominación
+      bool solicitudAceptada = false;
+      try {
+        await _api.requestMembership(
+          churchId: effectiveChurchId,
+          placeId: placeId,
+          churchName: churchName,
+          denomination: denominacion,
+        );
+        solicitudAceptada = true;
+        debugPrint(
+          '✅ [UserProvider] Solicitud de membresía enviada a Odoo para "$churchName" (placeId=$placeId, churchId=$effectiveChurchId)',
+        );
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Error en requestMembership: $e');
+      }
+
+      // Si no fue aceptada directamente vía /membership/request y tenemos placeId, vincular vía recomendación
+      if (!solicitudAceptada && placeId != null && placeId.isNotEmpty) {
+        try {
+          await _api.recommendChurch(placeId: placeId);
+          debugPrint(
+            '✅ [UserProvider] recommendChurch exitoso para vincular "$churchName" (placeId=$placeId)',
+          );
+        } catch (e) {
+          debugPrint('ℹ️ [UserProvider] Error en recommendChurch: $e');
+        }
+      }
+
+      // Sincronizar denominación de fe en perfil de Odoo
+      if (denominacion != null && denominacion.isNotEmpty) {
+        try {
+          await _api.updateMe({
+            'fe_religiosa': denominacion,
+            'religion': denominacion,
+            'denomination': denominacion,
+          });
+          debugPrint(
+            '✅ [UserProvider] Denominación de fe "$denominacion" sincronizada en Odoo',
+          );
+        } catch (e) {
+          debugPrint('ℹ️ [UserProvider] updateMe denominación: $e');
+        }
+      }
+
+      // Refrescar perfil protegiendo los datos solicitados
       try {
         await refreshUserProfile();
-        // Si el endpoint /me de Odoo no retornó el nombre en requested_church:
         if (_currentUser != null &&
             (_currentUser!.requestedChurchData == null ||
                 _currentUser!.requestedChurchData!['name'] == null)) {
@@ -474,7 +584,9 @@ class UserProvider extends ChangeNotifier {
             requestedChurchData: churchData,
             iglesiaActual: churchName,
             membershipStatus: 'membership_pending',
-            requestedChurchId: churchId,
+            requestedChurchId: (effectiveChurchId != null && effectiveChurchId > 0)
+                ? effectiveChurchId
+                : 0,
           );
           notifyListeners();
         }

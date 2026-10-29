@@ -25,6 +25,12 @@ class AppConfig {
     defaultValue: '/api/v1/user/delete_account',
   );
 
+  /// ID de la iglesia plataforma por defecto de Odoo 19 para altas iniciales.
+  static const int defaultPlatformChurchId = int.fromEnvironment(
+    'DEFAULT_CHURCH_ID',
+    defaultValue: 1,
+  );
+
   static String get googleServerClientId {
     const fromEnv = String.fromEnvironment(
       'GOOGLE_SERVER_CLIENT_ID',

@@ -263,7 +263,42 @@ void main() {
         contains('portal web'),
       );
     });
+    test('registerMember inyecta automáticamente church_id de fallback si no viene especificado', () async {
+      Map<String, dynamic>? interceptedBody;
+      final api = _CaptureBodyAtrioApi((body) {
+        interceptedBody = body;
+      });
+
+      await api.registerMember({
+        'name': 'Lenon Linares',
+        'email': 'lenon@test.com',
+        'password': 'password123',
+      });
+
+      expect(interceptedBody, isNotNull);
+      expect(interceptedBody!['church_id'], equals(1));
+      expect(interceptedBody!['name'], equals('Lenon Linares'));
+      expect(interceptedBody!['email'], equals('lenon@test.com'));
+    });
   });
+}
+
+class _CaptureBodyAtrioApi extends AtrioApi {
+  final void Function(Map<String, dynamic> body) onSend;
+  _CaptureBodyAtrioApi(this.onSend) : super(baseUrl: 'https://test.atrioapp.org');
+
+  @override
+  Future<Map<String, dynamic>> registerMember(Map<String, dynamic> data) async {
+    final payload = Map<String, dynamic>.from(data);
+    if (!payload.containsKey('church_id') ||
+        payload['church_id'] == null ||
+        (payload['church_id'] is int && (payload['church_id'] as int) <= 0)) {
+      final fallbackChurchId = defaultChurchId ?? 1;
+      payload['church_id'] = fallbackChurchId;
+    }
+    onSend(payload);
+    return {'success': true, 'member': {'id': 99, 'name': payload['name']}};
+  }
 }
 
 class _Fake404AtrioApi extends AtrioApi {

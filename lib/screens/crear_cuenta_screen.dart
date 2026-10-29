@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../atrio_api.dart';
+import '../data/app_config.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/user_model.dart';
 import '../providers/ajustes_provider.dart';
@@ -251,6 +252,8 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
       final iglesiaProvider = context.read<IglesiaProvider>();
       churchId = iglesiaProvider.iglesiaActual?.id;
     }
+    // Si no hay iglesia previa seleccionada, usar la iglesia por defecto del sistema
+    churchId ??= AppConfig.defaultPlatformChurchId;
 
     setState(() => _isLoading = true);
 
@@ -261,10 +264,8 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
         'email': correo,
         'phone': telefono,
         'password': password,
+        'church_id': churchId,
       };
-      if (churchId != null && churchId > 0) {
-        payload['church_id'] = churchId;
-      }
 
       final res = await userProvider.api.registerMember(payload);
 
@@ -384,6 +385,8 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
             'Ese correo ya tiene una cuenta registrada. Inicia sesión o recupera tu contraseña.';
       } else if (e.code == 'weak_password') {
         errorMsg = 'La contraseña debe tener un mínimo de 8 caracteres.';
+      } else if (e.code == 'missing_fields') {
+        errorMsg = 'Por favor, completa todos los campos requeridos para continuar.';
       }
       messenger.showSnackBar(
         SnackBar(

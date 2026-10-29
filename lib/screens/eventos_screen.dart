@@ -58,10 +58,11 @@ class _EventosScreenState extends State<EventosScreen> {
   }
 
   bool _isLoadingEvents = false;
+  bool _hasLoadedEvents = false;
 
   // Evento destacado (con fallback inicial local)
-  EventoModel _featuredEvent = EventoModel(
-    id: '1',
+  EventoModel? _featuredEvent = EventoModel(
+    id: 'demo_1',
     titulo: 'Conferencia de Liderazgo y Fe 2026',
     organizador: 'Pastor Carlos Gómez & Invitados',
     imagenUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800&auto=format&fit=crop',
@@ -75,16 +76,25 @@ class _EventosScreenState extends State<EventosScreen> {
     cupoMaximo: 350,
     cupoReservado: 245,
     esDestacado: true,
-    estaInscrito: true,
+    estaInscrito: false,
     fallbackBgColor: '0xFF072B4F',
     fallbackTextColor: '0xFFE5A023',
     fechaDateTime: DateTime(2026, 10, 24),
   );
 
-  // Catálogo inicial de 4 eventos (total 5 eventos con el destacado)
+  /// Evento al que el usuario actual se encuentra inscrito (si existe)
+  EventoModel? get _enrolledEvent {
+    try {
+      return _eventsList.firstWhere((e) => e.estaInscrito);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Catálogo inicial de eventos con prefijo demo_ para evitar colisiones con IDs de Odoo
   List<EventoModel> _eventsList = [
     EventoModel(
-      id: '2',
+      id: 'demo_2',
       titulo: 'Noche de Adoración Íntima',
       organizador: 'Ministerio de Alabanza ATRIO',
       imagenUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop',
@@ -103,7 +113,7 @@ class _EventosScreenState extends State<EventosScreen> {
       fechaDateTime: DateTime(2026, 10, 31),
     ),
     EventoModel(
-      id: '3',
+      id: 'demo_3',
       titulo: 'Encuentro Juvenil "Fuego & Gracia"',
       organizador: 'Comunidad Jóvenes ATRIO',
       imagenUrl: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=800&auto=format&fit=crop',
@@ -122,7 +132,7 @@ class _EventosScreenState extends State<EventosScreen> {
       fechaDateTime: DateTime(2026, 11, 7),
     ),
     EventoModel(
-      id: '4',
+      id: 'demo_4',
       titulo: 'Seminario Matrimonial "Pacto Firme"',
       organizador: 'Ministerio de Familias',
       imagenUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop',
@@ -141,7 +151,7 @@ class _EventosScreenState extends State<EventosScreen> {
       fechaDateTime: DateTime(2026, 11, 14),
     ),
     EventoModel(
-      id: '5',
+      id: 'demo_5',
       titulo: 'Jornada Solidaria "Manos que Bendicen"',
       organizador: 'Voluntariado Social ATRIO',
       imagenUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=800&auto=format&fit=crop',
@@ -182,7 +192,7 @@ class _EventosScreenState extends State<EventosScreen> {
       final data = await userProvider.api.events(limit: 50);
 
       final dynamic raw = data['events'] ?? data['items'] ?? data['data'];
-      if (raw is List && raw.isNotEmpty) {
+      if (raw is List) {
         final List<EventoModel> loaded = raw
             .map((e) => EventoModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -190,10 +200,15 @@ class _EventosScreenState extends State<EventosScreen> {
         if (mounted) {
           setState(() {
             _eventsList = loaded;
-            _featuredEvent = _eventsList.firstWhere(
-              (e) => e.esDestacado,
-              orElse: () => _eventsList.first,
-            );
+            _hasLoadedEvents = true;
+            if (_eventsList.isNotEmpty) {
+              _featuredEvent = _eventsList.firstWhere(
+                (e) => e.esDestacado,
+                orElse: () => _eventsList.first,
+              );
+            } else {
+              _featuredEvent = null;
+            }
           });
         }
       }
@@ -222,10 +237,11 @@ class _EventosScreenState extends State<EventosScreen> {
       );
       return;
     }
+    final isDemo = evento.id.startsWith('demo_');
     final eventId = int.tryParse(evento.id);
 
-    if (eventId == null) {
-      // Manejo local para eventos demo/fallback
+    if (isDemo || eventId == null) {
+      // Manejo local para eventos demo/fallback sin disparar peticiones fallidas a Odoo
       setState(() {
         final idx = _eventsList.indexWhere((e) => e.id == evento.id);
         if (idx != -1) {
@@ -252,6 +268,16 @@ class _EventosScreenState extends State<EventosScreen> {
           );
         }
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            evento.estaInscrito
+                ? 'Inscripción local cancelada (evento de demostración).'
+                : 'Inscripción local confirmada para "${evento.titulo}".',
+          ),
+          backgroundColor: const Color(0xFF072B4F),
+        ),
+      );
       return;
     }
 
@@ -284,6 +310,7 @@ class _EventosScreenState extends State<EventosScreen> {
           backgroundColor: Colors.red.shade700,
         ),
       );
+      await _cargarEventosOdoo();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -432,7 +459,8 @@ class _EventosScreenState extends State<EventosScreen> {
 
     // Pool de eventos disponibles (incluye destacado si no está en lista general)
     final allEvents = <EventoModel>[
-      if (!_eventsList.any((e) => e.id == _featuredEvent.id)) _featuredEvent,
+      if (_featuredEvent != null && !_eventsList.any((e) => e.id == _featuredEvent!.id))
+        _featuredEvent!,
       ..._eventsList,
     ];
 
@@ -718,33 +746,49 @@ class _EventosScreenState extends State<EventosScreen> {
                                 ),
                               ),
                             // Banner Hero: Evento Destacado
-                            _buildFeaturedEventHero(
-                              evento: _featuredEvent,
-                              screenWidth: screenWidth,
-                              usableHeight: usableHeight,
-                              azulFondo: azulFondo,
-                              amarilloOro: amarilloOro,
-                              grisBorde: grisBorde,
-                              onTap: () => _showEventDetailsModal(
-                                context,
-                                _featuredEvent,
+                            if (_featuredEvent != null) ...[
+                              _buildFeaturedEventHero(
+                                evento: _featuredEvent!,
+                                screenWidth: screenWidth,
+                                usableHeight: usableHeight,
+                                azulFondo: azulFondo,
+                                amarilloOro: amarilloOro,
+                                grisBorde: grisBorde,
+                                onTap: () => _showEventDetailsModal(
+                                  context,
+                                  _featuredEvent!,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: usableHeight * 0.011),
+                              SizedBox(height: usableHeight * 0.011),
+                            ],
 
                             // Tarjeta "Mi próximo evento agendado" con miniatura y cupo
-                            _buildMyEventScheduleCard(
-                              evento: _featuredEvent,
-                              screenWidth: screenWidth,
-                              usableHeight: usableHeight,
-                              azulFondo: azulFondo,
-                              amarilloOro: amarilloOro,
-                              grisBorde: grisBorde,
-                              onTap: () => _showEventDetailsModal(
-                                context,
-                                _featuredEvent,
+                            if (_enrolledEvent != null) ...[
+                              _buildMyEventScheduleCard(
+                                evento: _enrolledEvent!,
+                                screenWidth: screenWidth,
+                                usableHeight: usableHeight,
+                                azulFondo: azulFondo,
+                                amarilloOro: amarilloOro,
+                                grisBorde: grisBorde,
+                                onTap: () => _showEventDetailsModal(
+                                  context,
+                                  _enrolledEvent!,
+                                ),
                               ),
-                            ),
+                              SizedBox(height: usableHeight * 0.020),
+                            ],
+
+                            if (_eventsList.isEmpty && !_isLoadingEvents && _hasLoadedEvents) ...[
+                              _buildEmptyEventsBanner(
+                                screenWidth: screenWidth,
+                                usableHeight: usableHeight,
+                                azulFondo: azulFondo,
+                                amarilloOro: amarilloOro,
+                                grisBorde: grisBorde,
+                              ),
+                              SizedBox(height: usableHeight * 0.020),
+                            ],
                             SizedBox(height: usableHeight * 0.020),
 
                             // Sección Categorías
@@ -1557,6 +1601,90 @@ class _EventosScreenState extends State<EventosScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Componente: Banner visual cuando la congregación no tiene eventos programados en Odoo
+  Widget _buildEmptyEventsBanner({
+    required double screenWidth,
+    required double usableHeight,
+    required Color azulFondo,
+    required Color amarilloOro,
+    required Color grisBorde,
+  }) {
+    final userProvider = context.read<UserProvider>();
+    final isChurchAdmin = userProvider.isChurchAdmin;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.05,
+        vertical: usableHeight * 0.025,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        border: Border.all(color: grisBorde),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: EdgeInsets.all(screenWidth * 0.03),
+            decoration: BoxDecoration(
+              color: azulFondo.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.event_available_rounded,
+              size: screenWidth * 0.09,
+              color: azulFondo,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.012),
+          Text(
+            'Sin eventos programados',
+            style: TextStyle(
+              color: azulFondo,
+              fontSize: screenWidth * 0.040,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.005),
+          Text(
+            'Tu congregación aún no tiene eventos agendados. Desliza hacia abajo para refrescar o consulta con el liderazgo de tu iglesia.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: screenWidth * 0.030,
+              height: 1.3,
+            ),
+          ),
+          if (isChurchAdmin) ...[
+            SizedBox(height: usableHeight * 0.014),
+            ElevatedButton.icon(
+              onPressed: () => _abrirFormularioCrearEvento(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: amarilloOro,
+                foregroundColor: azulFondo,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04,
+                  vertical: usableHeight * 0.01,
+                ),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text(
+                'Crear primer evento',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

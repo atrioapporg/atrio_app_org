@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/modelos/church_recommendation_model.dart';
+import 'package:atrio/servicios/atrio_http_logger.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 
 /// Excepción personalizada para capturar y clasificar los errores devueltos por la API de Odoo.
@@ -66,6 +67,10 @@ class AtrioApi {
   /// Cliente HTTP opcional para inyección en pruebas unitarias y entornos simulados.
   final http.Client? client;
 
+  /// Controla si se imprimen los registros de red formateados en consola ([AtrioHttpLogger]).
+  /// Por defecto se activa automáticamente en entornos de desarrollo ([kDebugMode]).
+  final bool enableLogging;
+
   AtrioApi({
     required this.baseUrl,
     this.database,
@@ -76,6 +81,7 @@ class AtrioApi {
     this.defaultChurchId,
     this.isReadOnly = false,
     this.client,
+    this.enableLogging = kDebugMode,
   });
 
   bool _storageInitialized = false;
@@ -221,13 +227,39 @@ class AtrioApi {
       request.body = jsonEncode(body);
     }
 
-    final streamedResponse = await (client != null
-            ? client!.send(request)
-            : request.send())
-        .timeout(
-      const Duration(seconds: 15),
-    );
-    final response = await http.Response.fromStream(streamedResponse);
+    if (enableLogging) {
+      AtrioHttpLogger.logRequest(
+        method: method,
+        uri: uri,
+        headers: mergedHeaders,
+        body: body,
+      );
+    }
+
+    final stopwatch = Stopwatch()..start();
+    http.Response response;
+    try {
+      final streamedResponse = await (client != null
+              ? client!.send(request)
+              : request.send())
+          .timeout(
+        const Duration(seconds: 15),
+      );
+      response = await http.Response.fromStream(streamedResponse);
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      if (enableLogging) {
+        AtrioHttpLogger.logNetworkException(
+          method: method,
+          uri: uri,
+          exception: e,
+          duration: stopwatch.elapsed,
+          stackTrace: stackTrace,
+        );
+      }
+      rethrow;
+    }
+    stopwatch.stop();
 
     Map<String, dynamic> data = {};
     if (response.bodyBytes.isNotEmpty) {
@@ -248,6 +280,18 @@ class AtrioApi {
         retryAuth &&
         refreshToken != null &&
         path != '/auth/refresh') {
+      if (enableLogging) {
+        AtrioHttpLogger.logHttpError(
+          method: method,
+          uri: uri,
+          statusCode: response.statusCode,
+          duration: stopwatch.elapsed,
+          errorCode: 'unauthorized',
+          errorMessage:
+              'Token de acceso expirado (401). Iniciando renovación automática con refresh_token...',
+          rawBody: data,
+        );
+      }
       debugPrint(
         '🔄 [AtrioApi] 401 Unauthorized detectado en $path. Renovando sesión con refresh_token...',
       );
@@ -304,7 +348,30 @@ class AtrioApi {
       } else {
         message = 'Error en la petición (${response.statusCode})';
       }
+
+      if (enableLogging) {
+        AtrioHttpLogger.logHttpError(
+          method: method,
+          uri: uri,
+          statusCode: response.statusCode,
+          duration: stopwatch.elapsed,
+          errorCode: code,
+          errorMessage: message,
+          rawBody: data,
+        );
+      }
+
       throw AtrioApiException(response.statusCode, code, message);
+    }
+
+    if (enableLogging) {
+      AtrioHttpLogger.logResponse(
+        method: method,
+        uri: uri,
+        statusCode: response.statusCode,
+        duration: stopwatch.elapsed,
+        data: data,
+      );
     }
 
     return data;
@@ -635,9 +702,19 @@ class AtrioApi {
   Future<Map<String, dynamic>> plans() =>
       _send('GET', '/plans', retryAuth: false);
 
-  /// Registro de un nuevo miembro.
-  Future<Map<String, dynamic>> registerMember(Map<String, dynamic> data) =>
-      _send('POST', '/register', body: data, retryAuth: false);
+  /// Registro de un nuevo miembro (POST /register).
+  /// En Odoo 19, 'church_id' es obligatorio por contrato de backend.
+  /// Si no viene especificado en [data], utiliza [defaultChurchId] o [AppConfig.defaultPlatformChurchId].
+  Future<Map<String, dynamic>> registerMember(Map<String, dynamic> data) {
+    final payload = Map<String, dynamic>.from(data);
+    if (!payload.containsKey('church_id') ||
+        payload['church_id'] == null ||
+        (payload['church_id'] is int && (payload['church_id'] as int) <= 0)) {
+      final fallbackChurchId = defaultChurchId ?? AppConfig.defaultPlatformChurchId;
+      payload['church_id'] = fallbackChurchId;
+    }
+    return _send('POST', '/register', body: payload, retryAuth: false);
+  }
 
   // ===========================================================================
   // 2.1 RECOMENDACIÓN DE IGLESIAS Y MAPAS (ODOO 19)
@@ -731,15 +808,24 @@ class AtrioApi {
     body: {'old_password': oldPassword, 'new_password': newPassword},
   );
 
-  /// Solicitar ingreso o cambio de iglesia.
-  Future<Map<String, dynamic>> requestMembership(
-    int churchId, {
+  /// Solicitar ingreso o vinculación a una congregación (POST /membership/request).
+  /// Soporta ID numérico de Odoo [churchId], identificador de Google Maps [placeId],
+  /// nombre de la iglesia [churchName], denominación de fe [denomination] y notas pastorales.
+  Future<Map<String, dynamic>> requestMembership({
+    int? churchId,
+    String? placeId,
+    String? churchName,
+    String? denomination,
     String? notes,
   }) {
-    final body = <String, dynamic>{'church_id': churchId};
-    if (notes != null && notes.isNotEmpty) {
-      body['notes'] = notes;
-    }
+    final body = <String, dynamic>{
+      if (churchId != null && churchId > 0) 'church_id': churchId,
+      if (placeId != null && placeId.isNotEmpty) 'place_id': placeId,
+      if (churchName != null && churchName.isNotEmpty) 'church_name': churchName,
+      if (denomination != null && denomination.isNotEmpty)
+        'denomination': denomination,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    };
     return _send('POST', '/membership/request', body: body);
   }
 

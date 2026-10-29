@@ -42,6 +42,7 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
   bool _isInit = true;
   bool _guardandoIglesia = false;
   String? _mapDarkStyle;
+  String? _tradicionTituloSeleccionada;
 
   static const Color azulFondo = Color(0xFF072B4F);
   static const Color amarilloOro = Color(0xFFE5A023);
@@ -114,6 +115,10 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
             rawTitulo = tradicionProvider.tradicionSeleccionada!.titulo;
           }
         } catch (_) {}
+      }
+
+      if (rawTitulo.trim().isNotEmpty) {
+        _tradicionTituloSeleccionada = rawTitulo.trim();
       }
 
       final textoCombinado = '$rawId $rawTitulo'.toLowerCase();
@@ -376,18 +381,31 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       );
 
       final String nombreIglesia = iglesia.nombre.trim();
+      final String feReligiosa = (_tradicionTituloSeleccionada != null &&
+              _tradicionTituloSeleccionada!.trim().isNotEmpty)
+          ? _tradicionTituloSeleccionada!.trim()
+          : iglesia.denominacion.trim();
+
       if (nombreIglesia.isNotEmpty) {
         await AtrioDatabaseHelper.instance.guardarIglesiaNombre(nombreIglesia);
       }
+      if (feReligiosa.isNotEmpty) {
+        await AtrioDatabaseHelper.instance.guardarFeReligiosa(feReligiosa);
+      }
+
+      final int? parsedChurchId = int.tryParse(iglesia.id);
+      final String? placeId = (parsedChurchId == null || parsedChurchId <= 0)
+          ? iglesia.id
+          : null;
 
       if (userProvider.isAuthenticated) {
-        final churchId = int.tryParse(iglesia.id) ?? 0;
-        if (churchId > 0) {
-          await userProvider.solicitarMembresia(
-            churchId,
-            churchName: nombreIglesia,
-          );
-        }
+        await userProvider.solicitarMembresia(
+          churchId: parsedChurchId,
+          placeId: placeId,
+          churchName: nombreIglesia,
+          denominacion: feReligiosa,
+        );
+
         final String jsonString = jsonEncode(datosParaGuardar);
         await iglesiaProvider.guardarIglesiaLocal(jsonString);
 

@@ -934,8 +934,12 @@ class _RecomendarIglesiaMapaScreenState
                 ),
                 onPressed: () {
                   final churchId = lookup?.church?['id'] as int?;
+                  final churchName = (lookup?.church?['name'] as String?) ?? 'Iglesia';
                   if (churchId != null && churchId > 0) {
-                    context.read<UserProvider>().api.requestMembership(churchId);
+                    context.read<UserProvider>().solicitarMembresia(
+                      churchId: churchId,
+                      churchName: churchName,
+                    );
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

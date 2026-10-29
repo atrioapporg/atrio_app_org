@@ -128,116 +128,60 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       body: Stack(
         children: [
           // ===================================================================
-          // 1. CAPA DE FONDO: Degradado azul profundo corporativo ATRIO
+          // 1. CAPA DE FONDO: Fotografía inmersiva de la iglesia al atardecer
           // ===================================================================
           Positioned.fill(
+            child: Image.asset(
+              'assets/images/login_fondo_iglesia.jpg',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  'assets/images/login_header_mujer_limpia.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFF03182E),
+                            Color(0xFF072B4F),
+                            Color(0xFF093660),
+                            Color(0xFF041C35),
+                          ],
+                          stops: [0.0, 0.42, 0.82, 1.0],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          // ===================================================================
+          // 2. CAPA DE OVERLAY CINEMÁTICO Y GRADIENTE DE CONTRASTE (UI/UX)
+          // ===================================================================
+          // Garantiza contraste accesible WCAG AAA para títulos, botones y barra
+          // superior, permitiendo apreciar la arquitectura y los reflejos dorados.
+          Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF03182E),
-                    Color(0xFF072B4F),
-                    Color(0xFF093660),
-                    Color(0xFF041C35),
+                    Colors.black.withValues(alpha: 0.50),
+                    Colors.black.withValues(alpha: 0.15),
+                    const Color(0xFF04182C).withValues(alpha: 0.68),
+                    const Color(0xFF020E1A).withValues(alpha: 0.94),
                   ],
-                  stops: [0.0, 0.42, 0.82, 1.0],
+                  stops: const [0.0, 0.32, 0.62, 1.0],
                 ),
               ),
-            ),
-          ),
-
-          // ===================================================================
-          // 2. ONDA DECORATIVA INFERIOR SUTIL
-          // ===================================================================
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 90,
-            child: IgnorePointer(
-              child: ClipPath(
-                clipper: _BottomWaveClipper(),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFF0F4C81).withValues(alpha: 0.22),
-                        const Color(0xFF0A335C).withValues(alpha: 0.50),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ===================================================================
-          // 3. CABECERA HERO: Fotografía de la mujer orando con transición ondulada
-          // ===================================================================
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: heroHeight,
-            child: Stack(
-              children: [
-                // Resplandor / onda secundaria cian por detrás
-                Positioned.fill(
-                  child: ClipPath(
-                    clipper: _HeroWaveClipper(offsetY: 6),
-                    child: Container(
-                      color: const Color(0xFF0284C7).withValues(alpha: 0.35),
-                    ),
-                  ),
-                ),
-                // Imagen de cabecera recortada por la onda curva orgánica
-                Positioned.fill(
-                  child: ClipPath(
-                    clipper: _HeroWaveClipper(),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/images/login_header_mujer_limpia.jpg',
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/login_header_mujer.jpg',
-                              fit: BoxFit.cover,
-                              alignment: Alignment.topCenter,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: const Color(0xFF072B4F),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        // Viñeta superior para asegurar contraste con el logo y selector
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.40),
-                                Colors.transparent,
-                                const Color(0xFF072B4F).withValues(alpha: 0.25),
-                              ],
-                              stops: const [0.0, 0.45, 1.0],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
 
@@ -1341,7 +1285,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       } catch (e) {
         debugPrint('[AUTH_ERROR] Error invocando Google Sign-In: $e');
         if (mounted) {
-          _mostrarMensajeError('No se pudo conectar con los servicios de Google.');
+          _mostrarMensajeError(
+            'No se pudo conectar con los servicios de Google.',
+          );
         }
         return;
       }
@@ -1352,7 +1298,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       }
 
       final String email = googleUser.email;
-      final String nombre = (googleUser.displayName != null &&
+      final String nombre =
+          (googleUser.displayName != null &&
               googleUser.displayName!.trim().isNotEmpty)
           ? googleUser.displayName!.trim()
           : (l10n?.usuarioGoogle ?? 'Usuario Google');
@@ -1423,20 +1370,16 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         String mensaje;
         switch (apiEx.code) {
           case 'account_exists':
-            mensaje =
-                'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
+            mensaje = 'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
             break;
           case 'email_not_verified':
-            mensaje =
-                'Tu cuenta de Google no tiene el correo electrónico verificado.';
+            mensaje = 'Tu cuenta de Google no tiene el correo electrónico verificado.';
             break;
           case 'invalid_google_token':
-            mensaje =
-                'El token de autenticación de Google no es válido o ha expirado.';
+            mensaje = 'El token de autenticación de Google no es válido o ha expirado.';
             break;
           case 'google_disabled':
-            mensaje =
-                'El inicio de sesión con Google está temporalmente desactivado.';
+            mensaje = 'El inicio de sesión con Google está temporalmente desactivado.';
             break;
           default:
             mensaje = userProvider.errorMessage ?? apiEx.message;
@@ -1646,10 +1589,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
   // ============================================================================
   Future<void> _redirigirUsuarioPostLogin({bool esAutoLogin = false}) async {
     if (!mounted) return;
-    final userProvider = Provider.of<UserProvider>(
-      context,
-      listen: false,
-    );
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     // Si tiene sesión activa autenticada en Odoo, validar primero si ya cuenta con iglesia
     if (userProvider.isAuthenticated) {
@@ -1681,7 +1621,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio';
 
     final bool usuarioTieneIglesia =
-        tieneIglesiaLocal || tieneIglesiaDb || userProvider.hasSelectedOrLinkedChurch;
+        tieneIglesiaLocal ||
+        tieneIglesiaDb ||
+        userProvider.hasSelectedOrLinkedChurch;
 
     if (!mounted) return;
 
@@ -2071,59 +2013,4 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       ),
     );
   }
-}
-
-// ==============================================================================
-// CLIPPERS: ONDAS ORGÁNICAS DE TRANSICIÓN Y DECORACIÓN (HERO & BOTTOM)
-// ==============================================================================
-class _HeroWaveClipper extends CustomClipper<Path> {
-  final double offsetY;
-  _HeroWaveClipper({this.offsetY = 0});
-
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height * 0.88 + offsetY);
-
-    // Primera curva descendente hacia el centro-izquierdo
-    final p1 = Offset(size.width * 0.28, size.height * 0.98 + offsetY);
-    final p2 = Offset(size.width * 0.58, size.height * 0.88 + offsetY);
-    path.quadraticBezierTo(p1.dx, p1.dy, p2.dx, p2.dy);
-
-    // Segunda curva suave ascendente hacia el extremo derecho
-    final p3 = Offset(size.width * 0.84, size.height * 0.78 + offsetY);
-    final p4 = Offset(size.width, size.height * 0.84 + offsetY);
-    path.quadraticBezierTo(p3.dx, p3.dy, p4.dx, p4.dy);
-
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(_HeroWaveClipper oldClipper) =>
-      oldClipper.offsetY != offsetY;
-}
-
-class _BottomWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.moveTo(0, size.height * 0.45);
-    final p1 = Offset(size.width * 0.35, size.height * 0.15);
-    final p2 = Offset(size.width * 0.70, size.height * 0.40);
-    path.quadraticBezierTo(p1.dx, p1.dy, p2.dx, p2.dy);
-
-    final p3 = Offset(size.width * 0.88, size.height * 0.55);
-    final p4 = Offset(size.width, size.height * 0.30);
-    path.quadraticBezierTo(p3.dx, p3.dy, p4.dx, p4.dy);
-
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

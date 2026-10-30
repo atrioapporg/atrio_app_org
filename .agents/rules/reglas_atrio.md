@@ -70,11 +70,19 @@ El proyecto utiliza `AppLocalizations` junto con `intl: ^0.20.3` (`flutter_local
   - Comprobar que los layouts flex (`Row`, `Stack`) no asuman exclusivamente orientación LTR.
   - En cadenas con contenido mixto (LTR y RTL) o números/variables dentro de texto bidireccional, usar `BidiFormatter` de `package:intl/intl.dart` si es requerido.
 
----
-
 ### 5. Flujo de Trabajo Obligatorio al Crear o Refactorizar Pantallas
 1. **Identificar textos:** Extraer todas las cadenas, plurales o formatos parametrizados.
 2. **Declarar en ARB:** Agregar las claves y descripciones en `lib/l10n/app_es.arb` y `lib/l10n/app_en.arb`.
 3. **Regenerar código:** Ejecutar `flutter gen-l10n`.
 4. **Implementar en Widget:** Llamar a `AppLocalizations.of(context)!` y a `DateFormat` / `NumberFormat` con el locale activo.
 5. **Verificar dirección:** Comprobar uso de `*Directional` para compatibilidad bidi.
+
+---
+
+### 6. Arquitectura de Widgets (StatelessWidget sobre Métodos Helper Privados)
+- **Evitar el anti-patrón `Widget _buildX()`:** No encapsular sub-árboles de UI en funciones privadas dentro de la misma clase cuando contengan estado o se reconstruyan con frecuencia.
+- **Extraer en `StatelessWidget` / `StatefulWidget` dedicados:** Favorecer clases widget separadas con constructores `const` para:
+  1. Aislar las reconstrucciones de la UI por sub-árbol.
+  2. Permitir a Flutter optimizar el ciclo de vida del elemento y reusar el árbol de renderizado.
+  3. Evitar que un cambio de estado en el padre reconstruya innecesariamente widgets secundarios estáticos.
+

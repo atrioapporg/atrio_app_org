@@ -24,5 +24,12 @@
 5. **Regeneración de Código:**
    - Cada vez que se agreguen o cambien cadenas en `.arb`, regenerar con `flutter gen-l10n`.
 
+6. **Arquitectura de Widgets (StatelessWidget sobre Métodos Helper Privados):**
+   - **Evitar el anti-patrón `Widget _buildX()`:** No encapsular sub-árboles de UI en funciones privadas dentro de la misma clase cuando contengan estado o se reconstruyan con frecuencia.
+   - **Extraer en `StatelessWidget` / `StatefulWidget` dedicados:** Favorecer clases widget separadas con constructores `const` para:
+     1. Aislar las reconstrucciones de la UI por sub-árbol.
+     2. Permitir a Flutter optimizar el ciclo de vida del elemento y reusar el árbol de renderizado.
+     3. Evitar que un cambio de estado en el padre reconstruya innecesariamente widgets secundarios estáticos.
+
 ---
 *Para ver el detalle completo de reglas del proyecto, consulta [.agents/rules/reglas_atrio.md](file:///c:/APPS/ATRIO/.agents/rules/reglas_atrio.md).*

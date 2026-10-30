@@ -5,7 +5,7 @@ import 'package:atrio/atrio_api.dart';
 import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
-import 'package:atrio/screens/elegir_camino_iglesia_screen.dart';
+import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
 import 'package:atrio/screens/esperando_aprobacion_screen.dart';
 import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
 import 'package:atrio/screens/inicio_atrio_screen.dart';
@@ -43,7 +43,7 @@ void main() {
       String getRouteForStage(AppStage stage) {
         switch (stage) {
           case AppStage.chooseChurch:
-            return ElegirCaminoIglesiaScreen.routeName;
+            return SeleccionarIglesiaScreen.routeName;
           case AppStage.waitingApproval:
             return EsperandoAprobacionScreen.routeName;
           case AppStage.churchPendingActivation:
@@ -56,7 +56,7 @@ void main() {
         }
       }
 
-      expect(getRouteForStage(AppStage.chooseChurch), ElegirCaminoIglesiaScreen.routeName);
+      expect(getRouteForStage(AppStage.chooseChurch), SeleccionarIglesiaScreen.routeName);
       expect(getRouteForStage(AppStage.waitingApproval), EsperandoAprobacionScreen.routeName);
       expect(getRouteForStage(AppStage.churchPendingActivation), IglesiaPendienteActivacionScreen.routeName);
       expect(getRouteForStage(AppStage.memberHome), InicioAtrioScreen.routeName);

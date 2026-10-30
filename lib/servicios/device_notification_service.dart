@@ -1,11 +1,25 @@
 import 'dart:io' show Platform;
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/screens/inicio_atrio_screen.dart';
+
+/// Handler de ejecución en segundo plano para notificaciones Firebase Cloud Messaging.
+/// Debe ser una función top-level declarada con @pragma('vm:entry-point').
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
+  debugPrint(
+    '🔔 [DeviceNotificationService:Background] Push recibido: ID=${message.messageId} | Data=${message.data}',
+  );
+}
 
 /// Servicio encargado de gestionar el token de notificación del dispositivo
 /// y sincronizarlo automáticamente con el backend Odoo 19 (endpoints /devices).
@@ -19,6 +33,7 @@ class DeviceNotificationService {
       'atrio_last_registered_push_token';
 
   String? _cachedToken;
+  bool _isFCMInitialized = false;
 
   /// Obtiene la plataforma actual en formato normalizado para Odoo ('android' o 'ios').
   String get platformName {
@@ -30,9 +45,125 @@ class DeviceNotificationService {
     return 'android';
   }
 
+  /// Inicializa Firebase Cloud Messaging (FCM) y configura los listeners de notificaciones.
+  /// Se ejecuta de forma resiliente: si los archivos nativos de Firebase aún no están presentes,
+  /// captura la excepción sin interrumpir el arranque normal de la app.
+  Future<void> initialize({
+    AtrioApi? api,
+    UserProvider? userProvider,
+    GlobalKey<NavigatorState>? navigatorKey,
+  }) async {
+    if (_isFCMInitialized) return;
+
+    try {
+      // 1. Asegurar inicialización de Firebase Core
+      try {
+        await Firebase.initializeApp();
+      } catch (e) {
+        debugPrint(
+          'ℹ️ [DeviceNotificationService] Firebase Core no inicializado o usando fallback: $e',
+        );
+      }
+
+      final messaging = FirebaseMessaging.instance;
+
+      // 2. Registrar el handler de background
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      // 3. Solicitar permisos de notificación (Android 13+ y iOS)
+      final NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      debugPrint(
+        '🔔 [DeviceNotificationService] Permisos de notificación concedidos: ${settings.authorizationStatus}',
+      );
+
+      // 4. Escuchar registro y rotación de tokens FCM (API estándar firebase_messaging v17+)
+      messaging.onRegistered.listen((token) async {
+        debugPrint('🔑 [DeviceNotificationService] FCM Token registrado: $token');
+        await setFcmToken(token);
+        if (api != null && api.isAuthenticated) {
+          await registerDeviceWithBackend(api, customToken: token);
+        }
+      });
+
+      // 5. Registrar la aplicación con Firebase Cloud Messaging
+      try {
+        await messaging.register();
+      } catch (regErr) {
+        debugPrint(
+          'ℹ️ [DeviceNotificationService] Registro en FCM completado o en espera: $regErr',
+        );
+      }
+
+      // Fallback para obtener token de inmediato si ya está emitido
+      try {
+        // ignore: deprecated_member_use
+        final fcmToken = await messaging.getToken();
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await setFcmToken(fcmToken);
+          if (api != null && api.isAuthenticated) {
+            await registerDeviceWithBackend(api, customToken: fcmToken);
+          }
+        }
+      } catch (_) {}
+
+      // 6. Notificaciones recibidas en PRIMER PLANO (Foreground)
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint(
+          '🔔 [DeviceNotificationService:Foreground] Notificación recibida: ${message.notification?.title} | ${message.notification?.body} | Data: ${message.data}',
+        );
+        handlePushMessage(
+          message.data,
+          userProvider: userProvider,
+          navigatorKey: navigatorKey,
+        );
+      });
+
+      // 7. Notificación pulsada cuando la app estaba en SEGUNDO PLANO
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint(
+          '🔔 [DeviceNotificationService:OpenedApp] App abierta desde notificación: ${message.data}',
+        );
+        handlePushMessage(
+          message.data,
+          userProvider: userProvider,
+          navigatorKey: navigatorKey,
+        );
+      });
+
+      // 8. Notificación que abrió la app cuando estaba COMPLETAMENTE CERRADA
+      messaging.getInitialMessage().then((RemoteMessage? initialMessage) {
+        if (initialMessage != null) {
+          debugPrint(
+            '🔔 [DeviceNotificationService:InitialMessage] App iniciada por clic en push: ${initialMessage.data}',
+          );
+          handlePushMessage(
+            initialMessage.data,
+            userProvider: userProvider,
+            navigatorKey: navigatorKey,
+          );
+        }
+      });
+
+      _isFCMInitialized = true;
+      debugPrint('✅ [DeviceNotificationService] Firebase Cloud Messaging inicializado exitosamente.');
+    } catch (e) {
+      debugPrint(
+        '⚠️ [DeviceNotificationService] Inicialización de FCM en espera de credenciales nativas completas: $e',
+      );
+    }
+  }
+
   /// Obtiene o genera un token de dispositivo identificador.
-  /// Cuando FirebaseMessaging esté inicializado con google-services,
-  /// este método puede alimentar el FCM Token real.
+  /// Si FCM ya generó un token real, lo devuelve prioritariamente.
   Future<String> getOrCreateDeviceToken() async {
     if (_cachedToken != null && _cachedToken!.isNotEmpty) {
       return _cachedToken!;
@@ -42,11 +173,23 @@ class DeviceNotificationService {
     String? token = prefs.getString(_prefKeyDeviceToken);
 
     if (token == null || token.isEmpty) {
-      // Genera un token identificador único persistente para este dispositivo
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final random = (timestamp % 100000).toString().padLeft(5, '0');
-      token = 'atrio_${platformName}_${timestamp}_$random';
-      await prefs.setString(_prefKeyDeviceToken, token);
+      // Intenta obtenerlo de Firebase si está disponible
+      try {
+        // ignore: deprecated_member_use
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          token = fcmToken;
+          await prefs.setString(_prefKeyDeviceToken, token);
+        }
+      } catch (_) {}
+
+      // Si aún no está disponible FCM, genera un identificador temporal para no bloquear el flujo
+      if (token == null || token.isEmpty) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final random = (timestamp % 100000).toString().padLeft(5, '0');
+        token = 'atrio_${platformName}_${timestamp}_$random';
+        await prefs.setString(_prefKeyDeviceToken, token);
+      }
     }
 
     _cachedToken = token;

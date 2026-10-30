@@ -88,6 +88,8 @@ app.*.map.json
 *service-account*.json
 *firebase-adminsdk*.json
 *credentials*.json
+google-services.json
+GoogleService-Info.plist
 *CREDENCIALES*
 *credenciales*
 *password*
@@ -144,3 +146,5 @@ $RECYCLE.BIN/
 .swiftpm/
 migrate_working_dir/
 scratch/
+Gemini Notebook y Antigravity IDE.txt
+TODO_*.txt

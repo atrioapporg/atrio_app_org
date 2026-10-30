@@ -79,6 +79,8 @@ dependencies:
   package_info_plus: ^10.2.2 # Consulta versión de la app, número de build y nombre del paquete en tiempo de ejecución
   upgrader: ^13.5.0 # Notifica y obliga a los usuarios a actualizar la app desde Google Play o App Store si hay una versión crítica
   feedback: ^3.1.1 # Herramienta interactiva para que los usuarios envíen reportes de errores con capturas de pantalla dibujables
+  firebase_core: ^5.1.0
+  firebase_messaging: ^17.0.1
 
 # ==============================================================================
 # DEPENDENCIAS DE DESARROLLO (dev_dependencies)

@@ -1351,6 +1351,7 @@
   "errorAceptarTerminos": "Debes aceptar los Términos de uso y la Política de privacidad.",
   "registroExitosoTitulo": "¡Cuenta Registrada!",
   "registroExitosoMensaje": "Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.",
+  "registroExitosoMensajeSinIglesia": "Tu cuenta ha sido creada exitosamente. Elige tu iglesia para comenzar.",
   "iniciarSesionAhora": "Iniciar sesión ahora",
   "comprobanteTransferencia": "Comprobante de transferencia",
   "adjuntarComprobante": "Adjuntar comprobante",
@@ -1462,5 +1463,26 @@
   "errorConexionServidor": "Error de conexión con el servidor",
   "errorCargarSolicitudesDesc": "Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.",
   "reintentarConexionServidor": "Reintentar conexión con el servidor",
-  "modoLocalAviso": "Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor."
+  "modoLocalAviso": "Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.",
+  "bienvenidaAtrio": "¡Bienvenido a ATRIO!",
+  "modalBienvenidaIglesiaMensaje": "Conéctate a tu iglesia local para acceder a devocionales, eventos, oraciones y la vida de tu comunidad",
+  "conteoIglesiasEnMapa": "{count, plural, =0{No hay iglesias en el mapa} =1{1 iglesia en el mapa} other{{count} iglesias en el mapa}}",
+  "@conteoIglesiasEnMapa": {
+    "description": "Cantidad de iglesias en el mapa con formato plural",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "bienvenidoSegunGenero": "{gender, select, female{Bienvenida} male{Bienvenido} other{Bienvenido(a)}}",
+  "@bienvenidoSegunGenero": {
+    "description": "Saludo según género gramatical",
+    "placeholders": {
+      "gender": {
+        "type": "String"
+      }
+    }
+  }
 }

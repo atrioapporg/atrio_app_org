@@ -5,7 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../modelos/app_stage.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
-import 'elegir_camino_iglesia_screen.dart';
+import 'seleccionar_iglesia_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'inicio_sesion_screen.dart';
 
@@ -117,7 +117,7 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            ElegirCaminoIglesiaScreen.routeName,
+            SeleccionarIglesiaScreen.routeName,
             (route) => false,
           );
         }
@@ -523,7 +523,7 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
                         onPressed: () {
                           Navigator.pushNamed(
                             context,
-                            ElegirCaminoIglesiaScreen.routeName,
+                            SeleccionarIglesiaScreen.routeName,
                           );
                         },
                         child: const Text(

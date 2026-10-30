@@ -8,7 +8,7 @@ import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/widgets/change_pending_banner.dart';
 import 'package:atrio/screens/crear_cuenta_screen.dart';
-import 'package:atrio/screens/elegir_camino_iglesia_screen.dart';
+import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
 import 'package:atrio/screens/esperando_aprobacion_screen.dart';
 import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
 import 'package:atrio/screens/inicio_atrio_screen.dart';
@@ -33,7 +33,7 @@ Widget createTestApp({
     child: MaterialApp(
       home: child,
       routes: {
-        ElegirCaminoIglesiaScreen.routeName: (_) => const ElegirCaminoIglesiaScreen(),
+        SeleccionarIglesiaScreen.routeName: (_) => const SeleccionarIglesiaScreen(),
         EsperandoAprobacionScreen.routeName: (_) => const EsperandoAprobacionScreen(),
         IglesiaPendienteActivacionScreen.routeName: (_) =>
             const IglesiaPendienteActivacionScreen(),

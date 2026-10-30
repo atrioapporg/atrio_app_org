@@ -19,10 +19,9 @@ import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 
 import 'package:atrio/atrio_api.dart';
-import 'package:atrio/modelos/app_stage.dart';
 
 import 'crear_cuenta_screen.dart';
-import 'elegir_camino_iglesia_screen.dart';
+import 'seleccionar_iglesia_screen.dart';
 import 'iglesia_pendiente_activacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'recuperar_clave_screen.dart';
@@ -1106,18 +1105,17 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                 user.hasChurchAssigned ||
                 user.isMember ||
                 (user.iglesiaActual.trim().isNotEmpty &&
-                    user.iglesiaActual.trim() != 'Sin iglesia seleccionada' &&
-                    user.iglesiaActual.trim() != 'Iglesia Atrio');
+                    !UserModel.isDefaultOrDemoChurchName(user.iglesiaActual));
 
             final String iglesiaNombre =
                 (user.iglesiaActual.trim().isNotEmpty &&
-                    user.iglesiaActual.trim() != 'Iglesia Atrio' &&
-                    user.iglesiaActual.trim() != 'Sin iglesia seleccionada')
+                    !UserModel.isDefaultOrDemoChurchName(user.iglesiaActual))
                 ? user.iglesiaActual.trim()
                 : (tieneIglesiaOdoo
                       ? 'Iglesia Asignada'
                       : ((iglesiaGuardada != null &&
-                                iglesiaGuardada.trim().isNotEmpty)
+                                iglesiaGuardada.trim().isNotEmpty &&
+                                !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada))
                             ? 'Iglesia Guardada'
                             : 'Sin iglesia seleccionada'));
 
@@ -1363,6 +1361,18 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ),
         );
 
+        // BLINDAJE INQUEBRANTABLE (Consistencia con registro por correo):
+        // Todo usuario recién registrado vía Google Sign-In TIENE la obligación
+        // de pasar por SeleccionarIglesiaScreen para elegir su congregación.
+        if (created) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            SeleccionarIglesiaScreen.routeName,
+            (route) => false,
+          );
+          return;
+        }
+
         await _redirigirUsuarioPostLogin();
       } on AtrioApiException catch (apiEx) {
         await _googleSignIn.signOut();
@@ -1538,23 +1548,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         );
         break;
       case AppStage.chooseChurch:
-        // Validación asíncrona local de respaldo
-        userProvider.verificarIglesiaPrevia().then((tienePrevia) {
-          if (!mounted) return;
-          if (tienePrevia) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              InicioAtrioScreen.routeName,
-              (route) => false,
-            );
-          } else {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              ElegirCaminoIglesiaScreen.routeName,
-              (route) => false,
-            );
-          }
-        });
+        // Usuario autenticado sin iglesia asignada: va directamente y sin excepciones a SeleccionarIglesiaScreen
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          SeleccionarIglesiaScreen.routeName,
+          (route) => false,
+        );
         break;
       case AppStage.waitingApproval:
         // Solicitud pendiente de aprobación: Enrutamiento directo al HomeScreen
@@ -1609,16 +1608,16 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
     final bool tieneIglesiaLocal =
-        iglesiaGuardada != null && iglesiaGuardada.trim().isNotEmpty;
+        iglesiaGuardada != null &&
+        iglesiaGuardada.trim().isNotEmpty &&
+        !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada);
 
     final usuario = await AtrioDatabaseHelper.instance.getUsuario();
     final bool tieneIglesiaDb =
         usuario != null &&
         usuario['iglesia_nombre'] != null &&
         usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
-        usuario['iglesia_nombre'].toString().trim() !=
-            'Sin iglesia seleccionada' &&
-        usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio';
+        !UserModel.isDefaultOrDemoChurchName(usuario['iglesia_nombre'].toString());
 
     final bool usuarioTieneIglesia =
         tieneIglesiaLocal ||
@@ -1636,7 +1635,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     } else {
       Navigator.pushNamedAndRemoveUntil(
         context,
-        ElegirCaminoIglesiaScreen.routeName,
+        SeleccionarIglesiaScreen.routeName,
         (route) => false,
       );
     }

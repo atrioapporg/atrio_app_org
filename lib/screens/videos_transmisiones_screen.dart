@@ -57,7 +57,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     canalOIglesia: 'Atrio Iglesia (@AtrioIglesia)',
     predicador: 'Pastor de la Comunidad',
     thumbnailUrl: 'https://img.youtube.com/vi/uE53d7_-Unc/maxresdefault.jpg',
-    videoUrl: 'https://www.youtube.com/@AtrioIglesia/live',
+    videoUrl: 'https://youtu.be/s6ixxFXO6vc',
     categoria: 'En vivo',
     sinopsis: 'Acompáñanos en la transmisión en directo del canal oficial de YouTube @AtrioIglesia (ID: UCuW2ZM9B8MEm5FiKBQENjTw). Tiempo de alabanza congregacional, adoración comunitaria y la Palabra de Dios.',
     esEnVivo: true,
@@ -70,27 +70,13 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
   late final List<VideoModel> _videosList = [
     VideoModel(
       id: '2',
-      titulo: 'La fe que mueve montañas',
+      titulo: 'El ORIGEN de MOISÉS',
       canalOIglesia: 'Atrio Iglesia (@AtrioIglesia)',
       predicador: 'Pastor Andrés Gómez',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      thumbnailUrl: 'https://www.infobae.com/resizer/v2/https%3A%2F%2Fs3.amazonaws.com%2Farc-wordpress-client-uploads%2Finfobae-wp%2Fwp-content%2Fuploads%2F2016%2F11%2F26170514%2FMoises-sf-1.jpg?auth=d34b3503640161fb9119ab9a811445b05a5103b1ddd5f84639a725b40928483b&smart=true&width=992&height=766&quality=85',
+      videoUrl: 'https://www.youtube.com/watch?v=UJ7O2Fd4v3M',
       categoria: 'Prédicas',
-      sinopsis: 'Un mensaje inspirador y práctico sobre cómo activar una fe perseverante ante los momentos de incertidumbre, temor y pruebas cotidianas.',
-      esEnVivo: false,
-      duracion: '45:32',
-      estadisticas: 'Ayer · 1,230 vistas',
-      fallbackBgColor: '0xFF5D4037',
-    ),
-    VideoModel(
-      id: '3',
-      titulo: 'Noche de Clamor y Avivamiento',
-      canalOIglesia: 'Atrio Iglesia (@AtrioIglesia)',
-      predicador: 'Ministerio de Intercesión Atrio',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://youtube.com/live/uE53d7_-Unc',
-      categoria: 'En vivo',
-      sinopsis: 'Transmisión especial de clamor, intercesión y avivamiento desde el canal oficial @AtrioIglesia.',
+      sinopsis: 'La palabra de Dios ha sido la guía moral y espiritual del mundo occidental desde hace milenios. Sin embargo, el mensaje divino nos llegó a través de intermediarios. ¿Quiénes fueron los elegidos para traer el mensaje de Dios hacia nosotros?',
       esEnVivo: true,
       horario: 'En vivo ahora',
       estadisticas: '420 en vivo',
@@ -98,11 +84,11 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     ),
     VideoModel(
       id: '4',
-      titulo: 'Estudio Bíblico: Epístola a los Romanos',
+      titulo: 'EL LIBRO DE ENOC, LA BIBLIA PROHIBIDAs',
       canalOIglesia: 'Instituto Teológico Atrio',
       predicador: 'Dr. Carlos Morales',
       thumbnailUrl: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=7Pq-S557XQU',
+      videoUrl: 'https://www.youtube.com/watch?v=rjzzHbcmezc',
       categoria: 'Estudios',
       sinopsis: 'Un análisis exegético y teológico versículo a versículo acerca de la justificación por la fe, la soberanía divina y la gracia redentora en Romanos.',
       esEnVivo: false,
@@ -112,13 +98,13 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
     ),
     VideoModel(
       id: '5',
-      titulo: 'Tiempo de Alabanza e Intimidad',
+      titulo: 'La segunda venida de Jesús',
       canalOIglesia: 'Atrio Worship Band',
       predicador: 'Banda de Alabanza',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=640&q=80',
-      videoUrl: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+      thumbnailUrl: 'https://pensamientopentecostalarminiano.org/wp-content/uploads/2018/11/image_search_15911480031595573924258383821966.jpg?w=768&h=439',
+      videoUrl: 'https://www.youtube.com/watch?v=y1VFPMoryFU',
       categoria: 'Música',
-      sinopsis: 'Sesión acústica de adoración congregacional con cantos de alabanza, gratitud y exaltación al Creador para acompañar tus devocionales diarios.',
+      sinopsis: 'El Apocalipsis. El libro más impresionante y extremo de la Biblia. Un texto sagrado que profetiza el final de los tiempos.',
       esEnVivo: false,
       duracion: '32:10',
       estadisticas: 'Hace 1 sem · 8,400 vistas',
@@ -136,7 +122,10 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
 
   /// Despliega el formulario de publicación de prédica o transmisión en vivo (exclusivo church_admin).
   Future<void> _abrirFormularioCrearPredica() async {
-    final result = await Navigator.pushNamed(context, CrearPredicaScreen.routeName);
+    final result = await Navigator.pushNamed(
+      context,
+      CrearPredicaScreen.routeName,
+    );
     if (!mounted) return;
     if (result == true) {
       final adminProvider = context.read<AdminProvider>();
@@ -270,8 +259,9 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: amarilloOro,
-                                borderRadius:
-                                    BorderRadius.circular(screenWidth * 0.03),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.03,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.18),
@@ -316,7 +306,8 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: l10n?.buscarVideosPlaceholder ??
+                          hintText:
+                              l10n?.buscarVideosPlaceholder ??
                               'Buscar prédicas, canales o temas...',
                           hintStyle: TextStyle(
                             color: Colors.grey.shade500,
@@ -464,8 +455,7 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                         ),
                                         SizedBox(width: screenWidth * 0.02),
                                         Text(
-                                          l10n?.noSeEncontraronVideosCategoria ??
-                                              'No se encontraron videos en esta categoría',
+                                          l10n?.noSeEncontraronVideosCategoria ?? 'No se encontraron videos en esta categoría',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: screenWidth * 0.032,

@@ -1,3 +1,6 @@
+import '../data/app_config.dart';
+import 'user_model.dart';
+
 /// Define los estados de navegación principales de la aplicación ATRIO
 /// basados en la respuesta del endpoint GET /me o el login en Odoo 19.
 enum AppStage {
@@ -58,10 +61,24 @@ AppStage resolveStage(Map<String, dynamic>? me) {
     parsedChurchId = int.tryParse(rawChurchId);
   }
 
-  final bool hasChurchData = (parsedChurchId != null && parsedChurchId > 0) ||
-      (church != null &&
-          church.isNotEmpty &&
-          (church['id'] != null || church['name'] != null));
+  final churchName = (church?['name'] ??
+          church?['display_name'] ??
+          me['church_name'] ??
+          me['iglesia_actual'] ??
+          me['iglesia_nombre']) as String?;
+
+  final bool isDemoChurch = UserModel.isDefaultOrDemoChurchName(churchName);
+  final bool isDefaultPlatformId =
+      parsedChurchId == AppConfig.defaultPlatformChurchId &&
+          (role == 'user' || role == null) &&
+          (status == null || status == 'none' || status == 'draft');
+
+  final bool hasGenuineChurchData = !isDemoChurch &&
+      !isDefaultPlatformId &&
+      ((parsedChurchId != null && parsedChurchId > 0) ||
+          (church != null &&
+              church.isNotEmpty &&
+              (church['id'] != null || church['name'] != null)));
 
   if (role == 'platform_admin') return AppStage.platformAdmin;
   if (status == 'membership_pending' || status == 'pending') {
@@ -77,10 +94,8 @@ AppStage resolveStage(Map<String, dynamic>? me) {
     return AppStage.memberHome;
   }
 
-  // Si el usuario ya tiene congregación vinculada/seleccionada en su perfil
-  // (incluso si su rol es 'user' o la iglesia está en proceso de suscripción),
-  // accede directamente al Home de miembro.
-  if (hasChurchData) {
+  // Si el usuario ya tiene congregación legítima vinculada en su perfil
+  if (hasGenuineChurchData) {
     return AppStage.memberHome;
   }
 

@@ -4770,6 +4770,12 @@ abstract class AppLocalizations {
   /// **'Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.'**
   String get registroExitosoMensaje;
 
+  /// No description provided for @registroExitosoMensajeSinIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta ha sido creada exitosamente. Elige tu iglesia para comenzar.'**
+  String get registroExitosoMensajeSinIglesia;
+
   /// No description provided for @iniciarSesionAhora.
   ///
   /// In es, this message translates to:
@@ -5015,6 +5021,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.'**
   String get modoLocalAviso;
+
+  /// No description provided for @bienvenidaAtrio.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Bienvenido a ATRIO!'**
+  String get bienvenidaAtrio;
+
+  /// No description provided for @modalBienvenidaIglesiaMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'Conéctate a tu iglesia local para acceder a devocionales, eventos, oraciones y la vida de tu comunidad'**
+  String get modalBienvenidaIglesiaMensaje;
+
+  /// Cantidad de iglesias en el mapa con formato plural
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{No hay iglesias en el mapa} =1{1 iglesia en el mapa} other{{count} iglesias en el mapa}}'**
+  String conteoIglesiasEnMapa(num count);
+
+  /// Saludo según género gramatical
+  ///
+  /// In es, this message translates to:
+  /// **'{gender, select, female{Bienvenida} male{Bienvenido} other{Bienvenido(a)}}'**
+  String bienvenidoSegunGenero(String gender);
 }
 
 class _AppLocalizationsDelegate

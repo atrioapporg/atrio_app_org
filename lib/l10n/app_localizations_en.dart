@@ -2597,6 +2597,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account has been created successfully in Odoo. The church administrator will validate your membership.';
 
   @override
+  String get registroExitosoMensajeSinIglesia =>
+      'Your account has been created successfully. Choose your church to get started.';
+
+  @override
   String get iniciarSesionAhora => 'Log in now';
 
   @override
@@ -2743,4 +2747,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modoLocalAviso =>
       'Showing requests saved on this device. Failed to sync with the server.';
+
+  @override
+  String get bienvenidaAtrio => 'Welcome to ATRIO!';
+
+  @override
+  String get modalBienvenidaIglesiaMensaje =>
+      'Connect with your local church to access devotionals, events, prayers, and community life';
+
+  @override
+  String conteoIglesiasEnMapa(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString churches on map',
+      one: '1 church on map',
+      zero: 'No churches on map',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bienvenidoSegunGenero(String gender) {
+    String _temp0 = intl.Intl.selectLogic(gender, {
+      'female': 'Welcome',
+      'male': 'Welcome',
+      'other': 'Welcome',
+    });
+    return '$_temp0';
+  }
 }

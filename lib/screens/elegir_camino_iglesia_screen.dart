@@ -10,11 +10,12 @@ import 'inicio_sesion_screen.dart';
 import 'recomendar_iglesia_mapa_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 
-/// Pantalla optimizada donde un usuario sin congregación vinculada
-/// selecciona su camino de participación en la plataforma ATRIO:
-/// 1. Acción Principal: Unirme a una congregación (Búsqueda por tradición/cercanía)
-/// 2. Alternativas secundarias compactas: Recomendar en Google Maps o Registro Web Odoo.
-/// Si el usuario ya posee una iglesia seleccionada o vinculada, se ejecuta bypass inmediato al HomeScreen.
+/// Pantalla OBSOLETA donde un usuario sin congregación vinculada seleccionaba su camino.
+/// Reemplazada en el flujo principal por navegación directa a [SeleccionarIglesiaScreen]
+/// junto con el modal de bienvenida [ChurchWelcomeModal].
+@Deprecated(
+  'Pantalla redundante omitida. Redirigir directamente a SeleccionarIglesiaScreen con ChurchWelcomeModal.',
+)
 class ElegirCaminoIglesiaScreen extends StatefulWidget {
   static const String routeName = 'elegir_camino_iglesia_screen';
 

@@ -2,15 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../atrio_api.dart';
-import '../data/app_config.dart';
 import '../l10n/app_localizations.dart';
-import '../modelos/user_model.dart';
 import '../providers/ajustes_provider.dart';
-import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
-import 'elegir_camino_iglesia_screen.dart';
-import 'iglesia_pendiente_activacion_screen.dart';
-import 'inicio_atrio_screen.dart';
+import 'seleccionar_iglesia_screen.dart';
 import 'inicio_sesion_screen.dart';
 import 'terminos_privacidad_screen.dart';
 
@@ -240,7 +235,7 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
       return;
     }
 
-    // 2. Determinar iglesia vinculada (argumentos de ruta opcionales o provider)
+    // 2. Determinar iglesia vinculada SOLO si vino explícitamente por argumentos de ruta
     int? churchId;
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is int && args > 0) {
@@ -248,26 +243,19 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
     } else if (args is Map && args['church_id'] != null) {
       churchId = int.tryParse(args['church_id'].toString());
     }
-    if (churchId == null || churchId <= 0) {
-      final iglesiaProvider = context.read<IglesiaProvider>();
-      churchId = iglesiaProvider.iglesiaActual?.id;
-    }
-    // Si no hay iglesia previa seleccionada, usar la iglesia por defecto del sistema
-    churchId ??= AppConfig.defaultPlatformChurchId;
+    // Regla inquebrantable: A ningún usuario nuevo se le asigna iglesia demo o default automática.
 
     setState(() => _isLoading = true);
 
     try {
       final userProvider = context.read<UserProvider>();
-      final payload = <String, dynamic>{
-        'name': nombre,
-        'email': correo,
-        'phone': telefono,
-        'password': password,
-        'church_id': churchId,
-      };
-
-      final res = await userProvider.api.registerMember(payload);
+      final res = await userProvider.register(
+        nombre: nombre,
+        email: correo,
+        telefono: telefono,
+        password: password,
+        churchId: churchId,
+      );
 
       if (!mounted) return;
 
@@ -293,7 +281,8 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
               churchId != null && churchId > 0
                   ? (l10n?.registroExitosoMensaje ??
                       'Tu cuenta ha sido creada exitosamente. Tu solicitud de membresía está en revisión por la congregación.')
-                  : 'Tu cuenta ha sido creada exitosamente. Elige el camino de tu iglesia para comenzar.',
+                  : (l10n?.registroExitosoMensajeSinIglesia ??
+                      'Tu cuenta ha sido creada exitosamente. Elige tu iglesia para comenzar.'),
             ),
             actions: [
               ElevatedButton(
@@ -308,60 +297,15 @@ class _CrearCuentaScreenState extends State<CrearCuentaScreen> {
                       await userProvider.login(correo, password);
                   if (!mounted) return;
                   if (loginOk) {
-                    if (userProvider.hasSelectedOrLinkedChurch) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        InicioAtrioScreen.routeName,
-                        (route) => false,
-                      );
-                      return;
-                    }
-                    final stage = userProvider.currentStage;
-                    switch (stage) {
-                      case AppStage.chooseChurch:
-                        userProvider.verificarIglesiaPrevia().then((tienePrevia) {
-                          if (!mounted) return;
-                          if (tienePrevia) {
-                            Navigator.pushNamedAndRemoveUntil(
-                              context,
-                              InicioAtrioScreen.routeName,
-                              (route) => false,
-                            );
-                          } else {
-                            Navigator.pushNamedAndRemoveUntil(
-                              context,
-                              ElegirCaminoIglesiaScreen.routeName,
-                              (route) => false,
-                            );
-                          }
-                        });
-                        break;
-                      case AppStage.waitingApproval:
-                        // Redirigir de inmediato al HomeScreen
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          InicioAtrioScreen.routeName,
-                          (route) => false,
-                        );
-                        break;
-                      case AppStage.churchPendingActivation:
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          IglesiaPendienteActivacionScreen.routeName,
-                          (route) => false,
-                        );
-                        break;
-                      case AppStage.welcome:
-                      case AppStage.memberHome:
-                      case AppStage.adminHome:
-                      case AppStage.platformAdmin:
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          InicioAtrioScreen.routeName,
-                          (route) => false,
-                        );
-                        break;
-                    }
+                    // BLINDAJE INQUEBRANTABLE DE RUTA:
+                    // Todo usuario recién registrado por Correo y Clave TIENE la obligación
+                    // estricta e incondicional de pasar por SeleccionarIglesiaScreen.
+                    // Se bloquea cualquier ruta alternativa o bypass automático hacia el HomeScreen.
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      SeleccionarIglesiaScreen.routeName,
+                      (route) => false,
+                    );
                   } else {
                     Navigator.pushReplacementNamed(
                       context,

@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
@@ -17,6 +18,7 @@ import '../providers/iglesia_provider.dart';
 import '../providers/tradicion_cristiana_provider.dart';
 import '../providers/user_provider.dart';
 import '../servicios/map_style_service.dart';
+import '../widgets/church_welcome_modal.dart';
 import 'inicio_atrio_screen.dart';
 
 /// Pantalla SeleccionarIglesiaScreen: Permite al usuario explorar y seleccionar su iglesia
@@ -26,6 +28,86 @@ import 'inicio_atrio_screen.dart';
 class SeleccionarIglesiaScreen extends StatefulWidget {
   static const routeName = 'seleccionar_iglesia_screen';
   const SeleccionarIglesiaScreen({super.key});
+
+  // ===========================================================================
+  // FUNCIONES DE INTERNACIONALIZACIÓN Y LOCALIZACIÓN (i18n / l10n - intl 0.20)
+  // ===========================================================================
+
+  /// 1. Pluralización con sintaxis ICU y package:intl (AppLocalizations + fallback dinámico)
+  static String formatearConteoIglesias(
+    int count, {
+    String? locale,
+    AppLocalizations? l10n,
+  }) {
+    if (l10n != null) {
+      return l10n.conteoIglesiasEnMapa(count);
+    }
+    return Intl.plural(
+      count,
+      zero: 'No hay iglesias en el mapa',
+      one: '1 iglesia en el mapa',
+      other: '$count iglesias en el mapa',
+      locale: locale,
+      name: 'conteoIglesias',
+      args: [count],
+    );
+  }
+
+  /// 2. Selección gramatical por género (ICU select y package:intl)
+  static String saludoSegunGenero(
+    String? gender, {
+    String? locale,
+    AppLocalizations? l10n,
+  }) {
+    if (l10n != null && gender != null) {
+      return l10n.bienvenidoSegunGenero(gender);
+    }
+    return Intl.gender(
+      gender ?? 'other',
+      female: 'Bienvenida',
+      male: 'Bienvenido',
+      other: 'Bienvenido(a)',
+      locale: locale,
+      name: 'saludoSegunGenero',
+      args: [gender ?? 'other'],
+    );
+  }
+
+  /// 3. Formato numérico decimal localizado (distancias y radios de búsqueda)
+  static String formatearDistanciaKm(double km, {String? locale}) {
+    final nf = NumberFormat('#,##0.0', locale);
+    return nf.format(km);
+  }
+
+  /// 4. Análisis (parsing) de cadenas numéricas localizadas con intl
+  static double parsearDistanciaKm(String texto, {String? locale}) {
+    final nf = NumberFormat.decimalPattern(locale);
+    return nf.parse(texto).toDouble();
+  }
+
+  /// 5. Formato de fecha localizado para cultos y reuniones de la congregación
+  static String formatearFechaCulto(DateTime fecha, {String? locale}) {
+    return DateFormat.yMMMMEEEEd(locale).format(fecha);
+  }
+
+  /// 6. Formato de hora localizado para horarios de cultos
+  static String formatearHoraCulto(DateTime hora, {String? locale}) {
+    return DateFormat.jm(locale).format(hora);
+  }
+
+  /// 7. Análisis (parsing) de cadenas de hora localizadas
+  static DateTime parsearHoraCulto(String horaTexto, {String? locale}) {
+    try {
+      return DateFormat.jm(locale).parse(horaTexto);
+    } catch (_) {
+      return DateFormat('HH:mm').parse(horaTexto);
+    }
+  }
+
+  /// 8. Detección y validación de texto bidireccional (RTL vs. LTR)
+  static bool esDireccionRTL(BuildContext context) {
+    return Directionality.of(context) == TextDirection.rtl;
+  }
 
   @override
   State<SeleccionarIglesiaScreen> createState() =>
@@ -82,8 +164,16 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _verificarYPedirPermisosUbicacion();
+        _comprobarModalBienvenida();
       }
     });
+  }
+
+  /// Verifica y despliega el modal de bienvenida si es la primera vez que el usuario ingresa a este flujo.
+  Future<void> _comprobarModalBienvenida() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    await ChurchWelcomeModal.mostrarSiEsPrimeraVez(context);
   }
 
   @override
@@ -381,7 +471,8 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
       );
 
       final String nombreIglesia = iglesia.nombre.trim();
-      final String feReligiosa = (_tradicionTituloSeleccionada != null &&
+      final String feReligiosa =
+          (_tradicionTituloSeleccionada != null &&
               _tradicionTituloSeleccionada!.trim().isNotEmpty)
           ? _tradicionTituloSeleccionada!.trim()
           : iglesia.denominacion.trim();
@@ -528,17 +619,31 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                     Row(
                       children: [
                         GestureDetector(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            } else {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                InicioAtrioScreen.routeName,
+                              );
+                            }
+                          },
                           child: Container(
                             padding: EdgeInsets.all(screenWidth * 0.02),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              color: Colors.white,
-                              size: screenWidth * 0.07,
+                            child: Transform.flip(
+                              flipX:
+                                  Directionality.of(context) ==
+                                  TextDirection.rtl,
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: screenWidth * 0.07,
+                              ),
                             ),
                           ),
                         ),
@@ -1170,7 +1275,10 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                 SizedBox(width: screenWidth * 0.015),
                 Text(
                   provider.modo == ModoExploracion.radio
-                      ? '${provider.bufferResultados.length} ${l10n?.iglesiasEnMapa ?? "iglesias en mapa"}'
+                      ? (l10n?.conteoIglesiasEnMapa(
+                              provider.bufferResultados.length,
+                            ) ??
+                            '${provider.bufferResultados.length} ${l10n?.iglesiasEnMapa ?? "iglesias en mapa"}')
                       : (provider.hasMoreData
                             ? (l10n?.verMasPaginacion(
                                     totalMostradas.toString(),
@@ -1202,9 +1310,13 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
     required double usableHeight,
     required AppLocalizations? l10n,
   }) {
+    final locale = Localizations.localeOf(context).toString();
+    final kmFormateado = SeleccionarIglesiaScreen.formatearDistanciaKm(
+      iglesia.distanciaKm,
+      locale: locale,
+    );
     final distanciaStr = iglesia.distanciaKm > 0
-        ? (l10n?.aDistanciaKm(iglesia.distanciaKm.toStringAsFixed(1)) ??
-              'A ${iglesia.distanciaKm.toStringAsFixed(1)} km')
+        ? (l10n?.aDistanciaKm(kmFormateado) ?? 'A $kmFormateado km')
         : '';
 
     return Container(

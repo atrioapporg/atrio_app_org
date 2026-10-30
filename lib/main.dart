@@ -15,8 +15,9 @@ import 'package:atrio/widgets/atrio_better_feedback.dart';
 import 'package:atrio/widgets/atrio_feedback_form.dart';
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/data/app_config.dart';
-import 'package:atrio/modelos/app_stage.dart';
+import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:atrio/servicios/device_notification_service.dart';
 
 // Paquetes - Google Maps
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
@@ -43,7 +44,6 @@ import 'package:atrio/screens/crear_cuenta_screen.dart';
 import 'package:atrio/screens/recuperar_clave_screen.dart';
 import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
 import 'package:atrio/screens/tradicion_cristiana_screen.dart';
-import 'package:atrio/screens/elegir_camino_iglesia_screen.dart';
 import 'package:atrio/screens/esperando_aprobacion_screen.dart';
 import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
 import 'package:atrio/screens/crear_mi_iglesia_screen.dart';
@@ -153,17 +153,17 @@ Future<void> main() async {
             final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
             final usuario = await AtrioDatabaseHelper.instance.getUsuario();
             final bool tieneIglesiaLocal =
-                (iglesiaGuardada != null && iglesiaGuardada.trim().isNotEmpty) ||
+                (iglesiaGuardada != null &&
+                    iglesiaGuardada.trim().isNotEmpty &&
+                    !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
                 (usuario != null &&
                     usuario['iglesia_nombre'] != null &&
-                    usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
-                    usuario['iglesia_nombre'].toString().trim() !=
-                        'Sin iglesia seleccionada' &&
-                    usuario['iglesia_nombre'].toString().trim() != 'Iglesia Atrio');
+                    !UserModel.isDefaultOrDemoChurchName(
+                        usuario['iglesia_nombre'].toString()));
 
             rutaInicial = tieneIglesiaLocal
                 ? InicioAtrioScreen.routeName
-                : ElegirCaminoIglesiaScreen.routeName;
+                : SeleccionarIglesiaScreen.routeName;
             break;
           case AppStage.waitingApproval:
             // Regla estricta: Si la solicitud está pendiente de aprobación,
@@ -248,6 +248,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final userProvider = context.read<UserProvider>();
+        DeviceNotificationService.instance.initialize(
+          api: userProvider.api,
+          userProvider: userProvider,
+          navigatorKey: MyApp.navigatorKey,
+        );
+      }
+    });
   }
 
   @override
@@ -345,7 +355,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     RecuperarClaveScreen.routeName: (_) => const RecuperarClaveScreen(),
     SeleccionarIglesiaScreen.routeName: (_) => const SeleccionarIglesiaScreen(),
     TradicionCristianaScreen.routeName: (_) => const TradicionCristianaScreen(),
-    ElegirCaminoIglesiaScreen.routeName: (_) => const ElegirCaminoIglesiaScreen(),
     EsperandoAprobacionScreen.routeName: (_) => const EsperandoAprobacionScreen(),
     IglesiaPendienteActivacionScreen.routeName: (_) =>
         const IglesiaPendienteActivacionScreen(),

@@ -89,8 +89,35 @@ class UserModel {
   bool get canWrite =>
       !isReadOnly && (role == UserRole.churchAdmin || role == UserRole.member);
 
+  /// Valida si el nombre de una iglesia corresponde a una iglesia genérica,
+  /// de demostración o no asignada (ej. 'Atrio Demo', 'Iglesia Atrio',
+  /// 'Sin iglesia seleccionada', o variaciones de demostración).
+  static bool isDefaultOrDemoChurchName(String? name) {
+    if (name == null) return true;
+    final trimmed = name.trim().toLowerCase();
+    if (trimmed.isEmpty) return true;
+    if (trimmed == 'sin iglesia seleccionada') return true;
+    if (trimmed == 'iglesia atrio') return true;
+    if (trimmed == 'iglesia asignada') return true;
+    if (trimmed == 'atrio demo') return true;
+    if (trimmed.contains('atrio demo')) return true;
+    return false;
+  }
+
   /// Indica si el usuario cuenta con una congregación asignada válida.
-  bool get hasChurchAssigned => iglesiaId != null && iglesiaId! > 0;
+  /// No se considera asignada si el nombre es de demostración / por defecto
+  /// o si el usuario nuevo (rol user) no cuenta con membresía aprobada.
+  bool get hasChurchAssigned {
+    if (iglesiaId == null || iglesiaId! <= 0) return false;
+    if (isDefaultOrDemoChurchName(iglesiaActual)) return false;
+    if (role == UserRole.user &&
+        (membershipStatus == 'none' ||
+            membershipStatus.isEmpty ||
+            membershipStatus == 'draft')) {
+      return false;
+    }
+    return true;
+  }
 
   /// Estatus canónico de la congregación/membresía del usuario según Odoo.
   /// Ejemplos: 'membership_pending', 'approved', 'none', 'change_pending'.
@@ -110,8 +137,14 @@ class UserModel {
   /// independientemente del estatus de aprobación en backend ('pending', 'approved', etc.).
   bool get hasSelectedOrLinkedChurch {
     if (hasChurchAssigned) return true;
-    if (requestedChurchId != null && requestedChurchId! > 0) return true;
-    if (requestedChurchData != null && requestedChurchData!.isNotEmpty) {
+    if (requestedChurchId != null &&
+        requestedChurchId! > 0 &&
+        (isMembershipPending || isChangePending)) {
+      return true;
+    }
+    if (requestedChurchData != null &&
+        requestedChurchData!.isNotEmpty &&
+        (isMembershipPending || isChangePending)) {
       return true;
     }
     if (isMembershipPending || isChangePending) return true;
@@ -121,12 +154,26 @@ class UserModel {
       return true;
     }
     final nombre = iglesiaActual.trim();
-    if (nombre.isNotEmpty &&
-        nombre != 'Sin iglesia seleccionada' &&
-        nombre != 'Iglesia Atrio') {
+    if (nombre.isNotEmpty && !isDefaultOrDemoChurchName(nombre)) {
       return true;
     }
     return false;
+  }
+
+  /// Referencia a la congregación seleccionada o vinculada por el usuario.
+  /// Retorna null si el usuario no tiene ninguna congregación seleccionada o vinculada (nuevo registro).
+  String? get selectedChurch {
+    if (!hasSelectedOrLinkedChurch) return null;
+    final nombre = iglesiaActual.trim();
+    if (nombre.isNotEmpty && !isDefaultOrDemoChurchName(nombre)) {
+      return nombre;
+    }
+    if (iglesiaId != null &&
+        iglesiaId! > 0 &&
+        !isDefaultOrDemoChurchName(iglesiaActual)) {
+      return 'Iglesia #$iglesiaId';
+    }
+    return null;
   }
 
   UserModel copyWith({
@@ -182,8 +229,8 @@ class UserModel {
       id: json['id'] as int? ?? 0,
       nombre: json['nombre'] as String? ?? 'Usuario',
       email: json['email'] as String? ?? '',
-      telefono: json['telefono'] as String?,
-      iglesiaActual: json['iglesia_actual'] as String? ?? 'Iglesia Atrio',
+      iglesiaActual:
+          json['iglesia_actual'] as String? ?? 'Sin iglesia seleccionada',
       iglesiaId: json['iglesia_id'] as int?,
       fechaRegistro: json['fecha_registro'] as String? ?? '',
       avatarIniciales: json['avatar_iniciales'] as String? ?? 'U',
@@ -260,7 +307,13 @@ class UserModel {
       return null;
     }
 
-    final int? iglesiaId =
+    // Parseo de Rol
+    final rawRole =
+        (odooData['role'] ?? user['role'] ?? member['role'] ?? 'user')
+            as String?;
+    final role = UserRole.fromString(rawRole);
+
+    final int? rawIglesiaId =
         parseId(church['id']) ??
         parseId(user['church_id']) ??
         parseId(user['iglesia_id']) ??
@@ -316,21 +369,31 @@ class UserModel {
         parseName(member['church_id']) ??
         parseName(odooData['church_id']);
 
-    final String iglesiaActual =
-        (nombreIglesiaExtraido != null &&
-            nombreIglesiaExtraido.isNotEmpty &&
-            nombreIglesiaExtraido != 'Iglesia Atrio' &&
-            nombreIglesiaExtraido != 'Sin iglesia seleccionada')
+    final bool esDemo = isDefaultOrDemoChurchName(nombreIglesiaExtraido);
+    final bool esUsuarioSinAprobacion =
+        (membershipStatus == 'none' ||
+            membershipStatus.isEmpty ||
+            membershipStatus == 'draft') &&
+        (role == UserRole.user);
+
+    final int? iglesiaId =
+        (esDemo && esUsuarioSinAprobacion) ? null : rawIglesiaId;
+
+    final String iglesiaActual = (!esDemo &&
+            nombreIglesiaExtraido != null &&
+            nombreIglesiaExtraido.isNotEmpty)
         ? nombreIglesiaExtraido
-        : ((iglesiaId != null && iglesiaId > 0)
+        : ((iglesiaId != null && iglesiaId > 0 && !esDemo)
               ? 'Iglesia Asignada'
               : ((requestedChurchData?['name'] != null &&
                         (requestedChurchData!['name'] as String)
                             .trim()
-                            .isNotEmpty)
+                            .isNotEmpty &&
+                        !isDefaultOrDemoChurchName(
+                            requestedChurchData['name'] as String))
                     ? (requestedChurchData['name'] as String).trim()
-                    : (odooData['iglesia_actual'] as String? ??
-                          'Iglesia Atrio')));
+                    : 'Sin iglesia seleccionada'));
+
     final fechaRegistro =
         (user['create_date'] ?? DateTime.now().toIso8601String()) as String;
 
@@ -343,12 +406,6 @@ class UserModel {
               .join()
               .toUpperCase()
         : 'U';
-
-    // Parseo de Rol, Permisos y Modo de solo lectura
-    final rawRole =
-        (odooData['role'] ?? user['role'] ?? member['role'] ?? 'user')
-            as String?;
-    final role = UserRole.fromString(rawRole);
 
     final rawPerms =
         (odooData['permissions'] ?? user['permissions'] ?? [])

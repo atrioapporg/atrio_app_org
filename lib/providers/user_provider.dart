@@ -256,14 +256,19 @@ class UserProvider extends ChangeNotifier {
     return false;
   }
 
+  /// Referencia a la congregación seleccionada o vinculada por el usuario (o null si es nuevo).
+  String? get selectedChurch => _currentUser?.selectedChurch;
+
   /// Verifica de forma exhaustiva (incluyendo persistencia local SQLite y SharedPreferences)
-  /// si el usuario ya posee una congregación seleccionada previamente.
+  /// si el usuario ya posee una congregación seleccionada previamente legítima (no demo/default).
   Future<bool> verificarIglesiaPrevia() async {
     if (hasSelectedOrLinkedChurch) return true;
     try {
       final prefs = await SharedPreferences.getInstance();
       final iglesiaGuardada = prefs.getString('iglesia_guardada');
-      if (iglesiaGuardada != null && iglesiaGuardada.trim().isNotEmpty) {
+      if (iglesiaGuardada != null &&
+          iglesiaGuardada.trim().isNotEmpty &&
+          !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) {
         return true;
       }
 
@@ -272,8 +277,7 @@ class UserProvider extends ChangeNotifier {
         final iglesiaNombre = (localUser['iglesia_nombre'] as String?)?.trim();
         if (iglesiaNombre != null &&
             iglesiaNombre.isNotEmpty &&
-            iglesiaNombre != 'Sin iglesia seleccionada' &&
-            iglesiaNombre != 'Iglesia Atrio') {
+            !UserModel.isDefaultOrDemoChurchName(iglesiaNombre)) {
           return true;
         }
       }
@@ -600,6 +604,46 @@ class UserProvider extends ChangeNotifier {
   // FLUJO DE AUTENTICACIÓN CON ODOO (ETAPA 2)
   // ===========================================================================
 
+  /// Registra un nuevo usuario en Odoo (POST /register).
+  /// No inyecta ninguna iglesia demo o genérica por defecto.
+  /// Si el registro es exitoso, el usuario nuevo no tendrá iglesia asignada
+  /// y deberá pasar obligatoriamente por SeleccionarIglesiaScreen.
+  Future<Map<String, dynamic>> register({
+    required String nombre,
+    required String email,
+    required String password,
+    String? telefono,
+    int? churchId,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final payload = <String, dynamic>{
+        'name': nombre.trim(),
+        'email': email.trim(),
+        'password': password,
+        if (telefono != null && telefono.trim().isNotEmpty)
+          'phone': telefono.trim(),
+        if (churchId != null && churchId > 0)
+          'church_id': churchId,
+      };
+
+      final res = await _api.registerMember(payload);
+      return res;
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      rethrow;
+    } catch (e) {
+      _errorMessage = 'Error en el registro: $e';
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Inicia sesión enviando usuario/correo y contraseña a Odoo (POST /auth/login).
   /// Guarda tokens de forma segura y puebla el modelo de usuario actual.
   Future<bool> login(
@@ -623,6 +667,18 @@ class UserProvider extends ChangeNotifier {
       _currentUser = UserModel.fromOdooJson(data);
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+
+      // Si el usuario no tiene iglesia seleccionada o vinculada legítima, limpiar cualquier
+      // iglesia residual o demo en almacenamiento local (SharedPreferences y SQLite).
+      if (!(_currentUser?.hasSelectedOrLinkedChurch ?? false)) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('iglesia_guardada');
+          await AtrioDatabaseHelper.instance.guardarIglesiaNombre('Sin iglesia seleccionada');
+        } catch (e) {
+          debugPrint('[UserProvider] Advertencia limpiando iglesia previa residual: $e');
+        }
+      }
 
       // Sincronizar flag en SharedPreferences para compatibilidad de navegación
       try {
@@ -801,6 +857,17 @@ class UserProvider extends ChangeNotifier {
       _currentUser = UserModel.fromOdooJson(data);
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+
+      // Si el usuario nuevo o sin iglesia no tiene asignación legítima, limpiar residuos locales
+      if (!(_currentUser?.hasSelectedOrLinkedChurch ?? false)) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('iglesia_guardada');
+          await AtrioDatabaseHelper.instance.guardarIglesiaNombre('Sin iglesia seleccionada');
+        } catch (e) {
+          debugPrint('[UserProvider] Advertencia limpiando iglesia previa residual: $e');
+        }
+      }
 
       // Sincronizar SharedPreferences
       try {

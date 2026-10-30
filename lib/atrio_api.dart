@@ -703,15 +703,15 @@ class AtrioApi {
       _send('GET', '/plans', retryAuth: false);
 
   /// Registro de un nuevo miembro (POST /register).
-  /// En Odoo 19, 'church_id' es obligatorio por contrato de backend.
-  /// Si no viene especificado en [data], utiliza [defaultChurchId] o [AppConfig.defaultPlatformChurchId].
+  /// Si [data] incluye un `church_id` válido (> 0), se envía al backend de Odoo.
+  /// Si no se especifica o es nulo/inválido, NO se inyecta ninguna iglesia por defecto (como Atrio Demo),
+  /// permitiendo que el usuario nuevo elija su congregación en SeleccionarIglesiaScreen.
   Future<Map<String, dynamic>> registerMember(Map<String, dynamic> data) {
     final payload = Map<String, dynamic>.from(data);
-    if (!payload.containsKey('church_id') ||
-        payload['church_id'] == null ||
-        (payload['church_id'] is int && (payload['church_id'] as int) <= 0)) {
-      final fallbackChurchId = defaultChurchId ?? AppConfig.defaultPlatformChurchId;
-      payload['church_id'] = fallbackChurchId;
+    if (payload.containsKey('church_id') &&
+        (payload['church_id'] == null ||
+            (payload['church_id'] is int && (payload['church_id'] as int) <= 0))) {
+      payload.remove('church_id');
     }
     return _send('POST', '/register', body: payload, retryAuth: false);
   }

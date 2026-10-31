@@ -13,6 +13,11 @@ class AdminProvider extends ChangeNotifier {
   List<AdminAnnouncementModel> _announcements = [];
   List<AdminGroupModel> _groups = [];
   List<AdminPrayerRequestModel> _prayerRequests = [];
+  List<AdminChurchRequestModel> _churchRequests = [];
+  AdminChurchStatsModel? _churchStats;
+  List<AdminNotificationItemModel> _adminNotifications = [];
+  int _unreadNotificationsCount = 0;
+  int _inboxNotificationsCount = 0;
   List<EventDto> _adminEvents = [];
   List<SermonDto> _adminSermons = [];
   AdminAnalyticsModel? _analytics;
@@ -27,6 +32,11 @@ class AdminProvider extends ChangeNotifier {
   List<AdminAnnouncementModel> get announcements => _announcements;
   List<AdminGroupModel> get groups => _groups;
   List<AdminPrayerRequestModel> get prayerRequests => _prayerRequests;
+  List<AdminChurchRequestModel> get churchRequests => _churchRequests;
+  AdminChurchStatsModel? get churchStats => _churchStats;
+  List<AdminNotificationItemModel> get adminNotificationsList => _adminNotifications;
+  int get unreadNotificationsCount => _unreadNotificationsCount;
+  int get inboxNotificationsCount => _inboxNotificationsCount;
   List<EventDto> get adminEvents => _adminEvents;
   List<SermonDto> get adminSermons => _adminSermons;
   AdminAnalyticsModel? get analytics => _analytics;
@@ -45,6 +55,11 @@ class AdminProvider extends ChangeNotifier {
     _announcements = [];
     _groups = [];
     _prayerRequests = [];
+    _churchRequests = [];
+    _churchStats = null;
+    _adminNotifications = [];
+    _unreadNotificationsCount = 0;
+    _inboxNotificationsCount = 0;
     _adminEvents = [];
     _adminSermons = [];
     _analytics = null;
@@ -165,142 +180,271 @@ class AdminProvider extends ChangeNotifier {
   }
 
   // ===========================================================================
-  // 3. MODERACIÓN DE PETICIONES DE ORACIÓN (/admin/prayer-requests)
+  // 3. GESTIÓN Y MODERACIÓN DE SOLICITUDES PASTORALES (/admin/requests)
   // ===========================================================================
 
-  /// Consulta peticiones de oración para moderación pastoral.
-  /// Si el endpoint no existe en el backend Odoo (clasificado como punto pendiente),
-  /// activa el fallback informativo hacia la consola web (/atrio/manage).
-  Future<void> loadPrayerRequests({String status = 'pending'}) async {
+  /// Carga todas las solicitudes pastorales de la congregación desde Odoo 19.
+  /// [status]: 'nueva', 'en_progreso', 'respondida', 'rechazada' o null para todas.
+  /// [type]: 'oracion', 'ayuda', 'consejeria' o null para todas.
+  Future<void> loadChurchRequests({
+    String? status,
+    String? type,
+    int limit = 50,
+    int offset = 0,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final res = await _api.adminPrayerRequests(status: status);
+      final res = await _api.adminRequests(
+        status: status,
+        type: type,
+        limit: limit,
+        offset: offset,
+      );
       _isPrayerRequestsWebOnly = false;
-      final rawList = res['prayer_requests'] ?? res['items'] ?? res['requests'] ?? [];
+      final rawList = res['requests'] ?? res['items'] ?? res['data'] ?? [];
       if (rawList is List) {
-        _prayerRequests = rawList
-            .map((e) => AdminPrayerRequestModel.fromJson(Map<String, dynamic>.from(e)))
+        _churchRequests = rawList
+            .map((e) => AdminChurchRequestModel.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
+
+        // Mapeo retrocompatible para vistas legadas
+        _prayerRequests = _churchRequests.map((c) {
+          return AdminPrayerRequestModel(
+            id: c.id,
+            title: c.title,
+            description: c.message,
+            applicantName: c.requesterName,
+            applicantEmail: c.requester?.email ?? '',
+            state: c.state,
+            createDate: c.createdAt,
+            moderationReason: c.rejectionReason,
+            moderationDate: c.updatedAt,
+          );
+        }).toList();
       }
     } on AtrioApiException catch (e) {
       if (e.status == 404 || e.code == 'not_found' || e.code == 'endpoint_not_found') {
         _isPrayerRequestsWebOnly = true;
         _errorMessage =
             'La moderación de solicitudes pastorales se gestiona actualmente desde la consola web (/atrio/manage).';
-        debugPrint(
-          'ℹ️ [AdminProvider] Endpoint /admin/prayer-requests pendiente en Odoo. Activando vista informativa de consola web: $e',
-        );
       } else {
         _errorMessage = _traducirErrorOdoo(e);
-        debugPrint('[AdminProvider] Error al cargar peticiones: $e');
+        debugPrint('[AdminProvider] Error al cargar solicitudes: $e');
       }
     } catch (e) {
-      _errorMessage = 'Error al consultar peticiones: $e';
+      _errorMessage = 'Error al consultar solicitudes: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Modera una petición de oración (approve o reject).
-  Future<bool> moderatePrayerRequest({
-    required int requestId,
-    required bool approve,
-    String? reason,
-  }) async {
-    final action = approve ? 'approve' : 'reject';
-    try {
-      await _api.adminModeratePrayerRequest(
-        requestId: requestId,
-        action: action,
-        reason: reason,
-      );
-
-      // Actualizar el estado en la lista local reactivamente
-      final index = _prayerRequests.indexWhere((r) => r.id == requestId);
-      if (index != -1) {
-        final current = _prayerRequests[index];
-        _prayerRequests[index] = AdminPrayerRequestModel(
-          id: current.id,
-          title: current.title,
-          description: current.description,
-          applicantName: current.applicantName,
-          applicantEmail: current.applicantEmail,
-          state: approve ? 'approved' : 'rejected',
-          isAnonymous: current.isAnonymous,
-          createDate: current.createDate,
-          moderationReason: reason,
-          moderationDate: DateTime.now().toIso8601String(),
-        );
-        notifyListeners();
-      }
-      return true;
-    } on AtrioApiException catch (e) {
-      if (e.status == 404 || e.code == 'not_found') {
-        _errorMessage =
-            'Esta función de moderación se debe responder desde la consola web (/atrio/manage).';
-      } else {
-        _errorMessage = _traducirErrorOdoo(e);
-      }
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _errorMessage = 'Error inesperado al moderar petición: $e';
-      notifyListeners();
-      return false;
-    }
+  /// Alias de compatibilidad para cargar peticiones de oración
+  Future<void> loadPrayerRequests({String status = 'pending'}) async {
+    final mappedStatus = status == 'pending' ? 'nueva' : status;
+    return loadChurchRequests(status: mappedStatus == 'all' ? null : mappedStatus);
   }
 
-  // ===========================================================================
-  // 4. ESTADÍSTICAS Y ANALÍTICA DE COMUNIDAD (/admin/analytics)
-  // ===========================================================================
-
-  /// Carga métricas y estadísticas consolidadas de la iglesia.
-  /// Si el endpoint no existe en la API de Odoo (punto pendiente de especificación),
-  /// activa el fallback transparente hacia las métricas reales disponibles (anuncios).
-  Future<void> loadAnalytics({String period = 'month'}) async {
+  /// Responde formalmente a una solicitud pastoral con mensaje (PUT /admin/requests/{id} con action: answer).
+  Future<bool> answerChurchRequest({
+    required int requestId,
+    required String response,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final res = await _api.adminAnalytics(period: period);
-      _isAnalyticsWebOnly = false;
-      _analytics = AdminAnalyticsModel.fromJson(res);
-    } on AtrioApiException catch (e) {
-      if (e.status == 404 || e.code == 'not_found' || e.code == 'endpoint_not_found') {
-        _isAnalyticsWebOnly = true;
-        debugPrint(
-          'ℹ️ [AdminProvider] Endpoint /admin/analytics pendiente en Odoo. Activando fallback de anuncios: $e',
+      await _api.adminUpdateRequest(
+        requestId: requestId,
+        action: 'answer',
+        response: response,
+      );
+
+      // Actualización reactiva local
+      final idx = _churchRequests.indexWhere((r) => r.id == requestId);
+      if (idx != -1) {
+        _churchRequests[idx] = _churchRequests[idx].copyWith(
+          state: 'respondida',
+          response: response,
+          updatedAt: DateTime.now().toUtc().toIso8601String(),
         );
-
-        // Fallback resiliente: consultar estadísticas de anuncios propios de la iglesia
-        try {
-          final adsRes = await _api.myChurchAds();
-          final rawAds = adsRes['ads'] ?? adsRes['items'] ?? [];
-          final int adsCount = rawAds is List ? rawAds.length : 0;
-          _analytics = AdminAnalyticsModel(
-            period: period,
-            rawMetrics: {'church_ads_count': adsCount},
-          );
-        } catch (_) {
-          _analytics = AdminAnalyticsModel(period: period);
-        }
-
-        _errorMessage =
-            'Las estadísticas comunitarias consolidadas se consultan en el portal web. En la app puedes consultar el rendimiento de tus anuncios.';
-      } else {
-        _errorMessage = _traducirErrorOdoo(e);
-        debugPrint('[AdminProvider] Error al cargar analítica: $e');
       }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
     } catch (e) {
-      _errorMessage = 'Error al cargar analítica: $e';
+      _isLoading = false;
+      _errorMessage = 'Error al responder solicitud: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Aprueba una solicitud pastoral (PUT /admin/requests/{id} con action: approve).
+  Future<bool> approveChurchRequest({required int requestId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _api.adminUpdateRequest(
+        requestId: requestId,
+        action: 'approve',
+      );
+
+      final idx = _churchRequests.indexWhere((r) => r.id == requestId);
+      if (idx != -1) {
+        _churchRequests[idx] = _churchRequests[idx].copyWith(
+          state: 'respondida',
+          updatedAt: DateTime.now().toUtc().toIso8601String(),
+        );
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al aprobar solicitud: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Rechaza una solicitud pastoral con justificación (PUT /admin/requests/{id} con action: reject).
+  Future<bool> rejectChurchRequest({
+    required int requestId,
+    required String reason,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _api.adminUpdateRequest(
+        requestId: requestId,
+        action: 'reject',
+        reason: reason,
+      );
+
+      final idx = _churchRequests.indexWhere((r) => r.id == requestId);
+      if (idx != -1) {
+        _churchRequests[idx] = _churchRequests[idx].copyWith(
+          state: 'rechazada',
+          rejectionReason: reason,
+          updatedAt: DateTime.now().toUtc().toIso8601String(),
+        );
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _isLoading = false;
+      _errorMessage = _traducirErrorOdoo(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al rechazar solicitud: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Modera una petición de oración (approve o reject) - compatibilidad
+  Future<bool> moderatePrayerRequest({
+    required int requestId,
+    required bool approve,
+    String? reason,
+  }) async {
+    if (approve) {
+      return approveChurchRequest(requestId: requestId);
+    } else {
+      return rejectChurchRequest(requestId: requestId, reason: reason ?? 'Rechazada por moderador');
+    }
+  }
+
+  // ===========================================================================
+  // 4. ESTADÍSTICAS Y MÉTRICAS OFICIALES DE LA IGLESIA (/admin/stats)
+  // ===========================================================================
+
+  /// Carga estadísticas y métricas oficiales de la iglesia en Odoo 19.
+  Future<void> loadChurchStats({String period = 'month'}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _api.adminStats(period: period);
+      _isAnalyticsWebOnly = false;
+      _churchStats = AdminChurchStatsModel.fromJson(res);
+
+      // Compatibilidad con modelo analítico previo
+      _analytics = AdminAnalyticsModel(
+        totalMembers: _churchStats?.activeMembers ?? 0,
+        newMembersThisMonth: _churchStats?.newMembers ?? 0,
+        prayerRequestsCount: _churchRequests.length,
+        totalOfferingsAmount: _churchStats?.offeringsTotal ?? 0.0,
+        eventRegistrationsCount: _churchStats?.eventRegistrations ?? 0,
+        period: period,
+        rawMetrics: res,
+      );
+    } on AtrioApiException catch (e) {
+      _errorMessage = _traducirErrorOdoo(e);
+      debugPrint('[AdminProvider] Error al cargar stats: $e');
+    } catch (e) {
+      _errorMessage = 'Error al cargar estadísticas: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Alias de compatibilidad para métricas
+  Future<void> loadAnalytics({String period = 'month'}) async {
+    return loadChurchStats(period: period);
+  }
+
+  // ===========================================================================
+  // 4.1. BUZÓN DE NOTIFICACIONES ADMINISTRATIVAS (/admin/notifications)
+  // ===========================================================================
+
+  /// Carga notificaciones institucionales de la iglesia.
+  Future<void> loadAdminNotifications({
+    String view = 'inbox',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final res = await _api.adminNotifications(
+        view: view,
+        limit: limit,
+        offset: offset,
+      );
+      _unreadNotificationsCount = res['unread_count'] as int? ?? 0;
+      _inboxNotificationsCount = res['inbox_count'] as int? ?? 0;
+      final rawList = res['notifications'] ?? res['items'] ?? [];
+      if (rawList is List) {
+        _adminNotifications = rawList
+            .map((e) => AdminNotificationItemModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[AdminProvider] Error no bloqueante al cargar notificaciones admin: $e');
     }
   }
 

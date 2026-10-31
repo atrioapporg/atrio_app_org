@@ -1,5 +1,58 @@
 # 🚀 ATRIO App — Release Notes
 
+## [2026-10-31] (v0.1.0+25) - Módulo de Publicidad Odoo 19, Dashboard Pastoral Móvil para Admin de Iglesia & Certificación Multi-Agente
+
+### 📌 Resumen Ejecutivo
+
+Esta versión incorpora dos grandes hitos estratégicos en la plataforma ATRIO:
+1. **Módulo Completo de Publicidad y Campañas** sincronizado al 100% con los contratos REST de Odoo 19 ERP, permitiendo cotización dinámica por alcance/duración, pagos híbridos (PayPal y transferencia bancaria con comprobantes) y analítica con series temporales.
+2. **Dashboard Pastoral Móvil para el Administrador de Iglesia**, permitiendo al párroco o líder pastoral atender y responder solicitudes pastorales en tiempo real, consultar métricas de comunidad y gestionar su congregación directamente desde el móvil sin depender de la consola web de escritorio.
+
+Toda la implementación fue certificada mediante simulación multi-agente en vivo (Miembro, Admin y Supervisor QA), cumpliendo estrictamente con las reglas de internacionalización (`app_es.arb` / `app_en.arb`), soporte Bidi / RTL y arquitectura de widgets desacoplados.
+
+---
+
+### 🌟 Principales Mejoras y Novedades
+
+#### 1. 📢 Módulo Oficial de Publicidad y Pauta Comunitaria (Odoo 19)
+- **Modelos y Contratos Sincronizados ([ad_models.dart](file:///c:/APPS/ATRIO/lib/modelos/ad_models.dart)):**
+  - Soporte de targets de segmentación por países, estados, ciudades e iglesias específicas (`GET /admin/ads/targets`).
+  - Cotización reactiva en tiempo real (`POST /admin/ads/quote`) con desglose de costo base, multiplicadores por formato de entrega (`feed`, `notifications`, `both`), semanas y descuento por volumen.
+  - Modelado de cuentas bancarias institucionales para transferencias y gestión de pagos con PayPal en navegador externo.
+  - Métricas avanzadas con desglose temporal interactivo (impresiones, clics totales, clics únicos y CTR).
+- **Flujos de Creación, Pago y Analítica:**
+  - Rediseño de [create_ad_campaign_screen.dart](file:///c:/APPS/ATRIO/lib/screens/create_ad_campaign_screen.dart) con selectores dinámicos, cálculo reactivo de presupuesto y validaciones preventivas.
+  - Integración en [ad_payment_screen.dart](file:///c:/APPS/ATRIO/lib/screens/ad_payment_screen.dart) y [ad_stats_screen.dart](file:///c:/APPS/ATRIO/lib/screens/ad_stats_screen.dart) con gráficos de barras diarios y alertas de comprobantes.
+
+#### 2. 🏛️ Dashboard Pastoral Móvil para el Administrador de Iglesia
+- **Descubrimiento e Integración REST con Odoo 19:**
+  - Conexión nativa con endpoints no documentados de Odoo 19: `GET /admin/requests`, `PUT /admin/requests/{id}`, `GET /admin/stats` y `GET /admin/notifications`.
+- **Nueva Pantalla Principal [ChurchAdminDashboardScreen](file:///c:/APPS/ATRIO/lib/screens/church_admin_dashboard_screen.dart):**
+  - Encabezado con datos de la congregación, insignia de Líder Pastoral y conexión activa con Odoo 19.
+  - Grilla de KPIs en tiempo real: Nuevas Solicitudes, Feligreses Activos, Ofrendas Recaudadas (en formato local RD$) y Eventos del Mes.
+  - Barra de accesos directos rápidos a solicitudes, avisos, eventos y pauta publicitaria.
+  - Listado de solicitudes prioritarias con atención inmediata mediante botón "Responder Ahora".
+- **Bandeja de Gestión Pastoral [AdminRequestsScreen](file:///c:/APPS/ATRIO/lib/screens/admin_requests_screen.dart):**
+  - Búsqueda interactiva por feligrés o título.
+  - Filtro por estados (*Nueva, En Progreso, Respondida, Rechazada*) y categorías (*Oración, Ayuda, Consejería*).
+  - Modal pastoral Material 3 para redactar la respuesta pastoral y actualizar el estado en vivo en Odoo 19.
+- **Acceso Directo desde el Perfil ([perfil_screen.dart](file:///c:/APPS/ATRIO/lib/screens/perfil_screen.dart)):**
+  - Los administradores y líderes acceden directamente al Dashboard Pastoral y a la Bandeja de Solicitudes desde su perfil, eliminando los antiguos mensajes que remitían a la web.
+
+#### 3. 🤖 Certificación Multi-Agente & QA de Integración
+- **Simulación Agente Miembro:** Autenticación, creación de solicitudes, uso de tienda/carrito y ofrendas contra Odoo 19 en vivo.
+- **Simulación Agente Admin:** Inspección de buzón (53 notificaciones), consulta de 22 peticiones pastorales y transición exitosa de solicitud #14 de `nueva` a `respondida`.
+- **Aislamiento Multitenant (RBAC):** Validación de segregación estricta entre congregaciones (Iglesia 1 vs Iglesia 9) y control de acceso por roles.
+
+#### 4. 📐 Reglas de Calidad y Arquitectura ATRIO (AGENTS.md)
+- **100% i18n & l10n:** Cero textos hardcodeados. Todas las cadenas añadidas a `app_es.arb` y `app_en.arb` y regeneradas con `flutter gen-l10n`.
+- **Soporte Bidireccional:** Sustitución total de paddings absolutos por `EdgeInsetsDirectional`.
+- **Cero Anti-Patrón `_buildX()`:** Componentes UI extraídos en widgets desacoplados con constructores `const`.
+- **Tests Automatizados:** 10/10 pruebas unitarias aprobadas en [ads_odoo_integration_test.dart](file:///c:/APPS/ATRIO/test/ads_odoo_integration_test.dart) y [church_admin_dashboard_test.dart](file:///c:/APPS/ATRIO/test/church_admin_dashboard_test.dart).
+- **Análisis Estático:** 0 errores y 0 advertencias con `dart analyze`.
+
+---
+
 ## [2026-10-27] - Optimización de Navegación, Enrutamiento Estricto de Iglesia y Soporte Regional RD/HN
 
 ### 📌 Resumen Ejecutivo

@@ -29,7 +29,10 @@ class AdsProvider extends ChangeNotifier {
   /// Carga los anuncios activos para la iglesia del usuario con caché de sesión.
   /// Si ya se cargaron y [forceRefresh] es false, omite la llamada de red para
   /// no generar impresiones duplicadas ni saturar el servidor en cada redibujado.
-  Future<void> loadFeedAds({String placement = 'all', bool forceRefresh = false}) async {
+  Future<void> loadFeedAds({
+    String placement = 'all',
+    bool forceRefresh = false,
+  }) async {
     if (_feedLoaded && !forceRefresh) return;
     if (_isFeedLoading) return;
 
@@ -56,25 +59,29 @@ class AdsProvider extends ChangeNotifier {
   /// Registra el clic en el servidor Odoo y abre el enlace de destino de forma segura.
   /// Cumple la regla estricta: Se invoca `POST /ads/{ad_id}/click` antes de abrir
   /// la URL en el navegador externo con [LaunchMode.externalApplication].
+  /// Si el servidor devuelve redirect_url null, no se abre ningún enlace.
   Future<bool> handleAdClick(BuildContext context, AdModel ad) async {
-    String? targetUrl = ad.redirectUrl;
+    String? targetUrl;
 
     try {
       // 1. Registro obligatorio del clic en el backend antes de la navegación
       final serverRedirect = await _adsService.registerClick(ad.id);
       if (serverRedirect != null && serverRedirect.trim().isNotEmpty) {
         targetUrl = serverRedirect.trim();
+      } else {
+        targetUrl = ad.linkUrl ?? ad.redirectUrl;
       }
     } catch (e) {
       debugPrint('[AdsProvider] No se pudo registrar el clic en el servidor: $e');
-      // Continuamos con targetUrl local si existía
+      targetUrl = ad.linkUrl ?? ad.redirectUrl;
     }
 
     if (targetUrl == null || targetUrl.trim().isEmpty) {
+      // El anuncio no tiene URL de destino configurada en Odoo
       return false;
     }
 
-    // 2. Apertura externa segura
+    // 2. Apertura externa segura en navegador del sistema
     try {
       final uri = Uri.parse(targetUrl);
       final launched = await launchUrl(
@@ -116,7 +123,7 @@ class AdsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Carga todas las campañas creadas por la iglesia.
+  /// Carga todas las campañas creadas por la iglesia del administrador.
   Future<void> loadChurchAds({bool force = false}) async {
     if (_isAdminLoading) return;
     _isAdminLoading = true;
@@ -155,10 +162,18 @@ class AdsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Calcula la cotización de la campaña en vivo comunicándose con Odoo.
+  /// Calcula la cotización de la campaña en vivo comunicándose con Odoo 19 ERP.
   Future<AdQuoteModel?> calculateQuote({
-    required int targetChurchesCount,
-    required int weeks,
+    String delivery = 'both',
+    int durationWeeks = 2,
+    String targetScope = 'location',
+    List<int> countryIds = const [],
+    List<int> stateIds = const [],
+    List<String> cities = const [],
+    List<int> churchIds = const [],
+    // Compatibilidad:
+    int? targetChurchesCount,
+    int? weeks,
     List<int>? targetChurchIds,
     List<int>? targetCountryIds,
     String? placement,
@@ -169,6 +184,13 @@ class AdsProvider extends ChangeNotifier {
 
     try {
       final quote = await _adsService.quoteAd(
+        delivery: delivery,
+        durationWeeks: durationWeeks,
+        targetScope: targetScope,
+        countryIds: countryIds,
+        stateIds: stateIds,
+        cities: cities,
+        churchIds: churchIds,
         targetChurchesCount: targetChurchesCount,
         weeks: weeks,
         targetChurchIds: targetChurchIds,
@@ -179,7 +201,7 @@ class AdsProvider extends ChangeNotifier {
       return quote;
     } on AtrioApiException catch (e) {
       _quoteError = e.message;
-      debugPrint('[AdsProvider] Error en cotización: $e');
+      debugPrint('[AdsProvider] Error en cotización Odoo: $e');
       return null;
     } catch (e) {
       _quoteError = e.toString();
@@ -195,6 +217,18 @@ class AdsProvider extends ChangeNotifier {
   Future<AdModel?> createCampaign({
     required String name,
     required String imageBase64,
+    String? message,
+    String? linkUrl,
+    String? ctaLabel,
+    String delivery = 'both',
+    String targetScope = 'location',
+    List<int> countryIds = const [],
+    List<int> stateIds = const [],
+    List<String> cities = const [],
+    List<int> churchIds = const [],
+    int durationWeeks = 2,
+    DateTime? dateStart,
+    // Compatibilidad previa:
     String? description,
     String? redirectUrl,
     String placement = 'all',
@@ -210,6 +244,17 @@ class AdsProvider extends ChangeNotifier {
       final created = await _adsService.createAd(
         name: name,
         imageBase64: imageBase64,
+        message: message,
+        linkUrl: linkUrl,
+        ctaLabel: ctaLabel,
+        delivery: delivery,
+        targetScope: targetScope,
+        countryIds: countryIds,
+        stateIds: stateIds,
+        cities: cities,
+        churchIds: churchIds,
+        durationWeeks: durationWeeks,
+        dateStart: dateStart,
         description: description,
         redirectUrl: redirectUrl,
         placement: placement,
@@ -269,7 +314,7 @@ class AdsProvider extends ChangeNotifier {
   bool get isPaymentLoading => _isPaymentLoading;
   String? get paymentError => _paymentError;
 
-  /// Obtiene los detalles de pago (monto y cuentas bancarias) para una campaña aprobada.
+  /// Obtiene los detalles de pago (monto y cuenta bancaria de transferencia) para una campaña aprobada.
   Future<AdPaymentModel?> loadPaymentDetails(int adId) async {
     _isPaymentLoading = true;
     _paymentError = null;
@@ -293,6 +338,7 @@ class AdsProvider extends ChangeNotifier {
   }
 
   /// Inicia el flujo de PayPal obteniendo la URL externa de checkout y abriéndola en el navegador.
+  /// Siguiendo la recomendación técnica de Odoo 19: al regresar a la app, se refrescan las campañas.
   Future<bool> processPaypalPayment(int adId) async {
     _isPaymentLoading = true;
     _paymentError = null;
@@ -301,7 +347,10 @@ class AdsProvider extends ChangeNotifier {
     try {
       final checkoutUrl = await _adsService.payWithPaypal(adId);
       final uri = Uri.parse(checkoutUrl);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Tras lanzar PayPal, programamos un refresco de campañas
+      unawaited(loadChurchAds(force: true));
       return launched;
     } on AtrioApiException catch (e) {
       _paymentError = e.message;
@@ -316,7 +365,7 @@ class AdsProvider extends ChangeNotifier {
     }
   }
 
-  /// Envía el comprobante de transferencia bancaria en Base64 con su referencia opcional.
+  /// Envía el comprobante de transferencia bancaria en Base64 con su referencia.
   Future<bool> submitTransferPayment(
     int adId, {
     required String receiptBase64,
@@ -340,6 +389,7 @@ class AdsProvider extends ChangeNotifier {
         if (index != -1) {
           _churchAds[index] = _churchAds[index].copyWith(
             status: AdStatus.paymentReview,
+            statusLabel: 'Comprobante en revisión',
           );
         }
       }
@@ -368,7 +418,7 @@ class AdsProvider extends ChangeNotifier {
   bool get isStatsLoading => _isStatsLoading;
   String? get statsError => _statsError;
 
-  /// Carga las métricas y series temporales de un anuncio.
+  /// Carga las métricas y series temporales de un anuncio desde Odoo 19.
   Future<AdStatsModel?> loadStats(int adId) async {
     _isStatsLoading = true;
     _statsError = null;
@@ -394,13 +444,18 @@ class AdsProvider extends ChangeNotifier {
   // ===========================================================================
   // 6. TARGETS Y AUDIENCIAS
   // ===========================================================================
+  /// Consulta opciones de segmentación: [kind] = 'country', 'state', 'city', 'church'.
   Future<List<AdTargetModel>> searchTargets({
     required String kind,
     String q = '',
     List<int> countryIds = const [],
   }) async {
     try {
-      return await _adsService.getTargets(kind: kind, q: q, countryIds: countryIds);
+      return await _adsService.getTargets(
+        kind: kind,
+        q: q,
+        countryIds: countryIds,
+      );
     } catch (e) {
       debugPrint('[AdsProvider] Error buscando targets: $e');
       return [];

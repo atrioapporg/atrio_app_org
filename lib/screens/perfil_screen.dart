@@ -29,6 +29,8 @@ import 'terminos_privacidad_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 import 'configuracion_screen.dart';
 import 'admin_ads_screen.dart';
+import 'church_admin_dashboard_screen.dart';
+import 'admin_requests_screen.dart';
 import 'moderation_screen.dart';
 import 'moderation_words_screen.dart';
 import '../modelos/auth_permissions.dart';
@@ -1816,6 +1818,18 @@ class _PerfilScreenState extends State<PerfilScreen>
 
     final items = [
       (
+        icon: Icons.dashboard_customize_rounded,
+        title: l10n?.panelPastoral ?? 'Panel Pastoral (Odoo 19)',
+        subtitle: 'Métricas, KPIs y gestión comunitaria en tiempo real',
+        onTap: () => _mostrarMetricasComunidad(context),
+      ),
+      (
+        icon: Icons.inbox_rounded,
+        title: l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
+        subtitle: 'Atención y respuesta pastoral a feligreses',
+        onTap: () => _mostrarModeracionPeticiones(context),
+      ),
+      (
         icon: Icons.campaign_rounded,
         title: l10n?.gestionAvisos ?? 'Avisos congregacionales',
         subtitle: 'Publicar comunicados y avisos clave',
@@ -1826,18 +1840,6 @@ class _PerfilScreenState extends State<PerfilScreen>
         title: l10n?.gestionGrupos ?? 'Audiencias y grupos',
         subtitle: 'Segmentación de ministerios y membresía',
         onTap: () => _mostrarGruposAudiencia(context),
-      ),
-      (
-        icon: Icons.volunteer_activism_rounded,
-        title: l10n?.moderacionPeticiones ?? 'Moderación de peticiones',
-        subtitle: 'Revisión y cuidado pastoral de oraciones',
-        onTap: () => _mostrarModeracionPeticiones(context),
-      ),
-      (
-        icon: Icons.insights_rounded,
-        title: l10n?.metricasComunidad ?? 'Estadísticas de comunidad',
-        subtitle: 'Métricas de crecimiento y participación',
-        onTap: () => _mostrarMetricasComunidad(context),
       ),
       if (context.hasPermission(AppPermissions.manageAds))
         (
@@ -3656,6 +3658,9 @@ class _PerfilScreenState extends State<PerfilScreen>
   }
 
   void _mostrarModeracionPeticiones(BuildContext context) {
+    Navigator.pushNamed(context, AdminRequestsScreen.routeName);
+    return;
+    // ignore: dead_code
     final screenWidth = MediaQuery.sizeOf(context).width;
     final usableHeight =
         MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;
@@ -3869,6 +3874,9 @@ class _PerfilScreenState extends State<PerfilScreen>
   }
 
   void _mostrarMetricasComunidad(BuildContext context) {
+    Navigator.pushNamed(context, ChurchAdminDashboardScreen.routeName);
+    return;
+    // ignore: dead_code
     final screenWidth = MediaQuery.sizeOf(context).width;
     final usableHeight =
         MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;

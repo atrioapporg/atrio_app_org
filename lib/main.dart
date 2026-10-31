@@ -84,6 +84,8 @@ import 'package:atrio/screens/admin_ads_screen.dart';
 import 'package:atrio/screens/create_ad_campaign_screen.dart';
 import 'package:atrio/screens/moderation_screen.dart';
 import 'package:atrio/screens/moderation_words_screen.dart';
+import 'package:atrio/screens/church_admin_dashboard_screen.dart';
+import 'package:atrio/screens/admin_requests_screen.dart';
 
 // Screens - Pruebas
 import 'package:atrio/screens/test_pago_screen.dart';
@@ -340,6 +342,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     CreateAdCampaignScreen.routeName: (_) => const CreateAdCampaignScreen(),
     ModerationScreen.routeName: (_) => const ModerationScreen(),
     ModerationWordsScreen.routeName: (_) => const ModerationWordsScreen(),
+    ChurchAdminDashboardScreen.routeName: (_) => const ChurchAdminDashboardScreen(),
+    AdminRequestsScreen.routeName: (_) => const AdminRequestsScreen(),
 
     // ---------- Pruebas ----------
     TestPagoScreen.routeName: (_) => const TestPagoScreen(),

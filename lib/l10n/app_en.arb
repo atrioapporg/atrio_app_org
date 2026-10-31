@@ -1546,5 +1546,113 @@
         "type": "String"
       }
     }
+  },
+  "segmentacionAudiencia": "Audience Targeting",
+  "ambitoSegmentacion": "Targeting Scope",
+  "porUbicacion": "By geographic location",
+  "porIglesiasEspecificas": "By specific churches",
+  "seleccionarPais": "Select Country",
+  "paisDestino": "Country",
+  "ciudadDestino": "City (optional)",
+  "ciudadDestinoHint": "E.g. Santo Domingo",
+  "seleccionarIglesias": "Select Churches",
+  "ctaLabel": "Button Label (Call to Action)",
+  "ctaLabelHint": "E.g. Learn more, Register, More info",
+  "fechaInicio": "Desired Start Date",
+  "alcanceEstimado": "Estimated Reach",
+  "miembrosPlural": "{count, plural, =1{1 estimated member} other{{count} estimated members}}",
+  "@miembrosPlural": {
+    "description": "Reach in number of members with plural",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "muestraIglesias": "Sample churches",
+  "precioPorIglesia": "Per church",
+  "precioPorSemana": "Per week",
+  "minimoAplicado": "Minimum fee applied",
+  "formatoEntrega": "Format and Delivery",
+  "formatoAmbos": "Home feed and Notifications",
+  "formatoFeed": "Home feed only",
+  "formatoNotificaciones": "Notifications only",
+  "errorCargarTargets": "Could not load targeting options",
+  "comprobanteRechazadoAlerta": "Previous payment receipt was rejected: {reason}. You can submit a new one.",
+  "@comprobanteRechazadoAlerta": {
+    "description": "Alert when payment receipt was rejected",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "clicsUnicos": "Unique Clicks",
+  "sinEstadisticasDetalladas": "Detailed statistics will update as the campaign registers live activity.",
+  "cuentaBancaria": "Bank Account",
+  "banco": "Bank",
+  "copiarNumeroCuenta": "Copy account number",
+  "pagoPaypalExplicacion": "Pressing the button will redirect you to PayPal to complete your international transaction securely.",
+  "paypalNoDisponible": "PayPal is not available for this transaction. Please use bank transfer.",
+  "abrirPaypal": "Continue to PayPal",
+  "referenciaCopiada": "Reference copied to clipboard",
+  "panelPastoral": "Pastoral Dashboard",
+  "dashboardAdminIglesia": "Church Admin Dashboard",
+  "administradorPastoral": "Pastoral Administrator",
+  "bienvenidoAdmin": "Welcome to your community management",
+  "resumenMensual": "Monthly Summary",
+  "solicitudesNuevas": "New Requests",
+  "feligresesActivos": "Active Members",
+  "ofrendasRecaudadas": "Collected Offerings",
+  "eventosCelebrados": "Events this Month",
+  "accionesRapidas": "Quick Actions",
+  "bandejaSolicitudes": "Requests Inbox",
+  "crearAviso": "New Announcement",
+  "buzonAlertas": "Alerts Inbox",
+  "anunciosCampanas": "Ads & Publicities",
+  "solicitudesRecientes": "Recent Pastoral Requests",
+  "verTodasSolicitudes": "View all requests",
+  "sinSolicitudesRecientes": "No pending requests at this time",
+  "tipoOracion": "Prayer",
+  "tipoAyuda": "Help",
+  "tipoConsejeria": "Counseling",
+  "estadoNueva": "New",
+  "estadoEnProgreso": "In Progress",
+  "estadoRespondida": "Answered",
+  "estadoRechazada": "Rejected",
+  "responderSolicitud": "Answer Request",
+  "escribirRespuestaPastoral": "Write your pastoral message to the member...",
+  "enviarRespuesta": "Send Response",
+  "aprobarSolicitud": "Approve",
+  "rechazarSolicitud": "Reject",
+  "motivoRechazo": "Rejection reason (optional)",
+  "respuestaEnviadaExito": "Pastoral response sent successfully!",
+  "solicitudAprobadaExito": "Request approved successfully.",
+  "solicitudRechazadaExito": "Request rejected.",
+  "detalleSolicitud": "Request Detail",
+  "datosSolicitante": "Requester Details",
+  "mensajeSolicitante": "Requester Message",
+  "respuestaPastoralEmitida": "Pastoral Response Given",
+  "fechaEnvio": "Date sent",
+  "todasLasCategorias": "All",
+  "filtrarPorEstado": "Filter by status",
+  "buscarPorNombreOTitulo": "Search by requester or title...",
+  "notificacionesInstitucionales": "Institutional Notifications",
+  "sinNotificacionesAdmin": "No notifications in your inbox",
+  "actualizadoEnTiempoReal": "Updated in real-time from Odoo 19",
+  "telefonoContacto": "Phone",
+  "correoContacto": "Email address",
+  "responderAhora": "Answer Now",
+  "atendidaEl": "Answered on {fecha}",
+  "@atendidaEl": {
+    "description": "Date when request was answered",
+    "placeholders": {
+      "fecha": {
+        "type": "String"
+      }
+    }
   }
 }
+
+

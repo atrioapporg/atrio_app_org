@@ -1130,9 +1130,18 @@ class AtrioApi {
   // 10. ADMINISTRADOR DE IGLESIA (Avisos y Anuncios)
   // ===========================================================================
 
-  /// Avisos para el administrador de iglesia.
-  Future<Map<String, dynamic>> adminNotifications() =>
-      _send('GET', '/admin/notifications');
+  /// Avisos y notificaciones institucionales para el administrador de iglesia.
+  Future<Map<String, dynamic>> adminNotifications({
+    String view = 'inbox',
+    int limit = 20,
+    int offset = 0,
+    int? churchId,
+  }) =>
+      _send('GET', '/admin/notifications', query: {
+        'view': view,
+        'limit': '$limit',
+        'offset': '$offset',
+      }, churchId: churchId);
 
   /// Marcar avisos administrativos como leídos.
   Future<Map<String, dynamic>> markAdminNotificationsAsRead(List<int> ids) =>
@@ -1153,7 +1162,11 @@ class AtrioApi {
   }) => _send(
     'GET',
     '/admin/ads/targets',
-    query: {'kind': kind, 'q': q, 'country_ids': countryIds.join(',')},
+    query: {
+      'kind': kind,
+      if (q.trim().isNotEmpty) 'q': q.trim(),
+      if (countryIds.isNotEmpty) 'country_ids': countryIds.join(','),
+    },
   );
 
   /// Cotiza un anuncio antes de enviarlo.

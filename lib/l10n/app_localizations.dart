@@ -5175,7 +5175,7 @@ abstract class AppLocalizations {
   /// No description provided for @motivoRechazo.
   ///
   /// In es, this message translates to:
-  /// **'Motivo de rechazo'**
+  /// **'Motivo del rechazo (opcional)'**
   String get motivoRechazo;
 
   /// No description provided for @pagarCampana.
@@ -5723,6 +5723,480 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Palabras detectadas: {words}'**
   String palabrasDetectadas(String words);
+
+  /// No description provided for @segmentacionAudiencia.
+  ///
+  /// In es, this message translates to:
+  /// **'Segmentación de Audiencia'**
+  String get segmentacionAudiencia;
+
+  /// No description provided for @ambitoSegmentacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Ámbito de Segmentación'**
+  String get ambitoSegmentacion;
+
+  /// No description provided for @porUbicacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Por ubicación geográfica'**
+  String get porUbicacion;
+
+  /// No description provided for @porIglesiasEspecificas.
+  ///
+  /// In es, this message translates to:
+  /// **'Por iglesias específicas'**
+  String get porIglesiasEspecificas;
+
+  /// No description provided for @seleccionarPais.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar País'**
+  String get seleccionarPais;
+
+  /// No description provided for @paisDestino.
+  ///
+  /// In es, this message translates to:
+  /// **'País'**
+  String get paisDestino;
+
+  /// No description provided for @ciudadDestino.
+  ///
+  /// In es, this message translates to:
+  /// **'Ciudad (opcional)'**
+  String get ciudadDestino;
+
+  /// No description provided for @ciudadDestinoHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej. Santo Domingo'**
+  String get ciudadDestinoHint;
+
+  /// No description provided for @seleccionarIglesias.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar Iglesias'**
+  String get seleccionarIglesias;
+
+  /// No description provided for @ctaLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Texto del Botón (Llamado a la Acción)'**
+  String get ctaLabel;
+
+  /// No description provided for @ctaLabelHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej. Ver más, Registrarme, Más información'**
+  String get ctaLabelHint;
+
+  /// No description provided for @fechaInicio.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de Inicio Deseada'**
+  String get fechaInicio;
+
+  /// No description provided for @alcanceEstimado.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcance Estimado'**
+  String get alcanceEstimado;
+
+  /// Alcance en número de miembros con plural
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 miembro estimado} other{{count} miembros estimados}}'**
+  String miembrosPlural(num count);
+
+  /// No description provided for @muestraIglesias.
+  ///
+  /// In es, this message translates to:
+  /// **'Iglesias de muestra'**
+  String get muestraIglesias;
+
+  /// No description provided for @precioPorIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Por iglesia'**
+  String get precioPorIglesia;
+
+  /// No description provided for @precioPorSemana.
+  ///
+  /// In es, this message translates to:
+  /// **'Por semana'**
+  String get precioPorSemana;
+
+  /// No description provided for @minimoAplicado.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarifa mínima aplicada'**
+  String get minimoAplicado;
+
+  /// No description provided for @formatoEntrega.
+  ///
+  /// In es, this message translates to:
+  /// **'Formato y Entrega'**
+  String get formatoEntrega;
+
+  /// No description provided for @formatoAmbos.
+  ///
+  /// In es, this message translates to:
+  /// **'Feed de inicio y Notificaciones'**
+  String get formatoAmbos;
+
+  /// No description provided for @formatoFeed.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo Feed de inicio'**
+  String get formatoFeed;
+
+  /// No description provided for @formatoNotificaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo Notificaciones'**
+  String get formatoNotificaciones;
+
+  /// No description provided for @errorCargarTargets.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar las opciones de segmentación'**
+  String get errorCargarTargets;
+
+  /// Alerta cuando el comprobante fue rechazado
+  ///
+  /// In es, this message translates to:
+  /// **'El comprobante anterior fue rechazado: {reason}. Puedes subir uno nuevo.'**
+  String comprobanteRechazadoAlerta(String reason);
+
+  /// No description provided for @clicsUnicos.
+  ///
+  /// In es, this message translates to:
+  /// **'Clics Únicos'**
+  String get clicsUnicos;
+
+  /// No description provided for @sinEstadisticasDetalladas.
+  ///
+  /// In es, this message translates to:
+  /// **'Las estadísticas detalladas se actualizarán conforme la campaña registre actividad en vivo.'**
+  String get sinEstadisticasDetalladas;
+
+  /// No description provided for @cuentaBancaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta Bancaria'**
+  String get cuentaBancaria;
+
+  /// No description provided for @banco.
+  ///
+  /// In es, this message translates to:
+  /// **'Banco'**
+  String get banco;
+
+  /// No description provided for @copiarNumeroCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar número de cuenta'**
+  String get copiarNumeroCuenta;
+
+  /// No description provided for @pagoPaypalExplicacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Al presionar el botón serás redirigido al portal seguro de PayPal para completar tu transacción internacional.'**
+  String get pagoPaypalExplicacion;
+
+  /// No description provided for @paypalNoDisponible.
+  ///
+  /// In es, this message translates to:
+  /// **'PayPal no está disponible para esta transacción. Por favor utiliza transferencia bancaria.'**
+  String get paypalNoDisponible;
+
+  /// No description provided for @abrirPaypal.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar a PayPal'**
+  String get abrirPaypal;
+
+  /// No description provided for @referenciaCopiada.
+  ///
+  /// In es, this message translates to:
+  /// **'Referencia copiada al portapapeles'**
+  String get referenciaCopiada;
+
+  /// No description provided for @panelPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Panel Pastoral'**
+  String get panelPastoral;
+
+  /// No description provided for @dashboardAdminIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Panel de Administración'**
+  String get dashboardAdminIglesia;
+
+  /// No description provided for @administradorPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador Pastoral'**
+  String get administradorPastoral;
+
+  /// No description provided for @bienvenidoAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Bienvenido a la gestión de tu comunidad'**
+  String get bienvenidoAdmin;
+
+  /// No description provided for @resumenMensual.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen del Mes'**
+  String get resumenMensual;
+
+  /// No description provided for @solicitudesNuevas.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevas Solicitudes'**
+  String get solicitudesNuevas;
+
+  /// No description provided for @feligresesActivos.
+  ///
+  /// In es, this message translates to:
+  /// **'Feligreses Activos'**
+  String get feligresesActivos;
+
+  /// No description provided for @ofrendasRecaudadas.
+  ///
+  /// In es, this message translates to:
+  /// **'Ofrendas Recaudadas'**
+  String get ofrendasRecaudadas;
+
+  /// No description provided for @eventosCelebrados.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos del Mes'**
+  String get eventosCelebrados;
+
+  /// No description provided for @accionesRapidas.
+  ///
+  /// In es, this message translates to:
+  /// **'Acciones Rápidas'**
+  String get accionesRapidas;
+
+  /// No description provided for @bandejaSolicitudes.
+  ///
+  /// In es, this message translates to:
+  /// **'Bandeja de Solicitudes'**
+  String get bandejaSolicitudes;
+
+  /// No description provided for @crearAviso.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo Aviso'**
+  String get crearAviso;
+
+  /// No description provided for @buzonAlertas.
+  ///
+  /// In es, this message translates to:
+  /// **'Buzón de Alertas'**
+  String get buzonAlertas;
+
+  /// No description provided for @anunciosCampanas.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicidad y Anuncios'**
+  String get anunciosCampanas;
+
+  /// No description provided for @solicitudesRecientes.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitudes Pastorales Recientes'**
+  String get solicitudesRecientes;
+
+  /// No description provided for @verTodasSolicitudes.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver todas las solicitudes'**
+  String get verTodasSolicitudes;
+
+  /// No description provided for @sinSolicitudesRecientes.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay solicitudes pendientes en este momento'**
+  String get sinSolicitudesRecientes;
+
+  /// No description provided for @tipoOracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Oración'**
+  String get tipoOracion;
+
+  /// No description provided for @tipoAyuda.
+  ///
+  /// In es, this message translates to:
+  /// **'Ayuda Social'**
+  String get tipoAyuda;
+
+  /// No description provided for @tipoConsejeria.
+  ///
+  /// In es, this message translates to:
+  /// **'Consejería'**
+  String get tipoConsejeria;
+
+  /// No description provided for @estadoNueva.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva'**
+  String get estadoNueva;
+
+  /// No description provided for @estadoEnProgreso.
+  ///
+  /// In es, this message translates to:
+  /// **'En Progreso'**
+  String get estadoEnProgreso;
+
+  /// No description provided for @estadoRespondida.
+  ///
+  /// In es, this message translates to:
+  /// **'Respondida'**
+  String get estadoRespondida;
+
+  /// No description provided for @responderSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Responder Petición'**
+  String get responderSolicitud;
+
+  /// No description provided for @escribirRespuestaPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe tu mensaje pastoral para el feligrés...'**
+  String get escribirRespuestaPastoral;
+
+  /// No description provided for @enviarRespuesta.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar Respuesta'**
+  String get enviarRespuesta;
+
+  /// No description provided for @aprobarSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprobar'**
+  String get aprobarSolicitud;
+
+  /// No description provided for @rechazarSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazar'**
+  String get rechazarSolicitud;
+
+  /// No description provided for @respuestaEnviadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Respuesta pastoral enviada con éxito!'**
+  String get respuestaEnviadaExito;
+
+  /// No description provided for @solicitudAprobadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud aprobada con éxito.'**
+  String get solicitudAprobadaExito;
+
+  /// No description provided for @solicitudRechazadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud rechazada.'**
+  String get solicitudRechazadaExito;
+
+  /// No description provided for @detalleSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle de la Solicitud'**
+  String get detalleSolicitud;
+
+  /// No description provided for @datosSolicitante.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos del Solicitante'**
+  String get datosSolicitante;
+
+  /// No description provided for @mensajeSolicitante.
+  ///
+  /// In es, this message translates to:
+  /// **'Mensaje del Solicitante'**
+  String get mensajeSolicitante;
+
+  /// No description provided for @respuestaPastoralEmitida.
+  ///
+  /// In es, this message translates to:
+  /// **'Respuesta Pastoral Emitida'**
+  String get respuestaPastoralEmitida;
+
+  /// No description provided for @fechaEnvio.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de envío'**
+  String get fechaEnvio;
+
+  /// No description provided for @todasLasCategorias.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas'**
+  String get todasLasCategorias;
+
+  /// No description provided for @filtrarPorEstado.
+  ///
+  /// In es, this message translates to:
+  /// **'Filtrar por estado'**
+  String get filtrarPorEstado;
+
+  /// No description provided for @buscarPorNombreOTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por solicitante o título...'**
+  String get buscarPorNombreOTitulo;
+
+  /// No description provided for @notificacionesInstitucionales.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones Institucionales'**
+  String get notificacionesInstitucionales;
+
+  /// No description provided for @sinNotificacionesAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes notificaciones en tu buzón'**
+  String get sinNotificacionesAdmin;
+
+  /// No description provided for @actualizadoEnTiempoReal.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizado en tiempo real desde Odoo 19'**
+  String get actualizadoEnTiempoReal;
+
+  /// No description provided for @telefonoContacto.
+  ///
+  /// In es, this message translates to:
+  /// **'Teléfono'**
+  String get telefonoContacto;
+
+  /// No description provided for @correoContacto.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo electrónico'**
+  String get correoContacto;
+
+  /// No description provided for @responderAhora.
+  ///
+  /// In es, this message translates to:
+  /// **'Responder Ahora'**
+  String get responderAhora;
+
+  /// Fecha en que fue atendida la solicitud
+  ///
+  /// In es, this message translates to:
+  /// **'Atendida el {fecha}'**
+  String atendidaEl(String fecha);
 }
 
 class _AppLocalizationsDelegate

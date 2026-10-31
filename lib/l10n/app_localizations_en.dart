@@ -2848,7 +2848,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estadoRechazada => 'Rejected';
 
   @override
-  String get motivoRechazo => 'Rejection reason';
+  String get motivoRechazo => 'Rejection reason (optional)';
 
   @override
   String get pagarCampana => 'Pay Campaign';
@@ -3174,5 +3174,263 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String palabrasDetectadas(String words) {
     return 'Detected words: $words';
+  }
+
+  @override
+  String get segmentacionAudiencia => 'Audience Targeting';
+
+  @override
+  String get ambitoSegmentacion => 'Targeting Scope';
+
+  @override
+  String get porUbicacion => 'By geographic location';
+
+  @override
+  String get porIglesiasEspecificas => 'By specific churches';
+
+  @override
+  String get seleccionarPais => 'Select Country';
+
+  @override
+  String get paisDestino => 'Country';
+
+  @override
+  String get ciudadDestino => 'City (optional)';
+
+  @override
+  String get ciudadDestinoHint => 'E.g. Santo Domingo';
+
+  @override
+  String get seleccionarIglesias => 'Select Churches';
+
+  @override
+  String get ctaLabel => 'Button Label (Call to Action)';
+
+  @override
+  String get ctaLabelHint => 'E.g. Learn more, Register, More info';
+
+  @override
+  String get fechaInicio => 'Desired Start Date';
+
+  @override
+  String get alcanceEstimado => 'Estimated Reach';
+
+  @override
+  String miembrosPlural(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString estimated members',
+      one: '1 estimated member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get muestraIglesias => 'Sample churches';
+
+  @override
+  String get precioPorIglesia => 'Per church';
+
+  @override
+  String get precioPorSemana => 'Per week';
+
+  @override
+  String get minimoAplicado => 'Minimum fee applied';
+
+  @override
+  String get formatoEntrega => 'Format and Delivery';
+
+  @override
+  String get formatoAmbos => 'Home feed and Notifications';
+
+  @override
+  String get formatoFeed => 'Home feed only';
+
+  @override
+  String get formatoNotificaciones => 'Notifications only';
+
+  @override
+  String get errorCargarTargets => 'Could not load targeting options';
+
+  @override
+  String comprobanteRechazadoAlerta(String reason) {
+    return 'Previous payment receipt was rejected: $reason. You can submit a new one.';
+  }
+
+  @override
+  String get clicsUnicos => 'Unique Clicks';
+
+  @override
+  String get sinEstadisticasDetalladas =>
+      'Detailed statistics will update as the campaign registers live activity.';
+
+  @override
+  String get cuentaBancaria => 'Bank Account';
+
+  @override
+  String get banco => 'Bank';
+
+  @override
+  String get copiarNumeroCuenta => 'Copy account number';
+
+  @override
+  String get pagoPaypalExplicacion =>
+      'Pressing the button will redirect you to PayPal to complete your international transaction securely.';
+
+  @override
+  String get paypalNoDisponible =>
+      'PayPal is not available for this transaction. Please use bank transfer.';
+
+  @override
+  String get abrirPaypal => 'Continue to PayPal';
+
+  @override
+  String get referenciaCopiada => 'Reference copied to clipboard';
+
+  @override
+  String get panelPastoral => 'Pastoral Dashboard';
+
+  @override
+  String get dashboardAdminIglesia => 'Church Admin Dashboard';
+
+  @override
+  String get administradorPastoral => 'Pastoral Administrator';
+
+  @override
+  String get bienvenidoAdmin => 'Welcome to your community management';
+
+  @override
+  String get resumenMensual => 'Monthly Summary';
+
+  @override
+  String get solicitudesNuevas => 'New Requests';
+
+  @override
+  String get feligresesActivos => 'Active Members';
+
+  @override
+  String get ofrendasRecaudadas => 'Collected Offerings';
+
+  @override
+  String get eventosCelebrados => 'Events this Month';
+
+  @override
+  String get accionesRapidas => 'Quick Actions';
+
+  @override
+  String get bandejaSolicitudes => 'Requests Inbox';
+
+  @override
+  String get crearAviso => 'New Announcement';
+
+  @override
+  String get buzonAlertas => 'Alerts Inbox';
+
+  @override
+  String get anunciosCampanas => 'Ads & Publicities';
+
+  @override
+  String get solicitudesRecientes => 'Recent Pastoral Requests';
+
+  @override
+  String get verTodasSolicitudes => 'View all requests';
+
+  @override
+  String get sinSolicitudesRecientes => 'No pending requests at this time';
+
+  @override
+  String get tipoOracion => 'Prayer';
+
+  @override
+  String get tipoAyuda => 'Help';
+
+  @override
+  String get tipoConsejeria => 'Counseling';
+
+  @override
+  String get estadoNueva => 'New';
+
+  @override
+  String get estadoEnProgreso => 'In Progress';
+
+  @override
+  String get estadoRespondida => 'Answered';
+
+  @override
+  String get responderSolicitud => 'Answer Request';
+
+  @override
+  String get escribirRespuestaPastoral =>
+      'Write your pastoral message to the member...';
+
+  @override
+  String get enviarRespuesta => 'Send Response';
+
+  @override
+  String get aprobarSolicitud => 'Approve';
+
+  @override
+  String get rechazarSolicitud => 'Reject';
+
+  @override
+  String get respuestaEnviadaExito => 'Pastoral response sent successfully!';
+
+  @override
+  String get solicitudAprobadaExito => 'Request approved successfully.';
+
+  @override
+  String get solicitudRechazadaExito => 'Request rejected.';
+
+  @override
+  String get detalleSolicitud => 'Request Detail';
+
+  @override
+  String get datosSolicitante => 'Requester Details';
+
+  @override
+  String get mensajeSolicitante => 'Requester Message';
+
+  @override
+  String get respuestaPastoralEmitida => 'Pastoral Response Given';
+
+  @override
+  String get fechaEnvio => 'Date sent';
+
+  @override
+  String get todasLasCategorias => 'All';
+
+  @override
+  String get filtrarPorEstado => 'Filter by status';
+
+  @override
+  String get buscarPorNombreOTitulo => 'Search by requester or title...';
+
+  @override
+  String get notificacionesInstitucionales => 'Institutional Notifications';
+
+  @override
+  String get sinNotificacionesAdmin => 'No notifications in your inbox';
+
+  @override
+  String get actualizadoEnTiempoReal => 'Updated in real-time from Odoo 19';
+
+  @override
+  String get telefonoContacto => 'Phone';
+
+  @override
+  String get correoContacto => 'Email address';
+
+  @override
+  String get responderAhora => 'Answer Now';
+
+  @override
+  String atendidaEl(String fecha) {
+    return 'Answered on $fecha';
   }
 }

@@ -78,8 +78,9 @@ class AdsService {
   }
 
   /// Consulta las opciones de segmentación disponibles para pautar anuncios.
-  /// [kind]: 'church', 'denomination', 'country'.
-  /// Endpoint: `GET /admin/ads/targets`
+  /// [kind]: 'country', 'state', 'city', 'church'.
+  /// Endpoint: `GET /admin/ads/targets?kind={kind}&q={q}&country_ids={country_ids}`
+  /// Odoo 19 responde: `{ "options": [{ "id": 61, "label": "República Dominicana", "hint": "12 iglesias", "churches": 12 }] }`
   Future<List<AdTargetModel>> getTargets({
     required String kind,
     String q = '',
@@ -87,10 +88,17 @@ class AdsService {
   }) async {
     try {
       final res = await api.adTargets(kind, q: q, countryIds: countryIds);
-      final rawList = res['targets'] ?? res['items'] ?? res['data'] ?? [];
+      final rawList = res['options'] ??
+          res['targets'] ??
+          res['items'] ??
+          res['data'] ??
+          [];
       if (rawList is List) {
         return rawList
-            .map((e) => AdTargetModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map((e) => AdTargetModel.fromJson(
+                  Map<String, dynamic>.from(e as Map),
+                  defaultKind: kind,
+                ))
             .toList();
       }
       return [];
@@ -104,22 +112,52 @@ class AdsService {
 
   /// Cotiza el costo de una campaña publicitaria en tiempo real según la segmentación.
   /// Endpoint: `POST /admin/ads/quote`
+  /// Contrato Odoo 19:
+  /// ```json
+  /// {
+  ///   "delivery": "both",
+  ///   "duration_weeks": 2,
+  ///   "target_scope": "location",
+  ///   "country_ids": [61],
+  ///   "state_ids": [],
+  ///   "cities": ["Santo Domingo"],
+  ///   "church_ids": []
+  /// }
+  /// ```
   Future<AdQuoteModel> quoteAd({
-    required int targetChurchesCount,
-    required int weeks,
+    String delivery = 'both',
+    int durationWeeks = 2,
+    String targetScope = 'location',
+    List<int> countryIds = const [],
+    List<int> stateIds = const [],
+    List<String> cities = const [],
+    List<int> churchIds = const [],
+    // Parámetros compatibles para no romper integraciones previas:
+    int? targetChurchesCount,
+    int? weeks,
     List<int>? targetChurchIds,
     List<int>? targetCountryIds,
     String? placement,
   }) async {
     try {
+      final finalDelivery = placement ?? delivery;
+      final finalWeeks = weeks ?? durationWeeks;
+      final finalCountries =
+          (countryIds.isNotEmpty ? countryIds : targetCountryIds) ?? const [];
+      final finalChurches =
+          (churchIds.isNotEmpty ? churchIds : targetChurchIds) ?? const [];
+
       final body = <String, dynamic>{
-        'churches_count': targetChurchesCount,
-        'weeks': weeks,
-        if (targetChurchIds != null && targetChurchIds.isNotEmpty)
-          'church_ids': targetChurchIds,
-        if (targetCountryIds != null && targetCountryIds.isNotEmpty)
-          'country_ids': targetCountryIds,
-        'placement': ?placement,
+        'delivery': finalDelivery,
+        'duration_weeks': finalWeeks,
+        'target_scope': targetScope,
+        'country_ids': finalCountries,
+        'state_ids': stateIds,
+        'cities': cities,
+        'church_ids': finalChurches,
+        // Compatibilidad:
+        if (targetChurchesCount != null)
+          'churches_count': targetChurchesCount,
       };
 
       final res = await api.quoteAd(body);
@@ -134,9 +172,37 @@ class AdsService {
 
   /// Envía un nuevo anuncio publicitario a revisión de Atrio.
   /// Endpoint: `POST /admin/ads`
+  /// Contrato Odoo 19:
+  /// ```json
+  /// {
+  ///   "name": "Noche de Adoración",
+  ///   "message": "Te esperamos el viernes",
+  ///   "image": "<base64>",
+  ///   "link_url": "https://miiglesia.org/adoracion",
+  ///   "cta_label": "Ver más",
+  ///   "delivery": "both",
+  ///   "target_scope": "location",
+  ///   "country_ids": [61],
+  ///   "cities": ["Santo Domingo"],
+  ///   "duration_weeks": 2,
+  ///   "date_start": "2026-10-01T15:00:00Z"
+  /// }
+  /// ```
   Future<AdModel> createAd({
     required String name,
     required String imageBase64,
+    String? message,
+    String? linkUrl,
+    String? ctaLabel,
+    String delivery = 'both',
+    String targetScope = 'location',
+    List<int> countryIds = const [],
+    List<int> stateIds = const [],
+    List<String> cities = const [],
+    List<int> churchIds = const [],
+    int durationWeeks = 2,
+    DateTime? dateStart,
+    // Parámetros de compatibilidad previa:
     String? description,
     String? redirectUrl,
     String placement = 'all',
@@ -145,19 +211,34 @@ class AdsService {
     List<int>? targetCountryIds,
   }) async {
     try {
+      final finalMessage = message ?? description;
+      final finalLinkUrl = linkUrl ?? redirectUrl;
+      final finalDelivery =
+          delivery != 'both' ? delivery : (placement != 'all' ? placement : 'both');
+      final finalWeeks = durationWeeks != 2 ? durationWeeks : weeks;
+      final finalCountries =
+          countryIds.isNotEmpty ? countryIds : (targetCountryIds ?? const []);
+      final finalChurches =
+          churchIds.isNotEmpty ? churchIds : (targetChurchIds ?? const []);
+
       final body = <String, dynamic>{
         'name': name.trim(),
         'image': imageBase64,
-        'placement': placement,
-        'weeks': weeks,
-        if (description != null && description.trim().isNotEmpty)
-          'description': description.trim(),
-        if (redirectUrl != null && redirectUrl.trim().isNotEmpty)
-          'redirect_url': redirectUrl.trim(),
-        if (targetChurchIds != null && targetChurchIds.isNotEmpty)
-          'target_church_ids': targetChurchIds,
-        if (targetCountryIds != null && targetCountryIds.isNotEmpty)
-          'target_country_ids': targetCountryIds,
+        'delivery': finalDelivery,
+        'duration_weeks': finalWeeks,
+        'target_scope': targetScope,
+        if (finalMessage != null && finalMessage.trim().isNotEmpty)
+          'message': finalMessage.trim(),
+        if (finalLinkUrl != null && finalLinkUrl.trim().isNotEmpty)
+          'link_url': finalLinkUrl.trim(),
+        if (ctaLabel != null && ctaLabel.trim().isNotEmpty)
+          'cta_label': ctaLabel.trim(),
+        if (finalCountries.isNotEmpty) 'country_ids': finalCountries,
+        if (stateIds.isNotEmpty) 'state_ids': stateIds,
+        if (cities.isNotEmpty) 'cities': cities,
+        if (finalChurches.isNotEmpty) 'church_ids': finalChurches,
+        if (dateStart != null)
+          'date_start': dateStart.toUtc().toIso8601String(),
       };
 
       final res = await api.submitAd(body);
@@ -167,7 +248,11 @@ class AdsService {
       } else if (rawAd is Map) {
         return AdModel.fromJson(Map<String, dynamic>.from(rawAd));
       }
-      throw AtrioApiException(500, 'invalid_response', 'Estructura de respuesta no válida al crear anuncio');
+      throw AtrioApiException(
+        500,
+        'invalid_response',
+        'Estructura de respuesta no válida al crear anuncio en Odoo 19',
+      );
     } on AtrioApiException {
       rethrow;
     } catch (e) {
@@ -214,7 +299,11 @@ class AdsService {
           res['approval_url']?.toString() ??
           res['url']?.toString();
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
-        throw AtrioApiException(500, 'paypal_error', 'No se recibió la URL de pago de PayPal');
+        throw AtrioApiException(
+          500,
+          'paypal_error',
+          'No se recibió la URL de pago de PayPal desde Odoo 19',
+        );
       }
       return checkoutUrl;
     } on AtrioApiException {
@@ -227,6 +316,7 @@ class AdsService {
 
   /// Registra el pago por transferencia bancaria adjuntando comprobante en Base64.
   /// Endpoint: `POST /admin/ads/{id}/pay/transfer`
+  /// Body: `{ "reference": "REF-889231", "receipt_file": "<base64>", "receipt_filename": "comprobante.pdf" }`
   Future<bool> payWithTransfer(
     int adId, {
     required String receiptBase64,
@@ -249,7 +339,7 @@ class AdsService {
     }
   }
 
-  /// Obtiene las estadísticas de rendimiento (impresiones, clics, CTR e historial) de un anuncio.
+  /// Obtiene las estadísticas de rendimiento (impresiones, clics, CTR, serie temporal, etc.) de un anuncio.
   /// Endpoint: `GET /admin/ads/{id}/stats`
   Future<AdStatsModel> getStats(int adId) async {
     try {

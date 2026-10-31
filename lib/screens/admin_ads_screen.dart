@@ -347,7 +347,7 @@ class _AdminAdCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _StatusBadge(status: ad.status),
+              _StatusBadge(status: ad.status, label: ad.statusLabel),
             ],
           ),
 
@@ -486,8 +486,9 @@ class _AdminAdCard extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final AdStatus status;
+  final String? label;
 
-  const _StatusBadge({required this.status});
+  const _StatusBadge({required this.status, this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -495,55 +496,57 @@ class _StatusBadge extends StatelessWidget {
 
     Color bgColor;
     Color textColor;
-    String label;
+    String displayLabel;
 
     switch (status) {
       case AdStatus.requested:
         bgColor = const Color(0xFFFEF3C7);
         textColor = const Color(0xFFB45309);
-        label = l10n?.estadoSolicitada ?? 'En Revisión';
+        displayLabel = l10n?.estadoSolicitada ?? 'En Revisión';
         break;
       case AdStatus.toPay:
         bgColor = const Color(0xFFFFFBEB);
         textColor = const Color(0xFFD97706);
-        label = l10n?.estadoPorPagar ?? 'Por Pagar';
+        displayLabel = l10n?.estadoPorPagar ?? 'Por Pagar';
         break;
       case AdStatus.paymentReview:
         bgColor = const Color(0xFFE0E7FF);
         textColor = const Color(0xFF3730A3);
-        label = l10n?.estadoComprobanteRevision ?? 'Comprobante en Revisión';
+        displayLabel = l10n?.estadoComprobanteRevision ?? 'Comprobante en Revisión';
         break;
       case AdStatus.ready:
         bgColor = const Color(0xFFCCFBF1);
         textColor = const Color(0xFF0F766E);
-        label = l10n?.estadoLista ?? 'Lista para Salir';
+        displayLabel = l10n?.estadoLista ?? 'Lista para Salir';
         break;
       case AdStatus.active:
         bgColor = const Color(0xFFDCFCE7);
         textColor = const Color(0xFF15803D);
-        label = l10n?.estadoActiva ?? 'Activa';
+        displayLabel = l10n?.estadoActiva ?? 'Activa';
         break;
       case AdStatus.paused:
         bgColor = const Color(0xFFF1F5F9);
         textColor = const Color(0xFF475569);
-        label = l10n?.estadoPausada ?? 'Pausada';
+        displayLabel = l10n?.estadoPausada ?? 'Pausada';
         break;
       case AdStatus.finished:
         bgColor = const Color(0xFFF1F5F9);
         textColor = const Color(0xFF64748B);
-        label = l10n?.estadoFinalizada ?? 'Finalizada';
+        displayLabel = l10n?.estadoFinalizada ?? 'Finalizada';
         break;
       case AdStatus.rejected:
         bgColor = const Color(0xFFFEE2E2);
         textColor = const Color(0xFFB91C1C);
-        label = l10n?.estadoRechazada ?? 'Rechazada';
+        displayLabel = l10n?.estadoRechazada ?? 'Rechazada';
         break;
       case AdStatus.unknown:
         bgColor = const Color(0xFFF1F5F9);
         textColor = Colors.grey.shade600;
-        label = 'Desconocido';
+        displayLabel = 'Desconocido';
         break;
     }
+
+    final text = (label != null && label!.trim().isNotEmpty) ? label! : displayLabel;
 
     return Container(
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 4),
@@ -552,7 +555,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        label,
+        text,
         style: TextStyle(
           color: textColor,
           fontSize: 11,

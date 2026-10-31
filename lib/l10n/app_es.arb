@@ -1637,5 +1637,113 @@
         "type": "String"
       }
     }
+  },
+  "segmentacionAudiencia": "Segmentación de Audiencia",
+  "ambitoSegmentacion": "Ámbito de Segmentación",
+  "porUbicacion": "Por ubicación geográfica",
+  "porIglesiasEspecificas": "Por iglesias específicas",
+  "seleccionarPais": "Seleccionar País",
+  "paisDestino": "País",
+  "ciudadDestino": "Ciudad (opcional)",
+  "ciudadDestinoHint": "Ej. Santo Domingo",
+  "seleccionarIglesias": "Seleccionar Iglesias",
+  "ctaLabel": "Texto del Botón (Llamado a la Acción)",
+  "ctaLabelHint": "Ej. Ver más, Registrarme, Más información",
+  "fechaInicio": "Fecha de Inicio Deseada",
+  "alcanceEstimado": "Alcance Estimado",
+  "miembrosPlural": "{count, plural, =1{1 miembro estimado} other{{count} miembros estimados}}",
+  "@miembrosPlural": {
+    "description": "Alcance en número de miembros con plural",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "muestraIglesias": "Iglesias de muestra",
+  "precioPorIglesia": "Por iglesia",
+  "precioPorSemana": "Por semana",
+  "minimoAplicado": "Tarifa mínima aplicada",
+  "formatoEntrega": "Formato y Entrega",
+  "formatoAmbos": "Feed de inicio y Notificaciones",
+  "formatoFeed": "Solo Feed de inicio",
+  "formatoNotificaciones": "Solo Notificaciones",
+  "errorCargarTargets": "No se pudieron cargar las opciones de segmentación",
+  "comprobanteRechazadoAlerta": "El comprobante anterior fue rechazado: {reason}. Puedes subir uno nuevo.",
+  "@comprobanteRechazadoAlerta": {
+    "description": "Alerta cuando el comprobante fue rechazado",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "clicsUnicos": "Clics Únicos",
+  "sinEstadisticasDetalladas": "Las estadísticas detalladas se actualizarán conforme la campaña registre actividad en vivo.",
+  "cuentaBancaria": "Cuenta Bancaria",
+  "banco": "Banco",
+  "copiarNumeroCuenta": "Copiar número de cuenta",
+  "pagoPaypalExplicacion": "Al presionar el botón serás redirigido al portal seguro de PayPal para completar tu transacción internacional.",
+  "paypalNoDisponible": "PayPal no está disponible para esta transacción. Por favor utiliza transferencia bancaria.",
+  "abrirPaypal": "Continuar a PayPal",
+  "referenciaCopiada": "Referencia copiada al portapapeles",
+  "panelPastoral": "Panel Pastoral",
+  "dashboardAdminIglesia": "Panel de Administración",
+  "administradorPastoral": "Administrador Pastoral",
+  "bienvenidoAdmin": "Bienvenido a la gestión de tu comunidad",
+  "resumenMensual": "Resumen del Mes",
+  "solicitudesNuevas": "Nuevas Solicitudes",
+  "feligresesActivos": "Feligreses Activos",
+  "ofrendasRecaudadas": "Ofrendas Recaudadas",
+  "eventosCelebrados": "Eventos del Mes",
+  "accionesRapidas": "Acciones Rápidas",
+  "bandejaSolicitudes": "Bandeja de Solicitudes",
+  "crearAviso": "Nuevo Aviso",
+  "buzonAlertas": "Buzón de Alertas",
+  "anunciosCampanas": "Publicidad y Anuncios",
+  "solicitudesRecientes": "Solicitudes Pastorales Recientes",
+  "verTodasSolicitudes": "Ver todas las solicitudes",
+  "sinSolicitudesRecientes": "No hay solicitudes pendientes en este momento",
+  "tipoOracion": "Oración",
+  "tipoAyuda": "Ayuda Social",
+  "tipoConsejeria": "Consejería",
+  "estadoNueva": "Nueva",
+  "estadoEnProgreso": "En Progreso",
+  "estadoRespondida": "Respondida",
+  "estadoRechazada": "Rechazada",
+  "responderSolicitud": "Responder Petición",
+  "escribirRespuestaPastoral": "Escribe tu mensaje pastoral para el feligrés...",
+  "enviarRespuesta": "Enviar Respuesta",
+  "aprobarSolicitud": "Aprobar",
+  "rechazarSolicitud": "Rechazar",
+  "motivoRechazo": "Motivo del rechazo (opcional)",
+  "respuestaEnviadaExito": "¡Respuesta pastoral enviada con éxito!",
+  "solicitudAprobadaExito": "Solicitud aprobada con éxito.",
+  "solicitudRechazadaExito": "Solicitud rechazada.",
+  "detalleSolicitud": "Detalle de la Solicitud",
+  "datosSolicitante": "Datos del Solicitante",
+  "mensajeSolicitante": "Mensaje del Solicitante",
+  "respuestaPastoralEmitida": "Respuesta Pastoral Emitida",
+  "fechaEnvio": "Fecha de envío",
+  "todasLasCategorias": "Todas",
+  "filtrarPorEstado": "Filtrar por estado",
+  "buscarPorNombreOTitulo": "Buscar por solicitante o título...",
+  "notificacionesInstitucionales": "Notificaciones Institucionales",
+  "sinNotificacionesAdmin": "No tienes notificaciones en tu buzón",
+  "actualizadoEnTiempoReal": "Actualizado en tiempo real desde Odoo 19",
+  "telefonoContacto": "Teléfono",
+  "correoContacto": "Correo electrónico",
+  "responderAhora": "Responder Ahora",
+  "atendidaEl": "Atendida el {fecha}",
+  "@atendidaEl": {
+    "description": "Fecha en que fue atendida la solicitud",
+    "placeholders": {
+      "fecha": {
+        "type": "String"
+      }
+    }
   }
 }
+
+

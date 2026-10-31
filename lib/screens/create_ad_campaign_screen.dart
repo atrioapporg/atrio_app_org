@@ -602,7 +602,7 @@ class _DeliveryAndDateCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: delivery,
+            initialValue: delivery,
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
@@ -779,7 +779,7 @@ class _TargetingCard extends StatelessWidget {
               )
             else if (availableCountries.isNotEmpty) ...[
               DropdownButtonFormField<int>(
-                value: selectedCountryId,
+                initialValue: selectedCountryId,
                 decoration: InputDecoration(
                   labelText: l10n?.paisDestino ?? 'País Destino',
                   filled: true,

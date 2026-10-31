@@ -1,5 +1,28 @@
 # Reglas de Desarrollo del Proyecto ATRIO
 
+---
+
+## 0. Propósito, Misión, Necesidad, Alcance y Limitaciones
+
+### 🎯 Propósito y Misión
+**ATRIO** ("*Vive tu Fe en comunidad*") es la plataforma móvil que conecta a los creyentes con sus iglesias locales, pastores y ministerios. Centraliza la vida espiritual (Biblia en audio, radios cristianas, devocionales), la comunión (peticiones pastorales, eventos, voluntariado) y el sostenimiento ministerial (ofrendas, donaciones a causas solidarias y tienda).
+
+### 💡 Necesidad
+1. **Canal Oficial Pastoral:** Elimina la dispersión en canales informales no trazables.
+2. **Dashboard Pastoral Móvil para Líderes:** Supera la barrera de depender de la consola web de escritorio de Odoo 19 (`action-700`) permitiendo atender y responder solicitudes pastorales en tiempo real desde el móvil.
+3. **Pauta y Campañas Comunitarias:** Ofrece a emprendedores y ministerios cristianos una plataforma de anuncios moderada y afín.
+
+### 🌐 Alcance y Roles
+- **`member`:** Feligrés. Lectura bíblica, audio, peticiones personales, ofrendas, tienda y anuncios en feed.
+- **`church_admin`:** Pastor/Admin de sede. Dashboard Pastoral Móvil ([ChurchAdminDashboardScreen](file:///c:/APPS/ATRIO/lib/screens/church_admin_dashboard_screen.dart)), gestión de peticiones pastorales ([AdminRequestsScreen](file:///c:/APPS/ATRIO/lib/screens/admin_requests_screen.dart)), métricas en vivo (`/admin/stats`), buzón institucional (`/admin/notifications`) y campañas de anuncios (`/admin/ads`).
+
+### ⚠️ Limitaciones
+- **Multitenancy y RBAC:** Aislamiento estricto por `church_id`.
+- **Conectividad:** Caché y lectura local offline (SQLite); transacciones y respuestas pastorales requieren conexión a Odoo 19.
+- **Región:** Cobertura primaria en República Dominicana (`DO`) y Honduras (`HN`) con geolocalización adaptativa.
+
+---
+
 ## Internacionalización y Localización (i18n & l10n) - Regla Inquebrantable
 
 > **OBLIGATORIO Y NO NEGOCIABLE:** Aplica estrictamente a **toda creación, modificación o refactorización** de pantallas, vistas, componentes o widgets en ATRIO.

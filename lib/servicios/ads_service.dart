@@ -156,8 +156,7 @@ class AdsService {
         'cities': cities,
         'church_ids': finalChurches,
         // Compatibilidad:
-        if (targetChurchesCount != null)
-          'churches_count': targetChurchesCount,
+        'churches_count': ?targetChurchesCount,
       };
 
       final res = await api.quoteAd(body);

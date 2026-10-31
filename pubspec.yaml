@@ -1,7 +1,7 @@
 name: atrio
 description: "Vive tu Fe en comunidad"
 publish_to: "none" # Evita que el paquete se publique accidentalmente en pub.dev
-version: 0.1.0+23 # Versión semántica (0.1.0) y número de compilación interno (+23)
+version: 0.1.0+24 # Versión semántica (0.1.0) y número de compilación interno (+23)
 
 environment:
   sdk: ^3.13.0 # Versión mínima y compatible del SDK de Dart
@@ -117,22 +117,25 @@ flutter:
 
 # Generación del icono de la aplicación (ejecutar: dart run flutter_launcher_icons)
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
-  image_path: "assets/icons/icon.png"
-  min_sdk_android: 29 # Requisito del proyecto: Android 10 (API 29) o superior
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#072B4F" # Color oficial azul institucional de ATRIO
+  adaptive_icon_foreground: "assets/icons/adaptive_foreground.png" # Emblema transparente centrado en safe-zone
+  adaptive_icon_foreground_inset: 0
 
 # Generación de la pantalla de bienvenida nativa (ejecutar: dart run flutter_native_splash:create)
 flutter_native_splash:
-  color: "#42a5f5" # Color de fondo general del splash
-  image: assets/images/splash-screen.png # Imagen centrada del splash
+  color: "#072B4F" # Color azul oficial de fondo de ATRIO
+  image: assets/images/splash-screen.png # Arte completo para Android < 12 e iOS
   android_gravity: fill
   ios_content_mode: scaleAspectFill
   web_image_mode: cover
   fullscreen: true
 
-  # Configuración obligatoria y específica para la API de Splash de Android 12+
+  # Configuración obligatoria y optimizada para la API de Splash de Android 12+
   android_12:
-    color: "#42a5f5"
-    image: assets/images/logo.png # Logo con dimensiones compatibles con el recorte circular de Android 12
-    icon_background_color: "#111111"
+    color: "#072B4F" # Azul oficial continuo
+    image: assets/images/android12_splash.png # Emblema de alta definición centrado dentro de la máscara circular
+

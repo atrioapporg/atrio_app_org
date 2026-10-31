@@ -27,6 +27,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subtituloBienvenida => 'A space to live and share your faith';
 
   @override
+  String get sloganAtrio => 'TOGETHER IN FAITH, CLOSER TO YOU';
+
+  @override
+  String get cargandoAtrio => 'Loading...';
+
+  @override
   String get accesoRapidoSeguro => 'Fast and Secure Access';
 
   @override
@@ -2604,10 +2610,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iniciarSesionAhora => 'Log in now';
 
   @override
-  String get comprobanteTransferencia => 'Transfer receipt';
+  String get comprobanteTransferencia => 'Transfer Receipt';
 
   @override
-  String get adjuntarComprobante => 'Attach receipt';
+  String get adjuntarComprobante => 'Attach Receipt';
 
   @override
   String get cambiarComprobante => 'Change receipt';
@@ -2780,5 +2786,393 @@ class AppLocalizationsEn extends AppLocalizations {
       'other': 'Welcome',
     });
     return '$_temp0';
+  }
+
+  @override
+  String get patrocinado => 'Sponsored';
+
+  @override
+  String get anunciosYPublicidad => 'Advertising & Ads';
+
+  @override
+  String get gestionCampanasPublicitarias => 'Advertising Campaign Management';
+
+  @override
+  String get subtituloGestionCampanas =>
+      'Create, quote, and measure your campaigns in the community';
+
+  @override
+  String get nuevaCampana => 'New Campaign';
+
+  @override
+  String get sinCampanas => 'No campaigns registered';
+
+  @override
+  String get sinCampanasSubtitulo =>
+      'Create your first campaign to reach more churches and members.';
+
+  @override
+  String get filtroActivas => 'Active';
+
+  @override
+  String get filtroPorPagar => 'To Pay';
+
+  @override
+  String get filtroEnRevision => 'In Review';
+
+  @override
+  String get filtroFinalizadas => 'Finished';
+
+  @override
+  String get estadoSolicitada => 'In Review';
+
+  @override
+  String get estadoPorPagar => 'Ready to Pay';
+
+  @override
+  String get estadoComprobanteRevision => 'Receipt in Review';
+
+  @override
+  String get estadoLista => 'Ready';
+
+  @override
+  String get estadoActiva => 'Active';
+
+  @override
+  String get estadoPausada => 'Paused';
+
+  @override
+  String get estadoFinalizada => 'Finished';
+
+  @override
+  String get estadoRechazada => 'Rejected';
+
+  @override
+  String get motivoRechazo => 'Rejection reason';
+
+  @override
+  String get pagarCampana => 'Pay Campaign';
+
+  @override
+  String get verEstadisticas => 'View Statistics';
+
+  @override
+  String get cancelarCampana => 'Cancel Campaign';
+
+  @override
+  String get confirmarCancelarCampana =>
+      'Are you sure you want to withdraw this ad request?';
+
+  @override
+  String get nombreCampana => 'Campaign Name';
+
+  @override
+  String get nombreCampanaHint => 'e.g. Annual Youth Conference 2026';
+
+  @override
+  String get descripcionCampana => 'Description (optional)';
+
+  @override
+  String get descripcionCampanaHint => 'Brief informative message';
+
+  @override
+  String get urlDestino => 'Destination URL (optional)';
+
+  @override
+  String get urlDestinoHint => 'https://my-church.org/event';
+
+  @override
+  String get ubicacionAnuncio => 'Ad Placement';
+
+  @override
+  String get ubicacionTodas => 'All placements';
+
+  @override
+  String get ubicacionFeed => 'Home feed';
+
+  @override
+  String get ubicacionNotificaciones => 'Notifications';
+
+  @override
+  String get imagenCampana => 'Campaign Image or Banner';
+
+  @override
+  String get seleccionarImagen => 'Select Image';
+
+  @override
+  String get cambiarImagen => 'Change Image';
+
+  @override
+  String get duracionSemanas => 'Campaign Duration';
+
+  @override
+  String semanasPlural(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString weeks',
+      one: '1 week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get alcanceIglesias => 'Church Reach';
+
+  @override
+  String iglesiasPlural(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString churches',
+      one: '1 church',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resumenCotizacion => 'Quote Summary';
+
+  @override
+  String get precioBase => 'Base price';
+
+  @override
+  String get costoTotal => 'Total Cost';
+
+  @override
+  String get cotizando => 'Calculating quote...';
+
+  @override
+  String get enviarARevision => 'Submit for Review';
+
+  @override
+  String get campanaCreadaExito =>
+      'Campaign submitted for review successfully!';
+
+  @override
+  String get metodoPago => 'Payment Method';
+
+  @override
+  String get pagarConPaypal => 'Pay with PayPal';
+
+  @override
+  String get transferenciaBancaria => 'Bank Transfer';
+
+  @override
+  String get cuentasBancariasDisponibles => 'Available Bank Accounts';
+
+  @override
+  String get titularCuenta => 'Account Holder';
+
+  @override
+  String get numeroCuenta => 'Account Number';
+
+  @override
+  String get tipoCuenta => 'Account Type';
+
+  @override
+  String get rncCedula => 'Tax ID';
+
+  @override
+  String get numeroCopiado => 'Account number copied to clipboard';
+
+  @override
+  String get referenciaBancaria => 'Bank Reference / Deposit Number';
+
+  @override
+  String get referenciaBancariaHint => 'e.g. DEP-12345678';
+
+  @override
+  String get enviarComprobante => 'Submit Receipt';
+
+  @override
+  String get comprobanteEnviadoExito =>
+      'Receipt submitted. Your campaign will be reviewed for payment.';
+
+  @override
+  String get rendimientoCampana => 'Campaign Performance';
+
+  @override
+  String get impresiones => 'Impressions';
+
+  @override
+  String get clics => 'Clicks';
+
+  @override
+  String get ctr => 'CTR (Clicks / Impressions)';
+
+  @override
+  String get evolucionDiaria => 'Daily Evolution';
+
+  @override
+  String get masInformacion => 'More information';
+
+  @override
+  String get permisoRequeridoManageAds =>
+      'Ad Manager permission (manage_ads) is required to access this module.';
+
+  @override
+  String get moderacionPlataforma => 'Platform Moderation';
+
+  @override
+  String get centroModeracion => 'Moderation Center';
+
+  @override
+  String get subtituloModeracion =>
+      'Audit and moderate community content and manage restricted words';
+
+  @override
+  String get resumenModeracion => 'Moderation Summary';
+
+  @override
+  String get marcados => 'Flagged';
+
+  @override
+  String get bloqueados => 'Banned';
+
+  @override
+  String get publicaciones => 'Posts';
+
+  @override
+  String get todosLosTipos => 'All types';
+
+  @override
+  String get bloquearContenido => 'Ban Content';
+
+  @override
+  String get desbloquearContenido => 'Unban Content';
+
+  @override
+  String get motivoBloqueo => 'Ban Reason';
+
+  @override
+  String get motivoBloqueoHint =>
+      'Explain why this content is inappropriate (visible to the church)';
+
+  @override
+  String get motivoBloqueoObligatorio => 'A ban reason is required';
+
+  @override
+  String get confirmarBloqueo => 'Confirm Ban';
+
+  @override
+  String get confirmarDesbloqueo =>
+      'Do you want to unban this content so it becomes visible again?';
+
+  @override
+  String get contenidoBloqueadoExito => 'Content banned successfully';
+
+  @override
+  String get contenidoDesbloqueadoExito => 'Content unbanned successfully';
+
+  @override
+  String get palabrasRestringidas => 'Restricted Words';
+
+  @override
+  String get subtituloPalabrasRestringidas =>
+      'Lexical rules to automatically flag or block content';
+
+  @override
+  String get nuevaPalabra => 'New Word';
+
+  @override
+  String get palabraOFrase => 'Word or Phrase';
+
+  @override
+  String get palabraOFraseHint => 'e.g. profanity, forbidden term';
+
+  @override
+  String get modoPalabra => 'Action Mode';
+
+  @override
+  String get modoFlag => 'Flag - Saves and alerts for review';
+
+  @override
+  String get modoBlock => 'Block - Prevents saving';
+
+  @override
+  String get palabraCompleta => 'Whole word matching';
+
+  @override
+  String get palabraActiva => 'Rule active';
+
+  @override
+  String get notaInterna => 'Internal Note (optional)';
+
+  @override
+  String get notaInternaHint => 'Reason or context for restriction';
+
+  @override
+  String get palabraGuardadaExito => 'Restricted word saved successfully';
+
+  @override
+  String get eliminarPalabra => 'Delete Word';
+
+  @override
+  String get confirmarEliminarPalabra =>
+      'Do you want to delete this word from the restricted list?';
+
+  @override
+  String get palabraEliminadaExito => 'Word deleted successfully';
+
+  @override
+  String get revisarTodoElContenido => 'Rescan All Content';
+
+  @override
+  String get confirmarRescan =>
+      'All existing posts, events, and notifications will be audited against restricted words. This may take a few moments.';
+
+  @override
+  String get iniciarRevision => 'Start Rescan';
+
+  @override
+  String get revisionCompletada => 'Rescan completed';
+
+  @override
+  String elementosMarcadosRescan(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString items flagged after rescan.',
+      one: '1 item flagged after rescan.',
+      zero: 'No new items flagged.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get permisoRequeridoSuperAdmin =>
+      'Restricted access: Super Platform Administrator role (platform_admin) is required to access this module.';
+
+  @override
+  String get sinContenidoModerado => 'No content in this section';
+
+  @override
+  String get sinPalabrasRestringidas => 'No restricted words registered';
+
+  @override
+  String get buscarPorTituloOIglesia => 'Search by title or church...';
+
+  @override
+  String get buscarPalabra => 'Search word...';
+
+  @override
+  String palabrasDetectadas(String words) {
+    return 'Detected words: $words';
   }
 }

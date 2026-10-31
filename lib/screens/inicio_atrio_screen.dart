@@ -13,10 +13,12 @@ import '../l10n/app_localizations.dart';
 import '../modelos/anuncio_model.dart';
 import '../modelos/post_model.dart';
 import '../providers/ajustes_provider.dart';
+import '../providers/ads_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../servicios/anuncio_service.dart';
 import '../widgets/hero_banner_card.dart';
+import '../widgets/sponsored_ad_card.dart';
 import '../widgets/read_only_banner.dart';
 import '../widgets/change_pending_banner.dart';
 import '../widgets/membership_pending_banner.dart';
@@ -125,6 +127,11 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     _cargarNotificacionesContador();
     _ultimoChequeoNotificaciones = DateTime.now();
     _cargarDatosPerfil();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AdsProvider>().loadFeedAds(placement: 'all');
+      }
+    });
   }
 
   Future<void> _cargarPosts() async {
@@ -1017,6 +1024,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     _cargarPosts(),
                     _cargarNotificacionesContador(),
                     _cargarDatosPerfil(),
+                    context.read<AdsProvider>().loadFeedAds(forceRefresh: true),
                   ]);
                 },
                 child: SingleChildScrollView(
@@ -1060,6 +1068,22 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                         amarilloOro,
                         grisBorde,
                         l10n,
+                      ),
+                      Consumer<AdsProvider>(
+                        builder: (context, adsProv, _) {
+                          if (adsProv.feedAds.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: usableHeight * 0.015),
+                              ...adsProv.feedAds.map(
+                                (ad) => SponsoredAdCard(ad: ad),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       SizedBox(height: usableHeight * 0.02),
                       _buildPostsSection(

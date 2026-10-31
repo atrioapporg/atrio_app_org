@@ -27,6 +27,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get subtituloBienvenida => 'Un espacio para vivir y compartir tu fe';
 
   @override
+  String get sloganAtrio => 'JUNTOS EN LA FE, MÁS CERCA DE TI';
+
+  @override
+  String get cargandoAtrio => 'Cargando...';
+
+  @override
   String get accesoRapidoSeguro => 'Acceso Rápido y Seguro';
 
   @override
@@ -2622,10 +2628,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get iniciarSesionAhora => 'Iniciar sesión ahora';
 
   @override
-  String get comprobanteTransferencia => 'Comprobante de transferencia';
+  String get comprobanteTransferencia => 'Comprobante de Transferencia';
 
   @override
-  String get adjuntarComprobante => 'Adjuntar comprobante';
+  String get adjuntarComprobante => 'Adjuntar Comprobante';
 
   @override
   String get cambiarComprobante => 'Cambiar comprobante';
@@ -2800,5 +2806,395 @@ class AppLocalizationsEs extends AppLocalizations {
       'other': 'Bienvenido(a)',
     });
     return '$_temp0';
+  }
+
+  @override
+  String get patrocinado => 'Patrocinado';
+
+  @override
+  String get anunciosYPublicidad => 'Publicidad y Anuncios';
+
+  @override
+  String get gestionCampanasPublicitarias =>
+      'Gestión de Campañas Publicitarias';
+
+  @override
+  String get subtituloGestionCampanas =>
+      'Crea, cotiza y mide tus campañas en la comunidad';
+
+  @override
+  String get nuevaCampana => 'Nueva Campaña';
+
+  @override
+  String get sinCampanas => 'No hay campañas registradas';
+
+  @override
+  String get sinCampanasSubtitulo =>
+      'Crea tu primera campaña para llegar a más iglesias y miembros.';
+
+  @override
+  String get filtroActivas => 'Activas';
+
+  @override
+  String get filtroPorPagar => 'Por Pagar';
+
+  @override
+  String get filtroEnRevision => 'En Revisión';
+
+  @override
+  String get filtroFinalizadas => 'Finalizadas';
+
+  @override
+  String get estadoSolicitada => 'En Revisión';
+
+  @override
+  String get estadoPorPagar => 'Por Pagar';
+
+  @override
+  String get estadoComprobanteRevision => 'Comprobante en Revisión';
+
+  @override
+  String get estadoLista => 'Lista para Salir';
+
+  @override
+  String get estadoActiva => 'Activa';
+
+  @override
+  String get estadoPausada => 'Pausada';
+
+  @override
+  String get estadoFinalizada => 'Finalizada';
+
+  @override
+  String get estadoRechazada => 'Rechazada';
+
+  @override
+  String get motivoRechazo => 'Motivo de rechazo';
+
+  @override
+  String get pagarCampana => 'Pagar Campaña';
+
+  @override
+  String get verEstadisticas => 'Ver Estadísticas';
+
+  @override
+  String get cancelarCampana => 'Cancelar Campaña';
+
+  @override
+  String get confirmarCancelarCampana =>
+      '¿Estás seguro de que deseas retirar esta solicitud de anuncio?';
+
+  @override
+  String get nombreCampana => 'Nombre de la Campaña';
+
+  @override
+  String get nombreCampanaHint => 'Ej. Conferencia Anual de Jóvenes 2026';
+
+  @override
+  String get descripcionCampana => 'Descripción (opcional)';
+
+  @override
+  String get descripcionCampanaHint => 'Breve mensaje informativo';
+
+  @override
+  String get urlDestino => 'URL de Destino (opcional)';
+
+  @override
+  String get urlDestinoHint => 'https://mi-iglesia.org/evento';
+
+  @override
+  String get ubicacionAnuncio => 'Ubicación del Anuncio';
+
+  @override
+  String get ubicacionTodas => 'Todas las ubicaciones';
+
+  @override
+  String get ubicacionFeed => 'Feed de inicio';
+
+  @override
+  String get ubicacionNotificaciones => 'Notificaciones';
+
+  @override
+  String get imagenCampana => 'Imagen o Banner de la Campaña';
+
+  @override
+  String get seleccionarImagen => 'Seleccionar Imagen';
+
+  @override
+  String get cambiarImagen => 'Cambiar Imagen';
+
+  @override
+  String get duracionSemanas => 'Duración de la Campaña';
+
+  @override
+  String semanasPlural(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString semanas',
+      one: '1 semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get alcanceIglesias => 'Alcance de Iglesias';
+
+  @override
+  String iglesiasPlural(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString iglesias',
+      one: '1 iglesia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resumenCotizacion => 'Resumen de Cotización';
+
+  @override
+  String get precioBase => 'Precio base';
+
+  @override
+  String get costoTotal => 'Costo Total';
+
+  @override
+  String get cotizando => 'Calculando cotización...';
+
+  @override
+  String get enviarARevision => 'Enviar a Revisión';
+
+  @override
+  String get campanaCreadaExito => '¡Campaña enviada a revisión con éxito!';
+
+  @override
+  String get metodoPago => 'Método de Pago';
+
+  @override
+  String get pagarConPaypal => 'Pagar con PayPal';
+
+  @override
+  String get transferenciaBancaria => 'Transferencia Bancaria';
+
+  @override
+  String get cuentasBancariasDisponibles => 'Cuentas Bancarias Disponibles';
+
+  @override
+  String get titularCuenta => 'Titular';
+
+  @override
+  String get numeroCuenta => 'Número';
+
+  @override
+  String get tipoCuenta => 'Tipo';
+
+  @override
+  String get rncCedula => 'RNC / Cédula';
+
+  @override
+  String get numeroCopiado => 'Número de cuenta copiado al portapapeles';
+
+  @override
+  String get referenciaBancaria => 'Referencia Bancaria / Número de Depósito';
+
+  @override
+  String get referenciaBancariaHint => 'Ej. DEP-12345678';
+
+  @override
+  String get enviarComprobante => 'Enviar Comprobante';
+
+  @override
+  String get comprobanteEnviadoExito =>
+      'Comprobante enviado. Tu campaña pasará a revisión de pago.';
+
+  @override
+  String get rendimientoCampana => 'Rendimiento de la Campaña';
+
+  @override
+  String get impresiones => 'Impresiones';
+
+  @override
+  String get clics => 'Clics';
+
+  @override
+  String get ctr => 'CTR (Clics / Impresiones)';
+
+  @override
+  String get evolucionDiaria => 'Evolución Diaria';
+
+  @override
+  String get masInformacion => 'Más información';
+
+  @override
+  String get permisoRequeridoManageAds =>
+      'Se requiere el permiso de Administrador de Anuncios (manage_ads) para acceder a este módulo.';
+
+  @override
+  String get moderacionPlataforma => 'Moderación de Plataforma';
+
+  @override
+  String get centroModeracion => 'Centro de Moderación';
+
+  @override
+  String get subtituloModeracion =>
+      'Audita y modera contenido público y administra palabras restringidas';
+
+  @override
+  String get resumenModeracion => 'Resumen de Moderación';
+
+  @override
+  String get marcados => 'Marcados';
+
+  @override
+  String get bloqueados => 'Bloqueados';
+
+  @override
+  String get publicaciones => 'Publicaciones';
+
+  @override
+  String get todosLosTipos => 'Todos los tipos';
+
+  @override
+  String get bloquearContenido => 'Bloquear Contenido';
+
+  @override
+  String get desbloquearContenido => 'Desbloquear Contenido';
+
+  @override
+  String get motivoBloqueo => 'Motivo del Bloqueo';
+
+  @override
+  String get motivoBloqueoHint =>
+      'Explica por qué este contenido es inapropiado (la iglesia lo verá)';
+
+  @override
+  String get motivoBloqueoObligatorio => 'El motivo del bloqueo es obligatorio';
+
+  @override
+  String get confirmarBloqueo => 'Confirmar Bloqueo';
+
+  @override
+  String get confirmarDesbloqueo =>
+      '¿Deseas desbloquear este contenido para que vuelva a estar visible en la comunidad?';
+
+  @override
+  String get contenidoBloqueadoExito => 'Contenido bloqueado exitosamente';
+
+  @override
+  String get contenidoDesbloqueadoExito =>
+      'Contenido desbloqueado exitosamente';
+
+  @override
+  String get palabrasRestringidas => 'Palabras Restringidas';
+
+  @override
+  String get subtituloPalabrasRestringidas =>
+      'Reglas léxicas para marcar o bloquear contenidos automáticamente';
+
+  @override
+  String get nuevaPalabra => 'Nueva Palabra';
+
+  @override
+  String get palabraOFrase => 'Palabra o Frase';
+
+  @override
+  String get palabraOFraseHint => 'Ej. grosería, término indebido';
+
+  @override
+  String get modoPalabra => 'Modo de Acción';
+
+  @override
+  String get modoFlag => 'Marcar (Flag) - Guarda y alerta para revisión';
+
+  @override
+  String get modoBlock => 'Bloquear (Block) - Impide guardar';
+
+  @override
+  String get palabraCompleta => 'Coincidencia exacta de palabra completa';
+
+  @override
+  String get palabraActiva => 'Regla activa';
+
+  @override
+  String get notaInterna => 'Nota Interna (opcional)';
+
+  @override
+  String get notaInternaHint => 'Razón o contexto de la restricción';
+
+  @override
+  String get palabraGuardadaExito => 'Palabra restringida guardada con éxito';
+
+  @override
+  String get eliminarPalabra => 'Eliminar Palabra';
+
+  @override
+  String get confirmarEliminarPalabra =>
+      '¿Deseas eliminar esta palabra de la lista de restricciones?';
+
+  @override
+  String get palabraEliminadaExito => 'Palabra eliminada con éxito';
+
+  @override
+  String get revisarTodoElContenido => 'Revisar Todo el Contenido';
+
+  @override
+  String get confirmarRescan =>
+      'Se auditarán todas las publicaciones, eventos y notificaciones existentes en busca de palabras restringidas. Esta acción puede tomar unos momentos.';
+
+  @override
+  String get iniciarRevision => 'Iniciar Revisión';
+
+  @override
+  String get revisionCompletada => 'Revisión completada';
+
+  @override
+  String elementosMarcadosRescan(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se marcaron $countString elementos tras la revisión.',
+      one: 'Se marcó 1 elemento tras la revisión.',
+      zero: 'No se encontraron nuevos elementos marcados.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get permisoRequeridoSuperAdmin =>
+      'Acceso restringido: Se requiere el rol de Super Administrador de Plataforma (platform_admin) para acceder a este módulo.';
+
+  @override
+  String get sinContenidoModerado => 'No hay contenido en esta sección';
+
+  @override
+  String get sinPalabrasRestringidas =>
+      'No hay palabras restringidas registradas';
+
+  @override
+  String get buscarPorTituloOIglesia => 'Buscar por título o iglesia...';
+
+  @override
+  String get buscarPalabra => 'Buscar palabra...';
+
+  @override
+  String palabrasDetectadas(String words) {
+    return 'Palabras detectadas: $words';
   }
 }

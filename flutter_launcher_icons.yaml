@@ -1,31 +1,23 @@
-# flutter pub run flutter_launcher_icons
 flutter_launcher_icons:
-  image_path: "assets/icons/icon.png"
+  # Icono legacy / iOS / fallback sin texto recortado
+  image_path: "assets/icons/app_icon.png"
 
-  android: "launcher_icon"
-  # image_path_android: "assets/icons/icon.png"
-  min_sdk_android: 29 # Android 10 o superior
-  # adaptive_icon_background: "assets/icon/background.png"
-  # adaptive_icon_foreground: "assets/icon/foreground.png"
-  # adaptive_icon_foreground_inset: 16
-  # adaptive_icon_monochrome: "assets/icon/monochrome.png"
+  # Android estándar (genera ic_launcher e ic_launcher_round)
+  android: true
+  min_sdk_android: 21
 
+  # Configuración oficial de Adaptive Icons para Android 8.0+ (API 26+)
+  adaptive_icon_background: "#072B4F"
+  adaptive_icon_foreground: "assets/icons/adaptive_foreground.png"
+  adaptive_icon_foreground_inset: 0
+
+  # Configuración para iOS
   ios: true
-  # image_path_ios: "assets/icon/icon.png"
   remove_alpha_ios: true
-  # image_path_ios_dark_transparent: "assets/icon/icon_dark.png"
-  # image_path_ios_tinted_grayscale: "assets/icon/icon_tinted.png"
-  # desaturate_tinted_to_grayscale_ios: true
-  # background_color_ios: "#ffffff"
 
   web:
     generate: false
-    image_path: "assets/icons/icon.png"
-
   windows:
     generate: false
-    image_path: "assets/icons/icon.png"
-
   macos:
     generate: false
-    image_path: "assets/icons/icon.png"

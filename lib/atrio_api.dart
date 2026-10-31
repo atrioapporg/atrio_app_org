@@ -124,7 +124,8 @@ class AtrioApi {
     int? churchId,
     Map<String, String>? extraHeaders,
   }) {
-    final isPublicAuth = path == '/auth/login' ||
+    final isPublicAuth =
+        path == '/auth/login' ||
         path == '/auth/google' ||
         path == '/auth/refresh' ||
         path == '/auth/password/reset' ||
@@ -195,7 +196,10 @@ class AtrioApi {
         method == 'PUT' ||
         method == 'PATCH' ||
         method == 'DELETE';
-    if (isReadOnly && isMutation && !path.startsWith('/auth/')) {
+    if (isReadOnly &&
+        isMutation &&
+        !path.startsWith('/auth/') &&
+        !path.startsWith('/platform/moderation')) {
       throw AtrioApiException(
         403,
         'read_only',
@@ -208,8 +212,8 @@ class AtrioApi {
     final String fullPath = path.startsWith('http')
         ? path
         : (path.startsWith('/api/')
-            ? '$baseUrl$path'
-            : '$baseUrl/atrio/portal/api$path');
+              ? '$baseUrl$path'
+              : '$baseUrl/atrio/portal/api$path');
     final uri = Uri.parse(fullPath).replace(queryParameters: query);
 
     final mergedHeaders = _buildHeaders(
@@ -239,12 +243,9 @@ class AtrioApi {
     final stopwatch = Stopwatch()..start();
     http.Response response;
     try {
-      final streamedResponse = await (client != null
-              ? client!.send(request)
-              : request.send())
-          .timeout(
-        const Duration(seconds: 15),
-      );
+      final streamedResponse =
+          await (client != null ? client!.send(request) : request.send())
+              .timeout(const Duration(seconds: 15));
       response = await http.Response.fromStream(streamedResponse);
     } catch (e, stackTrace) {
       stopwatch.stop();
@@ -287,8 +288,7 @@ class AtrioApi {
           statusCode: response.statusCode,
           duration: stopwatch.elapsed,
           errorCode: 'unauthorized',
-          errorMessage:
-              'Token de acceso expirado (401). Iniciando renovación automática con refresh_token...',
+          errorMessage: 'Token de acceso expirado (401). Iniciando renovación automática con refresh_token...',
           rawBody: data,
         );
       }
@@ -418,10 +418,7 @@ class AtrioApi {
     final data = await _send(
       'POST',
       '/auth/google',
-      body: {
-        'id_token': idToken,
-        'device_name': deviceName,
-      },
+      body: {'id_token': idToken, 'device_name': deviceName},
       retryAuth: false,
     );
 
@@ -471,7 +468,9 @@ class AtrioApi {
     try {
       data = await _send('POST', primaryEndpoint, body: body, retryAuth: false);
     } catch (e) {
-      final String errStr = e is AtrioApiException ? '${e.statusCode} ${e.message}' : '$e';
+      final String errStr = e is AtrioApiException
+          ? '${e.statusCode} ${e.message}'
+          : '$e';
       debugPrint(
         '⚠️ [AtrioApi] Endpoint primario social ($primaryEndpoint) devolvió: $errStr. Probando alternativo...',
       );
@@ -486,7 +485,9 @@ class AtrioApi {
           retryAuth: false,
         );
       } catch (e2) {
-        final String errStr2 = e2 is AtrioApiException ? '${e2.statusCode} ${e2.message}' : '$e2';
+        final String errStr2 = e2 is AtrioApiException
+            ? '${e2.statusCode} ${e2.message}'
+            : '$e2';
         debugPrint(
           'ℹ️ [AtrioApi] Endpoints de Social Login en backend Odoo no disponibles ($errStr2). '
           'Generando sesión social segura en cliente...',
@@ -710,7 +711,8 @@ class AtrioApi {
     final payload = Map<String, dynamic>.from(data);
     if (payload.containsKey('church_id') &&
         (payload['church_id'] == null ||
-            (payload['church_id'] is int && (payload['church_id'] as int) <= 0))) {
+            (payload['church_id'] is int &&
+                (payload['church_id'] as int) <= 0))) {
       payload.remove('church_id');
     }
     return _send('POST', '/register', body: payload, retryAuth: false);
@@ -821,7 +823,8 @@ class AtrioApi {
     final body = <String, dynamic>{
       if (churchId != null && churchId > 0) 'church_id': churchId,
       if (placeId != null && placeId.isNotEmpty) 'place_id': placeId,
-      if (churchName != null && churchName.isNotEmpty) 'church_name': churchName,
+      if (churchName != null && churchName.isNotEmpty)
+        'church_name': churchName,
       if (denomination != null && denomination.isNotEmpty)
         'denomination': denomination,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
@@ -832,8 +835,9 @@ class AtrioApi {
   /// Registra una nueva iglesia para el usuario actual autenticado (POST /me/church).
   /// Quien crea la iglesia queda automáticamente con rol 'church_admin'.
   /// La congregación queda pendiente de asignación de plan por parte de ATRIO.
-  Future<Map<String, dynamic>> createMyChurch(Map<String, dynamic> churchData) =>
-      _send('POST', '/me/church', body: churchData);
+  Future<Map<String, dynamic>> createMyChurch(
+    Map<String, dynamic> churchData,
+  ) => _send('POST', '/me/church', body: churchData);
 
   /// Registrar token o información del dispositivo para notificaciones push.
   Future<Map<String, dynamic>> registerDevice(
@@ -1494,10 +1498,8 @@ class AtrioApi {
   );
 
   /// Detalle administrativo de un evento específico (GET /admin/events/{id}).
-  Future<Map<String, dynamic>> adminEventDetail(
-    int eventId, {
-    int? churchId,
-  }) => _send('GET', '/admin/events/$eventId', churchId: churchId);
+  Future<Map<String, dynamic>> adminEventDetail(int eventId, {int? churchId}) =>
+      _send('GET', '/admin/events/$eventId', churchId: churchId);
 
   /// Crea un nuevo evento en Odoo 19 (POST /admin/events).
   Future<Map<String, dynamic>> adminCreateEvent(
@@ -1510,13 +1512,16 @@ class AtrioApi {
     int eventId,
     Map<String, dynamic> eventData, {
     int? churchId,
-  }) => _send('PUT', '/admin/events/$eventId', body: eventData, churchId: churchId);
+  }) => _send(
+    'PUT',
+    '/admin/events/$eventId',
+    body: eventData,
+    churchId: churchId,
+  );
 
   /// Elimina un evento de la congregación (DELETE /admin/events/{id}).
-  Future<Map<String, dynamic>> adminDeleteEvent(
-    int eventId, {
-    int? churchId,
-  }) => _send('DELETE', '/admin/events/$eventId', churchId: churchId);
+  Future<Map<String, dynamic>> adminDeleteEvent(int eventId, {int? churchId}) =>
+      _send('DELETE', '/admin/events/$eventId', churchId: churchId);
 
   /// Consulta todas las publicaciones y prédicas de la iglesia (GET /admin/posts).
   Future<Map<String, dynamic>> adminPosts({
@@ -1531,10 +1536,8 @@ class AtrioApi {
   );
 
   /// Detalle de una publicación en panel administrativo (GET /admin/posts/{id}).
-  Future<Map<String, dynamic>> adminPostDetail(
-    int postId, {
-    int? churchId,
-  }) => _send('GET', '/admin/posts/$postId', churchId: churchId);
+  Future<Map<String, dynamic>> adminPostDetail(int postId, {int? churchId}) =>
+      _send('GET', '/admin/posts/$postId', churchId: churchId);
 
   /// Crea una publicación, prédica o stream en vivo en Odoo (POST /admin/posts).
   Future<Map<String, dynamic>> adminCreatePost(
@@ -1547,13 +1550,12 @@ class AtrioApi {
     int postId,
     Map<String, dynamic> postData, {
     int? churchId,
-  }) => _send('PUT', '/admin/posts/$postId', body: postData, churchId: churchId);
+  }) =>
+      _send('PUT', '/admin/posts/$postId', body: postData, churchId: churchId);
 
   /// Elimina una publicación de la iglesia (DELETE /admin/posts/{id}).
-  Future<Map<String, dynamic>> adminDeletePost(
-    int postId, {
-    int? churchId,
-  }) => _send('DELETE', '/admin/posts/$postId', churchId: churchId);
+  Future<Map<String, dynamic>> adminDeletePost(int postId, {int? churchId}) =>
+      _send('DELETE', '/admin/posts/$postId', churchId: churchId);
 
   // ===========================================================================
   // 14. ENDPOINTS DE PLATAFORMA / SUPER ADMIN (platform_admin)
@@ -1572,4 +1574,96 @@ class AtrioApi {
     }
     return _send('GET', '/platform/churches', query: query);
   }
+
+  // ===========================================================================
+  // 15. CENTRO DE MODERACIÓN DE PLATAFORMA (SUPER ADMIN - platform_admin)
+  // ===========================================================================
+
+  /// Resumen estadístico de contenido marcado y bloqueado por tipo (GET /platform/moderation/summary).
+  Future<Map<String, dynamic>> moderationSummary() =>
+      _send('GET', '/platform/moderation/summary');
+
+  /// Listado de contenido moderado filtrado (GET /platform/moderation/content).
+  Future<Map<String, dynamic>> moderationContent({
+    String type = 'post',
+    String status = 'flagged',
+    int? churchId,
+    String? search,
+    int limit = 50,
+    int offset = 0,
+  }) {
+    final query = <String, String>{
+      'type': type,
+      'status': status,
+      'limit': '$limit',
+      'offset': '$offset',
+      if (churchId != null) 'church_id': '$churchId',
+      if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+    };
+    return _send('GET', '/platform/moderation/content', query: query);
+  }
+
+  /// Bloquea un contenido reportado exigiendo un motivo que se notificará a la iglesia.
+  /// (POST /platform/moderation/content/{type}/{id}/ban)
+  Future<Map<String, dynamic>> banContent(String type, int id, String reason) =>
+      _send(
+        'POST',
+        '/platform/moderation/content/$type/$id/ban',
+        body: {'reason': reason},
+      );
+
+  /// Desbloquea un contenido previamente bloqueado y notifica a la iglesia.
+  /// (POST /platform/moderation/content/{type}/{id}/unban)
+  Future<Map<String, dynamic>> unbanContent(String type, int id) =>
+      _send('POST', '/platform/moderation/content/$type/$id/unban');
+
+  /// Consulta el catálogo de palabras restringidas (GET /platform/moderation/words).
+  Future<Map<String, dynamic>> moderationWords() =>
+      _send('GET', '/platform/moderation/words');
+
+  /// Registra una nueva palabra restringida en el sistema (POST /platform/moderation/words).
+  Future<Map<String, dynamic>> createModerationWord({
+    required String word,
+    String mode = 'flag',
+    bool wholeWord = true,
+    String? note,
+  }) => _send(
+    'POST',
+    '/platform/moderation/words',
+    body: {
+      'word': word.trim(),
+      'mode': mode,
+      'whole_word': wholeWord,
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+    },
+  );
+
+  /// Edita los parámetros o estado de una palabra restringida (PATCH /platform/moderation/words/{id}).
+  Future<Map<String, dynamic>> updateModerationWord(
+    int id, {
+    String? word,
+    String? mode,
+    bool? wholeWord,
+    bool? active,
+    String? note,
+  }) => _send(
+    'PATCH',
+    '/platform/moderation/words/$id',
+    body: {
+      'word': ?word?.trim(),
+      'mode': ?mode,
+      'whole_word': ?wholeWord,
+      'active': ?active,
+      'note': ?note?.trim(),
+    },
+  );
+
+  /// Elimina una palabra restringida de la base de datos (DELETE /platform/moderation/words/{id}).
+  Future<Map<String, dynamic>> deleteModerationWord(int id) =>
+      _send('DELETE', '/platform/moderation/words/$id');
+
+  /// Ejecuta un reescaneo global asíncrono de todo el contenido de la plataforma.
+  /// (POST /platform/moderation/rescan)
+  Future<Map<String, dynamic>> moderationRescan() =>
+      _send('POST', '/platform/moderation/rescan');
 }

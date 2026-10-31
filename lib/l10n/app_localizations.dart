@@ -128,6 +128,18 @@ abstract class AppLocalizations {
   /// **'Un espacio para vivir y compartir tu fe'**
   String get subtituloBienvenida;
 
+  /// No description provided for @sloganAtrio.
+  ///
+  /// In es, this message translates to:
+  /// **'JUNTOS EN LA FE, MÁS CERCA DE TI'**
+  String get sloganAtrio;
+
+  /// No description provided for @cargandoAtrio.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando...'**
+  String get cargandoAtrio;
+
   /// No description provided for @accesoRapidoSeguro.
   ///
   /// In es, this message translates to:
@@ -4785,13 +4797,13 @@ abstract class AppLocalizations {
   /// No description provided for @comprobanteTransferencia.
   ///
   /// In es, this message translates to:
-  /// **'Comprobante de transferencia'**
+  /// **'Comprobante de Transferencia'**
   String get comprobanteTransferencia;
 
   /// No description provided for @adjuntarComprobante.
   ///
   /// In es, this message translates to:
-  /// **'Adjuntar comprobante'**
+  /// **'Adjuntar Comprobante'**
   String get adjuntarComprobante;
 
   /// No description provided for @cambiarComprobante.
@@ -5045,6 +5057,672 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{gender, select, female{Bienvenida} male{Bienvenido} other{Bienvenido(a)}}'**
   String bienvenidoSegunGenero(String gender);
+
+  /// No description provided for @patrocinado.
+  ///
+  /// In es, this message translates to:
+  /// **'Patrocinado'**
+  String get patrocinado;
+
+  /// No description provided for @anunciosYPublicidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicidad y Anuncios'**
+  String get anunciosYPublicidad;
+
+  /// No description provided for @gestionCampanasPublicitarias.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestión de Campañas Publicitarias'**
+  String get gestionCampanasPublicitarias;
+
+  /// No description provided for @subtituloGestionCampanas.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea, cotiza y mide tus campañas en la comunidad'**
+  String get subtituloGestionCampanas;
+
+  /// No description provided for @nuevaCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva Campaña'**
+  String get nuevaCampana;
+
+  /// No description provided for @sinCampanas.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay campañas registradas'**
+  String get sinCampanas;
+
+  /// No description provided for @sinCampanasSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu primera campaña para llegar a más iglesias y miembros.'**
+  String get sinCampanasSubtitulo;
+
+  /// No description provided for @filtroActivas.
+  ///
+  /// In es, this message translates to:
+  /// **'Activas'**
+  String get filtroActivas;
+
+  /// No description provided for @filtroPorPagar.
+  ///
+  /// In es, this message translates to:
+  /// **'Por Pagar'**
+  String get filtroPorPagar;
+
+  /// No description provided for @filtroEnRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'En Revisión'**
+  String get filtroEnRevision;
+
+  /// No description provided for @filtroFinalizadas.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizadas'**
+  String get filtroFinalizadas;
+
+  /// No description provided for @estadoSolicitada.
+  ///
+  /// In es, this message translates to:
+  /// **'En Revisión'**
+  String get estadoSolicitada;
+
+  /// No description provided for @estadoPorPagar.
+  ///
+  /// In es, this message translates to:
+  /// **'Por Pagar'**
+  String get estadoPorPagar;
+
+  /// No description provided for @estadoComprobanteRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprobante en Revisión'**
+  String get estadoComprobanteRevision;
+
+  /// No description provided for @estadoLista.
+  ///
+  /// In es, this message translates to:
+  /// **'Lista para Salir'**
+  String get estadoLista;
+
+  /// No description provided for @estadoActiva.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa'**
+  String get estadoActiva;
+
+  /// No description provided for @estadoPausada.
+  ///
+  /// In es, this message translates to:
+  /// **'Pausada'**
+  String get estadoPausada;
+
+  /// No description provided for @estadoFinalizada.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizada'**
+  String get estadoFinalizada;
+
+  /// No description provided for @estadoRechazada.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazada'**
+  String get estadoRechazada;
+
+  /// No description provided for @motivoRechazo.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo de rechazo'**
+  String get motivoRechazo;
+
+  /// No description provided for @pagarCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagar Campaña'**
+  String get pagarCampana;
+
+  /// No description provided for @verEstadisticas.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver Estadísticas'**
+  String get verEstadisticas;
+
+  /// No description provided for @cancelarCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar Campaña'**
+  String get cancelarCampana;
+
+  /// No description provided for @confirmarCancelarCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Estás seguro de que deseas retirar esta solicitud de anuncio?'**
+  String get confirmarCancelarCampana;
+
+  /// No description provided for @nombreCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de la Campaña'**
+  String get nombreCampana;
+
+  /// No description provided for @nombreCampanaHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej. Conferencia Anual de Jóvenes 2026'**
+  String get nombreCampanaHint;
+
+  /// No description provided for @descripcionCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción (opcional)'**
+  String get descripcionCampana;
+
+  /// No description provided for @descripcionCampanaHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Breve mensaje informativo'**
+  String get descripcionCampanaHint;
+
+  /// No description provided for @urlDestino.
+  ///
+  /// In es, this message translates to:
+  /// **'URL de Destino (opcional)'**
+  String get urlDestino;
+
+  /// No description provided for @urlDestinoHint.
+  ///
+  /// In es, this message translates to:
+  /// **'https://mi-iglesia.org/evento'**
+  String get urlDestinoHint;
+
+  /// No description provided for @ubicacionAnuncio.
+  ///
+  /// In es, this message translates to:
+  /// **'Ubicación del Anuncio'**
+  String get ubicacionAnuncio;
+
+  /// No description provided for @ubicacionTodas.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las ubicaciones'**
+  String get ubicacionTodas;
+
+  /// No description provided for @ubicacionFeed.
+  ///
+  /// In es, this message translates to:
+  /// **'Feed de inicio'**
+  String get ubicacionFeed;
+
+  /// No description provided for @ubicacionNotificaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get ubicacionNotificaciones;
+
+  /// No description provided for @imagenCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Imagen o Banner de la Campaña'**
+  String get imagenCampana;
+
+  /// No description provided for @seleccionarImagen.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar Imagen'**
+  String get seleccionarImagen;
+
+  /// No description provided for @cambiarImagen.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar Imagen'**
+  String get cambiarImagen;
+
+  /// No description provided for @duracionSemanas.
+  ///
+  /// In es, this message translates to:
+  /// **'Duración de la Campaña'**
+  String get duracionSemanas;
+
+  /// Duración en semanas con plural
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 semana} other{{count} semanas}}'**
+  String semanasPlural(num count);
+
+  /// No description provided for @alcanceIglesias.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcance de Iglesias'**
+  String get alcanceIglesias;
+
+  /// Alcance en número de iglesias con plural
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 iglesia} other{{count} iglesias}}'**
+  String iglesiasPlural(num count);
+
+  /// No description provided for @resumenCotizacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen de Cotización'**
+  String get resumenCotizacion;
+
+  /// No description provided for @precioBase.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio base'**
+  String get precioBase;
+
+  /// No description provided for @costoTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Costo Total'**
+  String get costoTotal;
+
+  /// No description provided for @cotizando.
+  ///
+  /// In es, this message translates to:
+  /// **'Calculando cotización...'**
+  String get cotizando;
+
+  /// No description provided for @enviarARevision.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar a Revisión'**
+  String get enviarARevision;
+
+  /// No description provided for @campanaCreadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Campaña enviada a revisión con éxito!'**
+  String get campanaCreadaExito;
+
+  /// No description provided for @metodoPago.
+  ///
+  /// In es, this message translates to:
+  /// **'Método de Pago'**
+  String get metodoPago;
+
+  /// No description provided for @pagarConPaypal.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagar con PayPal'**
+  String get pagarConPaypal;
+
+  /// No description provided for @transferenciaBancaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Transferencia Bancaria'**
+  String get transferenciaBancaria;
+
+  /// No description provided for @cuentasBancariasDisponibles.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuentas Bancarias Disponibles'**
+  String get cuentasBancariasDisponibles;
+
+  /// No description provided for @titularCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'Titular'**
+  String get titularCuenta;
+
+  /// No description provided for @numeroCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'Número'**
+  String get numeroCuenta;
+
+  /// No description provided for @tipoCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo'**
+  String get tipoCuenta;
+
+  /// No description provided for @rncCedula.
+  ///
+  /// In es, this message translates to:
+  /// **'RNC / Cédula'**
+  String get rncCedula;
+
+  /// No description provided for @numeroCopiado.
+  ///
+  /// In es, this message translates to:
+  /// **'Número de cuenta copiado al portapapeles'**
+  String get numeroCopiado;
+
+  /// No description provided for @referenciaBancaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Referencia Bancaria / Número de Depósito'**
+  String get referenciaBancaria;
+
+  /// No description provided for @referenciaBancariaHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej. DEP-12345678'**
+  String get referenciaBancariaHint;
+
+  /// No description provided for @enviarComprobante.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar Comprobante'**
+  String get enviarComprobante;
+
+  /// No description provided for @comprobanteEnviadoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprobante enviado. Tu campaña pasará a revisión de pago.'**
+  String get comprobanteEnviadoExito;
+
+  /// No description provided for @rendimientoCampana.
+  ///
+  /// In es, this message translates to:
+  /// **'Rendimiento de la Campaña'**
+  String get rendimientoCampana;
+
+  /// No description provided for @impresiones.
+  ///
+  /// In es, this message translates to:
+  /// **'Impresiones'**
+  String get impresiones;
+
+  /// No description provided for @clics.
+  ///
+  /// In es, this message translates to:
+  /// **'Clics'**
+  String get clics;
+
+  /// No description provided for @ctr.
+  ///
+  /// In es, this message translates to:
+  /// **'CTR (Clics / Impresiones)'**
+  String get ctr;
+
+  /// No description provided for @evolucionDiaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Evolución Diaria'**
+  String get evolucionDiaria;
+
+  /// No description provided for @masInformacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Más información'**
+  String get masInformacion;
+
+  /// No description provided for @permisoRequeridoManageAds.
+  ///
+  /// In es, this message translates to:
+  /// **'Se requiere el permiso de Administrador de Anuncios (manage_ads) para acceder a este módulo.'**
+  String get permisoRequeridoManageAds;
+
+  /// No description provided for @moderacionPlataforma.
+  ///
+  /// In es, this message translates to:
+  /// **'Moderación de Plataforma'**
+  String get moderacionPlataforma;
+
+  /// No description provided for @centroModeracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Centro de Moderación'**
+  String get centroModeracion;
+
+  /// No description provided for @subtituloModeracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Audita y modera contenido público y administra palabras restringidas'**
+  String get subtituloModeracion;
+
+  /// No description provided for @resumenModeracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen de Moderación'**
+  String get resumenModeracion;
+
+  /// No description provided for @marcados.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcados'**
+  String get marcados;
+
+  /// No description provided for @bloqueados.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloqueados'**
+  String get bloqueados;
+
+  /// No description provided for @publicaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicaciones'**
+  String get publicaciones;
+
+  /// No description provided for @todosLosTipos.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los tipos'**
+  String get todosLosTipos;
+
+  /// No description provided for @bloquearContenido.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear Contenido'**
+  String get bloquearContenido;
+
+  /// No description provided for @desbloquearContenido.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquear Contenido'**
+  String get desbloquearContenido;
+
+  /// No description provided for @motivoBloqueo.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo del Bloqueo'**
+  String get motivoBloqueo;
+
+  /// No description provided for @motivoBloqueoHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Explica por qué este contenido es inapropiado (la iglesia lo verá)'**
+  String get motivoBloqueoHint;
+
+  /// No description provided for @motivoBloqueoObligatorio.
+  ///
+  /// In es, this message translates to:
+  /// **'El motivo del bloqueo es obligatorio'**
+  String get motivoBloqueoObligatorio;
+
+  /// No description provided for @confirmarBloqueo.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar Bloqueo'**
+  String get confirmarBloqueo;
+
+  /// No description provided for @confirmarDesbloqueo.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas desbloquear este contenido para que vuelva a estar visible en la comunidad?'**
+  String get confirmarDesbloqueo;
+
+  /// No description provided for @contenidoBloqueadoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Contenido bloqueado exitosamente'**
+  String get contenidoBloqueadoExito;
+
+  /// No description provided for @contenidoDesbloqueadoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Contenido desbloqueado exitosamente'**
+  String get contenidoDesbloqueadoExito;
+
+  /// No description provided for @palabrasRestringidas.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabras Restringidas'**
+  String get palabrasRestringidas;
+
+  /// No description provided for @subtituloPalabrasRestringidas.
+  ///
+  /// In es, this message translates to:
+  /// **'Reglas léxicas para marcar o bloquear contenidos automáticamente'**
+  String get subtituloPalabrasRestringidas;
+
+  /// No description provided for @nuevaPalabra.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva Palabra'**
+  String get nuevaPalabra;
+
+  /// No description provided for @palabraOFrase.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabra o Frase'**
+  String get palabraOFrase;
+
+  /// No description provided for @palabraOFraseHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej. grosería, término indebido'**
+  String get palabraOFraseHint;
+
+  /// No description provided for @modoPalabra.
+  ///
+  /// In es, this message translates to:
+  /// **'Modo de Acción'**
+  String get modoPalabra;
+
+  /// No description provided for @modoFlag.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcar (Flag) - Guarda y alerta para revisión'**
+  String get modoFlag;
+
+  /// No description provided for @modoBlock.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear (Block) - Impide guardar'**
+  String get modoBlock;
+
+  /// No description provided for @palabraCompleta.
+  ///
+  /// In es, this message translates to:
+  /// **'Coincidencia exacta de palabra completa'**
+  String get palabraCompleta;
+
+  /// No description provided for @palabraActiva.
+  ///
+  /// In es, this message translates to:
+  /// **'Regla activa'**
+  String get palabraActiva;
+
+  /// No description provided for @notaInterna.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota Interna (opcional)'**
+  String get notaInterna;
+
+  /// No description provided for @notaInternaHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Razón o contexto de la restricción'**
+  String get notaInternaHint;
+
+  /// No description provided for @palabraGuardadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabra restringida guardada con éxito'**
+  String get palabraGuardadaExito;
+
+  /// No description provided for @eliminarPalabra.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar Palabra'**
+  String get eliminarPalabra;
+
+  /// No description provided for @confirmarEliminarPalabra.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas eliminar esta palabra de la lista de restricciones?'**
+  String get confirmarEliminarPalabra;
+
+  /// No description provided for @palabraEliminadaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabra eliminada con éxito'**
+  String get palabraEliminadaExito;
+
+  /// No description provided for @revisarTodoElContenido.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisar Todo el Contenido'**
+  String get revisarTodoElContenido;
+
+  /// No description provided for @confirmarRescan.
+  ///
+  /// In es, this message translates to:
+  /// **'Se auditarán todas las publicaciones, eventos y notificaciones existentes en busca de palabras restringidas. Esta acción puede tomar unos momentos.'**
+  String get confirmarRescan;
+
+  /// No description provided for @iniciarRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar Revisión'**
+  String get iniciarRevision;
+
+  /// No description provided for @revisionCompletada.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisión completada'**
+  String get revisionCompletada;
+
+  /// Cantidad de elementos marcados durante el reescaneo
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{No se encontraron nuevos elementos marcados.} =1{Se marcó 1 elemento tras la revisión.} other{Se marcaron {count} elementos tras la revisión.}}'**
+  String elementosMarcadosRescan(num count);
+
+  /// No description provided for @permisoRequeridoSuperAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Acceso restringido: Se requiere el rol de Super Administrador de Plataforma (platform_admin) para acceder a este módulo.'**
+  String get permisoRequeridoSuperAdmin;
+
+  /// No description provided for @sinContenidoModerado.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay contenido en esta sección'**
+  String get sinContenidoModerado;
+
+  /// No description provided for @sinPalabrasRestringidas.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay palabras restringidas registradas'**
+  String get sinPalabrasRestringidas;
+
+  /// No description provided for @buscarPorTituloOIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por título o iglesia...'**
+  String get buscarPorTituloOIglesia;
+
+  /// No description provided for @buscarPalabra.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar palabra...'**
+  String get buscarPalabra;
+
+  /// Muestra las palabras restringidas que fueron detectadas en el texto
+  ///
+  /// In es, this message translates to:
+  /// **'Palabras detectadas: {words}'**
+  String palabrasDetectadas(String words);
 }
 
 class _AppLocalizationsDelegate

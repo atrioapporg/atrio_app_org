@@ -28,6 +28,10 @@ import 'seguimiento_solicitud_screen.dart';
 import 'terminos_privacidad_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 import 'configuracion_screen.dart';
+import 'admin_ads_screen.dart';
+import 'moderation_screen.dart';
+import 'moderation_words_screen.dart';
+import '../modelos/auth_permissions.dart';
 
 class PerfilScreen extends StatefulWidget {
   static const routeName = 'perfil_screen';
@@ -477,6 +481,19 @@ class _PerfilScreenState extends State<PerfilScreen>
                       child: Padding(
                         padding: EdgeInsets.only(bottom: usableHeight * 0.025),
                         child: _buildSeccionPastoralDestacada(
+                          context: context,
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
+                        ),
+                      ),
+                    ),
+
+                    // Panel de Moderación de Plataforma (Super Admin - Odoo 19 /platform/moderation/*)
+                    PermissionGuard(
+                      requirePlatformAdmin: true,
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: usableHeight * 0.025),
+                        child: _buildSeccionSuperAdminModeracion(
                           context: context,
                           screenWidth: screenWidth,
                           usableHeight: usableHeight,
@@ -1822,6 +1839,14 @@ class _PerfilScreenState extends State<PerfilScreen>
         subtitle: 'Métricas de crecimiento y participación',
         onTap: () => _mostrarMetricasComunidad(context),
       ),
+      if (context.hasPermission(AppPermissions.manageAds))
+        (
+          icon: Icons.ad_units_rounded,
+          title: l10n?.anunciosYPublicidad ?? 'Publicidad y Anuncios',
+          subtitle: l10n?.subtituloGestionCampanas ??
+              'Crea, cotiza y mide tus campañas en la comunidad',
+          onTap: () => Navigator.pushNamed(context, AdminAdsScreen.routeName),
+        ),
     ];
 
     return Container(
@@ -2023,6 +2048,252 @@ class _PerfilScreenState extends State<PerfilScreen>
                                         color: Colors.white.withValues(
                                           alpha: 0.38,
                                         ),
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (!isLast)
+                              Divider(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                height: 1,
+                                thickness: 1,
+                                indent: screenWidth * 0.14,
+                                endIndent: screenWidth * 0.03,
+                              ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeccionSuperAdminModeracion({
+    required BuildContext context,
+    required double screenWidth,
+    required double usableHeight,
+  }) {
+    final l10n = AppLocalizations.of(context);
+
+    final items = [
+      (
+        icon: Icons.shield_rounded,
+        title: l10n?.centroModeracion ?? 'Centro de Moderación',
+        subtitle: 'Auditar contenidos marcados y bloqueados',
+        onTap: () => Navigator.pushNamed(context, ModerationScreen.routeName),
+      ),
+      (
+        icon: Icons.rule_rounded,
+        title: l10n?.palabrasRestringidas ?? 'Palabras Restringidas',
+        subtitle: 'Reglas automáticas flag y block',
+        onTap: () =>
+            Navigator.pushNamed(context, ModerationWordsScreen.routeName),
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF818CF8).withValues(alpha: 0.5),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E1B4B).withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -15,
+              right: -15,
+              child: Icon(
+                Icons.security_rounded,
+                size: screenWidth * 0.38,
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.045,
+                vertical: usableHeight * 0.022,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF818CF8).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF818CF8).withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.gavel_rounded,
+                          color: Color(0xFFC7D2FE),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    l10n?.moderacionPlataforma ??
+                                        'Moderación de Plataforma',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: screenWidth * 0.044,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF818CF8),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'SUPER ADMIN',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              l10n?.subtituloModeracion ??
+                                  'Audita y modera contenido público',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.72),
+                                fontSize: screenWidth * 0.03,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: usableHeight * 0.018),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.09),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: List.generate(items.length, (idx) {
+                        final item = items[idx];
+                        final isLast = idx == items.length - 1;
+                        return Column(
+                          children: [
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.vertical(
+                                  top: idx == 0
+                                      ? const Radius.circular(14)
+                                      : Radius.zero,
+                                  bottom: isLast
+                                      ? const Radius.circular(14)
+                                      : Radius.zero,
+                                ),
+                                onTap: item.onTap,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.035,
+                                    vertical: usableHeight * 0.014,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF818CF8)
+                                              .withValues(alpha: 0.16),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(
+                                          item.icon,
+                                          color: const Color(0xFFC7D2FE),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.title,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: screenWidth * 0.037,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              item.subtitle,
+                                              style: TextStyle(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.65),
+                                                fontSize: screenWidth * 0.029,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.38),
                                         size: 14,
                                       ),
                                     ],

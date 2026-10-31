@@ -1,22 +1,15 @@
-import 'package:atrio/data/atrio_database_helper.dart';
-import 'package:atrio/data/database_helper.dart';
 import 'package:atrio/screens/emisoras_cristianas_screen.dart';
 import 'package:atrio/screens/mis_favoritos_screen.dart';
 import 'package:atrio/screens/mis_notas_screen.dart';
-import 'package:atrio/servicios/connectivity_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:feedback/feedback.dart';
 import 'package:atrio/theme/atrio_feedback_theme.dart';
 import 'package:atrio/widgets/atrio_better_feedback.dart';
 import 'package:atrio/widgets/atrio_feedback_form.dart';
-import 'package:atrio/atrio_api.dart';
-import 'package:atrio/data/app_config.dart';
-import 'package:atrio/modelos/user_model.dart';
-import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:atrio/modelos/app_stage.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 
 // Paquetes - Google Maps
@@ -34,6 +27,8 @@ import 'package:atrio/providers/biblia_provider.dart';
 import 'package:atrio/providers/tradicion_cristiana_provider.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/admin_provider.dart';
+import 'package:atrio/providers/ads_provider.dart';
+import 'package:atrio/providers/moderation_provider.dart';
 import 'package:atrio/providers/recomendacion_iglesia_provider.dart';
 
 // Screens - Autenticación / Onboarding
@@ -85,9 +80,14 @@ import 'package:atrio/screens/libros_screen.dart';
 import 'package:atrio/screens/videos_transmisiones_screen.dart';
 import 'package:atrio/screens/crear_evento_screen.dart';
 import 'package:atrio/screens/crear_predica_screen.dart';
+import 'package:atrio/screens/admin_ads_screen.dart';
+import 'package:atrio/screens/create_ad_campaign_screen.dart';
+import 'package:atrio/screens/moderation_screen.dart';
+import 'package:atrio/screens/moderation_words_screen.dart';
 
 // Screens - Pruebas
 import 'package:atrio/screens/test_pago_screen.dart';
+import 'package:atrio/screens/splash_screen.dart';
 
 Future<void> main() async {
   // 1. Vincular motor de Flutter
@@ -108,91 +108,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Error al inicializar Google Maps Renderer: $e');
   }
-  //
-  // =========================================================================
-  // 4. INICIALIZACIÓN DE BASES DE DATOS LOCALES
-  // =========================================================================
-  try {
-    // A) Base de datos de la Biblia (copia desde assets si es la primera vez)
-    await DatabaseHelper.instance.database;
-    debugPrint('✅ [DB] biblia_audio.db lista');
 
-    // B) NUEVA BASE DE DATOS LOCAL: atrio.db
-    // Se ejecuta onCreate, genera las tablas 'usuario' y 'config_atrio'
-    await AtrioDatabaseHelper.instance.database;
-    debugPrint('✅ [DB] atrio.db inicializada');
-  } catch (e) {
-    debugPrint('💥 Error inicializando bases de datos SQLite: $e');
-  }
-
-  // 4. Determinar la ruta inicial según el estado de bienvenida y autenticación
-  final prefs = await SharedPreferences.getInstance();
-  final bool introVista = prefs.getBool('intro_vista') ?? false;
-  final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  String rutaInicial = !introVista
-      ? IntroEncuentraScreen.routeName
-      : (isLoggedIn
-            ? InicioAtrioScreen.routeName
-            : InicioSesionScreen.routeName);
-
-  // Si hay sesión iniciada, resolver el stage exacto de Odoo 19
-  if (introVista && isLoggedIn) {
-    try {
-      final api = AtrioApi(
-        baseUrl: AppConfig.odooBaseUrl,
-        storageService: TokenStorageService(),
-      );
-      await api.initFromStorage();
-      if (api.isAuthenticated) {
-        final me = await api.me().timeout(const Duration(seconds: 3));
-        final stage = resolveStage(me);
-        switch (stage) {
-          case AppStage.chooseChurch:
-            // Regla de bypass: si el usuario ya seleccionó una iglesia localmente en SQLite o SharedPreferences,
-            // omitir la pantalla de elección y entrar directo a HomeScreen.
-            final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
-            final usuario = await AtrioDatabaseHelper.instance.getUsuario();
-            final bool tieneIglesiaLocal =
-                (iglesiaGuardada != null &&
-                    iglesiaGuardada.trim().isNotEmpty &&
-                    !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
-                (usuario != null &&
-                    usuario['iglesia_nombre'] != null &&
-                    !UserModel.isDefaultOrDemoChurchName(
-                        usuario['iglesia_nombre'].toString()));
-
-            rutaInicial = tieneIglesiaLocal
-                ? InicioAtrioScreen.routeName
-                : SeleccionarIglesiaScreen.routeName;
-            break;
-          case AppStage.waitingApproval:
-            // Regla estricta: Si la solicitud está pendiente de aprobación,
-            // redirigir de inmediato al HomeScreen (InicioAtrioScreen), donde se presenta el banner reactivo.
-            rutaInicial = InicioAtrioScreen.routeName;
-            break;
-          case AppStage.churchPendingActivation:
-            rutaInicial = IglesiaPendienteActivacionScreen.routeName;
-            break;
-          case AppStage.welcome:
-          case AppStage.memberHome:
-          case AppStage.adminHome:
-          case AppStage.platformAdmin:
-            rutaInicial = InicioAtrioScreen.routeName;
-            break;
-        }
-      }
-    } catch (e) {
-      debugPrint(
-        'ℹ️ [MAIN] No se pudo resolver AppStage en arranque: $e. Usando ruta por defecto.',
-      );
-    }
-  }
-
-  //
-  // Iniciar monitoreo de internet en toda la app
-  ConnectivityService.instance.startMonitoring();
-  // 5. Arrancar la app
-  runApp(AppState(initialRoute: rutaInicial));
+  // 4. Arrancar la app de inmediato proyectando la SplashScreen inmersiva
+  runApp(const AppState(initialRoute: SplashScreen.routeName));
 }
 
 class AppState extends StatelessWidget {
@@ -223,6 +141,16 @@ class AppState extends StatelessWidget {
           update: (ctx, userProvider, previous) =>
               previous ??
               RecomendacionIglesiaProvider(api: userProvider.api),
+        ),
+        ChangeNotifierProxyProvider<UserProvider, AdsProvider>(
+          create: (ctx) => AdsProvider(api: ctx.read<UserProvider>().api),
+          update: (ctx, userProvider, previous) =>
+              previous ?? AdsProvider(api: userProvider.api),
+        ),
+        ChangeNotifierProxyProvider<UserProvider, ModerationProvider>(
+          create: (ctx) => ModerationProvider(api: ctx.read<UserProvider>().api),
+          update: (ctx, userProvider, previous) =>
+              previous ?? ModerationProvider(api: userProvider.api),
         ),
       ],
       child: MyApp(initialRoute: initialRoute),
@@ -347,6 +275,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   // RUTAS CENTRALIZADAS (Static routeName)
   // =========================================================
   static final Map<String, WidgetBuilder> _routes = {
+    // ---------- Bienvenida / Splash ----------
+    SplashScreen.routeName: (_) => const SplashScreen(),
+
     // ---------- Autenticación / Onboarding ----------
     IntroEncuentraScreen.routeName: (_) => const IntroEncuentraScreen(),
     InicioSesionScreen.routeName: (_) => const InicioSesionScreen(),
@@ -405,6 +336,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         const VideosTransmisionesScreen(),
     CrearEventoScreen.routeName: (_) => const CrearEventoScreen(),
     CrearPredicaScreen.routeName: (_) => const CrearPredicaScreen(),
+    AdminAdsScreen.routeName: (_) => const AdminAdsScreen(),
+    CreateAdCampaignScreen.routeName: (_) => const CreateAdCampaignScreen(),
+    ModerationScreen.routeName: (_) => const ModerationScreen(),
+    ModerationWordsScreen.routeName: (_) => const ModerationWordsScreen(),
 
     // ---------- Pruebas ----------
     TestPagoScreen.routeName: (_) => const TestPagoScreen(),

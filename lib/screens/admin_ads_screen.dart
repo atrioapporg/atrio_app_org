@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../l10n/app_localizations.dart';
 import '../modelos/ad_models.dart';
 import '../modelos/auth_permissions.dart';
 import '../providers/ads_provider.dart';
 import '../providers/user_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import 'ad_payment_screen.dart';
 import 'ad_stats_screen.dart';
 import 'create_ad_campaign_screen.dart';
@@ -31,6 +33,15 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
         context.read<AdsProvider>().loadChurchAds(force: true);
       }
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _handleRefresh(),
+    );
+    if (!hasInternet || !mounted) return;
+    await context.read<AdsProvider>().loadChurchAds(force: true);
   }
 
   @override
@@ -62,7 +73,7 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsetsDirectional.all(18),
                   decoration: BoxDecoration(
                     color: Colors.red.shade50,
                     shape: BoxShape.circle,
@@ -75,8 +86,7 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  l10n?.permisoRequeridoManageAds ??
-                      'Se requiere el permiso de Administrador de Anuncios (manage_ads) para acceder a este módulo.',
+                  l10n?.permisoRequeridoManageAds ?? 'Se requiere el permiso de Administrador de Anuncios (manage_ads) para acceder a este módulo.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade800,
@@ -108,7 +118,8 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => context.read<AdsProvider>().loadChurchAds(force: true),
+            tooltip: l10n?.refrescar ?? 'Refrescar',
+            onPressed: _handleRefresh,
           ),
         ],
       ),
@@ -122,12 +133,18 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         onPressed: () async {
+          final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+            context,
+            onRetry: () =>
+                Navigator.pushNamed(context, CreateAdCampaignScreen.routeName),
+          );
+          if (!hasInternet || !context.mounted) return;
           final res = await Navigator.pushNamed(
             context,
             CreateAdCampaignScreen.routeName,
           );
           if (res == true && context.mounted) {
-            context.read<AdsProvider>().loadChurchAds(force: true);
+            _handleRefresh();
           }
         },
       ),
@@ -145,8 +162,7 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
           Expanded(
             child: RefreshIndicator(
               color: azulFondo,
-              onRefresh: () =>
-                  context.read<AdsProvider>().loadChurchAds(force: true),
+              onRefresh: _handleRefresh,
               child: isLoading && ads.isEmpty
                   ? const Center(
                       child: CircularProgressIndicator(
@@ -154,21 +170,21 @@ class _AdminAdsScreenState extends State<AdminAdsScreen> {
                       ),
                     )
                   : ads.isEmpty
-                      ? _EmptyAdsView()
-                      : ListView.separated(
-                          padding: const EdgeInsetsDirectional.only(
-                            start: 16,
-                            end: 16,
-                            top: 12,
-                            bottom: 80,
-                          ),
-                          itemCount: ads.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final ad = ads[index];
-                            return _AdminAdCard(ad: ad);
-                          },
-                        ),
+                  ? _EmptyAdsView()
+                  : ListView.separated(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: 16,
+                        end: 16,
+                        top: 12,
+                        bottom: 80,
+                      ),
+                      itemCount: ads.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final ad = ads[index];
+                        return _AdminAdCard(ad: ad);
+                      },
+                    ),
             ),
           ),
         ],
@@ -195,8 +211,14 @@ class _FilterChipsBar extends StatelessWidget {
       (label: l10n?.filtroTodas ?? 'Todas', status: null),
       (label: l10n?.filtroActivas ?? 'Activas', status: AdStatus.active),
       (label: l10n?.filtroPorPagar ?? 'Por Pagar', status: AdStatus.toPay),
-      (label: l10n?.filtroEnRevision ?? 'En Revisión', status: AdStatus.requested),
-      (label: l10n?.filtroFinalizadas ?? 'Finalizadas', status: AdStatus.finished),
+      (
+        label: l10n?.filtroEnRevision ?? 'En Revisión',
+        status: AdStatus.requested,
+      ),
+      (
+        label: l10n?.filtroFinalizadas ?? 'Finalizadas',
+        status: AdStatus.finished,
+      ),
     ];
 
     return Container(
@@ -263,10 +285,17 @@ class _AdminAdCard extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
+              final bool hasInternet =
+                  await AtrioConnectivityAlert.checkAndNotify(
+                    context,
+                    onRetry: () =>
+                        context.read<AdsProvider>().cancelCampaign(ad.id),
+                  );
+              if (!hasInternet || !context.mounted) return;
               Navigator.pop(ctx);
               await context.read<AdsProvider>().cancelCampaign(ad.id);
             },
-            child: const Text('Confirmar'),
+            child: Text(l10n?.confirmar ?? 'Confirmar'),
           ),
         ],
       ),
@@ -314,7 +343,10 @@ class _AdminAdCard extends StatelessWidget {
                       width: 56,
                       height: 56,
                       color: const Color(0xFFF1F5F9),
-                      child: const Icon(Icons.image_not_supported_rounded, size: 24),
+                      child: const Icon(
+                        Icons.image_not_supported_rounded,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
@@ -352,7 +384,9 @@ class _AdminAdCard extends StatelessWidget {
           ),
 
           // 2. Banner de Motivo de Rechazo (si aplica)
-          if (ad.isRejected && ad.rejectionReason != null && ad.rejectionReason!.isNotEmpty) ...[
+          if (ad.isRejected &&
+              ad.rejectionReason != null &&
+              ad.rejectionReason!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsetsDirectional.all(12),
@@ -363,7 +397,11 @@ class _AdminAdCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, color: Colors.red.shade700, size: 18),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Colors.red.shade700,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -413,7 +451,9 @@ class _AdminAdCard extends StatelessWidget {
               // Si está solicitada: opción de cancelar
               if (ad.isRequested)
                 TextButton.icon(
-                  style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red.shade700,
+                  ),
                   onPressed: () => _showCancelDialog(context),
                   icon: const Icon(Icons.close_rounded, size: 16),
                   label: Text(l10n?.cancelarCampana ?? 'Cancelar'),
@@ -432,6 +472,17 @@ class _AdminAdCard extends StatelessWidget {
                     ),
                   ),
                   onPressed: () async {
+                    final bool hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
+                          context,
+                          onRetry: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AdPaymentScreen(ad: ad),
+                            ),
+                          ),
+                        );
+                    if (!hasInternet || !context.mounted) return;
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -461,12 +512,21 @@ class _AdminAdCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    final bool hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
+                          context,
+                          onRetry: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AdStatsScreen(ad: ad),
+                            ),
+                          ),
+                        );
+                    if (!hasInternet || !context.mounted) return;
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => AdStatsScreen(ad: ad),
-                      ),
+                      MaterialPageRoute(builder: (_) => AdStatsScreen(ad: ad)),
                     );
                   },
                   icon: const Icon(Icons.analytics_outlined, size: 16),
@@ -512,7 +572,8 @@ class _StatusBadge extends StatelessWidget {
       case AdStatus.paymentReview:
         bgColor = const Color(0xFFE0E7FF);
         textColor = const Color(0xFF3730A3);
-        displayLabel = l10n?.estadoComprobanteRevision ?? 'Comprobante en Revisión';
+        displayLabel =
+            l10n?.estadoComprobanteRevision ?? 'Comprobante en Revisión';
         break;
       case AdStatus.ready:
         bgColor = const Color(0xFFCCFBF1);
@@ -542,14 +603,19 @@ class _StatusBadge extends StatelessWidget {
       case AdStatus.unknown:
         bgColor = const Color(0xFFF1F5F9);
         textColor = Colors.grey.shade600;
-        displayLabel = 'Desconocido';
+        displayLabel = l10n?.estadoDesconocido ?? 'Desconocido';
         break;
     }
 
-    final text = (label != null && label!.trim().isNotEmpty) ? label! : displayLabel;
+    final text = (label != null && label!.trim().isNotEmpty)
+        ? label!
+        : displayLabel;
 
     return Container(
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: 10,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
@@ -605,7 +671,7 @@ class _EmptyAdsView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsetsDirectional.all(24),
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
@@ -627,8 +693,7 @@ class _EmptyAdsView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              l10n?.sinCampanasSubtitulo ??
-                  'Crea tu primera campaña para llegar a más iglesias y miembros de la comunidad.',
+              l10n?.sinCampanasSubtitulo ?? 'Crea tu primera campaña para llegar a más iglesias y miembros de la comunidad.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade600,

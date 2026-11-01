@@ -1,4 +1,4 @@
-import 'package:atrio/screens/emisoras_cristianas_screen.dart';
+import 'package:atrio/screens/emisoras_screen.dart';
 import 'package:atrio/screens/mis_favoritos_screen.dart';
 import 'package:atrio/screens/mis_notas_screen.dart';
 import 'package:flutter/material.dart';
@@ -141,8 +141,7 @@ class AppState extends StatelessWidget {
           create: (ctx) =>
               RecomendacionIglesiaProvider(api: ctx.read<UserProvider>().api),
           update: (ctx, userProvider, previous) =>
-              previous ??
-              RecomendacionIglesiaProvider(api: userProvider.api),
+              previous ?? RecomendacionIglesiaProvider(api: userProvider.api),
         ),
         ChangeNotifierProxyProvider<UserProvider, AdsProvider>(
           create: (ctx) => AdsProvider(api: ctx.read<UserProvider>().api),
@@ -150,7 +149,8 @@ class AppState extends StatelessWidget {
               previous ?? AdsProvider(api: userProvider.api),
         ),
         ChangeNotifierProxyProvider<UserProvider, ModerationProvider>(
-          create: (ctx) => ModerationProvider(api: ctx.read<UserProvider>().api),
+          create: (ctx) =>
+              ModerationProvider(api: ctx.read<UserProvider>().api),
           update: (ctx, userProvider, previous) =>
               previous ?? ModerationProvider(api: userProvider.api),
         ),
@@ -199,33 +199,42 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      debugPrint('[LIFECYCLE] App resumed: sincronizando sesión con Odoo 19...');
+      debugPrint(
+        '[LIFECYCLE] App resumed: sincronizando sesión con Odoo 19...',
+      );
       try {
         final userProvider = context.read<UserProvider>();
         if (userProvider.isAuthenticated) {
-          userProvider.refreshUserProfile().then((_) {
-            if (!mounted) return;
-            final stage = userProvider.currentStage;
-            // Si el estado pasó a estar activo (aprobación de membresía o activación de congregación)
-            if (stage == AppStage.memberHome || stage == AppStage.adminHome) {
-              final nav = MyApp.navigatorKey.currentState;
-              final currentCtx = MyApp.navigatorKey.currentContext;
-              if (nav != null && currentCtx != null && currentCtx.mounted) {
-                final currentRoute =
-                    ModalRoute.of(currentCtx)?.settings.name;
-                if (currentRoute == EsperandoAprobacionScreen.routeName ||
-                    currentRoute ==
-                        IglesiaPendienteActivacionScreen.routeName) {
-                  nav.pushNamedAndRemoveUntil(
-                    InicioAtrioScreen.routeName,
-                    (r) => false,
-                  );
+          userProvider
+              .refreshUserProfile()
+              .then((_) {
+                if (!mounted) return;
+                final stage = userProvider.currentStage;
+                // Si el estado pasó a estar activo (aprobación de membresía o activación de congregación)
+                if (stage == AppStage.memberHome ||
+                    stage == AppStage.adminHome) {
+                  final nav = MyApp.navigatorKey.currentState;
+                  final currentCtx = MyApp.navigatorKey.currentContext;
+                  if (nav != null && currentCtx != null && currentCtx.mounted) {
+                    final currentRoute = ModalRoute.of(currentCtx)
+                        ?.settings
+                        .name;
+                    if (currentRoute == EsperandoAprobacionScreen.routeName ||
+                        currentRoute ==
+                            IglesiaPendienteActivacionScreen.routeName) {
+                      nav.pushNamedAndRemoveUntil(
+                        InicioAtrioScreen.routeName,
+                        (r) => false,
+                      );
+                    }
+                  }
                 }
-              }
-            }
-          }).catchError((e) {
-            debugPrint('[LIFECYCLE] Error pasivo en refreshUserProfile: $e');
-          });
+              })
+              .catchError((e) {
+                debugPrint(
+                  '[LIFECYCLE] Error pasivo en refreshUserProfile: $e',
+                );
+              });
         }
       } catch (e) {
         debugPrint('[LIFECYCLE] Error en didChangeAppLifecycleState: $e');
@@ -288,7 +297,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     RecuperarClaveScreen.routeName: (_) => const RecuperarClaveScreen(),
     SeleccionarIglesiaScreen.routeName: (_) => const SeleccionarIglesiaScreen(),
     TradicionCristianaScreen.routeName: (_) => const TradicionCristianaScreen(),
-    EsperandoAprobacionScreen.routeName: (_) => const EsperandoAprobacionScreen(),
+    EsperandoAprobacionScreen.routeName: (_) =>
+        const EsperandoAprobacionScreen(),
     IglesiaPendienteActivacionScreen.routeName: (_) =>
         const IglesiaPendienteActivacionScreen(),
     CrearMiIglesiaScreen.routeName: (_) => const CrearMiIglesiaScreen(),
@@ -331,7 +341,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     MisPedidosScreen.routeName: (_) => const MisPedidosScreen(),
     LibrosScreen.routeName: (_) => const LibrosScreen(),
     // EmisorasCristianasScreen
-    EmisorasCristianasScreen.routeName: (_) => const EmisorasCristianasScreen(),
+    EmisorasScreen.routeName: (_) => const EmisorasScreen(),
     MisFavoritosScreen.routeName: (_) => const MisFavoritosScreen(),
     MisNotasScreen.routeName: (_) => const MisNotasScreen(),
     VideosTransmisionesScreen.routeName: (_) =>
@@ -342,7 +352,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     CreateAdCampaignScreen.routeName: (_) => const CreateAdCampaignScreen(),
     ModerationScreen.routeName: (_) => const ModerationScreen(),
     ModerationWordsScreen.routeName: (_) => const ModerationWordsScreen(),
-    ChurchAdminDashboardScreen.routeName: (_) => const ChurchAdminDashboardScreen(),
+    ChurchAdminDashboardScreen.routeName: (_) =>
+        const ChurchAdminDashboardScreen(),
     AdminRequestsScreen.routeName: (_) => const AdminRequestsScreen(),
 
     // ---------- Pruebas ----------

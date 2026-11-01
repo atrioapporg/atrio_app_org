@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:atrio/screens/emisoras_cristianas_screen.dart';
+import 'package:atrio/screens/emisoras_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -665,7 +665,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       ),
       const IglesiaScreen(),
       const ExplorarScreen(),
-      EmisorasCristianasScreen(isActive: _currentNavIndex == 3),
+      EmisorasScreen(isActive: _currentNavIndex == 3),
       const PerfilScreen(),
     ];
 
@@ -865,22 +865,28 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       'Sin iglesia seleccionada';
                   final String? requestedName =
                       userProvider.requestedChurchData?['name'] as String? ??
-                      userProvider.currentUser?.requestedChurchData?['name'] as String?;
-                  final bool isPending = userProvider.isAuthenticated &&
+                      userProvider.currentUser?.requestedChurchData?['name']
+                          as String?;
+                  final bool isPending =
+                      userProvider.isAuthenticated &&
                       (userProvider.isWaitingApproval ||
-                          userProvider.currentUser?.isMembershipPending == true ||
-                          userProvider.membershipStatus == 'membership_pending');
+                          userProvider.currentUser?.isMembershipPending ==
+                              true ||
+                          userProvider.membershipStatus ==
+                              'membership_pending');
 
                   final String nombreIglesia =
                       (provider.tieneIglesiaGuardada &&
                           provider.iglesiaActual != null &&
                           provider.iglesiaActual!.nombre.trim().isNotEmpty)
                       ? provider.iglesiaActual!.nombre.trim()
-                      : ((requestedName != null && requestedName.trim().isNotEmpty)
+                      : ((requestedName != null &&
+                                requestedName.trim().isNotEmpty)
                             ? requestedName.trim()
                             : ((_iglesiaLocal != null &&
                                       _iglesiaLocal!.trim().isNotEmpty &&
-                                      _iglesiaLocal != 'Sin iglesia seleccionada')
+                                      _iglesiaLocal !=
+                                          'Sin iglesia seleccionada')
                                   ? _iglesiaLocal!.trim()
                                   : sinIglesia));
 
@@ -934,7 +940,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                             ),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFFEF3C7),
-                                              borderRadius: BorderRadius.circular(6),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
                                             ),
                                             child: const Text(
                                               'Pendiente',

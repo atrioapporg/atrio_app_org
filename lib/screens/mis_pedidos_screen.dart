@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../modelos/pedido_model.dart';
 import '../providers/user_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import 'tienda_screen.dart';
 
 class MisPedidosScreen extends StatefulWidget {
@@ -47,6 +48,18 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
           _errorServidor = false;
         });
       }
+      return;
+    }
+
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: _cargarPedidos,
+    );
+    if (!hasInternet || !mounted) {
+      setState(() {
+        _isLoading = false;
+        _errorServidor = true;
+      });
       return;
     }
 
@@ -143,9 +156,9 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       case 'completed':
         return l10n?.estadoPedidoCompletado ?? 'Completado';
       case 'delivered':
-        return 'Entregado';
+        return l10n?.estadoPedidoEntregado ?? 'Entregado';
       case 'paid':
-        return 'Pagado';
+        return l10n?.estadoPedidoPagado ?? 'Pagado';
       case 'cancel':
       case 'cancelled':
         return l10n?.estadoPedidoCancelado ?? 'Cancelado';
@@ -158,6 +171,41 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
             ? pedido.estadoEtiqueta
             : status;
     }
+  }
+
+  void _mostrarDetallePedido(PedidoModel pedido) {
+    final l10n = AppLocalizations.of(context);
+    final isEnglish = Localizations.localeOf(context).languageCode == 'en';
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+    const Color grisBorde = Color(0xFFE5E5E5);
+
+    final statusColor = _obtenerColorEstado(pedido);
+    final statusText = _obtenerTextoEstado(pedido, l10n);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _PedidoDetalleSheet(
+        pedido: pedido,
+        screenWidth: screenWidth,
+        usableHeight: usableHeight,
+        azulFondo: azulFondo,
+        blancoFondo: blancoFondo,
+        grisBorde: grisBorde,
+        statusColor: statusColor,
+        statusText: statusText,
+        l10n: l10n,
+        isEnglish: isEnglish,
+      ),
+    );
   }
 
   @override
@@ -197,7 +245,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
             children: [
               // 1. Encabezado con Botón de Retroceso y Título
               Padding(
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.05,
                   vertical: usableHeight * 0.015,
                 ),
@@ -257,7 +305,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
 
               // 2. Selector de Ámbito / Pestañas (Activos / Historial)
               Padding(
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.05,
                   vertical: usableHeight * 0.01,
                 ),
@@ -342,18 +390,16 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.07),
-                      topRight: Radius.circular(screenWidth * 0.07),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.07),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.07),
-                      topRight: Radius.circular(screenWidth * 0.07),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.07),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
+                      padding: EdgeInsetsDirectional.fromSTEB(
                         screenWidth * 0.05,
                         usableHeight * 0.02,
                         screenWidth * 0.05,
@@ -372,12 +418,14 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                                     onRefresh: _cargarPedidos,
                                     color: azulFondo,
                                     child: _pedidos.isEmpty
-                                        ? _buildEstadoVacio(
-                                            screenWidth,
-                                            usableHeight,
-                                            azulFondo,
-                                            amarilloOro,
-                                            l10n,
+                                        ? _EstadoVacioPedidos(
+                                            screenWidth: screenWidth,
+                                            usableHeight: usableHeight,
+                                            azulFondo: azulFondo,
+                                            errorServidor: _errorServidor,
+                                            selectedScope: _selectedScope,
+                                            onRetry: _cargarPedidos,
+                                            l10n: l10n,
                                           )
                                         : ListView.separated(
                                             physics:
@@ -392,7 +440,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                                                 ),
                                             itemBuilder: (context, index) {
                                               final pedido = _pedidos[index];
-                                              return _buildPedidoCard(
+                                              return _PedidoCard(
                                                 pedido: pedido,
                                                 screenWidth: screenWidth,
                                                 usableHeight: usableHeight,
@@ -400,8 +448,18 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                                                 grisBorde: grisBorde,
                                                 amarilloOro: amarilloOro,
                                                 blancoFondo: blancoFondo,
+                                                statusColor:
+                                                    _obtenerColorEstado(pedido),
+                                                statusText: _obtenerTextoEstado(
+                                                  pedido,
+                                                  l10n,
+                                                ),
                                                 l10n: l10n,
                                                 isEnglish: isEnglish,
+                                                onTap: () =>
+                                                    _mostrarDetallePedido(
+                                                      pedido,
+                                                    ),
                                               );
                                             },
                                           ),
@@ -453,23 +511,38 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       ),
     );
   }
+}
 
-  // Componente: Estado Vacío
-  Widget _buildEstadoVacio(
-    double screenWidth,
-    double usableHeight,
-    Color azulFondo,
-    Color amarilloOro,
-    AppLocalizations? l10n,
-  ) {
+/// Estado Vacío de pedidos o error de sincronización
+class _EstadoVacioPedidos extends StatelessWidget {
+  const _EstadoVacioPedidos({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.errorServidor,
+    required this.selectedScope,
+    required this.onRetry,
+    required this.l10n,
+  });
+
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final bool errorServidor;
+  final String selectedScope;
+  final VoidCallback onRetry;
+  final AppLocalizations? l10n;
+
+  @override
+  Widget build(BuildContext context) {
     final userProvider = context.watch<UserProvider>();
     final bool esInvitado = !userProvider.isAuthenticated;
 
     final String tituloVacio = esInvitado
         ? (l10n?.modoInvitado ?? 'Modo invitado')
-        : (_errorServidor
-              ? 'Error de sincronización'
-              : (_selectedScope == 'active'
+        : (errorServidor
+              ? (l10n?.errorSincronizacion ?? 'Error de sincronización')
+              : (selectedScope == 'active'
                     ? (l10n?.noTienesPedidosActivos ??
                           'No tienes pedidos activos')
                     : (l10n?.noTienesPedidosAnteriores ??
@@ -478,9 +551,10 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
     final String descVacio = esInvitado
         ? (l10n?.pedidosInvitadoDesc ??
               'En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.')
-        : (_errorServidor
-              ? 'No pudimos conectar con el servidor para consultar tus pedidos. Reintenta la conexión.'
-              : (_selectedScope == 'active'
+        : (errorServidor
+              ? (l10n?.errorSincronizacionPedidosDesc ??
+                    'No pudimos conectar con el servidor para consultar tus pedidos. Reintenta la conexión.')
+              : (selectedScope == 'active'
                     ? (l10n?.pedidosActivosDesc ??
                           'Tus compras recientes de la tienda ATRIO aparecerán aquí para que hagas seguimiento a su entrega.')
                     : (l10n?.pedidosAnterioresDesc ??
@@ -505,7 +579,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                 child: Icon(
                   esInvitado
                       ? Icons.account_circle_outlined
-                      : (_errorServidor
+                      : (errorServidor
                             ? Icons.cloud_off_rounded
                             : Icons.receipt_long_outlined),
                   size: screenWidth * 0.16,
@@ -523,7 +597,9 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
               ),
               SizedBox(height: usableHeight * 0.01),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.08,
+                ),
                 child: Text(
                   descVacio,
                   textAlign: TextAlign.center,
@@ -545,7 +621,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: azulFondo,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
+                    padding: EdgeInsetsDirectional.symmetric(
                       horizontal: screenWidth * 0.06,
                       vertical: usableHeight * 0.012,
                     ),
@@ -556,24 +632,22 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   onPressed: () {
                     final nav =
                         MyApp.navigatorKey.currentState ??
-                        (context.mounted
-                            ? Navigator.maybeOf(context)
-                            : null);
+                        (context.mounted ? Navigator.maybeOf(context) : null);
                     nav?.pushNamed('inicio_sesion_screen');
                   },
                 ),
-              ] else if (_errorServidor) ...[
+              ] else if (errorServidor) ...[
                 SizedBox(height: usableHeight * 0.025),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text(
-                    'Reintentar conexión',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  label: Text(
+                    l10n?.reintentar ?? 'Reintentar',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: azulFondo,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
+                    padding: EdgeInsetsDirectional.symmetric(
                       horizontal: screenWidth * 0.06,
                       vertical: usableHeight * 0.012,
                     ),
@@ -581,7 +655,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                       borderRadius: BorderRadius.circular(screenWidth * 0.03),
                     ),
                   ),
-                  onPressed: _cargarPedidos,
+                  onPressed: onRetry,
                 ),
               ],
             ],
@@ -590,36 +664,44 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       ],
     );
   }
+}
 
-  // Componente: Tarjeta de Pedido
-  Widget _buildPedidoCard({
-    required PedidoModel pedido,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color grisBorde,
-    required Color amarilloOro,
-    required Color blancoFondo,
-    required AppLocalizations? l10n,
-    required bool isEnglish,
-  }) {
-    final statusColor = _obtenerColorEstado(pedido);
-    final statusText = _obtenerTextoEstado(pedido, l10n);
+/// Tarjeta individual de pedido en la lista
+class _PedidoCard extends StatelessWidget {
+  const _PedidoCard({
+    required this.pedido,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.grisBorde,
+    required this.amarilloOro,
+    required this.blancoFondo,
+    required this.statusColor,
+    required this.statusText,
+    required this.l10n,
+    required this.isEnglish,
+    required this.onTap,
+  });
 
+  final PedidoModel pedido;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color grisBorde;
+  final Color amarilloOro;
+  final Color blancoFondo;
+  final Color statusColor;
+  final String statusText;
+  final AppLocalizations? l10n;
+  final bool isEnglish;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _mostrarDetallePedido(
-        pedido: pedido,
-        screenWidth: screenWidth,
-        usableHeight: usableHeight,
-        azulFondo: azulFondo,
-        blancoFondo: blancoFondo,
-        grisBorde: grisBorde,
-        amarilloOro: amarilloOro,
-        l10n: l10n,
-        isEnglish: isEnglish,
-      ),
+      onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: EdgeInsetsDirectional.symmetric(
           horizontal: screenWidth * 0.045,
           vertical: usableHeight * 0.016,
         ),
@@ -669,7 +751,7 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
                   ],
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(
+                  padding: EdgeInsetsDirectional.symmetric(
                     horizontal: screenWidth * 0.025,
                     vertical: usableHeight * 0.005,
                   ),
@@ -732,234 +814,259 @@ class _MisPedidosScreenState extends State<MisPedidosScreen> {
       ),
     );
   }
+}
 
-  // Modal / BottomSheet de Detalle del Pedido
-  void _mostrarDetallePedido({
-    required PedidoModel pedido,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color blancoFondo,
-    required Color grisBorde,
-    required Color amarilloOro,
-    required AppLocalizations? l10n,
-    required bool isEnglish,
-  }) {
-    final statusColor = _obtenerColorEstado(pedido);
-    final statusText = _obtenerTextoEstado(pedido, l10n);
+/// Bottom Sheet modal con el detalle completo del pedido
+class _PedidoDetalleSheet extends StatelessWidget {
+  const _PedidoDetalleSheet({
+    required this.pedido,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.blancoFondo,
+    required this.grisBorde,
+    required this.statusColor,
+    required this.statusText,
+    required this.l10n,
+    required this.isEnglish,
+  });
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: blancoFondo,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(screenWidth * 0.06),
-            topRight: Radius.circular(screenWidth * 0.06),
-          ),
+  final PedidoModel pedido;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color blancoFondo;
+  final Color grisBorde;
+  final Color statusColor;
+  final String statusText;
+  final AppLocalizations? l10n;
+  final bool isEnglish;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: blancoFondo,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
         ),
-        padding: EdgeInsets.fromLTRB(
-          screenWidth * 0.06,
-          usableHeight * 0.025,
-          screenWidth * 0.06,
-          usableHeight * 0.03,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: screenWidth * 0.12,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      ),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        screenWidth * 0.06,
+        usableHeight * 0.025,
+        screenWidth * 0.06,
+        usableHeight * 0.03,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: screenWidth * 0.12,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            SizedBox(height: usableHeight * 0.02),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n?.detalleDeOrden ?? 'Detalle de Orden',
+          ),
+          SizedBox(height: usableHeight * 0.02),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l10n?.detalleDeOrden ?? 'Detalle de Orden',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.052,
+                  fontWeight: FontWeight.bold,
+                  color: azulFondo,
+                ),
+              ),
+              Container(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.03,
+                  vertical: usableHeight * 0.006,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                ),
+                child: Text(
+                  statusText,
                   style: TextStyle(
-                    fontSize: screenWidth * 0.052,
+                    color: statusColor,
                     fontWeight: FontWeight.bold,
-                    color: azulFondo,
+                    fontSize: screenWidth * 0.032,
                   ),
                 ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.03,
-                    vertical: usableHeight * 0.006,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.032,
-                    ),
-                  ),
+              ),
+            ],
+          ),
+          SizedBox(height: usableHeight * 0.015),
+
+          // Tarjeta de información del pedido
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              border: Border.all(color: grisBorde),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _InfoRow(
+                  label: l10n?.referenciaOdooColon ?? 'Referencia Odoo:',
+                  value: pedido.nombre,
+                  isBold: true,
+                ),
+                SizedBox(height: usableHeight * 0.008),
+                _InfoRow(
+                  label: l10n?.fechaDelPedido ?? 'Fecha del pedido:',
+                  value: pedido.formatearFecha(isEnglish: isEnglish),
+                ),
+                SizedBox(height: usableHeight * 0.008),
+                _InfoRow(
+                  label: l10n?.totalAPagar ?? 'Total a pagar:',
+                  value: pedido.totalFormateado,
+                  isBold: true,
+                  textColor: azulFondo,
                 ),
               ],
             ),
-            SizedBox(height: usableHeight * 0.015),
+          ),
+          SizedBox(height: usableHeight * 0.02),
 
-            // Tarjeta de información del pedido
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(screenWidth * 0.04),
+          Text(
+            l10n?.articulosIncluidos ?? 'Artículos incluidos:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: screenWidth * 0.038,
+              color: azulFondo,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.01),
+
+          // Lista de artículos
+          ...pedido.items.map(
+            (it) => Container(
+              margin: EdgeInsets.only(bottom: usableHeight * 0.008),
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: screenWidth * 0.035,
+                vertical: usableHeight * 0.01,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: grisBorde),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _infoRow(
-                    l10n?.referenciaOdooColon ?? 'Referencia Odoo:',
-                    pedido.nombre,
-                    isBold: true,
+                  Expanded(
+                    child: Text(
+                      it.nombre,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
                   ),
-                  SizedBox(height: usableHeight * 0.008),
-                  _infoRow(
-                    l10n?.fechaDelPedido ?? 'Fecha del pedido:',
-                    pedido.formatearFecha(isEnglish: isEnglish),
-                  ),
-                  SizedBox(height: usableHeight * 0.008),
-                  _infoRow(
-                    l10n?.totalAPagar ?? 'Total a pagar:',
-                    pedido.totalFormateado,
-                    isBold: true,
-                    textColor: azulFondo,
+                  Text(
+                    l10n?.unidadesProducto(it.cantidad.toInt()) ??
+                        '${it.cantidad.toInt()} ud(s).',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.034,
+                    ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: usableHeight * 0.02),
+          ),
 
-            Text(
-              l10n?.articulosIncluidos ?? 'Artículos incluidos:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: screenWidth * 0.038,
-                color: azulFondo,
-              ),
-            ),
-            SizedBox(height: usableHeight * 0.01),
+          SizedBox(height: usableHeight * 0.02),
 
-            // Lista de artículos
-            ...pedido.items.map(
-              (it) => Container(
-                margin: EdgeInsets.only(bottom: usableHeight * 0.008),
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.035,
-                  vertical: usableHeight * 0.01,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: grisBorde),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        it.nombre,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    Text(
-                      l10n?.unidadesProducto(it.cantidad.toInt()) ??
-                          '${it.cantidad.toInt()} ud(s).',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: azulFondo,
-                        fontSize: screenWidth * 0.034,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SizedBox(height: usableHeight * 0.02),
-
-            // Enlace al portal web si está disponible en Odoo
-            if (pedido.portalUrl != null && pedido.portalUrl!.isNotEmpty) ...[
-              SizedBox(
-                width: double.infinity,
-                height: usableHeight * 0.052,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: azulFondo,
-                    side: BorderSide(color: azulFondo),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.open_in_browser_rounded, size: 18),
-                  label: const Text(
-                    'Ver orden en Portal Odoo',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: () async {
-                    try {
-                      final uri = Uri.parse(pedido.portalUrl!);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      }
-                    } catch (e) {
-                      debugPrint('[PEDIDOS] Error abriendo portal_url: $e');
-                    }
-                  },
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.012),
-            ],
-
-            // Botón Cerrar
+          // Enlace al portal web si está disponible en Odoo
+          if (pedido.portalUrl != null && pedido.portalUrl!.isNotEmpty) ...[
             SizedBox(
               width: double.infinity,
-              height: usableHeight * 0.055,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: azulFondo,
-                  foregroundColor: Colors.white,
+              height: usableHeight * 0.052,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: azulFondo,
+                  side: BorderSide(color: azulFondo),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n?.cerrar ?? 'Cerrar'),
+                icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                label: Text(
+                  l10n?.verOrdenPortalOdoo ?? 'Ver orden en Portal Odoo',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  final bool hasNet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () {},
+                      );
+                  if (!hasNet) return;
+                  try {
+                    final uri = Uri.parse(pedido.portalUrl!);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('[PEDIDOS] Error abriendo portal_url: $e');
+                  }
+                },
               ),
             ),
+            SizedBox(height: usableHeight * 0.012),
           ],
-        ),
+
+          // Botón Cerrar
+          SizedBox(
+            width: double.infinity,
+            height: usableHeight * 0.055,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: azulFondo,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n?.cerrar ?? 'Cerrar'),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _infoRow(
-    String label,
-    String value, {
-    bool isBold = false,
-    Color? textColor,
-  }) {
+/// Fila de información clave-valor con alineación adaptada
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.isBold = false,
+    this.textColor,
+  });
+
+  final String label;
+  final String value;
+  final bool isBold;
+  final Color? textColor;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

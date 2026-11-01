@@ -18,6 +18,7 @@ import '../providers/recomendacion_iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import 'ayuda_soporte_screen.dart';
 import 'esperando_aprobacion_screen.dart';
 import 'mis_donaciones_screen.dart';
@@ -110,6 +111,7 @@ class _PerfilScreenState extends State<PerfilScreen>
 
   void _mostrarNotificacionCambioEstado(ChurchStatusChangeEvent event) {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     if (event.isApprovedNow) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -128,16 +130,18 @@ class _PerfilScreenState extends State<PerfilScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '¡Tu iglesia ha sido aprobada!',
-                      style: TextStyle(
+                    Text(
+                      l10n?.iglesiaAprobadaTitulo ??
+                          '¡Tu iglesia ha sido aprobada!',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     Text(
-                      'Ya eres miembro activo de ${event.churchName}. Acceso completo desbloqueado.',
+                      l10n?.iglesiaAprobadaMensaje(event.churchName) ??
+                          'Ya eres miembro activo de ${event.churchName}. Acceso completo desbloqueado.',
                       style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ],
@@ -166,7 +170,11 @@ class _PerfilScreenState extends State<PerfilScreen>
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'El estado de tu congregación (${event.churchName}) ha cambiado a: ${event.newStatus}.',
+                  l10n?.estadoCongregacionCambiado(
+                        event.churchName,
+                        event.newStatus,
+                      ) ??
+                      'El estado de tu congregación (${event.churchName}) ha cambiado a: ${event.newStatus}.',
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ),
@@ -347,9 +355,13 @@ class _PerfilScreenState extends State<PerfilScreen>
       child: RefreshIndicator(
         color: amarilloOro,
         onRefresh: () async {
-          if (userProvider.isAuthenticated) {
-            await userProvider.refreshUserProfile();
-          }
+          if (!userProvider.isAuthenticated) return;
+          final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+            context,
+            onRetry: () => userProvider.refreshUserProfile(),
+          );
+          if (!hasInternet) return;
+          await userProvider.refreshUserProfile();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(
@@ -625,15 +637,11 @@ class _PerfilScreenState extends State<PerfilScreen>
         ? iglesiaNombre.trim()
         : '';
 
-    final String prefixAviso =
-        (nombreMostrar.toLowerCase().startsWith('el ') ||
-            nombreMostrar.toLowerCase().startsWith('templo '))
-        ? 'al '
-        : (nombreMostrar.toLowerCase().startsWith('la ') ? '' : 'a la ');
-
     final String mensajeAviso = nombreMostrar.isNotEmpty
-        ? 'Perteneces $prefixAviso$nombreMostrar, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'
-        : 'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.';
+        ? (l10n?.pertenecesAIglesiaEnRevisionDesc(nombreMostrar) ??
+              'Perteneces a $nombreMostrar, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.')
+        : (l10n?.iglesiaEnRevisionDesc ??
+              'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.');
 
     showModalBottomSheet(
       context: context,
@@ -646,7 +654,7 @@ class _PerfilScreenState extends State<PerfilScreen>
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 24, 24, 20),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -670,9 +678,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Iglesia en revisión',
+                    l10n?.iglesiaEnRevision ?? 'Iglesia en revisión',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: azulFondo,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -702,9 +710,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                         ),
                       ),
                       icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text(
-                        'Ver estado de solicitud',
-                        style: TextStyle(
+                      label: Text(
+                        l10n?.verEstadoSolicitud ?? 'Ver estado de solicitud',
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -1845,7 +1853,8 @@ class _PerfilScreenState extends State<PerfilScreen>
         (
           icon: Icons.ad_units_rounded,
           title: l10n?.anunciosYPublicidad ?? 'Publicidad y Anuncios',
-          subtitle: l10n?.subtituloGestionCampanas ??
+          subtitle:
+              l10n?.subtituloGestionCampanas ??
               'Crea, cotiza y mide tus campañas en la comunidad',
           onTap: () => Navigator.pushNamed(context, AdminAdsScreen.routeName),
         ),
@@ -2151,7 +2160,8 @@ class _PerfilScreenState extends State<PerfilScreen>
                           color: const Color(0xFF818CF8).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF818CF8).withValues(alpha: 0.5),
+                            color: const Color(0xFF818CF8)
+                                .withValues(alpha: 0.5),
                             width: 1,
                           ),
                         ),
@@ -2257,8 +2267,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF818CF8)
                                               .withValues(alpha: 0.16),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: Icon(
                                           item.icon,
@@ -2284,8 +2295,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                                             Text(
                                               item.subtitle,
                                               style: TextStyle(
-                                                color: Colors.white
-                                                    .withValues(alpha: 0.65),
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.65,
+                                                ),
                                                 fontSize: screenWidth * 0.029,
                                               ),
                                             ),
@@ -2294,8 +2306,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                                       ),
                                       Icon(
                                         Icons.arrow_forward_ios_rounded,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.38),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.38,
+                                        ),
                                         size: 14,
                                       ),
                                     ],
@@ -2528,6 +2541,12 @@ class _PerfilScreenState extends State<PerfilScreen>
 
   /// Herramienta interactiva para verificar en vivo la recuperación ante error 401 y refresh de Odoo
   Future<void> _probarRenovacionToken(BuildContext context) async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _probarRenovacionToken(context),
+    );
+    if (!hasInternet || !context.mounted) return;
+
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final bool estaAutenticado =
         userProvider.isAuthenticated || userProvider.currentUser != null;
@@ -2718,6 +2737,13 @@ class _PerfilScreenState extends State<PerfilScreen>
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
+              final bool hasInternet =
+                  await AtrioConnectivityAlert.checkAndNotify(
+                    context,
+                    onRetry: () => _confirmarEliminarCuenta(context),
+                  );
+              if (!hasInternet || !context.mounted) return;
+
               Navigator.pop(ctx);
 
               final userProvider = Provider.of<UserProvider>(
@@ -2750,17 +2776,18 @@ class _PerfilScreenState extends State<PerfilScreen>
                               ),
                             ),
                             const SizedBox(height: 18),
-                            const Text(
-                              'Eliminando cuenta y datos personales...',
+                            Text(
+                              l10n?.eliminandoCuentaYDatos ??
+                                  'Eliminando cuenta y datos personales...',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Notificando a Odoo, revocando Google Sign-In y restableciendo estado virgen...',
+                              l10n?.eliminandoCuentaSubtitulo ?? 'Notificando a Odoo, revocando Google Sign-In y restableciendo estado virgen...',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 12,
@@ -2808,8 +2835,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            l10n?.cuentaEliminadaExito ??
-                                'Tu cuenta y datos personales han sido eliminados satisfactoriamente. Se ha enviado una confirmación a tu correo.',
+                            l10n?.cuentaEliminadaExito ?? 'Tu cuenta y datos personales han sido eliminados satisfactoriamente. Se ha enviado una confirmación a tu correo.',
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),

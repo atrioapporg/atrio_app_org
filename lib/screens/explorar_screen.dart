@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,7 +9,41 @@ import '../l10n/app_localizations.dart';
 import '../modelos/iglesia_explorar_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/explorar_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import 'iglesias_en_mapa_screen.dart';
+
+const Color azulFondo = Color(0xFF072B4F);
+const Color amarilloOro = Color(0xFFE5A023);
+const Color blancoFondo = Color(0xFFFAF7F0);
+const Color grisBorde = Color(0xFFEFEFEF);
+
+const List<String> _filtrosKeys = [
+  'todos',
+  'catolica',
+  'evangelica',
+  'pentecostal',
+  'bautista',
+  'adventista',
+];
+
+String _getFiltroLabel(int index, AppLocalizations? l10n) {
+  switch (index) {
+    case 0:
+      return l10n?.todos ?? 'Todas';
+    case 1:
+      return l10n?.catolica ?? 'Católica';
+    case 2:
+      return l10n?.evangelica ?? 'Evangélica';
+    case 3:
+      return l10n?.pentecostal ?? 'Pentecostal';
+    case 4:
+      return l10n?.bautista ?? 'Bautista';
+    case 5:
+      return l10n?.adventista ?? 'Adventista';
+    default:
+      return '';
+  }
+}
 
 /// Pantalla ExplorarScreen: Búsqueda dual estricta al país actual del usuario
 /// (si está en RD, solo busca en RD; si está en Colombia, solo busca en Colombia).
@@ -25,20 +60,6 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-
-  static const Color azulFondo = Color(0xFF072B4F);
-  static const Color amarilloOro = Color(0xFFE5A023);
-  static const Color blancoFondo = Color(0xFFFAF7F0);
-  static const Color grisBorde = Color(0xFFEFEFEF);
-
-  final List<String> _filtrosKeys = [
-    'todos',
-    'catolica',
-    'evangelica',
-    'pentecostal',
-    'bautista',
-    'adventista',
-  ];
 
   @override
   void initState() {
@@ -114,27 +135,12 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     explorarProv.buscar(ignorarDebounce: true);
   }
 
-  String _getFiltroLabel(int index, AppLocalizations? l10n) {
-    switch (index) {
-      case 0:
-        return l10n?.todos ?? 'Todas';
-      case 1:
-        return l10n?.catolica ?? 'Católica';
-      case 2:
-        return l10n?.evangelica ?? 'Evangélica';
-      case 3:
-        return l10n?.pentecostal ?? 'Pentecostal';
-      case 4:
-        return l10n?.bautista ?? 'Bautista';
-      case 5:
-        return l10n?.adventista ?? 'Adventista';
-      default:
-        return '';
-    }
-  }
-
   Future<void> _abrirNavegacion(LatLng? latLng, String nombre) async {
     if (latLng == null) return;
+
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) return;
+
     final double lat = latLng.latitude;
     final double lng = latLng.longitude;
 
@@ -181,7 +187,13 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // 1. Encabezado institucional superior
-        _buildHeader(context, provider, l10n, screenWidth, usableHeight),
+        _ExplorarHeader(
+          provider: provider,
+          l10n: l10n,
+          screenWidth: screenWidth,
+          usableHeight: usableHeight,
+          onLocationTap: _inicializarExploracion,
+        ),
 
         // 2. Canvas principal aprovechando el 100% del alto restante
         Expanded(
@@ -189,9 +201,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
             width: screenWidth,
             decoration: BoxDecoration(
               color: blancoFondo,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(screenWidth * 0.075),
-                topRight: Radius.circular(screenWidth * 0.075),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(screenWidth * 0.075),
               ),
               boxShadow: [
                 BoxShadow(
@@ -202,14 +213,16 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(screenWidth * 0.075),
-                topRight: Radius.circular(screenWidth * 0.075),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(screenWidth * 0.075),
               ),
               child: RefreshIndicator(
                 color: azulFondo,
                 backgroundColor: amarilloOro,
                 onRefresh: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(context);
+                  if (!hasInternet) return;
                   await provider.refrescar();
                 },
                 child: CustomScrollView(
@@ -221,7 +234,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     // Área superior de controles (Modo, Buscador, Denominaciones y Banner)
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(
+                        padding: EdgeInsetsDirectional.fromSTEB(
                           screenWidth * 0.045,
                           usableHeight * 0.02,
                           screenWidth * 0.045,
@@ -231,51 +244,59 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Selector de Modo y Radio estricto al país actual
-                            _buildModeAndRangeBar(
-                              context,
-                              provider,
-                              l10n,
-                              screenWidth,
-                              usableHeight,
+                            _ModeAndRangeBar(
+                              provider: provider,
+                              l10n: l10n,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
                             ),
                             SizedBox(height: usableHeight * 0.016),
 
                             // Barra de búsqueda con Debounce de 500 ms
-                            _buildSearchBar(
-                              context,
-                              provider,
-                              l10n,
-                              screenWidth,
-                              usableHeight,
+                            _ExplorarSearchBar(
+                              provider: provider,
+                              l10n: l10n,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              searchController: _searchController,
+                              searchFocusNode: _searchFocusNode,
                             ),
                             SizedBox(height: usableHeight * 0.016),
 
                             // Filtros de Denominación interactivos
-                            _buildFilterChips(
-                              context,
-                              provider,
-                              l10n,
-                              screenWidth,
-                              usableHeight,
+                            _FilterChipsBar(
+                              provider: provider,
+                              l10n: l10n,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
                             ),
                             SizedBox(height: usableHeight * 0.02),
 
                             // Banner interactivo hacia el mapa general
-                            _buildMapBanner(
-                              context,
-                              l10n,
-                              screenWidth,
-                              usableHeight,
+                            _MapBanner(
+                              l10n: l10n,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              onTap: () async {
+                                final hasInternet =
+                                    await AtrioConnectivityAlert.checkAndNotify(
+                                      context,
+                                    );
+                                if (!hasInternet || !context.mounted) return;
+                                Navigator.pushNamed(
+                                  context,
+                                  IglesiasEnMapaScreen.routeName,
+                                );
+                              },
                             ),
                             SizedBox(height: usableHeight * 0.022),
 
                             // Cabecera de la sección de resultados
-                            _buildSectionHeader(
-                              context,
-                              provider,
-                              l10n,
-                              screenWidth,
-                              usableHeight,
+                            _SectionHeader(
+                              provider: provider,
+                              l10n: l10n,
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
                             ),
                             SizedBox(height: usableHeight * 0.012),
                           ],
@@ -287,35 +308,51 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     if (provider.isLoading)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: _buildLoadingState(
-                          l10n,
-                          screenWidth,
-                          usableHeight,
+                        child: _LoadingState(
+                          l10n: l10n,
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
                         ),
                       )
                     else if (provider.errorMessage != null)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: _buildErrorState(
-                          provider,
-                          l10n,
-                          screenWidth,
-                          usableHeight,
+                        child: _ErrorState(
+                          provider: provider,
+                          l10n: l10n,
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
+                          onRetry: () async {
+                            final hasInternet =
+                                await AtrioConnectivityAlert.checkAndNotify(
+                                  context,
+                                );
+                            if (!hasInternet) return;
+                            provider.buscar(
+                              ignorarDebounce: true,
+                              forzarRecarga: true,
+                            );
+                          },
                         ),
                       )
                     else if (provider.iglesiasMostradas.isEmpty)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: _buildEmptyState(
-                          provider,
-                          l10n,
-                          screenWidth,
-                          usableHeight,
+                        child: _EmptyState(
+                          provider: provider,
+                          l10n: l10n,
+                          screenWidth: screenWidth,
+                          usableHeight: usableHeight,
+                          onReset: () {
+                            _searchController.clear();
+                            provider.cambiarDenominacion(0);
+                            provider.limpiarBusqueda();
+                          },
                         ),
                       )
                     else
                       SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
+                        padding: EdgeInsetsDirectional.fromSTEB(
                           screenWidth * 0.045,
                           0,
                           screenWidth * 0.045,
@@ -329,25 +366,28 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                                   : 0),
                           itemBuilder: (context, index) {
                             if (index == provider.iglesiasMostradas.length) {
-                              return _buildBottomPaginationLoader(
-                                provider,
-                                l10n,
-                                screenWidth,
-                                usableHeight,
+                              return _BottomPaginationLoader(
+                                provider: provider,
+                                l10n: l10n,
+                                screenWidth: screenWidth,
+                                usableHeight: usableHeight,
                               );
                             }
 
                             final iglesia = provider.iglesiasMostradas[index];
                             return Padding(
-                              padding: EdgeInsets.only(
+                              padding: EdgeInsetsDirectional.only(
                                 bottom: usableHeight * 0.014,
                               ),
-                              child: _buildChurchCard(
-                                context: context,
+                              child: _ChurchCard(
                                 screenWidth: screenWidth,
                                 usableHeight: usableHeight,
                                 iglesia: iglesia,
                                 l10n: l10n,
+                                onNavigationTap: () => _abrirNavegacion(
+                                  iglesia.latLng,
+                                  iglesia.nombre,
+                                ),
                               ),
                             );
                           },
@@ -362,15 +402,25 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ],
     );
   }
+}
 
-  /// Encabezado superior con título y estado de cobertura
-  Widget _buildHeader(
-    BuildContext context,
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _ExplorarHeader extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onLocationTap;
+
+  const _ExplorarHeader({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onLocationTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final idioma = Localizations.localeOf(context).languageCode;
     final paisNombre = provider.getPaisNombre(idioma);
     final esNacional = provider.modo == ModoExploracion.nacional;
@@ -384,9 +434,13 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               l10n?.comunidadesCristianasCercanas ??
               'Comunidades cristianas cercanas');
 
+    final locale = Localizations.localeOf(context).toString();
+    final radioNumStr = NumberFormat.decimalPattern(locale)
+        .format(provider.radioKm.toInt());
+
     return Container(
       width: screenWidth,
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         screenWidth * 0.05,
         usableHeight * 0.012,
         screenWidth * 0.05,
@@ -427,10 +481,10 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _inicializarExploracion,
+              onTap: onLocationTap,
               borderRadius: BorderRadius.circular(screenWidth * 0.06),
               child: Container(
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.03,
                   vertical: usableHeight * 0.008,
                 ),
@@ -448,9 +502,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     ),
                     SizedBox(width: screenWidth * 0.012),
                     Text(
-                      esNacional
-                          ? provider.paisCodigo
-                          : '${provider.radioKm.toInt()} km',
+                      esNacional ? provider.paisCodigo : '$radioNumStr km',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: screenWidth * 0.032,
@@ -466,16 +518,25 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ),
     );
   }
+}
 
-  /// Barra de control dual: Selector de Modo (Radio vs. Nacional) y Bloqueo estricto al país actual
-  Widget _buildModeAndRangeBar(
-    BuildContext context,
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _ModeAndRangeBar extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+
+  const _ModeAndRangeBar({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final idioma = Localizations.localeOf(context).languageCode;
+    final locale = Localizations.localeOf(context).toString();
     final paisNombre = provider.getPaisNombre(idioma);
     final esRadio = provider.modo == ModoExploracion.radio;
 
@@ -581,12 +642,15 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               SizedBox(width: screenWidth * 0.025),
               ...[10.0, 25.0, 50.0].map((km) {
                 final isSelected = provider.radioKm == km;
+                final kmFormatted = NumberFormat.decimalPattern(locale)
+                    .format(km.toInt());
+
                 return Padding(
-                  padding: EdgeInsets.only(right: screenWidth * 0.02),
+                  padding: EdgeInsetsDirectional.only(end: screenWidth * 0.02),
                   child: GestureDetector(
                     onTap: () => provider.cambiarRadio(km),
                     child: Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: EdgeInsetsDirectional.symmetric(
                         horizontal: screenWidth * 0.032,
                         vertical: usableHeight * 0.005,
                       ),
@@ -600,7 +664,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                         ),
                       ),
                       child: Text(
-                        '${km.toInt()} km',
+                        '$kmFormatted km',
                         style: TextStyle(
                           color: isSelected ? Colors.white : azulFondo,
                           fontSize: screenWidth * 0.03,
@@ -618,7 +682,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         else
           // Indicador estricto de país actual (Bloqueado al país del usuario)
           Container(
-            padding: EdgeInsets.symmetric(
+            padding: EdgeInsetsDirectional.symmetric(
               horizontal: screenWidth * 0.035,
               vertical: usableHeight * 0.008,
             ),
@@ -647,7 +711,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(
+                  padding: EdgeInsetsDirectional.symmetric(
                     horizontal: screenWidth * 0.02,
                     vertical: usableHeight * 0.003,
                   ),
@@ -681,15 +745,27 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ],
     );
   }
+}
 
-  /// Buscador Material 3 con debounce de 500 ms y longitud mínima de 3 caracteres
-  Widget _buildSearchBar(
-    BuildContext context,
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _ExplorarSearchBar extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final TextEditingController searchController;
+  final FocusNode searchFocusNode;
+
+  const _ExplorarSearchBar({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.searchController,
+    required this.searchFocusNode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final idioma = Localizations.localeOf(context).languageCode;
     final paisNombre = provider.getPaisNombre(idioma);
     final hint = provider.modo == ModoExploracion.nacional
@@ -698,7 +774,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         : (l10n?.buscarIglesiasPlaceholder ??
               'Ej. Iglesia cristiana, Bautista...');
 
-    final texto = _searchController.text.trim();
+    final texto = searchController.text.trim();
     final advertenciaMinCaracteres = texto.isNotEmpty && texto.length < 3;
 
     return Column(
@@ -720,7 +796,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               ),
             ],
           ),
-          padding: EdgeInsets.symmetric(
+          padding: EdgeInsetsDirectional.symmetric(
             horizontal: screenWidth * 0.035,
             vertical: usableHeight * 0.004,
           ),
@@ -734,19 +810,19 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               SizedBox(width: screenWidth * 0.025),
               Expanded(
                 child: TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
+                  controller: searchController,
+                  focusNode: searchFocusNode,
                   textInputAction: TextInputAction.search,
                   onChanged: (val) {
                     provider.onTextoBusquedaCambiado(val);
                   },
                   onSubmitted: (val) {
-                    _searchFocusNode.unfocus();
-                    final texto = val.trim();
-                    if (texto.isEmpty) {
+                    searchFocusNode.unfocus();
+                    final textoSubmitted = val.trim();
+                    if (textoSubmitted.isEmpty) {
                       provider.limpiarBusqueda();
                     } else {
-                      provider.ejecutarBusquedaInmediata(texto);
+                      provider.ejecutarBusquedaInmediata(textoSubmitted);
                     }
                   },
                   style: TextStyle(
@@ -763,17 +839,17 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                     ),
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: EdgeInsetsDirectional.symmetric(
                       vertical: usableHeight * 0.014,
                     ),
                   ),
                 ),
               ),
-              if (_searchController.text.isNotEmpty)
+              if (searchController.text.isNotEmpty)
                 GestureDetector(
                   onTap: () {
-                    _searchController.clear();
-                    _searchFocusNode.unfocus();
+                    searchController.clear();
+                    searchFocusNode.unfocus();
                     provider.limpiarBusqueda();
                   },
                   child: Padding(
@@ -791,12 +867,12 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 child: InkWell(
                   onTap: () {
-                    _searchFocusNode.unfocus();
-                    final texto = _searchController.text.trim();
-                    if (texto.isEmpty) {
+                    searchFocusNode.unfocus();
+                    final textoAction = searchController.text.trim();
+                    if (textoAction.isEmpty) {
                       provider.limpiarBusqueda();
                     } else {
-                      provider.ejecutarBusquedaInmediata(texto);
+                      provider.ejecutarBusquedaInmediata(textoAction);
                     }
                   },
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -816,7 +892,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         if (advertenciaMinCaracteres) ...[
           SizedBox(height: usableHeight * 0.005),
           Padding(
-            padding: EdgeInsets.only(left: screenWidth * 0.02),
+            padding: EdgeInsetsDirectional.only(start: screenWidth * 0.02),
             child: Row(
               children: [
                 Icon(
@@ -841,15 +917,23 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ],
     );
   }
+}
 
-  /// Barra horizontal interactiva de denominaciones
-  Widget _buildFilterChips(
-    BuildContext context,
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _FilterChipsBar extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+
+  const _FilterChipsBar({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: usableHeight * 0.046,
       child: ListView.separated(
@@ -869,7 +953,9 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: screenWidth * 0.04,
+              ),
               decoration: BoxDecoration(
                 color: isSelected ? azulFondo : Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.05),
@@ -921,19 +1007,27 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ),
     );
   }
+}
 
-  /// Banner interactivo con gradiente para navegar al mapa general
-  Widget _buildMapBanner(
-    BuildContext context,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _MapBanner extends StatelessWidget {
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onTap;
+
+  const _MapBanner({
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () =>
-            Navigator.pushNamed(context, IglesiasEnMapaScreen.routeName),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(screenWidth * 0.045),
         child: Ink(
           width: screenWidth,
@@ -1016,19 +1110,35 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ),
     );
   }
+}
 
-  /// Título de sección de resultados con conteo y descripción del filtro
-  Widget _buildSectionHeader(
-    BuildContext context,
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _SectionHeader extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+
+  const _SectionHeader({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final idioma = Localizations.localeOf(context).languageCode;
+    final locale = Localizations.localeOf(context).toString();
     final paisNombre = provider.getPaisNombre(idioma);
     final totalMostradas = provider.iglesiasMostradas.length;
     final totalCargadas = provider.totalResultadosCargados;
+
+    final totalMostradasFormatted = NumberFormat.decimalPattern(locale)
+        .format(totalMostradas);
+    final totalCargadasFormatted = NumberFormat.decimalPattern(locale)
+        .format(totalCargadas);
+    final radioFormatted = NumberFormat.decimalPattern(locale)
+        .format(provider.radioKm.toInt());
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1052,7 +1162,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               if (!provider.isLoading && totalMostradas > 0) ...[
                 SizedBox(width: screenWidth * 0.02),
                 Container(
-                  padding: EdgeInsets.symmetric(
+                  padding: EdgeInsetsDirectional.symmetric(
                     horizontal: screenWidth * 0.022,
                     vertical: usableHeight * 0.003,
                   ),
@@ -1063,11 +1173,11 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   child: Text(
                     totalCargadas > totalMostradas
                         ? (l10n?.conteoResultadosDeTotal(
-                                '$totalMostradas',
-                                '$totalCargadas',
+                                totalMostradasFormatted,
+                                totalCargadasFormatted,
                               ) ??
-                              '$totalMostradas de $totalCargadas')
-                        : '$totalMostradas',
+                              '$totalMostradasFormatted de $totalCargadasFormatted')
+                        : totalMostradasFormatted,
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.03,
@@ -1083,8 +1193,8 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
           SizedBox(width: screenWidth * 0.02),
           Text(
             provider.modo == ModoExploracion.radio
-                ? (l10n?.radioMenorQueKm(provider.radioKm.toInt().toString()) ??
-                      'Radio < ${provider.radioKm.toInt()} km')
+                ? (l10n?.radioMenorQueKm(radioFormatted) ??
+                      'Radio < $radioFormatted km')
                 : paisNombre,
             style: TextStyle(
               color: Colors.grey.shade600,
@@ -1096,18 +1206,34 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ],
     );
   }
+}
 
-  /// Tarjeta de Iglesia responsiva Material 3
-  Widget _buildChurchCard({
-    required BuildContext context,
-    required double screenWidth,
-    required double usableHeight,
-    required IglesiaExplorarModel iglesia,
-    required AppLocalizations? l10n,
-  }) {
+class _ChurchCard extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final IglesiaExplorarModel iglesia;
+  final AppLocalizations? l10n;
+  final VoidCallback onNavigationTap;
+
+  const _ChurchCard({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.iglesia,
+    required this.l10n,
+    required this.onNavigationTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    final ratingFormatted = NumberFormat('0.0', locale).format(iglesia.rating);
+    final distanciaFormatted = NumberFormat(
+      '0.0',
+      locale,
+    ).format(iglesia.distanciaKm);
+
     final String distanciaStr = iglesia.distanciaKm > 0
-        ? (l10n?.aDistanciaKm(iglesia.distanciaKm.toStringAsFixed(1)) ??
-              'A ${iglesia.distanciaKm.toStringAsFixed(1)} km')
+        ? (l10n?.aDistanciaKm(distanciaFormatted) ?? 'A $distanciaFormatted km')
         : '';
 
     return Container(
@@ -1127,7 +1253,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(screenWidth * 0.04),
-          onTap: () => _abrirNavegacion(iglesia.latLng, iglesia.nombre),
+          onTap: onNavigationTap,
           child: Padding(
             padding: EdgeInsets.all(screenWidth * 0.035),
             child: Row(
@@ -1184,7 +1310,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(
+                            padding: EdgeInsetsDirectional.symmetric(
                               horizontal: screenWidth * 0.018,
                               vertical: usableHeight * 0.002,
                             ),
@@ -1204,7 +1330,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                                 ),
                                 SizedBox(width: screenWidth * 0.008),
                                 Text(
-                                  iglesia.rating.toStringAsFixed(1),
+                                  ratingFormatted,
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontSize: screenWidth * 0.028,
@@ -1249,8 +1375,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   shape: const CircleBorder(),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: () =>
-                        _abrirNavegacion(iglesia.latLng, iglesia.nombre),
+                    onTap: onNavigationTap,
                     child: Padding(
                       padding: EdgeInsets.all(screenWidth * 0.024),
                       child: Icon(
@@ -1268,14 +1393,23 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ),
     );
   }
+}
 
-  /// Indicador al pie de lista para la carga perezosa de 15 en 15 elementos
-  Widget _buildBottomPaginationLoader(
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _BottomPaginationLoader extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+
+  const _BottomPaginationLoader({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     if (provider.isLoadingMore) {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: usableHeight * 0.02),
@@ -1323,13 +1457,21 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
 
     return const SizedBox.shrink();
   }
+}
 
-  /// Estado de Carga
-  Widget _buildLoadingState(
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _LoadingState extends StatelessWidget {
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+
+  const _LoadingState({
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(screenWidth * 0.08),
@@ -1361,14 +1503,25 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ),
     );
   }
+}
 
-  /// Estado de Error con botón de reintento
-  Widget _buildErrorState(
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _ErrorState extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onRetry;
+
+  const _ErrorState({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final mensajeError = provider.errorMessage != null
         ? (l10n?.noSePudieronCargarIglesias ?? provider.errorMessage!)
         : '';
@@ -1407,7 +1560,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                 backgroundColor: amarilloOro,
                 foregroundColor: azulFondo,
                 elevation: 0,
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.06,
                   vertical: usableHeight * 0.014,
                 ),
@@ -1415,8 +1568,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 ),
               ),
-              onPressed: () =>
-                  provider.buscar(ignorarDebounce: true, forzarRecarga: true),
+              onPressed: onRetry,
               icon: Icon(Icons.refresh_rounded, size: screenWidth * 0.045),
               label: Text(
                 l10n?.reintentar ?? 'Reintentar',
@@ -1431,17 +1583,32 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
       ),
     );
   }
+}
 
-  /// Estado Vacío
-  Widget _buildEmptyState(
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _EmptyState extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onReset;
+
+  const _EmptyState({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final idioma = Localizations.localeOf(context).languageCode;
+    final locale = Localizations.localeOf(context).toString();
     final paisNombre = provider.getPaisNombre(idioma);
     final textoBusqueda = provider.textoBusqueda.trim();
+    final radioFormatted = NumberFormat.decimalPattern(locale)
+        .format(provider.radioKm.toInt());
+
     final String mensaje;
     if (textoBusqueda.isNotEmpty) {
       mensaje =
@@ -1450,10 +1617,10 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
     } else if (provider.modo == ModoExploracion.radio) {
       mensaje =
           l10n?.noSeEncontraronIglesiasRadioEnPais(
-            provider.radioKm.toInt().toString(),
+            radioFormatted,
             paisNombre,
           ) ??
-          'No se encontraron iglesias a menos de ${provider.radioKm.toInt()} km en $paisNombre.';
+          'No se encontraron iglesias a menos de $radioFormatted km en $paisNombre.';
     } else {
       mensaje =
           l10n?.noSeEncontraronIglesiasEnPais(paisNombre) ??
@@ -1493,7 +1660,7 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: azulFondo,
                 side: const BorderSide(color: azulFondo),
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.05,
                   vertical: usableHeight * 0.012,
                 ),
@@ -1501,14 +1668,10 @@ class _ExplorarScreenState extends State<ExplorarScreen> {
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 ),
               ),
-              onPressed: () {
-                _searchController.clear();
-                provider.cambiarDenominacion(0);
-                provider.limpiarBusqueda();
-              },
+              onPressed: onReset,
               icon: Icon(Icons.restore_rounded, size: screenWidth * 0.045),
               label: Text(
-                l10n?.todos ?? 'Ver todas',
+                l10n?.verTodas ?? l10n?.todos ?? 'Ver todas',
                 style: TextStyle(
                   fontSize: screenWidth * 0.034,
                   fontWeight: FontWeight.bold,

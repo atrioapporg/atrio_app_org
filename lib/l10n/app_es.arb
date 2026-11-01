@@ -498,6 +498,8 @@
     }
   },
   "todosLosDerechosReservados": "Todos los derechos reservados",
+  "reportarConCapturaPantalla": "Reportar con captura de pantalla",
+  "reportarConCapturaPantallaDesc": "Dibuja y envíanos sugerencias o errores técnicos.",
   "tiposDeSolicitud": "Tipos de solicitud",
   "peticionDeOracion": "Petición de oración",
   "orientacionPastoral": "Orientación pastoral",
@@ -1703,7 +1705,7 @@
   "buzonAlertas": "Buzón de Alertas",
   "anunciosCampanas": "Publicidad y Anuncios",
   "solicitudesRecientes": "Solicitudes Pastorales Recientes",
-  "verTodasSolicitudes": "Ver todas las solicitudes",
+  "verTodasSolicitudes": "Ver todas",
   "sinSolicitudesRecientes": "No hay solicitudes pendientes en este momento",
   "tipoOracion": "Oración",
   "tipoAyuda": "Ayuda Social",
@@ -1740,6 +1742,165 @@
     "description": "Fecha en que fue atendida la solicitud",
     "placeholders": {
       "fecha": {
+        "type": "String"
+      }
+    }
+  },
+  "actualizarRespuesta": "Actualizar Respuesta",
+  "placeholderRespuestaPastoral": "Escribe tu respuesta aquí...",
+  "verMenos": "Ver menos",
+  "refrescar": "Refrescar",
+  "solicitudRechazadaMotivo": "Rechazada: {motivo}",
+  "@solicitudRechazadaMotivo": {
+    "description": "Motivo por el cual fue rechazada una solicitud",
+    "placeholders": {
+      "motivo": {
+        "type": "String"
+      }
+    }
+  },
+  "sinConexionTitulo": "Sin conexión a internet",
+  "sinConexionMensajeDefecto": "Verifica tu señal Wi-Fi o datos móviles para continuar.",
+  "nuevoEvento": "Nuevo Evento",
+  "enTiempoReal": "En tiempo real",
+  "iglesiaEnRevision": "Iglesia en revisión",
+  "verEstadoSolicitud": "Ver estado de solicitud",
+  "peticionesApareceranAqui": "Tus peticiones pastorales aparecerán aquí.",
+  "respuestaPastoralTitulo": "Respuesta pastoral:",
+  "iglesiaEnRevisionDesc": "Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.",
+  "pertenecesAIglesiaEnRevisionDesc": "Perteneces a {iglesia}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.",
+  "@pertenecesAIglesiaEnRevisionDesc": {
+    "description": "Mensaje cuando la membresía de la iglesia está en revisión",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoDesconocido": "Desconocido",
+  "confirmarPedidoTitulo": "Confirmar Pedido",
+  "confirmarCompraPregunta": "¿Deseas confirmar la compra de {cantidad, plural, =1{1 artículo} other{{cantidad} artículos}} por un total de {total}?",
+  "@confirmarCompraPregunta": {
+    "description": "Pregunta de confirmación antes de procesar el pedido",
+    "placeholders": {
+      "cantidad": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "pedidoRegistradoTitulo": "¡Pedido {ref} Registrado!",
+  "@pedidoRegistradoTitulo": {
+    "description": "Título del diálogo de pedido registrado",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "pedidoRegistradoExito": "Tu orden se ha generado en Odoo exitosamente.",
+  "referenciaOdooItem": "• Referencia Odoo: {ref}",
+  "@referenciaOdooItem": {
+    "description": "Línea con la referencia de Odoo",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoOdooItem": "• Estado: {estado}",
+  "@estadoOdooItem": {
+    "description": "Línea con el estado de la orden de Odoo",
+    "placeholders": {
+      "estado": {
+        "type": "String"
+      }
+    }
+  },
+  "totalOdooItem": "• Total: {total}",
+  "@totalOdooItem": {
+    "description": "Línea con el total de la orden de Odoo",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "modalidadEntregaItem": "• Modalidad: {modalidad}",
+  "@modalidadEntregaItem": {
+    "description": "Línea con la modalidad de entrega",
+    "placeholders": {
+      "modalidad": {
+        "type": "String"
+      }
+    }
+  },
+  "instruccionesPagoTienda": "Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.",
+  "carritoDeCompras": "Carrito de compras",
+  "vaciarCarrito": "Vaciar",
+  "carritoVacio": "Tu carrito está vacío",
+  "carritoVacioDesc": "Explora nuestro catálogo y agrega tus productos favoritos.",
+  "confirmarPedidoConTotal": "Confirmar Pedido · {total}",
+  "@confirmarPedidoConTotal": {
+    "description": "Texto del botón de confirmación con monto total",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogoNoSincronizado": "El catálogo no está sincronizado con la tienda. Desliza hacia abajo para actualizar.",
+  "errorConexionTienda": "No se pudo conectar con la tienda. Intenta de nuevo.",
+  "aceptar": "Aceptar",
+  "@aceptar": {
+    "description": "Texto genérico de confirmación o acción afirmativa (Aceptar)"
+  },
+  "estadoPedidoEntregado": "Entregado",
+  "estadoPedidoPagado": "Pagado",
+  "errorSincronizacion": "Error de sincronización",
+  "errorSincronizacionPedidosDesc": "No pudimos conectar con el servidor para consultar tus pedidos. Reintenta la conexión.",
+  "verOrdenPortalOdoo": "Ver orden en Portal Odoo",
+  "verDetalle": "Ver detalle",
+  "iglesiaAprobadaTitulo": "¡Tu iglesia ha sido aprobada!",
+  "iglesiaAprobadaMensaje": "Ya eres miembro activo de {churchName}. Acceso completo desbloqueado.",
+  "@iglesiaAprobadaMensaje": {
+    "description": "Mensaje informativo de confirmación de aprobación de iglesia",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoCongregacionCambiado": "El estado de tu congregación ({churchName}) ha cambiado a: {newStatus}.",
+  "@estadoCongregacionCambiado": {
+    "description": "Mensaje de cambio de estado de congregación",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      },
+      "newStatus": {
+        "type": "String"
+      }
+    }
+  },
+  "eliminandoCuentaYDatos": "Eliminando cuenta y datos personales...",
+  "eliminandoCuentaSubtitulo": "Notificando a Odoo, revocando Google Sign-In y restableciendo estado virgen...",
+  "estadoDonacionProcesada": "Procesada",
+  "estadoDonacionPendiente": "Pendiente",
+  "estadoDonacionDenegada": "Denegada",
+  "estadoDonacionEnProceso": "En proceso",
+  "errorSincronizacionDonacionesDesc": "No pudimos conectar con el servidor para actualizar tus aportes. Reintenta la conexión.",
+  "tusAportesApareceranAqui": "Tus aportes ministeriales aparecerán aquí.",
+  "metodoTransferenciaBancaria": "Transferencia bancaria",
+  "metodoTransferenciaOnline": "Transferencia / Online",
+  "fechaReciente": "Reciente",
+  "aporteConMetodo": "Aporte ({metodo})",
+  "@aporteConMetodo": {
+    "description": "Título de donación con método de pago",
+    "placeholders": {
+      "metodo": {
         "type": "String"
       }
     }

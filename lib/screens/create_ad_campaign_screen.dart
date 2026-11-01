@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/ad_models.dart';
 import '../providers/ads_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 
 /// Pantalla para crear, segmentar, cotizar en vivo y enviar una campaña publicitaria a revisión.
 /// Cumple estrictamente con la especificación técnica de Odoo 19 ERP:
@@ -181,6 +182,9 @@ class _CreateAdCampaignScreenState extends State<CreateAdCampaignScreen> {
     final churchIds = _targetScope == 'church'
         ? _selectedChurches.map((c) => c.id).toList()
         : <int>[];
+
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) return;
 
     final created = await context.read<AdsProvider>().createCampaign(
           name: _nameController.text.trim(),

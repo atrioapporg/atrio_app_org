@@ -495,6 +495,8 @@
     }
   },
   "todosLosDerechosReservados": "All rights reserved",
+  "reportarConCapturaPantalla": "Report with screenshot",
+  "reportarConCapturaPantallaDesc": "Draw and send us suggestions or technical issues.",
   "tiposDeSolicitud": "Request types",
   "peticionDeOracion": "Prayer request",
   "orientacionPastoral": "Pastoral guidance",
@@ -1612,7 +1614,7 @@
   "buzonAlertas": "Alerts Inbox",
   "anunciosCampanas": "Ads & Publicities",
   "solicitudesRecientes": "Recent Pastoral Requests",
-  "verTodasSolicitudes": "View all requests",
+  "verTodasSolicitudes": "View all",
   "sinSolicitudesRecientes": "No pending requests at this time",
   "tipoOracion": "Prayer",
   "tipoAyuda": "Help",
@@ -1649,6 +1651,165 @@
     "description": "Date when request was answered",
     "placeholders": {
       "fecha": {
+        "type": "String"
+      }
+    }
+  },
+  "actualizarRespuesta": "Update Response",
+  "placeholderRespuestaPastoral": "Type your response here...",
+  "verMenos": "See less",
+  "refrescar": "Refresh",
+  "solicitudRechazadaMotivo": "Rejected: {motivo}",
+  "@solicitudRechazadaMotivo": {
+    "description": "Reason why a request was rejected",
+    "placeholders": {
+      "motivo": {
+        "type": "String"
+      }
+    }
+  },
+  "sinConexionTitulo": "No internet connection",
+  "sinConexionMensajeDefecto": "Check your Wi-Fi or mobile data signal to continue.",
+  "nuevoEvento": "New Event",
+  "enTiempoReal": "In real time",
+  "iglesiaEnRevision": "Church under review",
+  "verEstadoSolicitud": "View request status",
+  "peticionesApareceranAqui": "Your pastoral requests will appear here.",
+  "respuestaPastoralTitulo": "Pastoral response:",
+  "iglesiaEnRevisionDesc": "Your church is currently undergoing administrative review. Once approved, you will be able to manage and view the history of your requests and pastoral petitions.",
+  "pertenecesAIglesiaEnRevisionDesc": "You belong to {iglesia}, but your approval is currently pending by the administration. Your church is currently undergoing administrative review. Once approved, you will be able to manage and view the history of your requests and pastoral petitions.",
+  "@pertenecesAIglesiaEnRevisionDesc": {
+    "description": "Message when church membership is under review",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoDesconocido": "Unknown",
+  "confirmarPedidoTitulo": "Confirm Order",
+  "confirmarCompraPregunta": "Do you want to confirm the purchase of {cantidad, plural, =1{1 item} other{{cantidad} items}} for a total of {total}?",
+  "@confirmarCompraPregunta": {
+    "description": "Confirmation question before processing order",
+    "placeholders": {
+      "cantidad": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "pedidoRegistradoTitulo": "Order {ref} Placed!",
+  "@pedidoRegistradoTitulo": {
+    "description": "Dialog title for placed order",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "pedidoRegistradoExito": "Your order has been successfully generated in Odoo.",
+  "referenciaOdooItem": "• Odoo Reference: {ref}",
+  "@referenciaOdooItem": {
+    "description": "Line with Odoo reference",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoOdooItem": "• Status: {estado}",
+  "@estadoOdooItem": {
+    "description": "Line with Odoo order status",
+    "placeholders": {
+      "estado": {
+        "type": "String"
+      }
+    }
+  },
+  "totalOdooItem": "• Total: {total}",
+  "@totalOdooItem": {
+    "description": "Line with Odoo order total",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "modalidadEntregaItem": "• Delivery Method: {modalidad}",
+  "@modalidadEntregaItem": {
+    "description": "Line with delivery method",
+    "placeholders": {
+      "modalidad": {
+        "type": "String"
+      }
+    }
+  },
+  "instruccionesPagoTienda": "You can make the payment via bank transfer or in cash at the church offices.",
+  "carritoDeCompras": "Shopping cart",
+  "vaciarCarrito": "Clear",
+  "carritoVacio": "Your cart is empty",
+  "carritoVacioDesc": "Explore our catalog and add your favorite products.",
+  "confirmarPedidoConTotal": "Confirm Order · {total}",
+  "@confirmarPedidoConTotal": {
+    "description": "Confirmation button label with total amount",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogoNoSincronizado": "The catalog is not synced with the store. Pull down to refresh.",
+  "errorConexionTienda": "Could not connect to the store. Please try again.",
+  "aceptar": "OK",
+  "@aceptar": {
+    "description": "Generic affirmation or confirmation text (OK/Accept)"
+  },
+  "estadoPedidoEntregado": "Delivered",
+  "estadoPedidoPagado": "Paid",
+  "errorSincronizacion": "Sync error",
+  "errorSincronizacionPedidosDesc": "We couldn't connect to the server to check your orders. Please retry the connection.",
+  "verOrdenPortalOdoo": "View order in Odoo Portal",
+  "verDetalle": "View details",
+  "iglesiaAprobadaTitulo": "Your church has been approved!",
+  "iglesiaAprobadaMensaje": "You are now an active member of {churchName}. Full access unlocked.",
+  "@iglesiaAprobadaMensaje": {
+    "description": "Informational confirmation message of church approval",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      }
+    }
+  },
+  "estadoCongregacionCambiado": "Your congregation's status ({churchName}) has changed to: {newStatus}.",
+  "@estadoCongregacionCambiado": {
+    "description": "Congregation status change message",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      },
+      "newStatus": {
+        "type": "String"
+      }
+    }
+  },
+  "eliminandoCuentaYDatos": "Deleting account and personal data...",
+  "eliminandoCuentaSubtitulo": "Notifying Odoo, revoking Google Sign-In, and resetting state...",
+  "estadoDonacionProcesada": "Processed",
+  "estadoDonacionPendiente": "Pending",
+  "estadoDonacionDenegada": "Denied",
+  "estadoDonacionEnProceso": "In process",
+  "errorSincronizacionDonacionesDesc": "We couldn't connect to the server to update your contributions. Please retry the connection.",
+  "tusAportesApareceranAqui": "Your ministry contributions will appear here.",
+  "metodoTransferenciaBancaria": "Bank transfer",
+  "metodoTransferenciaOnline": "Transfer / Online",
+  "fechaReciente": "Recent",
+  "aporteConMetodo": "Contribution ({metodo})",
+  "@aporteConMetodo": {
+    "description": "Donation title with payment method",
+    "placeholders": {
+      "metodo": {
         "type": "String"
       }
     }

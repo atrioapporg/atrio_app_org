@@ -5,6 +5,7 @@ import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../screens/esperando_aprobacion_screen.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
 import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
@@ -149,9 +150,9 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                             size: screenWidth * 0.058,
                           ),
                         ),
-                        Positioned(
+                        PositionedDirectional(
                           top: screenWidth * 0.015,
-                          right: screenWidth * 0.015,
+                          end: screenWidth * 0.015,
                           child: Container(
                             width: screenWidth * 0.022,
                             height: screenWidth * 0.022,
@@ -497,7 +498,7 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                     ),
                                   ),
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
                                   final userProvider = context
                                       .read<UserProvider>();
                                   if (userProvider.isReadOnly) {
@@ -521,16 +522,26 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   }
 
                                   // Iglesia en revisión / pendiente de aprobación pastoral
-                                  final bool tieneIglesiaPendiente = userProvider.isMembershipPending ||
-                                      userProvider.churchStatus == 'membership_pending' ||
+                                  final bool tieneIglesiaPendiente =
+                                      userProvider.isMembershipPending ||
+                                      userProvider.churchStatus ==
+                                          'membership_pending' ||
                                       userProvider.churchStatus == 'pending' ||
                                       (!userProvider.isChurchApproved &&
                                           (userProvider.hasChurchAssigned ||
-                                              userProvider.requestedChurchId != null ||
-                                              (userProvider.currentUser?.iglesiaActual != null &&
-                                                  userProvider.currentUser?.iglesiaActual !=
+                                              userProvider.requestedChurchId !=
+                                                  null ||
+                                              (userProvider
+                                                          .currentUser
+                                                          ?.iglesiaActual !=
+                                                      null &&
+                                                  userProvider
+                                                          .currentUser
+                                                          ?.iglesiaActual !=
                                                       'Sin iglesia seleccionada' &&
-                                                  userProvider.currentUser?.iglesiaActual !=
+                                                  userProvider
+                                                          .currentUser
+                                                          ?.iglesiaActual !=
                                                       'Iglesia Atrio')));
 
                                   if (tieneIglesiaPendiente) {
@@ -547,7 +558,8 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                   }
 
                                   // Sin congregación asignada o no aprobada
-                                  if (!userProvider.hasChurchAssigned || !userProvider.isChurchApproved) {
+                                  if (!userProvider.hasChurchAssigned ||
+                                      !userProvider.isChurchApproved) {
                                     ModalRestriccionSolicitud.mostrarAlertaIglesiaRequerida(
                                       context: context,
                                       duracion: const Duration(seconds: 7),
@@ -555,19 +567,15 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                     return;
                                   }
                                   if (_formKey.currentState!.validate()) {
-                                    ModalConfirmacionSolicitud.mostrar(
-                                      context: context,
-                                      tipoSolicitud:
-                                          _selectedTipoSolicitud ??
-                                          (l10n?.general ?? 'General'),
-                                      asunto: _asuntoController.text.trim(),
-                                      mensaje: _descripcionController.text
-                                          .trim(),
-                                      isPrivate: _isPrivate,
-                                      onConfirmado: () {
-                                        Navigator.pop(context);
-                                      },
-                                    );
+                                    final bool hasInternet =
+                                        await AtrioConnectivityAlert.checkAndNotify(
+                                          context,
+                                          onRetry: () =>
+                                              _procesarEnvioSolicitud(l10n),
+                                        );
+                                    if (!hasInternet || !mounted) return;
+
+                                    _procesarEnvioSolicitud(l10n);
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -608,6 +616,20 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _procesarEnvioSolicitud(AppLocalizations? l10n) {
+    if (!mounted) return;
+    ModalConfirmacionSolicitud.mostrar(
+      context: context,
+      tipoSolicitud: _selectedTipoSolicitud ?? (l10n?.general ?? 'General'),
+      asunto: _asuntoController.text.trim(),
+      mensaje: _descripcionController.text.trim(),
+      isPrivate: _isPrivate,
+      onConfirmado: () {
+        Navigator.pop(context);
+      },
     );
   }
 

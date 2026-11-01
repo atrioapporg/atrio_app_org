@@ -3,7 +3,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../data/database_helper.dart';
 import '../l10n/app_localizations.dart';
-import '../servicios/connectivity_service.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 
 class EscucharLibroBibliaScreen extends StatefulWidget {
   static const routeName = 'escuchar_libro_biblia_screen';
@@ -688,42 +688,17 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     final l10n = AppLocalizations.of(context);
 
     // 1. Verificación previa de conexión a Internet real
-    final tieneInternet = await ConnectivityService.instance.hasRealInternet();
-    if (!tieneInternet) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFFC0392B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-          ),
-          content: Row(
-            children: [
-              Icon(
-                Icons.wifi_off_rounded,
-                color: Colors.white,
-                size: screenWidth * 0.06,
-              ),
-              SizedBox(width: screenWidth * 0.03),
-              Expanded(
-                child: Text(
-                  l10n?.sinInternetAudio ??
-                      'No hay conexión a internet para reproducir el audio.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.035,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      message: l10n?.sinInternetAudio,
+      onRetry: () => _abrirReproductorYouTube(
+        screenWidth,
+        usableHeight,
+        azulFondo,
+        amarilloOro,
+      ),
+    );
+    if (!hasInternet || !mounted) return;
 
     // 2. Consulta a la Base de Datos de manera asíncrona
     final nombreParaConsulta = _libroNombreOriginal.isNotEmpty
@@ -1210,15 +1185,13 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                     child: Column(
                       children: [
@@ -1327,13 +1300,17 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                                       SizedBox(height: usableHeight * 0.012),
                                   itemBuilder: (context, index) {
                                     final libro = librosFiltrados[index];
-                                    return _buildBookTile(
-                                      nombre: libro['nombre'] as String,
-                                      nombreOriginal:
-                                          (libro['nombreOriginal'] ??
-                                                  libro['nombre'])
-                                              as String,
-                                      capitulos: libro['capitulos'] as int,
+                                    final nombre = libro['nombre'] as String;
+                                    final nombreOriginal =
+                                        (libro['nombreOriginal'] ??
+                                                libro['nombre'])
+                                            as String;
+                                    final capitulos =
+                                        libro['capitulos'] as int;
+                                    return _BookTile(
+                                      nombre: nombre,
+                                      nombreOriginal: nombreOriginal,
+                                      capitulos: capitulos,
                                       colorIcono: libro['color'] as Color,
                                       icono: libro['icon'] as IconData,
                                       screenWidth: screenWidth,
@@ -1341,6 +1318,17 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                                       azulFondo: azulFondo,
                                       amarilloOro: amarilloOro,
                                       grisBorde: grisBorde,
+                                      onTap: () {
+                                        _mostrarSelectorCapitulos(
+                                          nombre,
+                                          nombreOriginal,
+                                          capitulos,
+                                          screenWidth,
+                                          usableHeight,
+                                          azulFondo,
+                                          amarilloOro,
+                                        );
+                                      },
                                     );
                                   },
                                 ),
@@ -1357,18 +1345,37 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     );
   }
 
-  Widget _buildBookTile({
-    required String nombre,
-    required String nombreOriginal,
-    required int capitulos,
-    required Color colorIcono,
-    required IconData icono,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color amarilloOro,
-    required Color grisBorde,
-  }) {
+}
+
+class _BookTile extends StatelessWidget {
+  const _BookTile({
+    required this.nombre,
+    required this.nombreOriginal,
+    required this.capitulos,
+    required this.colorIcono,
+    required this.icono,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.amarilloOro,
+    required this.grisBorde,
+    required this.onTap,
+  });
+
+  final String nombre;
+  final String nombreOriginal;
+  final int capitulos;
+  final Color colorIcono;
+  final IconData icono;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color amarilloOro;
+  final Color grisBorde;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final textoCapitulos = capitulos == 1
         ? (l10n?.unCapitulo ?? '1 capítulo')
@@ -1384,19 +1391,9 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(screenWidth * 0.035),
-          onTap: () {
-            _mostrarSelectorCapitulos(
-              nombre,
-              nombreOriginal,
-              capitulos,
-              screenWidth,
-              usableHeight,
-              azulFondo,
-              amarilloOro,
-            );
-          },
+          onTap: onTap,
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: EdgeInsetsDirectional.symmetric(
               horizontal: screenWidth * 0.04,
               vertical: usableHeight * 0.014,
             ),

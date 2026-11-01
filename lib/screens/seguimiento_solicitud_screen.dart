@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
 import 'esperando_aprobacion_screen.dart';
 import 'inicio_sesion_screen.dart';
@@ -14,10 +15,12 @@ class SeguimientoSolicitudScreen extends StatefulWidget {
   const SeguimientoSolicitudScreen({super.key});
 
   @override
-  State<SeguimientoSolicitudScreen> createState() => _SeguimientoSolicitudScreenState();
+  State<SeguimientoSolicitudScreen> createState() =>
+      _SeguimientoSolicitudScreenState();
 }
 
-class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen> {
+class _SeguimientoSolicitudScreenState
+    extends State<SeguimientoSolicitudScreen> {
   bool _isLoading = false;
   bool _errorServidor = false;
   bool _esModoLocal = false;
@@ -31,11 +34,24 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     });
   }
 
+  Future<void> _handleManualRefresh() async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _handleManualRefresh(),
+    );
+    if (!hasInternet || !mounted) return;
+    await _cargarSolicitudes();
+  }
+
   /// Transforma los datos de una solicitud (sea de Odoo API o SQLite local)
   /// al formato estructurado para visualización de la UI.
   Map<String, dynamic> _mapearSolicitud(Map<String, dynamic> m) {
-    final state = (m['state'] ?? m['estado'] ?? m['status'] ?? 'draft').toString().toLowerCase();
-    final type = (m['type'] ?? m['tipo'] ?? m['request_type'] ?? '').toString().toLowerCase();
+    final state = (m['state'] ?? m['estado'] ?? m['status'] ?? 'draft')
+        .toString()
+        .toLowerCase();
+    final type = (m['type'] ?? m['tipo'] ?? m['request_type'] ?? '')
+        .toString()
+        .toLowerCase();
 
     // Determinar color y texto de estado
     Color statusColor = const Color(0xFFE5A023);
@@ -81,7 +97,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     } else if (type.contains('oracion') || type.contains('prayer')) {
       icon = Icons.pan_tool_alt_outlined;
       iconColor = const Color(0xFF7A8B43);
-    } else if (type.contains('comunitaria') || type.contains('social') || type.contains('ayuda')) {
+    } else if (type.contains('comunitaria') ||
+        type.contains('social') ||
+        type.contains('ayuda')) {
       icon = Icons.groups_outlined;
       iconColor = const Color(0xFF072B4F);
     } else if (type.contains('familiar') || type.contains('family')) {
@@ -95,22 +113,35 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
       iconColor = const Color(0xFF0055A5);
     }
 
-    final rawDate = m['created_at'] ?? m['date'] ?? m['create_date'] ?? m['fecha'];
+    final rawDate =
+        m['created_at'] ?? m['date'] ?? m['create_date'] ?? m['fecha'];
     String dateFormatted = 'Reciente';
     if (rawDate != null) {
       dateFormatted = rawDate.toString().split('T').first;
     }
 
     return {
-      'title': m['title'] ?? m['titulo'] ?? m['name'] ?? 'Solicitud Ministerial',
+      'title':
+          m['title'] ?? m['titulo'] ?? m['name'] ?? 'Solicitud Ministerial',
       'status': m['status_label'] ?? m['estado_label'] ?? statusText,
       'statusColor': statusColor,
       'dateInfo': dateFormatted,
       'icon': icon,
       'iconColor': iconColor,
-      'referencia': m['reference'] ?? m['referencia'] ?? 'REQ-${m['id'] ?? m['odoo_id'] ?? '0000'}',
-      'detalle': m['message'] ?? m['mensaje'] ?? m['description'] ?? 'Solicitud registrada y asignada.',
-      'respuesta': m['response'] ?? m['respuesta'] ?? m['pastoral_notes'] ?? m['admin_notes'],
+      'referencia':
+          m['reference'] ??
+          m['referencia'] ??
+          'REQ-${m['id'] ?? m['odoo_id'] ?? '0000'}',
+      'detalle':
+          m['message'] ??
+          m['mensaje'] ??
+          m['description'] ??
+          'Solicitud registrada y asignada.',
+      'respuesta':
+          m['response'] ??
+          m['respuesta'] ??
+          m['pastoral_notes'] ??
+          m['admin_notes'],
     };
   }
 
@@ -141,7 +172,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     // 1. Cargar solicitudes guardadas en caché local SQLite
     List<Map<String, dynamic>> solicitudesLocales = [];
     try {
-      final locales = await AtrioDatabaseHelper.instance.getSolicitudesLocales(usuarioEmail: userEmail);
+      final locales = await AtrioDatabaseHelper.instance.getSolicitudesLocales(
+        usuarioEmail: userEmail,
+      );
       solicitudesLocales = locales.map(_mapearSolicitud).toList();
     } catch (eDb) {
       debugPrint('[SOLICITUDES] Error leyendo SQLite local: $eDb');
@@ -170,7 +203,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
       final dynamic raw = data['requests'] ?? data['items'] ?? data['data'];
 
       if (raw is List && mounted) {
-        final solicitudesServidor = raw.map((r) => _mapearSolicitud(r as Map<String, dynamic>)).toList();
+        final solicitudesServidor = raw
+            .map((r) => _mapearSolicitud(r as Map<String, dynamic>))
+            .toList();
         setState(() {
           _solicitudesApi = solicitudesServidor;
           _errorServidor = false;
@@ -179,7 +214,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
         return;
       }
     } catch (e) {
-      debugPrint('[SOLICITUDES] Error en Odoo API (activando modo local/fallback): $e');
+      debugPrint(
+        '[SOLICITUDES] Error en Odoo API (activando modo local/fallback): $e',
+      );
       if (mounted) {
         setState(() {
           _errorServidor = true;
@@ -220,9 +257,7 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     final bool esInvitado = !userProvider.isAuthenticated;
     final List<Map<String, dynamic>> solicitudes = esInvitado
         ? const []
-        : (_solicitudesApi.isNotEmpty
-            ? _solicitudesApi
-            : const []);
+        : (_solicitudesApi.isNotEmpty ? _solicitudesApi : const []);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -287,15 +322,13 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -306,7 +339,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                         children: [
                           if (_isLoading)
                             Padding(
-                              padding: EdgeInsets.only(bottom: usableHeight * 0.01),
+                              padding: EdgeInsets.only(
+                                bottom: usableHeight * 0.01,
+                              ),
                               child: const LinearProgressIndicator(
                                 color: amarilloOro,
                                 backgroundColor: Colors.transparent,
@@ -317,23 +352,27 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                             child: solicitudes.isEmpty
                                 ? Center(
                                     child: SingleChildScrollView(
-                                      physics: const AlwaysScrollableScrollPhysics(
-                                        parent: BouncingScrollPhysics(),
-                                      ),
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(
+                                            parent: BouncingScrollPhysics(),
+                                          ),
                                       child: Padding(
                                         padding: EdgeInsets.symmetric(
                                           horizontal: screenWidth * 0.06,
                                           vertical: usableHeight * 0.02,
                                         ),
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             if (esInvitado) ...[
                                               Container(
                                                 width: screenWidth * 0.18,
                                                 height: screenWidth * 0.18,
                                                 decoration: BoxDecoration(
-                                                  color: azulFondo.withValues(alpha: 0.08),
+                                                  color: azulFondo.withValues(
+                                                    alpha: 0.08,
+                                                  ),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Icon(
@@ -342,9 +381,12 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   size: screenWidth * 0.09,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.02),
+                                              SizedBox(
+                                                height: usableHeight * 0.02,
+                                              ),
                                               Text(
-                                                l10n?.modoInvitado ?? 'Modo invitado',
+                                                l10n?.modoInvitado ??
+                                                    'Modo invitado',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: azulFondo,
@@ -352,10 +394,11 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.01),
+                                              SizedBox(
+                                                height: usableHeight * 0.01,
+                                              ),
                                               Text(
-                                                l10n?.solicitudesInvitadoDesc ??
-                                                    'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.',
+                                                l10n?.solicitudesInvitadoDesc ?? 'En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
@@ -363,12 +406,15 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   height: 1.35,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.025),
+                                              SizedBox(
+                                                height: usableHeight * 0.025,
+                                              ),
                                               ElevatedButton.icon(
                                                 onPressed: () {
                                                   Navigator.pushNamed(
                                                     context,
-                                                    InicioSesionScreen.routeName,
+                                                    InicioSesionScreen
+                                                        .routeName,
                                                   );
                                                 },
                                                 style: ElevatedButton.styleFrom(
@@ -376,13 +422,16 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   foregroundColor: azulFondo,
                                                   elevation: 0,
                                                   padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.06,
-                                                    vertical: usableHeight * 0.014,
+                                                    horizontal:
+                                                        screenWidth * 0.06,
+                                                    vertical:
+                                                        usableHeight * 0.014,
                                                   ),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(
-                                                      screenWidth * 0.03,
-                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          screenWidth * 0.03,
+                                                        ),
                                                   ),
                                                 ),
                                                 icon: Icon(
@@ -390,37 +439,50 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   size: screenWidth * 0.045,
                                                 ),
                                                 label: Text(
-                                                  l10n?.iniciarSesion ?? 'Iniciar sesión',
+                                                  l10n?.iniciarSesion ??
+                                                      'Iniciar sesión',
                                                   style: TextStyle(
-                                                    fontSize: screenWidth * 0.038,
+                                                    fontSize:
+                                                        screenWidth * 0.038,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                               ),
-                                            ] else if (!userProvider.isChurchApproved ||
-                                                userProvider.isMembershipPending ||
+                                            ] else if (!userProvider
+                                                    .isChurchApproved ||
+                                                userProvider
+                                                    .isMembershipPending ||
                                                 userProvider.churchStatus ==
                                                     'membership_pending') ...[
                                               Container(
                                                 width: screenWidth * 0.18,
                                                 height: screenWidth * 0.18,
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFFFEF3C7),
+                                                  color: const Color(
+                                                    0xFFFEF3C7,
+                                                  ),
                                                   shape: BoxShape.circle,
                                                   border: Border.all(
-                                                    color: const Color(0xFFFCD34D),
+                                                    color: const Color(
+                                                      0xFFFCD34D,
+                                                    ),
                                                     width: 1.5,
                                                   ),
                                                 ),
                                                 child: Icon(
                                                   Icons.hourglass_top_rounded,
-                                                  color: const Color(0xFFD97706),
+                                                  color: const Color(
+                                                    0xFFD97706,
+                                                  ),
                                                   size: screenWidth * 0.09,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.02),
+                                              SizedBox(
+                                                height: usableHeight * 0.02,
+                                              ),
                                               Text(
-                                                'Iglesia en revisión',
+                                                l10n?.iglesiaEnRevision ??
+                                                    'Iglesia en revisión',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: azulFondo,
@@ -428,14 +490,35 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.01),
+                                              SizedBox(
+                                                height: usableHeight * 0.01,
+                                              ),
                                               Text(
-                                                (userProvider.requestedChurchData?['name'] != null ||
-                                                        (userProvider.currentUser?.iglesiaActual != null &&
-                                                            userProvider.currentUser?.iglesiaActual != 'Sin iglesia seleccionada' &&
-                                                            userProvider.currentUser?.iglesiaActual != 'Iglesia Atrio'))
-                                                    ? 'Perteneces a ${userProvider.requestedChurchData?['name'] ?? userProvider.currentUser?.iglesiaActual}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'
-                                                    : 'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.',
+                                                (userProvider.requestedChurchData?['name'] !=
+                                                            null ||
+                                                        (userProvider
+                                                                    .currentUser
+                                                                    ?.iglesiaActual !=
+                                                                null &&
+                                                            userProvider
+                                                                    .currentUser
+                                                                    ?.iglesiaActual !=
+                                                                'Sin iglesia seleccionada' &&
+                                                            userProvider
+                                                                    .currentUser
+                                                                    ?.iglesiaActual !=
+                                                                'Iglesia Atrio'))
+                                                    ? (l10n?.pertenecesAIglesiaEnRevisionDesc(
+                                                            userProvider
+                                                                    .requestedChurchData?['name'] ??
+                                                                userProvider
+                                                                    .currentUser
+                                                                    ?.iglesiaActual ??
+                                                                '',
+                                                          ) ??
+                                                          'Perteneces a ${userProvider.requestedChurchData?['name'] ?? userProvider.currentUser?.iglesiaActual}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.')
+                                                    : (l10n?.iglesiaEnRevisionDesc ??
+                                                          'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'),
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
@@ -443,12 +526,29 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   height: 1.35,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.025),
+                                              SizedBox(
+                                                height: usableHeight * 0.025,
+                                              ),
                                               ElevatedButton.icon(
-                                                onPressed: () {
+                                                onPressed: () async {
+                                                  final bool hasInternet =
+                                                      await AtrioConnectivityAlert.checkAndNotify(
+                                                        context,
+                                                        onRetry: () =>
+                                                            Navigator.pushNamed(
+                                                              context,
+                                                              EsperandoAprobacionScreen
+                                                                  .routeName,
+                                                            ),
+                                                      );
+                                                  if (!hasInternet ||
+                                                      !context.mounted) {
+                                                    return;
+                                                  }
                                                   Navigator.pushNamed(
                                                     context,
-                                                    EsperandoAprobacionScreen.routeName,
+                                                    EsperandoAprobacionScreen
+                                                        .routeName,
                                                   );
                                                 },
                                                 style: ElevatedButton.styleFrom(
@@ -456,22 +556,26 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   foregroundColor: Colors.white,
                                                   elevation: 0,
                                                   padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.05,
-                                                    vertical: usableHeight * 0.014,
+                                                    horizontal:
+                                                        screenWidth * 0.05,
+                                                    vertical:
+                                                        usableHeight * 0.014,
                                                   ),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(
-                                                      screenWidth * 0.03,
-                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          screenWidth * 0.03,
+                                                        ),
                                                   ),
                                                 ),
                                                 icon: Icon(
                                                   Icons.refresh_rounded,
                                                   size: screenWidth * 0.045,
                                                 ),
-                                                label: const Text(
-                                                  'Ver estado de solicitud',
-                                                  style: TextStyle(
+                                                label: Text(
+                                                  l10n?.verEstadoSolicitud ??
+                                                      'Ver estado de solicitud',
+                                                  style: const TextStyle(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -482,20 +586,28 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                 width: screenWidth * 0.18,
                                                 height: screenWidth * 0.18,
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFFFEF3C7),
+                                                  color: const Color(
+                                                    0xFFFEF3C7,
+                                                  ),
                                                   shape: BoxShape.circle,
                                                   border: Border.all(
-                                                    color: const Color(0xFFFCD34D),
+                                                    color: const Color(
+                                                      0xFFFCD34D,
+                                                    ),
                                                     width: 1.5,
                                                   ),
                                                 ),
                                                 child: Icon(
                                                   Icons.cloud_off_rounded,
-                                                  color: const Color(0xFFD97706),
+                                                  color: const Color(
+                                                    0xFFD97706,
+                                                  ),
                                                   size: screenWidth * 0.09,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.02),
+                                              SizedBox(
+                                                height: usableHeight * 0.02,
+                                              ),
                                               Text(
                                                 l10n?.errorConexionServidor ?? 'Error de conexión con el servidor',
                                                 textAlign: TextAlign.center,
@@ -505,10 +617,11 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.01),
+                                              SizedBox(
+                                                height: usableHeight * 0.01,
+                                              ),
                                               Text(
-                                                l10n?.errorCargarSolicitudesDesc ??
-                                                    'Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.',
+                                                l10n?.errorCargarSolicitudesDesc ?? 'Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
@@ -516,21 +629,26 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   height: 1.35,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.025),
+                                              SizedBox(
+                                                height: usableHeight * 0.025,
+                                              ),
                                               ElevatedButton.icon(
-                                                onPressed: _cargarSolicitudes,
+                                                onPressed: _handleManualRefresh,
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: azulFondo,
                                                   foregroundColor: Colors.white,
                                                   elevation: 0,
                                                   padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.05,
-                                                    vertical: usableHeight * 0.014,
+                                                    horizontal:
+                                                        screenWidth * 0.05,
+                                                    vertical:
+                                                        usableHeight * 0.014,
                                                   ),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(
-                                                      screenWidth * 0.03,
-                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          screenWidth * 0.03,
+                                                        ),
                                                   ),
                                                 ),
                                                 icon: Icon(
@@ -540,7 +658,8 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                 label: Text(
                                                   l10n?.reintentarConexionServidor ?? 'Reintentar conexión con el servidor',
                                                   style: TextStyle(
-                                                    fontSize: screenWidth * 0.036,
+                                                    fontSize:
+                                                        screenWidth * 0.036,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -550,7 +669,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                 width: screenWidth * 0.18,
                                                 height: screenWidth * 0.18,
                                                 decoration: BoxDecoration(
-                                                  color: azulFondo.withValues(alpha: 0.08),
+                                                  color: azulFondo.withValues(
+                                                    alpha: 0.08,
+                                                  ),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Icon(
@@ -559,10 +680,11 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   size: screenWidth * 0.09,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.02),
+                                              SizedBox(
+                                                height: usableHeight * 0.02,
+                                              ),
                                               Text(
-                                                l10n?.sinSolicitudesRegistradas ??
-                                                    'No tienes solicitudes registradas',
+                                                l10n?.sinSolicitudesRegistradas ?? 'No tienes solicitudes registradas',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: azulFondo,
@@ -570,9 +692,11 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              SizedBox(height: usableHeight * 0.01),
+                                              SizedBox(
+                                                height: usableHeight * 0.01,
+                                              ),
                                               Text(
-                                                'Tus peticiones pastorales aparecerán aquí.',
+                                                l10n?.peticionesApareceranAqui ?? 'Tus peticiones pastorales aparecerán aquí.',
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   color: Colors.grey.shade600,
@@ -590,15 +714,21 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                     children: [
                                       if (_esModoLocal || _errorServidor)
                                         Container(
-                                          margin: EdgeInsets.only(bottom: usableHeight * 0.014),
+                                          margin: EdgeInsets.only(
+                                            bottom: usableHeight * 0.014,
+                                          ),
                                           padding: EdgeInsets.symmetric(
                                             horizontal: screenWidth * 0.035,
                                             vertical: usableHeight * 0.01,
                                           ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFFFFBEB),
-                                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                            border: Border.all(color: const Color(0xFFFDE68A)),
+                                            borderRadius: BorderRadius.circular(
+                                              screenWidth * 0.03,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFFFDE68A),
+                                            ),
                                           ),
                                           child: Row(
                                             children: [
@@ -607,33 +737,44 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                                 color: const Color(0xFFB45309),
                                                 size: screenWidth * 0.05,
                                               ),
-                                              SizedBox(width: screenWidth * 0.025),
+                                              SizedBox(
+                                                width: screenWidth * 0.025,
+                                              ),
                                               Expanded(
                                                 child: Text(
-                                                  l10n?.modoLocalAviso ??
-                                                      'Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.',
+                                                  l10n?.modoLocalAviso ?? 'Mostrando solicitudes guardadas en este dispositivo. Error al sincronizar con el servidor.',
                                                   style: TextStyle(
-                                                    color: const Color(0xFF92400E),
-                                                    fontSize: screenWidth * 0.03,
+                                                    color: const Color(
+                                                      0xFF92400E,
+                                                    ),
+                                                    fontSize:
+                                                        screenWidth * 0.03,
                                                     height: 1.25,
                                                   ),
                                                 ),
                                               ),
                                               TextButton(
-                                                onPressed: _cargarSolicitudes,
+                                                onPressed: _handleManualRefresh,
                                                 style: TextButton.styleFrom(
                                                   padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.02,
+                                                    horizontal:
+                                                        screenWidth * 0.02,
                                                     vertical: 0,
                                                   ),
                                                   minimumSize: Size.zero,
-                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                  tapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
                                                 ),
                                                 child: Text(
-                                                  l10n?.reintentar ?? 'Reintentar',
+                                                  l10n?.reintentar ??
+                                                      'Reintentar',
                                                   style: TextStyle(
-                                                    color: const Color(0xFFB45309),
-                                                    fontSize: screenWidth * 0.032,
+                                                    color: const Color(
+                                                      0xFFB45309,
+                                                    ),
+                                                    fontSize:
+                                                        screenWidth * 0.032,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -643,24 +784,33 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                         ),
                                       Expanded(
                                         child: RefreshIndicator(
-                                          onRefresh: _cargarSolicitudes,
+                                          onRefresh: _handleManualRefresh,
                                           color: amarilloOro,
                                           child: ListView.separated(
-                                            physics: const AlwaysScrollableScrollPhysics(
-                                              parent: BouncingScrollPhysics(),
-                                            ),
+                                            physics:
+                                                const AlwaysScrollableScrollPhysics(
+                                                  parent:
+                                                      BouncingScrollPhysics(),
+                                                ),
                                             itemCount: solicitudes.length,
-                                            separatorBuilder: (context, index) =>
-                                                SizedBox(height: usableHeight * 0.014),
+                                            separatorBuilder:
+                                                (context, index) => SizedBox(
+                                                  height: usableHeight * 0.014,
+                                                ),
                                             itemBuilder: (context, index) {
                                               final item = solicitudes[index];
-                                              return _buildRequestCard(
+                                              return _RequestCard(
                                                 title: item['title'] as String,
-                                                status: item['status'] as String,
-                                                statusColor: item['statusColor'] as Color,
-                                                dateInfo: item['dateInfo'] as String?,
+                                                status:
+                                                    item['status'] as String,
+                                                statusColor:
+                                                    item['statusColor']
+                                                        as Color,
+                                                dateInfo:
+                                                    item['dateInfo'] as String?,
                                                 icon: item['icon'] as IconData,
-                                                iconColor: item['iconColor'] as Color,
+                                                iconColor:
+                                                    item['iconColor'] as Color,
                                                 screenWidth: screenWidth,
                                                 usableHeight: usableHeight,
                                                 azulFondo: azulFondo,
@@ -710,11 +860,22 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                                 )) {
                                   return;
                                 }
+                                final bool hasInternet =
+                                    await AtrioConnectivityAlert.checkAndNotify(
+                                      context,
+                                      onRetry: () => Navigator.pushNamed(
+                                        context,
+                                        'tipos_solicitud_screen',
+                                      ),
+                                    );
+                                if (!hasInternet || !context.mounted) return;
                                 await Navigator.pushNamed(
                                   context,
                                   'tipos_solicitud_screen',
                                 );
-                                _cargarSolicitudes();
+                                if (mounted) {
+                                  _cargarSolicitudes();
+                                }
                               },
                               child: Text(
                                 l10n?.nuevaSolicitud ?? 'Nueva solicitud',
@@ -739,94 +900,6 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
     );
   }
 
-  // Componente: Tarjeta de Solicitud Individual (Fiel a Foto 2)
-  Widget _buildRequestCard({
-    required String title,
-    required String status,
-    required Color statusColor,
-    required String? dateInfo,
-    required IconData icon,
-    required Color iconColor,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color grisBorde,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.045,
-          vertical: usableHeight * 0.016,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.035),
-          border: Border.all(color: grisBorde),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Icono del tipo de solicitud
-            Icon(icon, color: iconColor, size: screenWidth * 0.090),
-            SizedBox(width: screenWidth * 0.04),
-
-            // Textos de información (Título, Estado, Fecha)
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: azulFondo,
-                      fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: usableHeight * 0.003),
-                  Text(
-                    status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: screenWidth * 0.035,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (dateInfo != null) ...[
-                    SizedBox(height: usableHeight * 0.002),
-                    Text(
-                      dateInfo,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: screenWidth * 0.030,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Flecha indicadora derecha
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.grey.shade400,
-              size: screenWidth * 0.06,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Modal con el detalle completo de la solicitud (preparado para Odoo 19)
   void _mostrarDetalleSolicitud({
     required BuildContext context,
@@ -846,7 +919,7 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
       builder: (ctx) {
         final safeBottom = MediaQuery.of(ctx).padding.bottom;
         return Container(
-          padding: EdgeInsets.fromLTRB(
+          padding: EdgeInsetsDirectional.fromSTEB(
             screenWidth * 0.06,
             usableHeight * 0.02,
             screenWidth * 0.06,
@@ -854,9 +927,8 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
           ),
           decoration: BoxDecoration(
             color: blancoFondo,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(screenWidth * 0.08),
-              topRight: Radius.circular(screenWidth * 0.08),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(screenWidth * 0.08),
             ),
           ),
           child: Column(
@@ -909,7 +981,10 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                         ),
                         SizedBox(height: usableHeight * 0.003),
                         Text(
-                          l10n?.idOdoo(item['referencia'] as String? ?? 'REQ-2026-0001') ??
+                          l10n?.idOdoo(
+                                item['referencia'] as String? ??
+                                    'REQ-2026-0001',
+                              ) ??
                               'ID Odoo: ${item['referencia'] ?? 'REQ-2026-0001'}',
                           style: TextStyle(
                             color: Colors.grey.shade600,
@@ -1009,7 +1084,8 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                           ),
                           SizedBox(width: screenWidth * 0.02),
                           Text(
-                            'Respuesta pastoral:',
+                            l10n?.respuestaPastoralTitulo ??
+                                'Respuesta pastoral:',
                             style: TextStyle(
                               color: const Color(0xFF2E7D32),
                               fontSize: screenWidth * 0.032,
@@ -1024,8 +1100,9 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
                         padding: EdgeInsets.all(screenWidth * 0.03),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8F5E9),
-                          borderRadius:
-                              BorderRadius.circular(screenWidth * 0.025),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.025,
+                          ),
                           border: Border.all(color: const Color(0xFFA5D6A7)),
                         ),
                         child: Text(
@@ -1071,6 +1148,111 @@ class _SeguimientoSolicitudScreenState extends State<SeguimientoSolicitudScreen>
           ),
         );
       },
+    );
+  }
+}
+
+/// Componente: Tarjeta de Solicitud Individual
+class _RequestCard extends StatelessWidget {
+  final String title;
+  final String status;
+  final Color statusColor;
+  final String? dateInfo;
+  final IconData icon;
+  final Color iconColor;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color grisBorde;
+  final VoidCallback onTap;
+
+  const _RequestCard({
+    required this.title,
+    required this.status,
+    required this.statusColor,
+    required this.dateInfo,
+    required this.icon,
+    required this.iconColor,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.grisBorde,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsetsDirectional.symmetric(
+          horizontal: screenWidth * 0.045,
+          vertical: usableHeight * 0.016,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          border: Border.all(color: grisBorde),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icono del tipo de solicitud
+            Icon(icon, color: iconColor, size: screenWidth * 0.090),
+            SizedBox(width: screenWidth * 0.04),
+
+            // Textos de información (Título, Estado, Fecha)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.045,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: usableHeight * 0.003),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (dateInfo != null) ...[
+                    SizedBox(height: usableHeight * 0.002),
+                    Text(
+                      dateInfo!,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: screenWidth * 0.030,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Flecha indicadora derecha
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey.shade400,
+              size: screenWidth * 0.06,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

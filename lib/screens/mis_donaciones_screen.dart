@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../providers/user_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
+import '../widgets/modal_restriccion_donacion.dart';
 import 'donaciones_screen.dart';
 import 'inicio_sesion_screen.dart';
-import '../widgets/modal_restriccion_donacion.dart';
 
 class MisDonacionesScreen extends StatefulWidget {
   static const routeName = 'mis_donaciones_screen';
@@ -20,7 +22,7 @@ class MisDonacionesScreen extends StatefulWidget {
 class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
   bool _isLoading = false;
   bool _errorServidor = false;
-  List<Map<String, dynamic>> _donacionesApi = [];
+  List<Map<String, dynamic>> _rawDonaciones = [];
 
   @override
   void initState() {
@@ -37,9 +39,23 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
     if (!userProvider.isAuthenticated) {
       if (mounted) {
         setState(() {
-          _donacionesApi = [];
+          _rawDonaciones = [];
           _isLoading = false;
           _errorServidor = false;
+        });
+      }
+      return;
+    }
+
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: _cargarDonaciones,
+    );
+    if (!hasInternet || !mounted) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorServidor = true;
         });
       }
       return;
@@ -57,9 +73,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
 
       if (raw is List && mounted) {
         setState(() {
-          _donacionesApi = raw
-              .map((d) => _mapearDonacion(d as Map<String, dynamic>))
-              .toList();
+          _rawDonaciones = raw.whereType<Map<String, dynamic>>().toList();
           _errorServidor = false;
         });
       }
@@ -73,11 +87,19 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
     }
   }
 
-  /// Mapea los registros devueltos por Odoo 19 normalizando estados, etiquetas y formatos.
-  Map<String, dynamic> _mapearDonacion(Map<String, dynamic> m) {
+  /// Mapea los registros devueltos por Odoo 19 normalizando estados, etiquetas y formatos según el locale activo.
+  Map<String, dynamic> _mapearDonacion(
+    Map<String, dynamic> m,
+    BuildContext context,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
     final rawAmount = m['amount'] ?? m['monto'] ?? 0.0;
     final currency = (m['currency'] ?? 'DOP').toString().toUpperCase();
-    final state = (m['state'] ?? m['status'] ?? '').toString().toLowerCase().trim();
+    final state = (m['state'] ?? m['status'] ?? '')
+        .toString()
+        .toLowerCase()
+        .trim();
     final stateLabel = m['state_label']?.toString();
 
     // Determinación de estado, etiquetas y colores normalizados con Odoo 19
@@ -94,7 +116,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
         state == 'completada' ||
         state == 'done') {
       statusColor = const Color(0xFF2E7D32); // Verde Odoo
-      statusText = stateLabel ?? 'Procesada';
+      statusText = stateLabel ?? (l10n?.estadoDonacionProcesada ?? 'Procesada');
       icon = Icons.check_circle_outline_rounded;
       iconColor = const Color(0xFF2E7D32);
     } else if (state == 'pending' ||
@@ -102,7 +124,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
         state == 'draft' ||
         state == 'borrador') {
       statusColor = const Color(0xFFE5A023); // Amarillo/Ámbar Odoo
-      statusText = stateLabel ?? 'Pendiente';
+      statusText = stateLabel ?? (l10n?.estadoDonacionPendiente ?? 'Pendiente');
       icon = Icons.hourglass_top_rounded;
       iconColor = const Color(0xFFE5A023);
     } else if (state == 'rejected' ||
@@ -112,47 +134,43 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
         state == 'cancelled' ||
         state == 'cancelada') {
       statusColor = const Color(0xFFC62828); // Rojo
-      statusText = stateLabel ?? 'Denegada';
+      statusText = stateLabel ?? (l10n?.estadoDonacionDenegada ?? 'Denegada');
       icon = Icons.cancel_outlined;
       iconColor = const Color(0xFFC62828);
     } else {
       statusColor = const Color(0xFF0055A5); // Azul
-      statusText = stateLabel ?? (state.isNotEmpty ? state : 'En proceso');
+      statusText =
+          stateLabel ??
+          (state.isNotEmpty
+              ? state
+              : (l10n?.estadoDonacionEnProceso ?? 'En proceso'));
       icon = Icons.favorite_border_rounded;
       iconColor = const Color(0xFF0055A5);
     }
 
-    // Formateo del monto con separadores de miles (ej. DOP 55,777.00)
+    // Formateo del monto con NumberFormat (intl) respetando el locale activo
     double numAmount = 0.0;
     if (rawAmount is num) {
       numAmount = rawAmount.toDouble();
     } else if (rawAmount is String) {
       numAmount = double.tryParse(rawAmount) ?? 0.0;
     }
-    final partes = numAmount.toStringAsFixed(2).split('.');
-    final entero = partes[0].replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match match) => '${match[1]},',
+    final currencyFormat = NumberFormat.currency(
+      locale: locale,
+      symbol: '$currency ',
+      decimalDigits: 2,
     );
-    final montoFormateado = '$currency $entero.${partes[1]}';
+    final montoFormateado = currencyFormat.format(numAmount);
 
-    // Formateo de fechas amigable
+    // Formateo de fechas amigable usando DateFormat (intl)
     final rawDate = m['date'] ?? m['create_date'] ?? m['fecha'];
-    String fechaCorta = 'Reciente';
-    String fechaCompleta = 'Reciente';
+    String fechaCorta = l10n?.fechaReciente ?? 'Reciente';
+    String fechaCompleta = l10n?.fechaReciente ?? 'Reciente';
     if (rawDate != null) {
       try {
         final dt = DateTime.parse(rawDate.toString()).toLocal();
-        const meses = [
-          'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-          'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
-        ];
-        final mes = meses[dt.month - 1];
-        final hora = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-        final ampm = dt.hour >= 12 ? 'p.m.' : 'a.m.';
-        final min = dt.minute.toString().padLeft(2, '0');
-        fechaCorta = '${dt.day} $mes ${dt.year}';
-        fechaCompleta = '${dt.day} de $mes de ${dt.year}, $hora:$min $ampm';
+        fechaCorta = DateFormat.yMMMd(locale).format(dt);
+        fechaCompleta = DateFormat.yMMMd(locale).add_jm().format(dt);
       } catch (_) {
         fechaCorta = rawDate.toString().split('T').first;
         fechaCompleta = rawDate.toString();
@@ -164,20 +182,24 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
     String metodoLabel = m['payment_method_label']?.toString() ?? '';
     if (metodoLabel.isEmpty) {
       if (rawMethod.contains('transfer')) {
-        metodoLabel = 'Transferencia bancaria';
+        metodoLabel =
+            l10n?.metodoTransferenciaBancaria ?? 'Transferencia bancaria';
       } else if (rawMethod.contains('paypal')) {
         metodoLabel = 'PayPal';
       } else {
-        metodoLabel = 'Transferencia / Online';
+        metodoLabel =
+            l10n?.metodoTransferenciaOnline ?? 'Transferencia / Online';
       }
     }
 
-    final String ref = m['reference']?.toString() ??
+    final String ref =
+        m['reference']?.toString() ??
         (m['id'] != null ? 'DON-${m['id']}' : 'DON-0000');
 
-    final String titulo = m['name']?.toString() ??
+    final String titulo =
+        m['name']?.toString() ??
         m['title']?.toString() ??
-        'Aporte ($metodoLabel)';
+        (l10n?.aporteConMetodo(metodoLabel) ?? 'Aporte ($metodoLabel)');
 
     return {
       'title': titulo,
@@ -192,22 +214,57 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
       'referencia': ref,
       'metodoPago': metodoLabel,
       'destino': m['church_name'] ?? 'Comunidad ATRIO',
-      'detalle': m['notes'] ?? 'Aporte voluntario registrado y verificado en ATRIO.',
+      'detalle':
+          m['notes'] ??
+          (l10n?.aporteVoluntarioRegistrado ??
+              'Aporte voluntario registrado en ATRIO.'),
     };
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void _mostrarDetalleDonacion(Map<String, dynamic> item) {
     final l10n = AppLocalizations.of(context);
-
-    // 1. Obtención de métricas dinámicas relativas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
-    // Paleta de diseño Atrio
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+    const Color grisBorde = Color(0xFFE5E5E5);
+    const Color amarilloOro = Color(0xFFE5A023);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final safeBottom = MediaQuery.of(ctx).padding.bottom;
+        return _DonationDetailSheet(
+          item: item,
+          screenWidth: screenWidth,
+          usableHeight: usableHeight,
+          safeBottom: safeBottom,
+          azulFondo: azulFondo,
+          blancoFondo: blancoFondo,
+          grisBorde: grisBorde,
+          amarilloOro: amarilloOro,
+          l10n: l10n,
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
@@ -218,9 +275,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
     final bool esInvitado = !userProvider.isAuthenticated;
     final List<Map<String, dynamic>> donaciones = esInvitado
         ? const []
-        : (_donacionesApi.isNotEmpty
-            ? _donacionesApi
-            : const []);
+        : _rawDonaciones.map((d) => _mapearDonacion(d, context)).toList();
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -231,10 +286,12 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
           height: usableHeight,
           child: Column(
             children: [
-              // 2. Encabezado Superior (Título con Botón Volver)
+              // Encabezado Superior (Título con Botón Volver)
               Container(
                 width: screenWidth,
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.05,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -273,26 +330,26 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                 ),
               ),
 
-              // 3. Contenedor Blanco Inferior con Lista de Donaciones y Botón
+              // Contenedor Blanco Inferior con Lista de Donaciones y Botón
               Expanded(
                 child: Container(
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
-                        vertical: usableHeight * 0.022,
+                      padding: EdgeInsetsDirectional.fromSTEB(
+                        screenWidth * 0.05,
+                        usableHeight * 0.022,
+                        screenWidth * 0.05,
+                        usableHeight * 0.022,
                       ),
                       child: Column(
                         children: [
@@ -304,124 +361,34 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                 minHeight: 2,
                               ),
                             ),
+
                           // Lista de Donaciones Desplazable o Estado Vacío
                           Expanded(
                             child: donaciones.isEmpty
                                 ? Center(
                                     child: SingleChildScrollView(
-                                      physics: const AlwaysScrollableScrollPhysics(
-                                        parent: BouncingScrollPhysics(),
-                                      ),
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: screenWidth * 0.06,
-                                          vertical: usableHeight * 0.02,
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              width: screenWidth * 0.18,
-                                              height: screenWidth * 0.18,
-                                              decoration: BoxDecoration(
-                                                color: azulFondo.withValues(alpha: 0.08),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                esInvitado
-                                                    ? Icons.account_circle_outlined
-                                                    : (_errorServidor
-                                                        ? Icons.cloud_off_rounded
-                                                        : Icons.volunteer_activism_outlined),
-                                                color: azulFondo,
-                                                size: screenWidth * 0.09,
-                                              ),
-                                            ),
-                                            SizedBox(height: usableHeight * 0.02),
-                                            Text(
-                                              esInvitado
-                                                  ? (l10n?.modoInvitado ?? 'Modo invitado')
-                                                  : (_errorServidor
-                                                      ? 'Error de sincronización'
-                                                      : (l10n?.sinDonacionesRegistradas ??
-                                                          'No tienes donaciones registradas')),
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: azulFondo,
-                                                fontSize: screenWidth * 0.045,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            SizedBox(height: usableHeight * 0.01),
-                                            Text(
-                                              esInvitado
-                                                  ? (l10n?.donacionesInvitadoDesc ??
-                                                      'En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.')
-                                                  : (_errorServidor
-                                                      ? 'No pudimos conectar con el servidor para actualizar tus aportes. Reintenta la conexión.'
-                                                      : (l10n?.sinDonacionesRegistradas ??
-                                                          'Tus aportes ministeriales aparecerán aquí.')),
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: screenWidth * 0.034,
-                                                height: 1.35,
-                                              ),
-                                            ),
-                                            if (esInvitado) ...[
-                                              SizedBox(height: usableHeight * 0.025),
-                                              ElevatedButton.icon(
-                                                icon: const Icon(Icons.login_rounded, size: 18),
-                                                label: Text(
-                                                  l10n?.iniciarSesion ?? 'Iniciar sesión',
-                                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: azulFondo,
-                                                  foregroundColor: Colors.white,
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.06,
-                                                    vertical: usableHeight * 0.012,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                                  ),
-                                                ),
-                                                onPressed: () {
-                                                  final nav =
-                                                      MyApp.navigatorKey.currentState ??
-                                                      (context.mounted
-                                                          ? Navigator.maybeOf(context)
-                                                          : null);
-                                                  nav?.pushNamed(
-                                                    InicioSesionScreen.routeName,
-                                                  );
-                                                },
-                                              ),
-                                            ] else if (_errorServidor) ...[
-                                              SizedBox(height: usableHeight * 0.025),
-                                              ElevatedButton.icon(
-                                                icon: const Icon(Icons.refresh_rounded, size: 18),
-                                                label: const Text(
-                                                  'Reintentar conexión',
-                                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: azulFondo,
-                                                  foregroundColor: Colors.white,
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.06,
-                                                    vertical: usableHeight * 0.012,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                                  ),
-                                                ),
-                                                onPressed: _cargarDonaciones,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(
+                                            parent: BouncingScrollPhysics(),
+                                          ),
+                                      child: _EstadoVacioDonaciones(
+                                        esInvitado: esInvitado,
+                                        errorServidor: _errorServidor,
+                                        screenWidth: screenWidth,
+                                        usableHeight: usableHeight,
+                                        azulFondo: azulFondo,
+                                        l10n: l10n,
+                                        onRetry: _cargarDonaciones,
+                                        onLogin: () {
+                                          final nav =
+                                              MyApp.navigatorKey.currentState ??
+                                              (context.mounted
+                                                  ? Navigator.maybeOf(context)
+                                                  : null);
+                                          nav?.pushNamed(
+                                            InicioSesionScreen.routeName,
+                                          );
+                                        },
                                       ),
                                     ),
                                   )
@@ -429,19 +396,23 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                     onRefresh: _cargarDonaciones,
                                     color: azulFondo,
                                     child: ListView.separated(
-                                      physics: const AlwaysScrollableScrollPhysics(
-                                        parent: BouncingScrollPhysics(),
-                                      ),
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(
+                                            parent: BouncingScrollPhysics(),
+                                          ),
                                       itemCount: donaciones.length,
                                       separatorBuilder: (context, index) =>
-                                          SizedBox(height: usableHeight * 0.014),
+                                          SizedBox(
+                                            height: usableHeight * 0.014,
+                                          ),
                                       itemBuilder: (context, index) {
                                         final item = donaciones[index];
-                                        return _buildDonationCard(
+                                        return _DonationCard(
                                           title: item['title'] as String,
                                           monto: item['monto'] as String,
                                           status: item['status'] as String,
-                                          statusColor: item['statusColor'] as Color,
+                                          statusColor:
+                                              item['statusColor'] as Color,
                                           dateInfo: item['dateInfo'] as String?,
                                           icon: item['icon'] as IconData,
                                           iconColor: item['iconColor'] as Color,
@@ -449,19 +420,8 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                           usableHeight: usableHeight,
                                           azulFondo: azulFondo,
                                           grisBorde: grisBorde,
-                                          onTap: () {
-                                            _mostrarDetalleDonacion(
-                                              context: context,
-                                              item: item,
-                                              screenWidth: screenWidth,
-                                              usableHeight: usableHeight,
-                                              azulFondo: azulFondo,
-                                              blancoFondo: blancoFondo,
-                                              grisBorde: grisBorde,
-                                              amarilloOro: amarilloOro,
-                                              l10n: l10n,
-                                            );
-                                          },
+                                          onTap: () =>
+                                              _mostrarDetalleDonacion(item),
                                         );
                                       },
                                     ),
@@ -486,7 +446,9 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                                 ),
                               ),
                               onPressed: () {
-                                if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
+                                if (!ModalRestriccionDonacion.verificarYMostrar(
+                                  context: context,
+                                )) {
                                   return;
                                 }
                                 Navigator.pushNamed(
@@ -516,26 +478,174 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
       ),
     );
   }
+}
 
-  // Componente: Tarjeta de Donación Individual
-  Widget _buildDonationCard({
-    required String title,
-    required String monto,
-    required String status,
-    required Color statusColor,
-    required String? dateInfo,
-    required IconData icon,
-    required Color iconColor,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color grisBorde,
-    required VoidCallback onTap,
-  }) {
+/// Estado Vacío de la pantalla de donaciones
+class _EstadoVacioDonaciones extends StatelessWidget {
+  const _EstadoVacioDonaciones({
+    required this.esInvitado,
+    required this.errorServidor,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.l10n,
+    required this.onRetry,
+    required this.onLogin,
+  });
+
+  final bool esInvitado;
+  final bool errorServidor;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final AppLocalizations? l10n;
+  final VoidCallback onRetry;
+  final VoidCallback onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: screenWidth * 0.06,
+        vertical: usableHeight * 0.02,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: screenWidth * 0.18,
+            height: screenWidth * 0.18,
+            decoration: BoxDecoration(
+              color: azulFondo.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              esInvitado
+                  ? Icons.account_circle_outlined
+                  : (errorServidor
+                        ? Icons.cloud_off_rounded
+                        : Icons.volunteer_activism_outlined),
+              color: azulFondo,
+              size: screenWidth * 0.09,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.02),
+          Text(
+            esInvitado
+                ? (l10n?.modoInvitado ?? 'Modo invitado')
+                : (errorServidor
+                      ? (l10n?.errorSincronizacion ?? 'Error de sincronización')
+                      : (l10n?.sinDonacionesRegistradas ??
+                            'No tienes donaciones registradas')),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: azulFondo,
+              fontSize: screenWidth * 0.045,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.01),
+          Text(
+            esInvitado
+                ? (l10n?.donacionesInvitadoDesc ??
+                      'En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.')
+                : (errorServidor
+                      ? (l10n?.errorSincronizacionDonacionesDesc ??
+                            'No pudimos conectar con el servidor para actualizar tus aportes. Reintenta la conexión.')
+                      : (l10n?.tusAportesApareceranAqui ??
+                            'Tus aportes ministeriales aparecerán aquí.')),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: screenWidth * 0.034,
+              height: 1.35,
+            ),
+          ),
+          if (esInvitado) ...[
+            SizedBox(height: usableHeight * 0.025),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.login_rounded, size: 18),
+              label: Text(
+                l10n?.iniciarSesion ?? 'Iniciar sesión',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: azulFondo,
+                foregroundColor: Colors.white,
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.06,
+                  vertical: usableHeight * 0.012,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                ),
+              ),
+              onPressed: onLogin,
+            ),
+          ] else if (errorServidor) ...[
+            SizedBox(height: usableHeight * 0.025),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(
+                l10n?.reintentar ?? 'Reintentar',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: azulFondo,
+                foregroundColor: Colors.white,
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.06,
+                  vertical: usableHeight * 0.012,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                ),
+              ),
+              onPressed: onRetry,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Tarjeta individual de donación
+class _DonationCard extends StatelessWidget {
+  const _DonationCard({
+    required this.title,
+    required this.monto,
+    required this.status,
+    required this.statusColor,
+    required this.dateInfo,
+    required this.icon,
+    required this.iconColor,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.grisBorde,
+    required this.onTap,
+  });
+
+  final String title;
+  final String monto;
+  final String status;
+  final Color statusColor;
+  final String? dateInfo;
+  final IconData icon;
+  final Color iconColor;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color grisBorde;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: EdgeInsetsDirectional.symmetric(
           horizontal: screenWidth * 0.045,
           vertical: usableHeight * 0.016,
         ),
@@ -582,7 +692,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: EdgeInsetsDirectional.symmetric(
                           horizontal: screenWidth * 0.022,
                           vertical: usableHeight * 0.002,
                         ),
@@ -605,7 +715,7 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
                         SizedBox(width: screenWidth * 0.02),
                         Flexible(
                           child: Text(
-                            dateInfo,
+                            dateInfo!,
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: screenWidth * 0.028,
@@ -646,258 +756,276 @@ class _MisDonacionesScreenState extends State<MisDonacionesScreen> {
       ),
     );
   }
+}
 
-  // Modal con el detalle completo de la donación (preparado para Odoo 19)
-  void _mostrarDetalleDonacion({
-    required BuildContext context,
-    required Map<String, dynamic> item,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color blancoFondo,
-    required Color grisBorde,
-    required Color amarilloOro,
-    AppLocalizations? l10n,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final safeBottom = MediaQuery.of(ctx).padding.bottom;
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            screenWidth * 0.06,
-            usableHeight * 0.02,
-            screenWidth * 0.06,
-            usableHeight * 0.03 + safeBottom,
-          ),
-          decoration: BoxDecoration(
-            color: blancoFondo,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(screenWidth * 0.08),
-              topRight: Radius.circular(screenWidth * 0.08),
+/// Modal con el detalle completo de la donación
+class _DonationDetailSheet extends StatelessWidget {
+  const _DonationDetailSheet({
+    required this.item,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.safeBottom,
+    required this.azulFondo,
+    required this.blancoFondo,
+    required this.grisBorde,
+    required this.amarilloOro,
+    required this.l10n,
+  });
+
+  final Map<String, dynamic> item;
+  final double screenWidth;
+  final double usableHeight;
+  final double safeBottom;
+  final Color azulFondo;
+  final Color blancoFondo;
+  final Color grisBorde;
+  final Color amarilloOro;
+  final AppLocalizations? l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        screenWidth * 0.06,
+        usableHeight * 0.02,
+        screenWidth * 0.06,
+        usableHeight * 0.03 + safeBottom,
+      ),
+      decoration: BoxDecoration(
+        color: blancoFondo,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.08),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Barra indicadora de arrastre
+          Center(
+            child: Container(
+              width: screenWidth * 0.12,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(height: usableHeight * 0.02),
+
+          // Encabezado del modal: Icono + Título + Referencia
+          Row(
             children: [
-              // Barra indicadora de arrastre
-              Center(
-                child: Container(
-                  width: screenWidth * 0.12,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.02),
-
-              // Encabezado del modal: Icono + Título + Referencia
-              Row(
-                children: [
-                  Container(
-                    width: screenWidth * 0.13,
-                    height: screenWidth * 0.13,
-                    decoration: BoxDecoration(
-                      color: (item['iconColor'] as Color).withValues(
-                        alpha: 0.12,
-                      ),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                    ),
-                    child: Icon(
-                      item['icon'] as IconData,
-                      color: item['iconColor'] as Color,
-                      size: screenWidth * 0.075,
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.035),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title'] as String,
-                          style: TextStyle(
-                            color: azulFondo,
-                            fontSize: screenWidth * 0.048,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: usableHeight * 0.003),
-                        Text(
-                          l10n?.idOdoo(item['referencia'] as String? ?? 'DON-2026-0001') ??
-                              'ID Odoo: ${item['referencia'] ?? 'DON-2026-0001'}',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: screenWidth * 0.030,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.03,
-                      vertical: usableHeight * 0.006,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (item['statusColor'] as Color).withValues(
-                        alpha: 0.15,
-                      ),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                    ),
-                    child: Text(
-                      item['status'] as String,
-                      style: TextStyle(
-                        color: item['statusColor'] as Color,
-                        fontSize: screenWidth * 0.032,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: usableHeight * 0.025),
-
-              // Contenedor de Detalles
               Container(
-                width: screenWidth,
-                padding: EdgeInsets.all(screenWidth * 0.04),
+                width: screenWidth * 0.13,
+                height: screenWidth * 0.13,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: (item['iconColor'] as Color).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                  border: Border.all(color: grisBorde),
                 ),
+                child: Icon(
+                  item['icon'] as IconData,
+                  color: item['iconColor'] as Color,
+                  size: screenWidth * 0.075,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.035),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Monto destacado
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          l10n?.montoAportado ?? 'Monto aportado:',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: screenWidth * 0.034,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          item['monto'] as String,
-                          style: TextStyle(
-                            color: azulFondo,
-                            fontSize: screenWidth * 0.048,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Divider(height: usableHeight * 0.025, color: grisBorde),
-
-                    if (item['dateInfo'] != null) ...[
-                      _buildDetailRow(
-                        icon: Icons.calendar_today_rounded,
-                        label: l10n?.fechaYHora ?? 'Fecha y hora:',
-                        value: item['fechaCompleta'] as String? ?? item['dateInfo'] as String,
-                        screenWidth: screenWidth,
-                        azulFondo: azulFondo,
-                      ),
-                      SizedBox(height: usableHeight * 0.012),
-                    ],
-
-                    if (item['metodoPago'] != null) ...[
-                      _buildDetailRow(
-                        icon: Icons.credit_card_rounded,
-                        label: l10n?.metodo ?? 'Método:',
-                        value: item['metodoPago'] as String,
-                        screenWidth: screenWidth,
-                        azulFondo: azulFondo,
-                      ),
-                      SizedBox(height: usableHeight * 0.012),
-                    ],
-
-                    if (item['destino'] != null) ...[
-                      _buildDetailRow(
-                        icon: Icons.flag_outlined,
-                        label: l10n?.destino ?? 'Destino:',
-                        value: item['destino'] as String,
-                        screenWidth: screenWidth,
-                        azulFondo: azulFondo,
-                      ),
-                      SizedBox(height: usableHeight * 0.012),
-                    ],
-
-                    Divider(height: usableHeight * 0.020, color: grisBorde),
-
                     Text(
-                      l10n?.detalleDelAporte ?? 'Detalle del aporte:',
+                      item['title'] as String,
                       style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: screenWidth * 0.032,
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.048,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: usableHeight * 0.006),
+                    SizedBox(height: usableHeight * 0.003),
                     Text(
-                      item['detalle'] as String? ??
-                          (l10n?.aporteVoluntarioRegistrado ??
-                              'Aporte voluntario registrado en ATRIO.'),
+                      l10n?.idOdoo(
+                            item['referencia'] as String? ?? 'DON-2026-0001',
+                          ) ??
+                          'ID Odoo: ${item['referencia'] ?? 'DON-2026-0001'}',
                       style: TextStyle(
-                        color: azulFondo,
-                        fontSize: screenWidth * 0.035,
-                        height: 1.35,
+                        color: Colors.grey.shade600,
+                        fontSize: screenWidth * 0.030,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              SizedBox(height: usableHeight * 0.025),
-
-              // Botón de cerrar
-              SizedBox(
-                width: screenWidth,
-                height: usableHeight * 0.055,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: azulFondo,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    l10n?.entendido ?? 'Entendido',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.04,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Container(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.03,
+                  vertical: usableHeight * 0.006,
+                ),
+                decoration: BoxDecoration(
+                  color: (item['statusColor'] as Color).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                ),
+                child: Text(
+                  item['status'] as String,
+                  style: TextStyle(
+                    color: item['statusColor'] as Color,
+                    fontSize: screenWidth * 0.032,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
           ),
-        );
-      },
+
+          SizedBox(height: usableHeight * 0.025),
+
+          // Contenedor de Detalles
+          Container(
+            width: screenWidth,
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              border: Border.all(color: grisBorde),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Monto destacado
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      l10n?.montoAportado ?? 'Monto aportado:',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: screenWidth * 0.034,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      item['monto'] as String,
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: screenWidth * 0.048,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Divider(height: usableHeight * 0.025, color: grisBorde),
+
+                if (item['dateInfo'] != null) ...[
+                  _DonationDetailRow(
+                    icon: Icons.calendar_today_rounded,
+                    label: l10n?.fechaYHora ?? 'Fecha y hora:',
+                    value:
+                        item['fechaCompleta'] as String? ??
+                        item['dateInfo'] as String,
+                    screenWidth: screenWidth,
+                    azulFondo: azulFondo,
+                  ),
+                  SizedBox(height: usableHeight * 0.012),
+                ],
+
+                if (item['metodoPago'] != null) ...[
+                  _DonationDetailRow(
+                    icon: Icons.credit_card_rounded,
+                    label: l10n?.metodo ?? 'Método:',
+                    value: item['metodoPago'] as String,
+                    screenWidth: screenWidth,
+                    azulFondo: azulFondo,
+                  ),
+                  SizedBox(height: usableHeight * 0.012),
+                ],
+
+                if (item['destino'] != null) ...[
+                  _DonationDetailRow(
+                    icon: Icons.flag_outlined,
+                    label: l10n?.destino ?? 'Destino:',
+                    value: item['destino'] as String,
+                    screenWidth: screenWidth,
+                    azulFondo: azulFondo,
+                  ),
+                  SizedBox(height: usableHeight * 0.012),
+                ],
+
+                Divider(height: usableHeight * 0.020, color: grisBorde),
+
+                Text(
+                  l10n?.detalleDelAporte ?? 'Detalle del aporte:',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: screenWidth * 0.032,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: usableHeight * 0.006),
+                Text(
+                  item['detalle'] as String? ??
+                      (l10n?.aporteVoluntarioRegistrado ??
+                          'Aporte voluntario registrado en ATRIO.'),
+                  style: TextStyle(
+                    color: azulFondo,
+                    fontSize: screenWidth * 0.035,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: usableHeight * 0.025),
+
+          // Botón de cerrar
+          SizedBox(
+            width: screenWidth,
+            height: usableHeight * 0.055,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: azulFondo,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                ),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                l10n?.entendido ?? 'Entendido',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.04,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildDetailRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required double screenWidth,
-    required Color azulFondo,
-  }) {
+/// Fila de detalle con icono y valor alineado
+class _DonationDetailRow extends StatelessWidget {
+  const _DonationDetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.screenWidth,
+    required this.azulFondo,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final double screenWidth;
+  final Color azulFondo;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Icon(icon, size: screenWidth * 0.042, color: azulFondo),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/modelos/admin_models.dart';
 import 'package:atrio/providers/admin_provider.dart';
+import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 
 /// Pantalla completa de gestión y atención pastoral de solicitudes (Odoo 19 /admin/requests).
 /// Permite filtrar por estado (nueva, en_progreso, respondida, rechazada), por tipo y responder en tiempo real.
@@ -44,6 +45,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
 
     return Scaffold(
       backgroundColor: blancoFondo,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(
           l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
@@ -55,9 +57,17 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refrescar',
-            onPressed: () {
-              context.read<AdminProvider>().loadChurchRequests();
+            tooltip: l10n?.refrescar ?? 'Refrescar',
+            onPressed: () async {
+              final bool hasInternet =
+                  await AtrioConnectivityAlert.checkAndNotify(
+                context,
+                onRetry: () =>
+                    context.read<AdminProvider>().loadChurchRequests(),
+              );
+              if (hasInternet && context.mounted) {
+                context.read<AdminProvider>().loadChurchRequests();
+              }
             },
           ),
         ],
@@ -138,7 +148,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                       return _AdminRequestCard(
                         request: item,
                         onAnswer: () => _openAnswerDialog(context, item),
-                        onApprove: () => _handleApprove(context, item.id),
+                        onApprove: () => _handleApprove(item.id),
                         onReject: () => _openRejectDialog(context, item.id),
                       );
                     },
@@ -166,14 +176,24 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
     );
   }
 
-  Future<void> _handleApprove(BuildContext context, int requestId) async {
+  Future<void> _handleApprove(int requestId) async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _handleApprove(requestId),
+    );
+    if (!hasInternet || !mounted) return;
+
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
-    final ok = await context.read<AdminProvider>().approveChurchRequest(requestId: requestId);
-    if (ok) {
+    final ok = await context
+        .read<AdminProvider>()
+        .approveChurchRequest(requestId: requestId);
+    if (ok && mounted) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(l10n?.solicitudAprobadaExito ?? 'Solicitud aprobada con éxito.'),
+          content: Text(
+            l10n?.solicitudAprobadaExito ?? 'Solicitud aprobada con éxito.',
+          ),
           backgroundColor: const Color(0xFF15803D),
         ),
       );
@@ -457,6 +477,8 @@ class _AdminRequestCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   request.requesterName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -464,13 +486,18 @@ class _AdminRequestCard extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               const Icon(Icons.calendar_today_rounded, size: 12, color: Color(0xFF94A3B8)),
               const SizedBox(width: 4),
-              Text(
-                formattedDate,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF94A3B8),
+              Flexible(
+                child: Text(
+                  formattedDate,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
               ),
             ],
@@ -550,7 +577,8 @@ class _AdminRequestCard extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFFEE2E2)),
               ),
               child: Text(
-                'Rechazada: ${request.rejectionReason}',
+                l10n?.solicitudRechazadaMotivo(request.rejectionReason!) ??
+                    'Rechazada: ${request.rejectionReason}',
                 style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF991B1B),
@@ -561,45 +589,49 @@ class _AdminRequestCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // 7. Barra de acciones rápidas pastorales
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Botón de Rechazar (solo si no está resuelta)
-              if (!request.isAnswered && !request.isRejected) ...[
-                TextButton(
-                  onPressed: onReject,
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
+          // 7. Barra de acciones rápidas pastorales (Wrap para evitar desbordamiento en pantallas angostas)
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                // Botón de Rechazar (solo si no está resuelta)
+                if (!request.isAnswered && !request.isRejected)
+                  TextButton(
+                    onPressed: onReject,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                    ),
+                    child: Text(l10n?.rechazarSolicitud ?? 'Rechazar'),
                   ),
-                  child: Text(l10n?.rechazarSolicitud ?? 'Rechazar'),
-                ),
-                const SizedBox(width: 8),
-              ],
 
-              // Botón de Responder / Atender
-              ElevatedButton.icon(
-                onPressed: onAnswer,
-                icon: const Icon(Icons.reply_rounded, size: 16),
-                label: Text(
-                  request.isAnswered
-                      ? (l10n?.responderSolicitud ?? 'Actualizar Respuesta')
-                      : (l10n?.responderAhora ?? 'Responder Ahora'),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: request.isAnswered ? azulFondo : amarilloOro,
-                  foregroundColor: request.isAnswered ? Colors.white : azulFondo,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                // Botón de Responder / Atender
+                ElevatedButton.icon(
+                  onPressed: onAnswer,
+                  icon: const Icon(Icons.reply_rounded, size: 16),
+                  label: Text(
+                    request.isAnswered
+                        ? (l10n?.actualizarRespuesta ?? 'Actualizar Respuesta')
+                        : (l10n?.responderAhora ?? 'Responder Ahora'),
                   ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: request.isAnswered ? azulFondo : amarilloOro,
+                    foregroundColor: request.isAnswered ? Colors.white : azulFondo,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -707,16 +739,25 @@ class _PastoralAnswerModal extends StatefulWidget {
 
 class _PastoralAnswerModalState extends State<_PastoralAnswerModal> {
   late final TextEditingController _responseController;
+  final FocusNode _focusNode = FocusNode();
   bool _isSending = false;
+  bool _isExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _responseController = TextEditingController(text: widget.request.response ?? '');
+    final initialText = widget.request.response ?? '';
+    _responseController = TextEditingController(text: initialText);
+    if (initialText.isNotEmpty) {
+      _responseController.selection = TextSelection.fromPosition(
+        TextPosition(offset: initialText.length),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _responseController.dispose();
     super.dispose();
   }
@@ -728,47 +769,92 @@ class _PastoralAnswerModalState extends State<_PastoralAnswerModal> {
     const Color amarilloOro = Color(0xFFE5A023);
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      clipBehavior: Clip.antiAlias,
+      titlePadding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 12),
+      contentPadding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
+      actionsPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 16),
       title: Row(
         children: [
-          const Icon(Icons.volunteer_activism_rounded, color: azulFondo),
+          const Icon(Icons.volunteer_activism_rounded, color: azulFondo, size: 24),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               l10n?.responderSolicitud ?? 'Responder Petición',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: azulFondo),
             ),
           ),
         ],
       ),
       content: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Resumen de la petición
+            // Resumen compacto de la petición
             Container(
+              width: double.infinity,
               padding: const EdgeInsetsDirectional.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    widget.request.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: azulFondo),
+                  Row(
+                    children: [
+                      const Icon(Icons.person_pin_rounded, size: 14, color: azulFondo),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          widget.request.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: azulFondo,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${widget.request.requesterName}: "${widget.request.message}"',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF475569),
+                      height: 1.35,
+                    ),
+                    maxLines: _isExpanded ? null : 2,
+                    overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
                   ),
+                  if (widget.request.message.length > 70) ...[
+                    GestureDetector(
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(top: 4),
+                        child: Text(
+                          _isExpanded ? (l10n?.verMenos ?? 'Ver menos') : (l10n?.verMas ?? 'Ver más'),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: azulFondo,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // Campo de respuesta pastoral
             Text(
@@ -778,14 +864,39 @@ class _PastoralAnswerModalState extends State<_PastoralAnswerModal> {
             const SizedBox(height: 8),
             TextField(
               controller: _responseController,
+              focusNode: _focusNode,
+              autofocus: true,
+              minLines: 3,
               maxLines: 5,
+              textCapitalization: TextCapitalization.sentences,
+              cursorColor: azulFondo,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1E293B),
+                height: 1.4,
+              ),
               decoration: InputDecoration(
-                hintText: 'Que la paz de Dios guarde tu corazón...',
+                hintText: l10n?.placeholderRespuestaPastoral ?? 'Escribe tu respuesta aquí...',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.normal,
+                ),
                 filled: true,
                 fillColor: Colors.white,
+                contentPadding: const EdgeInsetsDirectional.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: azulFondo, width: 1.8),
                 ),
               ),
             ),
@@ -795,13 +906,18 @@ class _PastoralAnswerModalState extends State<_PastoralAnswerModal> {
       actions: [
         TextButton(
           onPressed: _isSending ? null : () => Navigator.pop(context),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          child: Text(
+            MaterialLocalizations.of(context).cancelButtonLabel,
+            style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+          ),
         ),
         ElevatedButton(
           onPressed: _isSending ? null : _submitAnswer,
           style: ElevatedButton.styleFrom(
             backgroundColor: amarilloOro,
             foregroundColor: azulFondo,
+            elevation: 0,
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 18, vertical: 12),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: _isSending
@@ -820,6 +936,12 @@ class _PastoralAnswerModalState extends State<_PastoralAnswerModal> {
     final text = _responseController.text.trim();
     if (text.isEmpty) return;
 
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _submitAnswer(),
+    );
+    if (!hasInternet || !mounted) return;
+
     setState(() => _isSending = true);
     final provider = context.read<AdminProvider>();
     final ok = await provider.answerChurchRequest(
@@ -829,13 +951,16 @@ class _PastoralAnswerModalState extends State<_PastoralAnswerModal> {
 
     if (mounted) {
       setState(() => _isSending = false);
-      Navigator.pop(context);
-      final messenger = ScaffoldMessenger.of(context);
-      final l10n = AppLocalizations.of(context);
       if (ok) {
+        Navigator.pop(context);
+        final messenger = ScaffoldMessenger.of(context);
+        final l10n = AppLocalizations.of(context);
         messenger.showSnackBar(
           SnackBar(
-            content: Text(l10n?.respuestaEnviadaExito ?? '¡Respuesta pastoral enviada con éxito!'),
+            content: Text(
+              l10n?.respuestaEnviadaExito ??
+                  '¡Respuesta pastoral enviada con éxito!',
+            ),
             backgroundColor: const Color(0xFF15803D),
           ),
         );
@@ -856,10 +981,12 @@ class _PastoralRejectModal extends StatefulWidget {
 
 class _PastoralRejectModalState extends State<_PastoralRejectModal> {
   final TextEditingController _reasonController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   bool _isSending = false;
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _reasonController.dispose();
     super.dispose();
   }
@@ -869,28 +996,75 @@ class _PastoralRejectModalState extends State<_PastoralRejectModal> {
     final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(
-        l10n?.rechazarSolicitud ?? 'Rechazar Solicitud',
-        style: const TextStyle(fontWeight: FontWeight.bold),
+      clipBehavior: Clip.antiAlias,
+      titlePadding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 12),
+      contentPadding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
+      actionsPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 16),
+      title: Row(
+        children: [
+          const Icon(Icons.cancel_outlined, color: Color(0xFFDC2626), size: 24),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n?.rechazarSolicitud ?? 'Rechazar Solicitud',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ),
+        ],
       ),
-      content: TextField(
-        controller: _reasonController,
-        maxLines: 3,
-        decoration: InputDecoration(
-          hintText: l10n?.motivoRechazo ?? 'Motivo del rechazo (opcional)...',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      content: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: TextField(
+          controller: _reasonController,
+          focusNode: _focusNode,
+          autofocus: true,
+          minLines: 2,
+          maxLines: 4,
+          textCapitalization: TextCapitalization.sentences,
+          cursorColor: const Color(0xFFDC2626),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+          decoration: InputDecoration(
+            hintText: l10n?.motivoRechazo ?? 'Motivo del rechazo (opcional)...',
+            hintStyle: const TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            contentPadding: const EdgeInsetsDirectional.all(14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.8),
+            ),
+          ),
         ),
       ),
       actions: [
         TextButton(
           onPressed: _isSending ? null : () => Navigator.pop(context),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          child: Text(
+            MaterialLocalizations.of(context).cancelButtonLabel,
+            style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+          ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFDC2626),
             foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 18, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: _isSending ? null : _submitReject,
           child: _isSending
@@ -899,13 +1073,19 @@ class _PastoralRejectModalState extends State<_PastoralRejectModal> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : Text(l10n?.rechazarSolicitud ?? 'Rechazar'),
+              : Text(l10n?.rechazarSolicitud ?? 'Rechazar', style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
   }
 
   Future<void> _submitReject() async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _submitReject(),
+    );
+    if (!hasInternet || !mounted) return;
+
     setState(() => _isSending = true);
     final ok = await context.read<AdminProvider>().rejectChurchRequest(
           requestId: widget.requestId,
@@ -914,13 +1094,15 @@ class _PastoralRejectModalState extends State<_PastoralRejectModal> {
 
     if (mounted) {
       setState(() => _isSending = false);
-      Navigator.pop(context);
-      final messenger = ScaffoldMessenger.of(context);
-      final l10n = AppLocalizations.of(context);
       if (ok) {
+        Navigator.pop(context);
+        final messenger = ScaffoldMessenger.of(context);
+        final l10n = AppLocalizations.of(context);
         messenger.showSnackBar(
           SnackBar(
-            content: Text(l10n?.solicitudRechazadaExito ?? 'Solicitud rechazada.'),
+            content: Text(
+              l10n?.solicitudRechazadaExito ?? 'Solicitud rechazada.',
+            ),
             backgroundColor: const Color(0xFFB91C1C),
           ),
         );
@@ -940,7 +1122,8 @@ class _EmptyRequestsNotice extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsetsDirectional.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -972,8 +1155,11 @@ class _ErrorNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsetsDirectional.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -987,9 +1173,18 @@ class _ErrorNotice extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: onRetry,
+              onPressed: () async {
+                final bool hasInternet =
+                    await AtrioConnectivityAlert.checkAndNotify(
+                  context,
+                  onRetry: onRetry,
+                );
+                if (hasInternet) {
+                  onRetry();
+                }
+              },
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Reintentar'),
+              label: Text(l10n?.reintentar ?? 'Reintentar'),
             ),
           ],
         ),

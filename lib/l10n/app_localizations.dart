@@ -1868,6 +1868,18 @@ abstract class AppLocalizations {
   /// **'Todos los derechos reservados'**
   String get todosLosDerechosReservados;
 
+  /// No description provided for @reportarConCapturaPantalla.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar con captura de pantalla'**
+  String get reportarConCapturaPantalla;
+
+  /// No description provided for @reportarConCapturaPantallaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Dibuja y envíanos sugerencias o errores técnicos.'**
+  String get reportarConCapturaPantallaDesc;
+
   /// No description provided for @tiposDeSolicitud.
   ///
   /// In es, this message translates to:
@@ -6015,7 +6027,7 @@ abstract class AppLocalizations {
   /// No description provided for @verTodasSolicitudes.
   ///
   /// In es, this message translates to:
-  /// **'Ver todas las solicitudes'**
+  /// **'Ver todas'**
   String get verTodasSolicitudes;
 
   /// No description provided for @sinSolicitudesRecientes.
@@ -6197,6 +6209,330 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Atendida el {fecha}'**
   String atendidaEl(String fecha);
+
+  /// No description provided for @actualizarRespuesta.
+  ///
+  /// In es, this message translates to:
+  /// **'Actualizar Respuesta'**
+  String get actualizarRespuesta;
+
+  /// No description provided for @placeholderRespuestaPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe tu respuesta aquí...'**
+  String get placeholderRespuestaPastoral;
+
+  /// No description provided for @verMenos.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver menos'**
+  String get verMenos;
+
+  /// No description provided for @refrescar.
+  ///
+  /// In es, this message translates to:
+  /// **'Refrescar'**
+  String get refrescar;
+
+  /// Motivo por el cual fue rechazada una solicitud
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazada: {motivo}'**
+  String solicitudRechazadaMotivo(String motivo);
+
+  /// No description provided for @sinConexionTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conexión a internet'**
+  String get sinConexionTitulo;
+
+  /// No description provided for @sinConexionMensajeDefecto.
+  ///
+  /// In es, this message translates to:
+  /// **'Verifica tu señal Wi-Fi o datos móviles para continuar.'**
+  String get sinConexionMensajeDefecto;
+
+  /// No description provided for @nuevoEvento.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo Evento'**
+  String get nuevoEvento;
+
+  /// No description provided for @enTiempoReal.
+  ///
+  /// In es, this message translates to:
+  /// **'En tiempo real'**
+  String get enTiempoReal;
+
+  /// No description provided for @iglesiaEnRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'Iglesia en revisión'**
+  String get iglesiaEnRevision;
+
+  /// No description provided for @verEstadoSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver estado de solicitud'**
+  String get verEstadoSolicitud;
+
+  /// No description provided for @peticionesApareceranAqui.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus peticiones pastorales aparecerán aquí.'**
+  String get peticionesApareceranAqui;
+
+  /// No description provided for @respuestaPastoralTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Respuesta pastoral:'**
+  String get respuestaPastoralTitulo;
+
+  /// No description provided for @iglesiaEnRevisionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'**
+  String get iglesiaEnRevisionDesc;
+
+  /// Mensaje cuando la membresía de la iglesia está en revisión
+  ///
+  /// In es, this message translates to:
+  /// **'Perteneces a {iglesia}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración. Tu iglesia se encuentra actualmente en proceso de revisión por parte de la administración. Una vez aprobada, podrás gestionar y ver el historial de tus solicitudes y peticiones pastorales.'**
+  String pertenecesAIglesiaEnRevisionDesc(String iglesia);
+
+  /// No description provided for @estadoDesconocido.
+  ///
+  /// In es, this message translates to:
+  /// **'Desconocido'**
+  String get estadoDesconocido;
+
+  /// No description provided for @confirmarPedidoTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar Pedido'**
+  String get confirmarPedidoTitulo;
+
+  /// Pregunta de confirmación antes de procesar el pedido
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas confirmar la compra de {cantidad, plural, =1{1 artículo} other{{cantidad} artículos}} por un total de {total}?'**
+  String confirmarCompraPregunta(int cantidad, String total);
+
+  /// Título del diálogo de pedido registrado
+  ///
+  /// In es, this message translates to:
+  /// **'¡Pedido {ref} Registrado!'**
+  String pedidoRegistradoTitulo(String ref);
+
+  /// No description provided for @pedidoRegistradoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu orden se ha generado en Odoo exitosamente.'**
+  String get pedidoRegistradoExito;
+
+  /// Línea con la referencia de Odoo
+  ///
+  /// In es, this message translates to:
+  /// **'• Referencia Odoo: {ref}'**
+  String referenciaOdooItem(String ref);
+
+  /// Línea con el estado de la orden de Odoo
+  ///
+  /// In es, this message translates to:
+  /// **'• Estado: {estado}'**
+  String estadoOdooItem(String estado);
+
+  /// Línea con el total de la orden de Odoo
+  ///
+  /// In es, this message translates to:
+  /// **'• Total: {total}'**
+  String totalOdooItem(String total);
+
+  /// Línea con la modalidad de entrega
+  ///
+  /// In es, this message translates to:
+  /// **'• Modalidad: {modalidad}'**
+  String modalidadEntregaItem(String modalidad);
+
+  /// No description provided for @instruccionesPagoTienda.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.'**
+  String get instruccionesPagoTienda;
+
+  /// No description provided for @carritoDeCompras.
+  ///
+  /// In es, this message translates to:
+  /// **'Carrito de compras'**
+  String get carritoDeCompras;
+
+  /// No description provided for @vaciarCarrito.
+  ///
+  /// In es, this message translates to:
+  /// **'Vaciar'**
+  String get vaciarCarrito;
+
+  /// No description provided for @carritoVacio.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu carrito está vacío'**
+  String get carritoVacio;
+
+  /// No description provided for @carritoVacioDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Explora nuestro catálogo y agrega tus productos favoritos.'**
+  String get carritoVacioDesc;
+
+  /// Texto del botón de confirmación con monto total
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar Pedido · {total}'**
+  String confirmarPedidoConTotal(String total);
+
+  /// No description provided for @catalogoNoSincronizado.
+  ///
+  /// In es, this message translates to:
+  /// **'El catálogo no está sincronizado con la tienda. Desliza hacia abajo para actualizar.'**
+  String get catalogoNoSincronizado;
+
+  /// No description provided for @errorConexionTienda.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo conectar con la tienda. Intenta de nuevo.'**
+  String get errorConexionTienda;
+
+  /// Texto genérico de confirmación o acción afirmativa (Aceptar)
+  ///
+  /// In es, this message translates to:
+  /// **'Aceptar'**
+  String get aceptar;
+
+  /// No description provided for @estadoPedidoEntregado.
+  ///
+  /// In es, this message translates to:
+  /// **'Entregado'**
+  String get estadoPedidoEntregado;
+
+  /// No description provided for @estadoPedidoPagado.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagado'**
+  String get estadoPedidoPagado;
+
+  /// No description provided for @errorSincronizacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Error de sincronización'**
+  String get errorSincronizacion;
+
+  /// No description provided for @errorSincronizacionPedidosDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos conectar con el servidor para consultar tus pedidos. Reintenta la conexión.'**
+  String get errorSincronizacionPedidosDesc;
+
+  /// No description provided for @verOrdenPortalOdoo.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver orden en Portal Odoo'**
+  String get verOrdenPortalOdoo;
+
+  /// No description provided for @verDetalle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver detalle'**
+  String get verDetalle;
+
+  /// No description provided for @iglesiaAprobadaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Tu iglesia ha sido aprobada!'**
+  String get iglesiaAprobadaTitulo;
+
+  /// Mensaje informativo de confirmación de aprobación de iglesia
+  ///
+  /// In es, this message translates to:
+  /// **'Ya eres miembro activo de {churchName}. Acceso completo desbloqueado.'**
+  String iglesiaAprobadaMensaje(String churchName);
+
+  /// Mensaje de cambio de estado de congregación
+  ///
+  /// In es, this message translates to:
+  /// **'El estado de tu congregación ({churchName}) ha cambiado a: {newStatus}.'**
+  String estadoCongregacionCambiado(String churchName, String newStatus);
+
+  /// No description provided for @eliminandoCuentaYDatos.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminando cuenta y datos personales...'**
+  String get eliminandoCuentaYDatos;
+
+  /// No description provided for @eliminandoCuentaSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificando a Odoo, revocando Google Sign-In y restableciendo estado virgen...'**
+  String get eliminandoCuentaSubtitulo;
+
+  /// No description provided for @estadoDonacionProcesada.
+  ///
+  /// In es, this message translates to:
+  /// **'Procesada'**
+  String get estadoDonacionProcesada;
+
+  /// No description provided for @estadoDonacionPendiente.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get estadoDonacionPendiente;
+
+  /// No description provided for @estadoDonacionDenegada.
+  ///
+  /// In es, this message translates to:
+  /// **'Denegada'**
+  String get estadoDonacionDenegada;
+
+  /// No description provided for @estadoDonacionEnProceso.
+  ///
+  /// In es, this message translates to:
+  /// **'En proceso'**
+  String get estadoDonacionEnProceso;
+
+  /// No description provided for @errorSincronizacionDonacionesDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos conectar con el servidor para actualizar tus aportes. Reintenta la conexión.'**
+  String get errorSincronizacionDonacionesDesc;
+
+  /// No description provided for @tusAportesApareceranAqui.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus aportes ministeriales aparecerán aquí.'**
+  String get tusAportesApareceranAqui;
+
+  /// No description provided for @metodoTransferenciaBancaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Transferencia bancaria'**
+  String get metodoTransferenciaBancaria;
+
+  /// No description provided for @metodoTransferenciaOnline.
+  ///
+  /// In es, this message translates to:
+  /// **'Transferencia / Online'**
+  String get metodoTransferenciaOnline;
+
+  /// No description provided for @fechaReciente.
+  ///
+  /// In es, this message translates to:
+  /// **'Reciente'**
+  String get fechaReciente;
+
+  /// Título de donación con método de pago
+  ///
+  /// In es, this message translates to:
+  /// **'Aporte ({metodo})'**
+  String aporteConMetodo(String metodo);
 }
 
 class _AppLocalizationsDelegate

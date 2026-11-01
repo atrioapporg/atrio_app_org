@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../modelos/carrito_model.dart';
 import '../modelos/producto_model.dart';
 import '../providers/user_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/modal_restriccion_donacion.dart';
 import 'mis_pedidos_screen.dart';
 
@@ -130,6 +131,16 @@ class _TiendaScreenState extends State<TiendaScreen> {
     });
   }
 
+  /// Maneja el refresco manual (Pull to Refresh) con validación de conectividad.
+  Future<void> _handleRefresh() async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: _handleRefresh,
+    );
+    if (!hasInternet || !mounted) return;
+    await _sincronizarTienda();
+  }
+
   /// Sincroniza catálogo, categorías y carrito con Odoo en paralelo.
   /// Se usa al abrir la pantalla y en el pull-to-refresh.
   Future<void> _sincronizarTienda() async {
@@ -215,6 +226,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     if (_procesandoCarrito) return false;
     final api = context.read<UserProvider>().api;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     setState(() => _procesandoCarrito = true);
     try {
       final data = await operacion(api);
@@ -232,10 +244,16 @@ class _TiendaScreenState extends State<TiendaScreen> {
       return false;
     } catch (e) {
       debugPrint('[CARRITO] Error inesperado: $e');
+      if (mounted) {
+        final bool hasInternet =
+            await AtrioConnectivityAlert.checkAndNotify(context);
+        if (!hasInternet) return false;
+      }
       messenger.showSnackBar(
         SnackBar(
-          content: const Text(
-            'No se pudo conectar con la tienda. Intenta de nuevo.',
+          content: Text(
+            l10n?.errorConexionTienda ??
+                'No se pudo conectar con la tienda. Intenta de nuevo.',
           ),
           backgroundColor: Colors.red.shade700,
         ),
@@ -258,13 +276,20 @@ class _TiendaScreenState extends State<TiendaScreen> {
       return;
     }
 
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _agregarAlCarrito(producto),
+    );
+    if (!hasInternet || !mounted) return;
+
     final productId = int.tryParse(producto.id);
 
     if (!_catalogoDesdeOdoo || productId == null) {
       messenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'El catálogo no está sincronizado con la tienda. Desliza hacia abajo para actualizar.',
+            l10n?.catalogoNoSincronizado ??
+                'El catálogo no está sincronizado con la tienda. Desliza hacia abajo para actualizar.',
           ),
         ),
       );
@@ -314,18 +339,28 @@ class _TiendaScreenState extends State<TiendaScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
 
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _confirmarPedido(modalContext),
+    );
+    if (!hasInternet || !mounted || !modalContext.mounted) return;
+
     final confirmar = await showDialog<bool>(
       context: modalContext,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirmar Pedido'),
+        title: Text(l10n?.confirmarPedidoTitulo ?? 'Confirmar Pedido'),
         content: Text(
-          '¿Deseas confirmar la compra de ${_carrito.cantidadArticulos} artículo(s) por un total de ${_carrito.formatear(_carrito.total)}?',
+          l10n?.confirmarCompraPregunta(
+                _carrito.cantidadArticulos,
+                _carrito.formatear(_carrito.total),
+              ) ??
+              '¿Deseas confirmar la compra de ${_carrito.cantidadArticulos} artículo(s) por un total de ${_carrito.formatear(_carrito.total)}?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n?.cancelar ?? 'Cancelar'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -333,7 +368,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirmar Pedido'),
+            child: Text(l10n?.confirmarPedidoTitulo ?? 'Confirmar Pedido'),
           ),
         ],
       ),
@@ -359,10 +394,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
 
       final order = res['order'] as Map<String, dynamic>?;
       final ref = order?['name'] ?? res['reference'] ?? 'S00000';
-      final estado = order?['status_label'] ?? 'Pago en verificación';
+      final estado = order?['status_label'] ??
+          (l10n?.estadoPagoEnVerificacion ?? 'Pago en verificación');
       final total = order?['amount_total'] != null
           ? 'RD\$${order!['amount_total']}'
           : _carrito.formatear(_carrito.total);
+      final modalidad = _selectedDeliveryOption == 0
+          ? (l10n?.envioADomicilio ?? 'Envío a domicilio')
+          : (l10n?.retiroEnIglesia ?? 'Retiro en iglesia');
 
       showDialog(
         context: context,
@@ -376,14 +415,17 @@ class _TiendaScreenState extends State<TiendaScreen> {
             size: 56,
           ),
           title: Text(
-            '¡Pedido $ref Registrado!',
+            l10n?.pedidoRegistradoTitulo(ref) ?? '¡Pedido $ref Registrado!',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tu orden se ha generado en Odoo exitosamente.'),
+              Text(
+                l10n?.pedidoRegistradoExito ??
+                    'Tu orden se ha generado en Odoo exitosamente.',
+              ),
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -397,14 +439,16 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '• Referencia Odoo: $ref',
+                      l10n?.referenciaOdooItem(ref) ?? '• Referencia Odoo: $ref',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
-                    Text('• Estado: $estado'),
+                    Text(
+                      l10n?.estadoOdooItem(estado) ?? '• Estado: $estado',
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                      '• Total: $total',
+                      l10n?.totalOdooItem(total) ?? '• Total: $total',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF072B4F),
@@ -412,15 +456,17 @@ class _TiendaScreenState extends State<TiendaScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '• Modalidad: ${_selectedDeliveryOption == 0 ? "Envío a domicilio" : "Retiro en iglesia"}',
+                      l10n?.modalidadEntregaItem(modalidad) ??
+                          '• Modalidad: $modalidad',
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.',
-                style: TextStyle(fontSize: 12, color: Colors.black87),
+              Text(
+                l10n?.instruccionesPagoTienda ??
+                    'Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.',
+                style: const TextStyle(fontSize: 12, color: Colors.black87),
               ),
             ],
           ),
@@ -438,7 +484,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Aceptar'),
+              child: Text(l10n?.aceptar ?? 'Aceptar'),
             ),
           ],
         ),
@@ -453,7 +499,9 @@ class _TiendaScreenState extends State<TiendaScreen> {
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Error al procesar el pedido: $e'),
+          content: Text(
+            l10n?.errorConexionTienda ?? 'Error al procesar el pedido: $e',
+          ),
           backgroundColor: Colors.red.shade700,
         ),
       );
@@ -491,14 +539,13 @@ class _TiendaScreenState extends State<TiendaScreen> {
               constraints: BoxConstraints(maxHeight: usableHeight * 0.85),
               decoration: BoxDecoration(
                 color: blancoFondo,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(screenWidth * 0.06),
-                  topRight: Radius.circular(screenWidth * 0.06),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(screenWidth * 0.06),
                 ),
               ),
-              padding: EdgeInsets.only(
-                left: screenWidth * 0.05,
-                right: screenWidth * 0.05,
+              padding: EdgeInsetsDirectional.only(
+                start: screenWidth * 0.05,
+                end: screenWidth * 0.05,
                 top: usableHeight * 0.018,
                 bottom:
                     MediaQuery.of(modalContext).padding.bottom +
@@ -534,7 +581,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           ),
                           SizedBox(width: screenWidth * 0.02),
                           Text(
-                            'Carrito de Compras',
+                            l10n?.carritoDeCompras ?? 'Carrito de Compras',
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.046,
@@ -556,9 +603,9 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             size: 18,
                             color: Colors.red,
                           ),
-                          label: const Text(
-                            'Vaciar',
-                            style: TextStyle(color: Colors.red, fontSize: 13),
+                          label: Text(
+                            l10n?.vaciarCarrito ?? 'Vaciar',
+                            style: const TextStyle(color: Colors.red, fontSize: 13),
                           ),
                         )
                       else
@@ -595,7 +642,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             ),
                             SizedBox(height: usableHeight * 0.015),
                             Text(
-                              'Tu carrito está vacío',
+                              l10n?.carritoVacio ?? 'Tu carrito está vacío',
                               style: TextStyle(
                                 color: azulFondo,
                                 fontSize: screenWidth * 0.042,
@@ -604,7 +651,8 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             ),
                             SizedBox(height: usableHeight * 0.008),
                             Text(
-                              'Explora nuestro catálogo y agrega tus productos favoritos.',
+                              l10n?.carritoVacioDesc ??
+                                  'Explora nuestro catálogo y agrega tus productos favoritos.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
@@ -757,7 +805,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Total a pagar:',
+                          l10n?.totalAPagar ?? 'Total a pagar:',
                           style: TextStyle(
                             color: azulFondo,
                             fontSize: screenWidth * 0.04,
@@ -795,7 +843,10 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             : () => _confirmarPedido(modalContext),
                         icon: const Icon(Icons.check_circle_outline_rounded),
                         label: Text(
-                          'Confirmar Pedido · ${_carrito.formatear(_carrito.total)}',
+                          l10n?.confirmarPedidoConTotal(
+                                _carrito.formatear(_carrito.total),
+                              ) ??
+                              'Confirmar Pedido · ${_carrito.formatear(_carrito.total)}',
                           style: TextStyle(
                             fontSize: screenWidth * 0.036,
                             fontWeight: FontWeight.bold,
@@ -906,13 +957,22 @@ class _TiendaScreenState extends State<TiendaScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             if (!ModalRestriccionDonacion.verificarAutenticacion(
                               context: context,
                               mensaje: l10n?.sesionRequeridaGenerica,
                             )) {
                               return;
                             }
+                            final bool hasInternet =
+                                await AtrioConnectivityAlert.checkAndNotify(
+                              context,
+                              onRetry: () => Navigator.pushNamed(
+                                context,
+                                MisPedidosScreen.routeName,
+                              ),
+                            );
+                            if (!hasInternet || !context.mounted) return;
                             Navigator.pushNamed(
                               context,
                               MisPedidosScreen.routeName,
@@ -1048,18 +1108,16 @@ class _TiendaScreenState extends State<TiendaScreen> {
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                     child: RefreshIndicator(
-                      onRefresh: _cargarProductosOdoo,
+                      onRefresh: _handleRefresh,
                       color: amarilloOro,
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(
@@ -1140,7 +1198,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             SizedBox(height: usableHeight * 0.02),
 
                             // Banner Hero Promocional interactivo
-                            _buildPromoBanner(
+                            _PromoBanner(
                               screenWidth: screenWidth,
                               usableHeight: usableHeight,
                               amarilloOro: amarilloOro,
@@ -1229,7 +1287,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                         ),
                                     itemBuilder: (context, index) {
                                       final item = _filteredProducts[index];
-                                      return _buildProductCard(
+                                      return _ProductCard(
                                         producto: item,
                                         screenWidth: screenWidth,
                                         usableHeight: usableHeight,
@@ -1237,6 +1295,11 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                         grisBorde: grisBorde,
                                         amarilloOro: amarilloOro,
                                         l10n: l10n,
+                                        localizedCategory:
+                                            _getLocalizedCategory(
+                                              item.categoria,
+                                              l10n,
+                                            ),
                                         onTap: () => _showProductDetailsModal(
                                           context,
                                           item,
@@ -1266,7 +1329,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: _buildDeliveryOption(
+                                  child: _DeliveryOptionButton(
                                     title:
                                         l10n?.envioADomicilio ??
                                         'Envío a domicilio',
@@ -1286,7 +1349,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                 ),
                                 SizedBox(width: screenWidth * 0.03),
                                 Expanded(
-                                  child: _buildDeliveryOption(
+                                  child: _DeliveryOptionButton(
                                     title:
                                         l10n?.retiroEnIglesia ??
                                         'Retiro en iglesia',
@@ -1321,330 +1384,6 @@ class _TiendaScreenState extends State<TiendaScreen> {
     );
   }
 
-  // Componente: Banner Hero Promocional
-  Widget _buildPromoBanner({
-    required double screenWidth,
-    required double usableHeight,
-    required Color amarilloOro,
-    required AppLocalizations? l10n,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      width: screenWidth,
-      height: usableHeight * 0.20,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(screenWidth * 0.045),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2C1F16), Color(0xFF4A3423)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(screenWidth * 0.045),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n?.recursosParaCrecerEnTuFe ??
-                      'Recursos para\ncrecer en tu fe',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.052,
-                    fontWeight: FontWeight.bold,
-                    height: 1.15,
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: amarilloOro,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: usableHeight * 0.008,
-                    ),
-                  ),
-                  onPressed: onTap,
-                  child: Text(
-                    l10n?.verDestacados ?? 'Ver destacados',
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.032,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Miniatura decorativa destacada
-          Container(
-            width: screenWidth * 0.22,
-            height: usableHeight * 0.14,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(screenWidth * 0.02),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 6,
-                  offset: const Offset(1, 3),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(screenWidth * 0.02),
-              child: Image.network(
-                'https://imagessl7.casadellibro.com/a/l/t7/60/9780829768060.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFF1E2D3D),
-                  child: const Icon(
-                    Icons.menu_book_rounded,
-                    color: Colors.white70,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(String categoria) {
-    switch (categoria.toLowerCase()) {
-      case 'biblias':
-        return Icons.menu_book_rounded;
-      case 'libros':
-        return Icons.auto_stories_rounded;
-      case 'música':
-      case 'musica':
-        return Icons.headphones_rounded;
-      case 'artículos de fe':
-      case 'articulos de fe':
-        return Icons.church_rounded;
-      case 'regalos':
-        return Icons.card_giftcard_rounded;
-      case 'ropa y accesorios':
-        return Icons.checkroom_rounded;
-      case 'papelería':
-      case 'papeleria':
-        return Icons.edit_note_rounded;
-      case 'paquetes':
-        return Icons.inventory_2_rounded;
-      default:
-        return Icons.shopping_bag_outlined;
-    }
-  }
-
-  Widget _buildFallbackProductIcon(String categoria, double iconSize) {
-    return Container(
-      color: const Color(0xFFF2ECE4),
-      child: Center(
-        child: Icon(
-          _getCategoryIcon(categoria),
-          size: iconSize,
-          color: const Color(0xFF6E5642),
-        ),
-      ),
-    );
-  }
-
-  // Componente: Tarjeta de Producto con Fotografía Real y Shimmer
-  Widget _buildProductCard({
-    required ProductoModel producto,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color grisBorde,
-    required Color amarilloOro,
-    required AppLocalizations? l10n,
-    required VoidCallback onTap,
-    required VoidCallback onFavoriteTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
-          border: Border.all(color: grisBorde),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Fotografía real del producto con botón flotante de favorito
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(screenWidth * 0.04),
-                  topRight: Radius.circular(screenWidth * 0.04),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (producto.imageUrl.isNotEmpty &&
-                        producto.imageUrl.startsWith('http'))
-                      Image.network(
-                        producto.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return _ShimmerPlaceholder(
-                            width: double.infinity,
-                            height: double.infinity,
-                            borderRadius: 0,
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildFallbackProductIcon(
-                              producto.categoria,
-                              screenWidth * 0.12,
-                            ),
-                      )
-                    else
-                      _buildFallbackProductIcon(
-                        producto.categoria,
-                        screenWidth * 0.12,
-                      ),
-                    // Botón flotante de favorito
-                    Positioned(
-                      top: usableHeight * 0.01,
-                      right: screenWidth * 0.02,
-                      child: GestureDetector(
-                        onTap: onFavoriteTap,
-                        child: Container(
-                          padding: EdgeInsets.all(screenWidth * 0.015),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            producto.esFavorito
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            color: producto.esFavorito
-                                ? const Color(0xFFE53935)
-                                : Colors.grey.shade600,
-                            size: screenWidth * 0.045,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Badge de categoría
-                    Positioned(
-                      bottom: usableHeight * 0.008,
-                      left: screenWidth * 0.02,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.02,
-                          vertical: usableHeight * 0.002,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(
-                            screenWidth * 0.01,
-                          ),
-                        ),
-                        child: Text(
-                          _getLocalizedCategory(producto.categoria, l10n),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.022,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Información del producto (Título + Precio + Calificación)
-            Padding(
-              padding: EdgeInsets.all(screenWidth * 0.03),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    producto.nombre,
-                    style: TextStyle(
-                      color: azulFondo,
-                      fontSize: screenWidth * 0.032,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: usableHeight * 0.004),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        producto.precioFormateado,
-                        style: TextStyle(
-                          color: azulFondo,
-                          fontSize: screenWidth * 0.036,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.star_rounded,
-                            size: screenWidth * 0.035,
-                            color: amarilloOro,
-                          ),
-                          SizedBox(width: screenWidth * 0.005),
-                          Text(
-                            '${producto.rating}',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: screenWidth * 0.026,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Modal Inferior de Detalle de Producto y Compra (Bottom Sheet)
   void _showProductDetailsModal(BuildContext context, ProductoModel producto) {
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -1666,14 +1405,13 @@ class _TiendaScreenState extends State<TiendaScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: blancoFondo,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(screenWidth * 0.06),
-                  topRight: Radius.circular(screenWidth * 0.06),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(screenWidth * 0.06),
                 ),
               ),
-              padding: EdgeInsets.only(
-                left: screenWidth * 0.06,
-                right: screenWidth * 0.06,
+              padding: EdgeInsetsDirectional.only(
+                start: screenWidth * 0.06,
+                end: screenWidth * 0.06,
                 top: usableHeight * 0.018,
                 bottom:
                     MediaQuery.of(modalContext).padding.bottom +
@@ -1735,14 +1473,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                     );
                                   },
                                   errorBuilder: (context, error, stackTrace) =>
-                                      _buildFallbackProductIcon(
-                                        producto.categoria,
-                                        screenWidth * 0.10,
+                                      _FallbackProductIcon(
+                                        categoria: producto.categoria,
+                                        iconSize: screenWidth * 0.10,
                                       ),
                                 )
-                              : _buildFallbackProductIcon(
-                                  producto.categoria,
-                                  screenWidth * 0.10,
+                              : _FallbackProductIcon(
+                                  categoria: producto.categoria,
+                                  iconSize: screenWidth * 0.10,
                                 ),
                         ),
                       ),
@@ -1907,56 +1645,6 @@ class _TiendaScreenState extends State<TiendaScreen> {
     );
   }
 
-  // Componente: Botón de Opción de Entrega
-  Widget _buildDeliveryOption({
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color amarilloOro,
-    required Color grisBorde,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: usableHeight * 0.065,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.035),
-          border: Border.all(
-            color: isSelected ? amarilloOro : grisBorde,
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.025),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? amarilloOro : azulFondo,
-              size: screenWidth * 0.055,
-            ),
-            SizedBox(width: screenWidth * 0.02),
-            Flexible(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? amarilloOro : azulFondo,
-                  fontSize: screenWidth * 0.03,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // Widget Shimmer animado para efecto de carga elegante sin dependencias externas
@@ -2023,6 +1711,427 @@ class _ShimmerPlaceholderState extends State<_ShimmerPlaceholder>
           ),
         );
       },
+    );
+  }
+}
+
+class _PromoBanner extends StatelessWidget {
+  const _PromoBanner({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.amarilloOro,
+    required this.l10n,
+    required this.onTap,
+  });
+
+  final double screenWidth;
+  final double usableHeight;
+  final Color amarilloOro;
+  final AppLocalizations? l10n;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: screenWidth,
+      height: usableHeight * 0.20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(screenWidth * 0.045),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2C1F16), Color(0xFF4A3423)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(screenWidth * 0.045),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n?.recursosParaCrecerEnTuFe ??
+                      'Recursos para\ncrecer en tu fe',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.052,
+                    fontWeight: FontWeight.bold,
+                    height: 1.15,
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: amarilloOro,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: usableHeight * 0.008,
+                    ),
+                  ),
+                  onPressed: onTap,
+                  child: Text(
+                    l10n?.verDestacados ?? 'Ver destacados',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.032,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: screenWidth * 0.22,
+            height: usableHeight * 0.14,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(screenWidth * 0.02),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                  offset: const Offset(1, 3),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(screenWidth * 0.02),
+              child: Image.network(
+                'https://imagessl7.casadellibro.com/a/l/t7/60/9780829768060.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFF1E2D3D),
+                  child: const Icon(
+                    Icons.menu_book_rounded,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FallbackProductIcon extends StatelessWidget {
+  const _FallbackProductIcon({
+    required this.categoria,
+    required this.iconSize,
+  });
+
+  final String categoria;
+  final double iconSize;
+
+  static IconData getCategoryIcon(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'biblias':
+        return Icons.menu_book_rounded;
+      case 'libros':
+        return Icons.auto_stories_rounded;
+      case 'música':
+      case 'musica':
+        return Icons.headphones_rounded;
+      case 'artículos de fe':
+      case 'articulos de fe':
+        return Icons.church_rounded;
+      case 'regalos':
+        return Icons.card_giftcard_rounded;
+      case 'ropa y accesorios':
+        return Icons.checkroom_rounded;
+      case 'papelería':
+      case 'papeleria':
+        return Icons.edit_note_rounded;
+      case 'paquetes':
+        return Icons.inventory_2_rounded;
+      default:
+        return Icons.shopping_bag_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF2ECE4),
+      child: Center(
+        child: Icon(
+          getCategoryIcon(categoria),
+          size: iconSize,
+          color: const Color(0xFF6E5642),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({
+    required this.producto,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.grisBorde,
+    required this.amarilloOro,
+    required this.l10n,
+    required this.localizedCategory,
+    required this.onTap,
+    required this.onFavoriteTap,
+  });
+
+  final ProductoModel producto;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color grisBorde;
+  final Color amarilloOro;
+  final AppLocalizations? l10n;
+  final String localizedCategory;
+  final VoidCallback onTap;
+  final VoidCallback onFavoriteTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          border: Border.all(color: grisBorde),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(screenWidth * 0.04),
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (producto.imageUrl.isNotEmpty &&
+                        producto.imageUrl.startsWith('http'))
+                      Image.network(
+                        producto.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return _ShimmerPlaceholder(
+                            width: double.infinity,
+                            height: double.infinity,
+                            borderRadius: 0,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            _FallbackProductIcon(
+                              categoria: producto.categoria,
+                              iconSize: screenWidth * 0.12,
+                            ),
+                      )
+                    else
+                      _FallbackProductIcon(
+                        categoria: producto.categoria,
+                        iconSize: screenWidth * 0.12,
+                      ),
+                    Positioned(
+                      top: usableHeight * 0.008,
+                      right: screenWidth * 0.02,
+                      child: GestureDetector(
+                        onTap: onFavoriteTap,
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            producto.esFavorito
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: producto.esFavorito
+                                ? const Color(0xFFE53935)
+                                : Colors.grey.shade600,
+                            size: screenWidth * 0.045,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: usableHeight * 0.008,
+                      left: screenWidth * 0.02,
+                      child: Container(
+                        padding: EdgeInsetsDirectional.symmetric(
+                          horizontal: screenWidth * 0.02,
+                          vertical: usableHeight * 0.002,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.01,
+                          ),
+                        ),
+                        child: Text(
+                          localizedCategory,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.022,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(screenWidth * 0.03),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    producto.nombre,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: screenWidth * 0.032,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: usableHeight * 0.004),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        producto.precioFormateado,
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.036,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: screenWidth * 0.035,
+                            color: amarilloOro,
+                          ),
+                          SizedBox(width: screenWidth * 0.005),
+                          Text(
+                            '${producto.rating}',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: screenWidth * 0.026,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeliveryOptionButton extends StatelessWidget {
+  const _DeliveryOptionButton({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.amarilloOro,
+    required this.grisBorde,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color amarilloOro;
+  final Color grisBorde;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: usableHeight * 0.065,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.035),
+          border: Border.all(
+            color: isSelected ? amarilloOro : grisBorde,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        padding: EdgeInsetsDirectional.symmetric(
+          horizontal: screenWidth * 0.025,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? amarilloOro : azulFondo,
+              size: screenWidth * 0.055,
+            ),
+            SizedBox(width: screenWidth * 0.02),
+            Flexible(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? amarilloOro : azulFondo,
+                  fontSize: screenWidth * 0.03,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

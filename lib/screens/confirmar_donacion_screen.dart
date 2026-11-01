@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/utils/media_validator.dart';
+import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/widgets/odoo_pago_dialog.dart';
 import 'package:atrio/widgets/read_only_banner.dart';
@@ -139,14 +140,15 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
     final Map donacionData =
         (ModalRoute.of(context)?.settings.arguments as Map?) ??
         {
-          'comunidad': 'Comunidad de Esperanza',
+          'comunidad': l10n?.miIglesia ?? 'Mi Iglesia',
           'concepto': l10n?.ofrenda ?? 'Ofrenda',
           'monto': 'RD\$1,000.00',
           'frecuencia': l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez',
           'metodoPago': 'Visa •••• 1234',
         };
 
-    final String comunidad = donacionData['comunidad'] ?? 'Comunidad';
+    final String comunidad =
+        donacionData['comunidad'] ?? (l10n?.miIglesia ?? 'Mi Iglesia');
     final String concepto = donacionData['concepto'] ?? (l10n?.ofrenda ?? 'Ofrenda');
     final String monto = donacionData['monto'] ?? 'RD\$ 0.00';
     final String frecuencia =
@@ -654,38 +656,32 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                   ),
                                 ),
                               ),
-                              onPressed: () {
-                                if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
+                              onPressed: () async {
+                                final bool hasInternet =
+                                    await AtrioConnectivityAlert.checkAndNotify(
+                                  context,
+                                  onRetry: () => _ejecutarConfirmacionPago(
+                                    concepto: concepto,
+                                    comunidad: comunidad,
+                                    monto: monto,
+                                    metodoPago: metodoPago,
+                                    donacionData: donacionData,
+                                  ),
+                                );
+                                if (!hasInternet || !mounted) return;
+
+                                if (!ModalRestriccionDonacion.verificarDonacionGeneral(
+                                  context: this.context,
+                                )) {
                                   return;
                                 }
-                                final userProvider = Provider.of<UserProvider>(
-                                  context,
-                                  listen: false,
-                                );
-                                final user = userProvider.currentUser;
 
-                                OdooPagoDialog.mostrarConfirmacionPago(
-                                  context: context,
-                                  concepto: '$concepto ($comunidad)',
+                                _ejecutarConfirmacionPago(
+                                  concepto: concepto,
+                                  comunidad: comunidad,
                                   monto: monto,
                                   metodoPago: metodoPago,
-                                  receiptBase64: _receiptBase64,
-                                  receiptFilename: _receiptFilename,
-                                  mensajeApoyo:
-                                      donacionData['mensajeApoyo'] as String?,
-                                  esAnonimo:
-                                      donacionData['esAnonimo'] as bool? ??
-                                      false,
-                                  donorName: user?.nombre,
-                                  donorEmail: user?.email,
-                                  onConfirmado: () {
-                                    Navigator.popUntil(
-                                      context,
-                                      ModalRoute.withName(
-                                        'inicio_atrio_screen',
-                                      ),
-                                    );
-                                  },
+                                  donacionData: donacionData,
                                 );
                               },
                               icon: Icon(
@@ -717,6 +713,42 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
     );
   }
 
+  void _ejecutarConfirmacionPago({
+    required String concepto,
+    required String comunidad,
+    required String monto,
+    required String metodoPago,
+    required Map donacionData,
+  }) {
+    if (!mounted) return;
+    final userProvider = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    );
+    final user = userProvider.currentUser;
+
+    OdooPagoDialog.mostrarConfirmacionPago(
+      context: context,
+      concepto: '$concepto ($comunidad)',
+      monto: monto,
+      metodoPago: metodoPago,
+      receiptBase64: _receiptBase64,
+      receiptFilename: _receiptFilename,
+      mensajeApoyo: donacionData['mensajeApoyo'] as String?,
+      esAnonimo: donacionData['esAnonimo'] as bool? ?? false,
+      donorName: user?.nombre,
+      donorEmail: user?.email,
+      onConfirmado: () {
+        Navigator.popUntil(
+          context,
+          ModalRoute.withName(
+            'inicio_atrio_screen',
+          ),
+        );
+      },
+    );
+  }
+
   // Widget auxiliar para filas con ícono y valor personalizado
   Widget _buildSummaryRow({
     required String label,
@@ -742,7 +774,7 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
         Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: valueWidget,
           ),
         ),

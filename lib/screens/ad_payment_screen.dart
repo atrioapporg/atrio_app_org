@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../l10n/app_localizations.dart';
 import '../modelos/ad_models.dart';
 import '../providers/ads_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 
 /// Pantalla para gestionar el pago de una campaña de anuncios aprobada (`to_pay`).
 /// Cumple con la especificación técnica de Odoo 19 ERP:
@@ -128,10 +131,7 @@ class _AdPaymentScreenState extends State<AdPaymentScreen>
                         adId: widget.ad.id,
                         paypalAvailable: payment?.paypalAvailable ?? true,
                       ),
-                      _TransferTab(
-                        ad: widget.ad,
-                        payment: payment,
-                      ),
+                      _TransferTab(ad: widget.ad, payment: payment),
                     ],
                   ),
                 ),
@@ -208,9 +208,7 @@ class _PaymentHeaderCard extends StatelessWidget {
       padding: const EdgeInsetsDirectional.all(20),
       decoration: const BoxDecoration(
         color: azulFondo,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -297,10 +295,7 @@ class _PaypalTab extends StatelessWidget {
   final int adId;
   final bool paypalAvailable;
 
-  const _PaypalTab({
-    required this.adId,
-    required this.paypalAvailable,
-  });
+  const _PaypalTab({required this.adId, required this.paypalAvailable});
 
   @override
   Widget build(BuildContext context) {
@@ -357,8 +352,7 @@ class _PaypalTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  l10n?.pagoPaypalExplicacion ??
-                      'Al presionar el botón serás redirigido al portal seguro de PayPal para completar tu transacción internacional.',
+                  l10n?.pagoPaypalExplicacion ?? 'Al presionar el botón serás redirigido al portal seguro de PayPal para completar tu transacción internacional.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade600,
@@ -375,8 +369,7 @@ class _PaypalTab extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      l10n?.paypalNoDisponible ??
-                          'PayPal no está disponible para esta transacción. Por favor utiliza transferencia bancaria.',
+                      l10n?.paypalNoDisponible ?? 'PayPal no está disponible para esta transacción. Por favor utiliza transferencia bancaria.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF92400E),
@@ -392,9 +385,16 @@ class _PaypalTab extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: isLoading
                           ? null
-                          : () => context
-                              .read<AdsProvider>()
-                              .processPaypalPayment(adId),
+                          : () async {
+                              final hasInternet =
+                                  await AtrioConnectivityAlert.checkAndNotify(
+                                    context,
+                                  );
+                              if (!hasInternet || !context.mounted) return;
+                              context.read<AdsProvider>().processPaypalPayment(
+                                adId,
+                              );
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC439),
                         foregroundColor: const Color(0xFF003087),
@@ -409,8 +409,9 @@ class _PaypalTab extends StatelessWidget {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(azulFondo),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  azulFondo,
+                                ),
                               ),
                             )
                           : Row(
@@ -447,10 +448,7 @@ class _TransferTab extends StatefulWidget {
   final AdModel ad;
   final AdPaymentModel? payment;
 
-  const _TransferTab({
-    required this.ad,
-    required this.payment,
-  });
+  const _TransferTab({required this.ad, required this.payment});
 
   @override
   State<_TransferTab> createState() => _TransferTabState();
@@ -506,7 +504,8 @@ class _TransferTabState extends State<_TransferTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n?.adjuntarComprobante ?? 'Por favor adjunta el comprobante de transferencia',
+            l10n?.adjuntarComprobante ??
+                'Por favor adjunta el comprobante de transferencia',
           ),
           backgroundColor: Colors.red.shade700,
         ),
@@ -514,14 +513,17 @@ class _TransferTabState extends State<_TransferTab> {
       return;
     }
 
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) return;
+
     final success = await context.read<AdsProvider>().submitTransferPayment(
-          widget.ad.id,
-          receiptBase64: _receiptBase64!,
-          receiptFilename: _receiptFilename ?? 'comprobante.jpg',
-          reference: _referenceController.text.trim().isNotEmpty
-              ? _referenceController.text.trim()
-              : null,
-        );
+      widget.ad.id,
+      receiptBase64: _receiptBase64!,
+      receiptFilename: _receiptFilename ?? 'comprobante.jpg',
+      reference: _referenceController.text.trim().isNotEmpty
+          ? _referenceController.text.trim()
+          : null,
+    );
 
     if (!mounted) return;
 
@@ -555,7 +557,8 @@ class _TransferTabState extends State<_TransferTab> {
     const Color amarilloOro = Color(0xFFE5A023);
 
     // Banco de Odoo 19
-    final bank = widget.payment?.transfer ??
+    final bank =
+        widget.payment?.transfer ??
         (widget.payment != null && widget.payment!.bankAccounts.isNotEmpty
             ? widget.payment!.bankAccounts.first
             : null);
@@ -567,7 +570,8 @@ class _TransferTabState extends State<_TransferTab> {
         children: [
           // Datos bancarios
           Text(
-            l10n?.cuentasBancariasDisponibles ?? 'Datos para Transferencia Bancaria',
+            l10n?.cuentasBancariasDisponibles ??
+                'Datos para Transferencia Bancaria',
             style: const TextStyle(
               color: azulFondo,
               fontSize: 15,
@@ -642,7 +646,9 @@ class _TransferTabState extends State<_TransferTab> {
                       TextButton.icon(
                         onPressed: _pickReceiptImage,
                         icon: const Icon(Icons.change_circle_rounded),
-                        label: Text(l10n?.cambiarImagen ?? 'Cambiar Comprobante'),
+                        label: Text(
+                          l10n?.cambiarImagen ?? 'Cambiar Comprobante',
+                        ),
                       ),
                     ],
                   )
@@ -739,8 +745,11 @@ class _OdooBankCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.account_balance_rounded,
-                  color: azulFondo, size: 20),
+              const Icon(
+                Icons.account_balance_rounded,
+                color: azulFondo,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -801,8 +810,11 @@ class _OdooBankCard extends StatelessWidget {
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.copy_rounded,
-                    size: 18, color: amarilloOro),
+                icon: const Icon(
+                  Icons.copy_rounded,
+                  size: 18,
+                  color: amarilloOro,
+                ),
                 tooltip: l10n?.copiarNumeroCuenta ?? 'Copiar',
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: bank.accountNumber));

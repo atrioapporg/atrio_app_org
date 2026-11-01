@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../widgets/modal_otro_monto.dart';
 import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/l10n/app_localizations.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 
 class AportarAProyectoScreen extends StatefulWidget {
   static const routeName = 'aportar_a_proyecto_screen';
@@ -438,7 +439,13 @@ class _AportarAProyectoScreenState extends State<AportarAProyectoScreen> {
                                   ),
                                 ),
                               ),
-                              onPressed: () {
+                              onPressed: () async {
+                                final hasInternet =
+                                    await AtrioConnectivityAlert.checkAndNotify(
+                                      context,
+                                    );
+                                if (!hasInternet || !context.mounted) return;
+
                                 if (!ModalRestriccionDonacion.verificarYMostrar(context: context)) {
                                   return;
                                 }

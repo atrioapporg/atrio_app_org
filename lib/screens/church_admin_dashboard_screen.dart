@@ -9,6 +9,7 @@ import 'package:atrio/screens/admin_requests_screen.dart';
 import 'package:atrio/screens/admin_ads_screen.dart';
 import 'package:atrio/screens/crear_evento_screen.dart';
 import 'package:atrio/screens/crear_predica_screen.dart';
+import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 
 /// Pantalla Principal del Dashboard Pastoral Móvil para el Admin de Iglesia (Odoo 19).
 /// Proporciona métricas consolidadas en tiempo real, accesos rápidos a gestión pastoral,
@@ -19,10 +20,12 @@ class ChurchAdminDashboardScreen extends StatefulWidget {
   const ChurchAdminDashboardScreen({super.key});
 
   @override
-  State<ChurchAdminDashboardScreen> createState() => _ChurchAdminDashboardScreenState();
+  State<ChurchAdminDashboardScreen> createState() =>
+      _ChurchAdminDashboardScreenState();
 }
 
-class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen> {
+class _ChurchAdminDashboardScreenState
+    extends State<ChurchAdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
@@ -36,6 +39,15 @@ class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen>
     adminProv.loadChurchStats();
     adminProv.loadChurchRequests(limit: 10);
     adminProv.loadAdminNotifications();
+  }
+
+  Future<void> _handleRefresh() async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _handleRefresh(),
+    );
+    if (!hasInternet || !mounted) return;
+    _loadDashboardData();
   }
 
   @override
@@ -78,7 +90,7 @@ class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen>
                   IconButton(
                     icon: const Icon(Icons.notifications_rounded),
                     tooltip: l10n?.buzonAlertas ?? 'Buzón de Alertas',
-                    onPressed: () => _mostrarBuzonNotificaciones(context),
+                    onPressed: _mostrarBuzonNotificaciones,
                   ),
                   if (unread > 0)
                     PositionedDirectional(
@@ -90,7 +102,10 @@ class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen>
                           color: amarilloOro,
                           shape: BoxShape.circle,
                         ),
-                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
                         child: Text(
                           '$unread',
                           textAlign: TextAlign.center,
@@ -108,14 +123,14 @@ class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen>
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refrescar',
-            onPressed: _loadDashboardData,
+            tooltip: l10n?.refrescar ?? 'Refrescar',
+            onPressed: _handleRefresh,
           ),
         ],
       ),
       body: RefreshIndicator(
         color: amarilloOro,
-        onRefresh: () async => _loadDashboardData(),
+        onRefresh: _handleRefresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -125,7 +140,9 @@ class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Tarjeta de Bienvenida y Datos de la Iglesia
-              _AdminHeaderCard(iglesiaNombre: iglesia?.nombre ?? 'Comunidad Atrio'),
+              _AdminHeaderCard(
+                iglesiaNombre: iglesia?.nombre ?? 'Comunidad Atrio',
+              ),
               const SizedBox(height: 16),
 
               // 2. Grilla de Indicadores Clave (KPIs)
@@ -149,7 +166,12 @@ class _ChurchAdminDashboardScreenState extends State<ChurchAdminDashboardScreen>
     );
   }
 
-  void _mostrarBuzonNotificaciones(BuildContext context) {
+  Future<void> _mostrarBuzonNotificaciones() async {
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _mostrarBuzonNotificaciones(),
+    );
+    if (!hasInternet || !mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -197,7 +219,10 @@ class _AdminHeaderCard extends StatelessWidget {
             children: [
               // Badge de Rol
               Container(
-                padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsetsDirectional.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: amarilloOro,
                   borderRadius: BorderRadius.circular(8),
@@ -248,10 +273,7 @@ class _AdminHeaderCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             l10n?.bienvenidoAdmin ?? 'Gestión, cuidado pastoral y métricas en vivo de tu congregación',
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
           ),
         ],
       ),
@@ -275,7 +297,8 @@ class _AdminKpiGrid extends StatelessWidget {
 
     // Formateador de moneda
     final currencySymbol = stats?.currencySymbol ?? 'RD\$';
-    final offeringsFormatted = '$currencySymbol ${NumberFormat('#,##0.00').format(stats?.offeringsTotal ?? 0.0)}';
+    final offeringsFormatted =
+        '$currencySymbol ${NumberFormat('#,##0.00').format(stats?.offeringsTotal ?? 0.0)}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,20 +306,20 @@ class _AdminKpiGrid extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              l10n?.resumenMensual ?? 'Resumen del Mes',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF072B4F),
+            Expanded(
+              child: Text(
+                l10n?.resumenMensual ?? 'Resumen del Mes',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF072B4F),
+                ),
               ),
             ),
-            const Text(
-              'En tiempo real',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-              ),
+            const SizedBox(width: 8),
+            Text(
+              l10n?.enTiempoReal ?? 'En tiempo real',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
             ),
           ],
         ),
@@ -309,7 +332,19 @@ class _AdminKpiGrid extends StatelessWidget {
                 value: '$newRequestsCount',
                 icon: Icons.mark_email_unread_rounded,
                 accentColor: const Color(0xFFE5A023),
-                onTap: () => Navigator.pushNamed(context, AdminRequestsScreen.routeName),
+                onTap: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () => Navigator.pushNamed(
+                          context,
+                          AdminRequestsScreen.routeName,
+                        ),
+                      );
+                  if (hasInternet && context.mounted) {
+                    Navigator.pushNamed(context, AdminRequestsScreen.routeName);
+                  }
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -399,7 +434,11 @@ class _KpiCard extends StatelessWidget {
                   child: Icon(icon, color: accentColor, size: 20),
                 ),
                 if (onTap != null)
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF94A3B8)),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: Color(0xFF94A3B8),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -460,28 +499,76 @@ class _QuickActionsSection extends StatelessWidget {
                 icon: Icons.inbox_rounded,
                 label: l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
                 color: const Color(0xFF072B4F),
-                onTap: () => Navigator.pushNamed(context, AdminRequestsScreen.routeName),
+                onTap: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () => Navigator.pushNamed(
+                          context,
+                          AdminRequestsScreen.routeName,
+                        ),
+                      );
+                  if (hasInternet && context.mounted) {
+                    Navigator.pushNamed(context, AdminRequestsScreen.routeName);
+                  }
+                },
               ),
               const SizedBox(width: 12),
               _QuickActionCard(
                 icon: Icons.campaign_rounded,
                 label: l10n?.crearAviso ?? 'Nuevo Aviso',
                 color: const Color(0xFF0284C7),
-                onTap: () => Navigator.pushNamed(context, CrearPredicaScreen.routeName),
+                onTap: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () => Navigator.pushNamed(
+                          context,
+                          CrearPredicaScreen.routeName,
+                        ),
+                      );
+                  if (hasInternet && context.mounted) {
+                    Navigator.pushNamed(context, CrearPredicaScreen.routeName);
+                  }
+                },
               ),
               const SizedBox(width: 12),
               _QuickActionCard(
                 icon: Icons.event_available_rounded,
-                label: 'Nuevo Evento',
+                label: l10n?.nuevoEvento ?? 'Nuevo Evento',
                 color: const Color(0xFF9333EA),
-                onTap: () => Navigator.pushNamed(context, CrearEventoScreen.routeName),
+                onTap: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () => Navigator.pushNamed(
+                          context,
+                          CrearEventoScreen.routeName,
+                        ),
+                      );
+                  if (hasInternet && context.mounted) {
+                    Navigator.pushNamed(context, CrearEventoScreen.routeName);
+                  }
+                },
               ),
               const SizedBox(width: 12),
               _QuickActionCard(
                 icon: Icons.ad_units_rounded,
                 label: l10n?.anunciosCampanas ?? 'Publicidad y Anuncios',
                 color: const Color(0xFFE5A023),
-                onTap: () => Navigator.pushNamed(context, AdminAdsScreen.routeName),
+                onTap: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () => Navigator.pushNamed(
+                          context,
+                          AdminAdsScreen.routeName,
+                        ),
+                      );
+                  if (hasInternet && context.mounted) {
+                    Navigator.pushNamed(context, AdminAdsScreen.routeName);
+                  }
+                },
               ),
             ],
           ),
@@ -564,16 +651,39 @@ class _RecentRequestsSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              l10n?.solicitudesRecientes ?? 'Solicitudes Pastorales Recientes',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF072B4F),
+            Expanded(
+              child: Text(
+                l10n?.solicitudesRecientes ??
+                    'Solicitudes Pastorales Recientes',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF072B4F),
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, AdminRequestsScreen.routeName),
+              onPressed: () async {
+                final hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+                  context,
+                  onRetry: () => Navigator.pushNamed(
+                    context,
+                    AdminRequestsScreen.routeName,
+                  ),
+                );
+                if (hasInternet && context.mounted) {
+                  Navigator.pushNamed(context, AdminRequestsScreen.routeName);
+                }
+              },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsetsDirectional.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: Text(
                 l10n?.verTodasSolicitudes ?? 'Ver todas',
                 style: const TextStyle(
@@ -597,12 +707,20 @@ class _RecentRequestsSection extends StatelessWidget {
             ),
             child: Column(
               children: [
-                const Icon(Icons.inbox_rounded, size: 40, color: Color(0xFF94A3B8)),
+                const Icon(
+                  Icons.inbox_rounded,
+                  size: 40,
+                  color: Color(0xFF94A3B8),
+                ),
                 const SizedBox(height: 8),
                 Text(
-                  l10n?.sinSolicitudesRecientes ?? 'No hay solicitudes pendientes en este momento',
+                  l10n?.sinSolicitudesRecientes ??
+                      'No hay solicitudes pendientes en este momento',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ],
             ),
@@ -649,9 +767,13 @@ class _RecentRequestCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              request.isAnswered ? Icons.check_circle_rounded : Icons.favorite_rounded,
+              request.isAnswered
+                  ? Icons.check_circle_rounded
+                  : Icons.favorite_rounded,
               size: 16,
-              color: request.isAnswered ? const Color(0xFF15803D) : const Color(0xFFB45309),
+              color: request.isAnswered
+                  ? const Color(0xFF15803D)
+                  : const Color(0xFFB45309),
             ),
           ),
           const SizedBox(width: 12),
@@ -679,7 +801,9 @@ class _RecentRequestCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: request.isAnswered ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                        color: request.isAnswered
+                            ? const Color(0xFF15803D)
+                            : const Color(0xFFB45309),
                       ),
                     ),
                   ],
@@ -700,8 +824,21 @@ class _RecentRequestCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: azulFondo),
-            onPressed: () => Navigator.pushNamed(context, AdminRequestsScreen.routeName),
+            icon: const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: azulFondo,
+            ),
+            onPressed: () async {
+              final hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+                context,
+                onRetry: () =>
+                    Navigator.pushNamed(context, AdminRequestsScreen.routeName),
+              );
+              if (hasInternet && context.mounted) {
+                Navigator.pushNamed(context, AdminRequestsScreen.routeName);
+              }
+            },
           ),
         ],
       ),
@@ -723,7 +860,8 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n?.notificacionesInstitucionales ?? 'Notificaciones Institucionales',
+          l10n?.notificacionesInstitucionales ??
+              'Notificaciones Institucionales',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -741,7 +879,8 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Text(
-              l10n?.sinNotificacionesAdmin ?? 'No tienes notificaciones en tu buzón',
+              l10n?.sinNotificacionesAdmin ??
+                  'No tienes notificaciones en tu buzón',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
             ),
@@ -760,7 +899,11 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.notifications_active_rounded, size: 18, color: Color(0xFF0284C7)),
+                    const Icon(
+                      Icons.notifications_active_rounded,
+                      size: 18,
+                      color: Color(0xFF0284C7),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -777,7 +920,10 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             n.message,
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF475569),
+                            ),
                           ),
                         ],
                       ),
@@ -836,7 +982,8 @@ class _AdminNotificationsModal extends StatelessWidget {
             child: notifs.isEmpty
                 ? Center(
                     child: Text(
-                      l10n?.sinNotificacionesAdmin ?? 'No tienes notificaciones en tu buzón',
+                      l10n?.sinNotificacionesAdmin ??
+                          'No tienes notificaciones en tu buzón',
                       style: const TextStyle(color: Color(0xFF64748B)),
                     ),
                   )
@@ -866,7 +1013,10 @@ class _AdminNotificationsModal extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               item.message,
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF334155),
+                              ),
                             ),
                           ],
                         ),

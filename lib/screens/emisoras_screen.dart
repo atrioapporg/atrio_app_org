@@ -12,23 +12,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../servicios/connectivity_service.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 
 class CambiarTabAtrioNotification extends Notification {
   final int nuevoIndice;
   const CambiarTabAtrioNotification(this.nuevoIndice);
 }
 
-class EmisorasCristianasScreen extends StatefulWidget {
-  static const String routeName = 'emisoras_cristianas_screen';
+class EmisorasScreen extends StatefulWidget {
+  static const String routeName = 'emisoras_screen';
   final bool isActive;
-  const EmisorasCristianasScreen({super.key, this.isActive = true});
+  const EmisorasScreen({super.key, this.isActive = true});
 
   @override
-  State<EmisorasCristianasScreen> createState() =>
-      _EmisorasCristianasScreenState();
+  State<EmisorasScreen> createState() => _EmisorasScreenState();
 }
 
-class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
+class _EmisorasScreenState extends State<EmisorasScreen> {
   static const Color azulFondo = Color(0xFF072B4F);
   static const Color amarilloOro = Color(0xFFE5A023);
   static const Color blancoFondo = Color(0xFFFAF7F0);
@@ -185,19 +185,35 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
 
       _playbackEventSub = _audioPlayer.playbackEventStream.listen(
         (event) {},
-        onError: (Object e, StackTrace stackTrace) {
+        onError: (Object e, StackTrace stackTrace) async {
           debugPrint('[RADIO_ERROR] Error en streaming: $e');
           if (!mounted) return;
           final l10n = AppLocalizations.of(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: rojoError,
-              content: Text(
-                l10n?.errorEmisoraNoDisponible ??
-                    'Error: La emisora no está disponible en este momento.',
+          final bool hasInternet =
+              await ConnectivityService.instance.hasRealInternet();
+          if (!mounted) return;
+          if (!hasInternet) {
+            AtrioConnectivityAlert.show(
+              context,
+              message: l10n?.sinInternetSintonizar,
+              onRetry: _emisoraActual != null
+                  ? () => _reproducirEmisora(
+                        _emisoraActual!,
+                        MediaQuery.of(context).size.width,
+                      )
+                  : null,
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: rojoError,
+                content: Text(
+                  l10n?.errorEmisoraNoDisponible ??
+                      'Error: La emisora no está disponible en este momento.',
+                ),
               ),
-            ),
-          );
+            );
+          }
           setState(() {
             _isBuffering = false;
             _isReproduciendo = false;
@@ -210,7 +226,7 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
   }
 
   @override
-  void didUpdateWidget(EmisorasCristianasScreen oldWidget) {
+  void didUpdateWidget(EmisorasScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isActive && !widget.isActive) {
       _detenerReproduccion();
@@ -233,44 +249,13 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     Map<String, dynamic> emisora,
     double screenWidth,
   ) async {
-    final bool tieneInternet = await ConnectivityService.instance
-        .hasRealInternet();
-    if (!mounted) return;
-
-    if (!tieneInternet) {
-      final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: rojoError,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-          ),
-          content: Row(
-            children: <Widget>[
-              Icon(
-                Icons.wifi_off_rounded,
-                color: Colors.white,
-                size: screenWidth * 0.06,
-              ),
-              SizedBox(width: screenWidth * 0.03),
-              Expanded(
-                child: Text(
-                  l10n?.sinInternetSintonizar ??
-                      'No hay conexión a internet para sintonizar la emisora.',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
+    final l10n = AppLocalizations.of(context);
+    final bool tieneInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      message: l10n?.sinInternetSintonizar,
+      onRetry: () => _reproducirEmisora(emisora, screenWidth),
+    );
+    if (!tieneInternet || !mounted) return;
 
     setState(() => _emisoraActual = Map<String, dynamic>.from(emisora));
 
@@ -308,11 +293,21 @@ class _EmisorasCristianasScreenState extends State<EmisorasCristianasScreen> {
     }
   }
 
-  void _togglePlayPause() {
+  Future<void> _togglePlayPause() async {
     try {
       if (_audioPlayer.playing) {
         _audioPlayer.pause();
       } else {
+        if (_emisoraActual != null) {
+          final l10n = AppLocalizations.of(context);
+          final bool tieneInternet =
+              await AtrioConnectivityAlert.checkAndNotify(
+            context,
+            message: l10n?.sinInternetSintonizar,
+            onRetry: () => _togglePlayPause(),
+          );
+          if (!tieneInternet || !mounted) return;
+        }
         unawaited(_audioPlayer.play());
       }
     } catch (e) {

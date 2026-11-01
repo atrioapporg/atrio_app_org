@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
+
 import '../main.dart';
 import '../modelos/notificacion_model.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import 'inicio_sesion_screen.dart';
 
 class NotificacionesScreen extends StatefulWidget {
@@ -47,6 +49,19 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
         setState(() {
           _notificaciones = [];
           _sponsored = [];
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      onRetry: () => _cargarNotificaciones(silent: silent),
+    );
+    if (!hasInternet || !mounted) {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -172,17 +187,20 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
         coincideFiltro = !noti.leida;
       } else if (_selectedFilterIndex == 2) {
         coincideFiltro =
-            noti.categoria.toLowerCase() == l10n.categoriaServicios.toLowerCase() ||
+            noti.categoria.toLowerCase() ==
+                l10n.categoriaServicios.toLowerCase() ||
             noti.categoria.toLowerCase() == 'servicios' ||
             noti.categoria.toLowerCase() == 'services';
       } else if (_selectedFilterIndex == 3) {
         coincideFiltro =
-            noti.categoria.toLowerCase() == l10n.categoriaEventos.toLowerCase() ||
+            noti.categoria.toLowerCase() ==
+                l10n.categoriaEventos.toLowerCase() ||
             noti.categoria.toLowerCase() == 'eventos' ||
             noti.categoria.toLowerCase() == 'events';
       } else if (_selectedFilterIndex == 4) {
         coincideFiltro =
-            noti.categoria.toLowerCase() == l10n.categoriaComunidad.toLowerCase() ||
+            noti.categoria.toLowerCase() ==
+                l10n.categoriaComunidad.toLowerCase() ||
             noti.categoria.toLowerCase() == 'comunidad' ||
             noti.categoria.toLowerCase() == 'community';
       }
@@ -301,7 +319,11 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
           ),
           content: Text(
             l10n.confirmarBorrarTodasMensaje,
-            style: const TextStyle(color: Colors.black87, fontSize: 16, height: 1.4),
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              height: 1.4,
+            ),
           ),
           actions: [
             TextButton(
@@ -330,7 +352,10 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
               },
               child: Text(
                 l10n.borrarTodas,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -394,17 +419,38 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
     );
   }
 
-  IconData _obtenerIcono(String iconCode) {
-    switch (iconCode) {
-      case 'schedule':
-        return Icons.access_time_rounded;
-      case 'event':
-        return Icons.calendar_month_rounded;
-      case 'volunteer':
-        return Icons.volunteer_activism_rounded;
-      default:
-        return Icons.notifications_active_rounded;
-    }
+  void _showNotificationDetailModal(NotificacionModel noti) {
+    final l10n = AppLocalizations.of(context)!;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return _NotificacionDetailSheet(
+          noti: noti,
+          screenWidth: screenWidth,
+          usableHeight: usableHeight,
+          azulFondo: azulFondo,
+          amarilloOro: amarilloOro,
+          blancoFondo: blancoFondo,
+          onDelete: () {
+            Navigator.pop(modalContext);
+            _eliminarNotificacion(noti);
+          },
+          l10n: l10n,
+        );
+      },
+    );
   }
 
   @override
@@ -441,7 +487,9 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
               // Encabezado Superior con tipografía amplia y clara
               Container(
                 width: screenWidth,
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.05,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -480,7 +528,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             IconButton(
                               tooltip: l10n.marcarTodasComoLeidas,
                               visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.symmetric(
+                              padding: EdgeInsetsDirectional.symmetric(
                                 horizontal: screenWidth * 0.01,
                               ),
                               constraints: const BoxConstraints(),
@@ -495,7 +543,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                           IconButton(
                             tooltip: l10n.borrarTodas,
                             visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.symmetric(
+                            padding: EdgeInsetsDirectional.symmetric(
                               horizontal: screenWidth * 0.01,
                             ),
                             constraints: const BoxConstraints(),
@@ -545,11 +593,11 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                                   onPressed: () {
                                     _searchController.clear();
                                   },
-                                padding: EdgeInsets.zero,
+                                  padding: EdgeInsets.zero,
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
+                          contentPadding: EdgeInsetsDirectional.symmetric(
                             vertical: usableHeight * 0.013,
                           ),
                         ),
@@ -574,15 +622,13 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.08),
-                      topRight: Radius.circular(screenWidth * 0.08),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.08),
                     ),
                     child: RefreshIndicator(
                       color: amarilloOro,
@@ -592,447 +638,419 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.05,
-                          vertical: usableHeight * 0.02,
+                        padding: EdgeInsetsDirectional.fromSTEB(
+                          screenWidth * 0.05,
+                          usableHeight * 0.02,
+                          screenWidth * 0.05,
+                          usableHeight * 0.02,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                          // Pastillas de Filtro con mayor tamaño táctil y tipográfico
-                          if (!esInvitado) ...[
-                            SizedBox(
-                              height: usableHeight * 0.052,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: filters.length,
-                                separatorBuilder: (context, index) =>
-                                     SizedBox(width: screenWidth * 0.025),
-                                itemBuilder: (context, index) {
-                                  final isSelected =
-                                      _selectedFilterIndex == index;
-                                  final label = filters[index];
-                                  final bool esNoLeidas = index == 1;
+                            // Pastillas de Filtro con mayor tamaño táctil y tipográfico
+                            if (!esInvitado) ...[
+                              SizedBox(
+                                height: usableHeight * 0.052,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: filters.length,
+                                  separatorBuilder: (context, index) =>
+                                      SizedBox(width: screenWidth * 0.025),
+                                  itemBuilder: (context, index) {
+                                    final isSelected =
+                                        _selectedFilterIndex == index;
+                                    final label = filters[index];
+                                    final bool esNoLeidas = index == 1;
 
-                                  return GestureDetector(
-                                    onTap: () {
-                                      if (mounted) {
-                                        setState(() {
-                                          _selectedFilterIndex = index;
-                                        });
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: screenWidth * 0.042,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? azulFondo
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(
-                                          screenWidth * 0.028,
-                                        ),
-                                        border: Border.all(
+                                    return GestureDetector(
+                                      onTap: () {
+                                        if (mounted) {
+                                          setState(() {
+                                            _selectedFilterIndex = index;
+                                          });
+                                        }
+                                      },
+                                      child: Container(
+                                        padding:
+                                            EdgeInsetsDirectional.symmetric(
+                                              horizontal: screenWidth * 0.042,
+                                            ),
+                                        decoration: BoxDecoration(
                                           color: isSelected
                                               ? azulFondo
-                                              : grisBorde,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            label,
-                                            style: TextStyle(
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : azulFondo,
-                                              fontSize: screenWidth * 0.038,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            screenWidth * 0.028,
                                           ),
-                                          if (esNoLeidas &&
-                                              _conteoNoLeidas > 0) ...[
-                                            SizedBox(width: screenWidth * 0.018),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 7,
-                                                vertical: 2.5,
-                                              ),
-                                              decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? azulFondo
+                                                : grisBorde,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              label,
+                                              style: TextStyle(
                                                 color: isSelected
-                                                    ? amarilloOro
+                                                    ? Colors.white
                                                     : azulFondo,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Text(
-                                                '$_conteoNoLeidas',
-                                                style: TextStyle(
-                                                  color: isSelected
-                                                      ? azulFondo
-                                                      : Colors.white,
-                                                  fontSize: screenWidth * 0.028,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                                fontSize: screenWidth * 0.038,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            SizedBox(height: usableHeight * 0.02),
-                          ],
-
-                          // Indicador de estado y ayuda visual
-                          if (!esInvitado) ...[
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    l10n.avisosDeLaComunidad,
-                                    style: TextStyle(
-                                      color: azulFondo,
-                                      fontSize: screenWidth * 0.048,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                SizedBox(width: screenWidth * 0.02),
-                                Text(
-                                  l10n.conteoNoLeidas(_conteoNoLeidas),
-                                  style: TextStyle(
-                                    color: _conteoNoLeidas > 0
-                                        ? const Color(0xFF9E6500)
-                                        : Colors.grey.shade600,
-                                    fontSize: screenWidth * 0.035,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: usableHeight * 0.006),
-                            if (_notificaciones.isNotEmpty)
-                              Text(
-                                l10n.deslizaAvisoParaEliminar,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: screenWidth * 0.032,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                          ],
-                          SizedBox(height: usableHeight * 0.014),
-
-                          // Lista de Notificaciones
-                          if (notificacionesFiltradas.isEmpty)
-                            Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: usableHeight * 0.06,
-                                ),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      esInvitado
-                                          ? Icons.account_circle_outlined
-                                          : Icons.notifications_off_outlined,
-                                      color: Colors.grey.shade400,
-                                      size: screenWidth * 0.16,
-                                    ),
-                                    SizedBox(height: usableHeight * 0.015),
-                                    Text(
-                                      esInvitado
-                                          ? l10n.modoInvitado
-                                          : l10n.noHayAvisosMomento,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: screenWidth * 0.044,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: usableHeight * 0.008),
-                                    Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: screenWidth * 0.06,
-                                      ),
-                                      child: Text(
-                                        esInvitado
-                                            ? l10n.notificacionesInvitadoDesc
-                                            : l10n.avisosOdooApareceranAqui,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: screenWidth * 0.034,
-                                          height: 1.35,
-                                        ),
-                                      ),
-                                    ),
-                                    if (esInvitado) ...[
-                                      SizedBox(height: usableHeight * 0.025),
-                                      ElevatedButton.icon(
-                                        icon: const Icon(Icons.login_rounded, size: 18),
-                                        label: Text(
-                                          l10n.iniciarSesion,
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: azulFondo,
-                                          foregroundColor: Colors.white,
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: screenWidth * 0.06,
-                                            vertical: usableHeight * 0.012,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          final nav =
-                                              MyApp.navigatorKey.currentState ??
-                                              (context.mounted
-                                                  ? Navigator.maybeOf(context)
-                                                  : null);
-                                          nav?.pushNamed(
-                                            InicioSesionScreen.routeName,
-                                          );
-                                        },
-                                      ),
-                                    ] else if (_notificaciones.isEmpty) ...[
-                                      SizedBox(height: usableHeight * 0.025),
-                                      OutlinedButton.icon(
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: azulFondo,
-                                          side: BorderSide(
-                                            color: azulFondo,
-                                            width: 1.5,
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: screenWidth * 0.04,
-                                            vertical: usableHeight * 0.014,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              screenWidth * 0.025,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: _restaurarAvisosEjemplo,
-                                        icon: const Icon(
-                                          Icons.refresh_rounded,
-                                          size: 22,
-                                        ),
-                                        label: Text(
-                                          l10n.restaurarAvisosEjemplo,
-                                          style: TextStyle(
-                                            fontSize: screenWidth * 0.036,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            )
-                          else
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: notificacionesFiltradas.length,
-                              separatorBuilder: (context, index) =>
-                                  SizedBox(height: usableHeight * 0.016),
-                              itemBuilder: (context, index) {
-                                final noti = notificacionesFiltradas[index];
-                                return Dismissible(
-                                  key: Key('noti_${noti.id}'),
-                                  direction: DismissDirection.endToStart,
-                                  background: Container(
-                                    alignment: Alignment.centerRight,
-                                    padding: EdgeInsets.only(
-                                      right: screenWidth * 0.05,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade400,
-                                      borderRadius: BorderRadius.circular(
-                                        screenWidth * 0.035,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          l10n.eliminar,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: screenWidth * 0.036,
-                                          ),
-                                        ),
-                                        SizedBox(width: screenWidth * 0.015),
-                                        Icon(
-                                          Icons.delete_outline_rounded,
-                                          color: Colors.white,
-                                          size: screenWidth * 0.065,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  onDismissed: (_) {
-                                    _eliminarNotificacion(noti);
-                                  },
-                                  child: _buildNotificationTile(
-                                    noti: noti,
-                                    screenWidth: screenWidth,
-                                    usableHeight: usableHeight,
-                                    azulFondo: azulFondo,
-                                    amarilloOro: amarilloOro,
-                                    grisBorde: grisBorde,
-                                    onTap: () {
-                                      _marcarComoLeida(noti.id);
-                                      _showNotificationDetailModal(
-                                        context,
-                                        noti,
-                                        screenWidth,
-                                        usableHeight,
-                                        azulFondo,
-                                        amarilloOro,
-                                        blancoFondo,
-                                      );
-                                    },
-                                    onDelete: () => _eliminarNotificacion(noti),
-                                  ),
-                                );
-                              },
-                            ),
-                          if (_sponsored.isNotEmpty) ...[
-                            SizedBox(height: usableHeight * 0.02),
-                            ..._sponsored.map((ad) {
-                              final title = ad['title'] as String? ?? '';
-                              final msg = ad['message'] as String? ?? '';
-                              final advertiser = ad['advertiser'] as String? ?? '';
-
-                              return Container(
-                                margin: EdgeInsets.only(bottom: usableHeight * 0.015),
-                                padding: EdgeInsets.all(screenWidth * 0.035),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF9E6),
-                                  borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                                  border: Border.all(
-                                    color: amarilloOro.withValues(alpha: 0.4),
-                                  ),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(screenWidth * 0.02),
-                                      decoration: BoxDecoration(
-                                        color: amarilloOro.withValues(alpha: 0.2),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.campaign_rounded,
-                                        color: const Color(0xFF9E6500),
-                                        size: screenWidth * 0.055,
-                                      ),
-                                    ),
-                                    SizedBox(width: screenWidth * 0.03),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
+                                            if (esNoLeidas &&
+                                                _conteoNoLeidas > 0) ...[
+                                              SizedBox(
+                                                width: screenWidth * 0.018,
+                                              ),
                                               Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 2,
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 7,
+                                                      vertical: 2.5,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: amarilloOro.withValues(alpha: 0.3),
-                                                  borderRadius: BorderRadius.circular(4),
+                                                  color: isSelected
+                                                      ? amarilloOro
+                                                      : azulFondo,
+                                                  shape: BoxShape.circle,
                                                 ),
                                                 child: Text(
-                                                  l10n.publicidad,
+                                                  '$_conteoNoLeidas',
                                                   style: TextStyle(
-                                                    color: const Color(0xFF9E6500),
-                                                    fontSize: screenWidth * 0.026,
+                                                    color: isSelected
+                                                        ? azulFondo
+                                                        : Colors.white,
+                                                    fontSize:
+                                                        screenWidth * 0.028,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                               ),
-                                              if (advertiser.isNotEmpty)
-                                                Text(
-                                                  advertiser,
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade600,
-                                                    fontSize: screenWidth * 0.028,
-                                                  ),
-                                                ),
                                             ],
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              SizedBox(height: usableHeight * 0.02),
+                            ],
+
+                            // Indicador de estado y ayuda visual
+                            if (!esInvitado) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      l10n.avisosDeLaComunidad,
+                                      style: TextStyle(
+                                        color: azulFondo,
+                                        fontSize: screenWidth * 0.048,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  SizedBox(width: screenWidth * 0.02),
+                                  Text(
+                                    l10n.conteoNoLeidas(_conteoNoLeidas),
+                                    style: TextStyle(
+                                      color: _conteoNoLeidas > 0
+                                          ? const Color(0xFF9E6500)
+                                          : Colors.grey.shade600,
+                                      fontSize: screenWidth * 0.035,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: usableHeight * 0.006),
+                              if (_notificaciones.isNotEmpty)
+                                Text(
+                                  l10n.deslizaAvisoParaEliminar,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: screenWidth * 0.032,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                            ],
+                            SizedBox(height: usableHeight * 0.014),
+
+                            // Lista de Notificaciones
+                            if (notificacionesFiltradas.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: usableHeight * 0.06,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        esInvitado
+                                            ? Icons.account_circle_outlined
+                                            : Icons.notifications_off_outlined,
+                                        color: Colors.grey.shade400,
+                                        size: screenWidth * 0.16,
+                                      ),
+                                      SizedBox(height: usableHeight * 0.015),
+                                      Text(
+                                        esInvitado
+                                            ? l10n.modoInvitado
+                                            : l10n.noHayAvisosMomento,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: screenWidth * 0.044,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: usableHeight * 0.008),
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.06,
+                                        ),
+                                        child: Text(
+                                          esInvitado
+                                              ? l10n.notificacionesInvitadoDesc
+                                              : l10n.avisosOdooApareceranAqui,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: screenWidth * 0.034,
+                                            height: 1.35,
                                           ),
-                                          SizedBox(height: usableHeight * 0.005),
-                                          Text(
-                                            title,
-                                            style: TextStyle(
-                                              color: azulFondo,
-                                              fontSize: screenWidth * 0.040,
+                                        ),
+                                      ),
+                                      if (esInvitado) ...[
+                                        SizedBox(height: usableHeight * 0.025),
+                                        ElevatedButton.icon(
+                                          icon: const Icon(
+                                            Icons.login_rounded,
+                                            size: 18,
+                                          ),
+                                          label: Text(
+                                            l10n.iniciarSesion,
+                                            style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          if (msg.isNotEmpty) ...[
-                                            SizedBox(height: usableHeight * 0.003),
-                                            Text(
-                                              msg,
-                                              style: TextStyle(
-                                                color: Colors.grey.shade800,
-                                                fontSize: screenWidth * 0.034,
-                                              ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: azulFondo,
+                                            foregroundColor: Colors.white,
+                                            padding:
+                                                EdgeInsetsDirectional.symmetric(
+                                                  horizontal:
+                                                      screenWidth * 0.06,
+                                                  vertical:
+                                                      usableHeight * 0.012,
+                                                ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    screenWidth * 0.03,
+                                                  ),
                                             ),
-                                          ],
+                                          ),
+                                          onPressed: () {
+                                            final nav =
+                                                MyApp
+                                                    .navigatorKey
+                                                    .currentState ??
+                                                (context.mounted
+                                                    ? Navigator.maybeOf(context)
+                                                    : null);
+                                            nav?.pushNamed(
+                                              InicioSesionScreen.routeName,
+                                            );
+                                          },
+                                        ),
+                                      ] else if (_notificaciones.isEmpty) ...[
+                                        SizedBox(height: usableHeight * 0.025),
+                                        OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: azulFondo,
+                                            side: BorderSide(
+                                              color: azulFondo,
+                                              width: 1.5,
+                                            ),
+                                            padding:
+                                                EdgeInsetsDirectional.symmetric(
+                                                  horizontal:
+                                                      screenWidth * 0.04,
+                                                  vertical:
+                                                      usableHeight * 0.014,
+                                                ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    screenWidth * 0.025,
+                                                  ),
+                                            ),
+                                          ),
+                                          onPressed: _restaurarAvisosEjemplo,
+                                          icon: const Icon(
+                                            Icons.refresh_rounded,
+                                            size: 22,
+                                          ),
+                                          label: Text(
+                                            l10n.restaurarAvisosEjemplo,
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.036,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: notificacionesFiltradas.length,
+                                separatorBuilder: (context, index) =>
+                                    SizedBox(height: usableHeight * 0.016),
+                                itemBuilder: (context, index) {
+                                  final noti = notificacionesFiltradas[index];
+                                  return Dismissible(
+                                    key: Key('noti_${noti.id}'),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      alignment: AlignmentDirectional.centerEnd,
+                                      padding: EdgeInsetsDirectional.only(
+                                        end: screenWidth * 0.05,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade400,
+                                        borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.035,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            l10n.eliminar,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: screenWidth * 0.036,
+                                            ),
+                                          ),
+                                          SizedBox(width: screenWidth * 0.015),
+                                          Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: Colors.white,
+                                            size: screenWidth * 0.065,
+                                          ),
                                         ],
                                       ),
                                     ),
-                                  ],
-                                ),
-                              );
-                            }),
+                                    onDismissed: (_) {
+                                      _eliminarNotificacion(noti);
+                                    },
+                                    child: _NotificationCard(
+                                      noti: noti,
+                                      screenWidth: screenWidth,
+                                      usableHeight: usableHeight,
+                                      azulFondo: azulFondo,
+                                      amarilloOro: amarilloOro,
+                                      grisBorde: grisBorde,
+                                      onTap: () {
+                                        _marcarComoLeida(noti.id);
+                                        _showNotificationDetailModal(noti);
+                                      },
+                                      onDelete: () =>
+                                          _eliminarNotificacion(noti),
+                                      l10n: l10n,
+                                    ),
+                                  );
+                                },
+                              ),
+                            if (_sponsored.isNotEmpty) ...[
+                              SizedBox(height: usableHeight * 0.02),
+                              ..._sponsored.map((ad) {
+                                final title = ad['title'] as String? ?? '';
+                                final msg = ad['message'] as String? ?? '';
+                                final advertiser =
+                                    ad['advertiser'] as String? ?? '';
+
+                                return _SponsoredNotificationCard(
+                                  title: title,
+                                  message: msg,
+                                  advertiser: advertiser,
+                                  screenWidth: screenWidth,
+                                  usableHeight: usableHeight,
+                                  azulFondo: azulFondo,
+                                  amarilloOro: amarilloOro,
+                                  l10n: l10n,
+                                );
+                              }),
+                            ],
+                            SizedBox(height: usableHeight * 0.03),
                           ],
-                          SizedBox(height: usableHeight * 0.03),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  // Componente: Tarjeta de Notificación con tipografía de alto contraste y tamaño cómodo
-  Widget _buildNotificationTile({
-    required NotificacionModel noti,
-    required double screenWidth,
-    required double usableHeight,
-    required Color azulFondo,
-    required Color amarilloOro,
-    required Color grisBorde,
-    required VoidCallback onTap,
-    required VoidCallback onDelete,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
+/// Tarjeta individual de notificación (con soporte para imagen o icono según corresponda)
+class _NotificationCard extends StatelessWidget {
+  const _NotificationCard({
+    required this.noti,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.amarilloOro,
+    required this.grisBorde,
+    required this.onTap,
+    required this.onDelete,
+    required this.l10n,
+  });
+
+  final NotificacionModel noti;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color amarilloOro;
+  final Color grisBorde;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+  final AppLocalizations l10n;
+
+  IconData _obtenerIcono(String iconCode) {
+    switch (iconCode) {
+      case 'schedule':
+        return Icons.access_time_rounded;
+      case 'event':
+        return Icons.calendar_month_rounded;
+      case 'volunteer':
+        return Icons.volunteer_activism_rounded;
+      default:
+        return Icons.notifications_active_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final bool tieneImagen = noti.imageUrl != null && noti.imageUrl!.isNotEmpty;
     final String? fullImageUrl = tieneImagen
@@ -1099,7 +1117,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(
+                            padding: EdgeInsetsDirectional.symmetric(
                               horizontal: screenWidth * 0.024,
                               vertical: usableHeight * 0.003,
                             ),
@@ -1211,7 +1229,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Ver detalle',
+                                l10n.verDetalle,
                                 style: TextStyle(
                                   color: const Color(0xFF9E6500),
                                   fontSize: screenWidth * 0.030,
@@ -1328,7 +1346,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: EdgeInsetsDirectional.symmetric(
                           horizontal: screenWidth * 0.024,
                           vertical: usableHeight * 0.003,
                         ),
@@ -1384,272 +1402,376 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       ),
     );
   }
+}
 
-  // Modal Inferior de Detalle Completo de Notificación optimizado para personas mayores
-  void _showNotificationDetailModal(
-    BuildContext context,
-    NotificacionModel noti,
-    double screenWidth,
-    double usableHeight,
-    Color azulFondo,
-    Color amarilloOro,
-    Color blancoFondo,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: blancoFondo,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(screenWidth * 0.06),
-              topRight: Radius.circular(screenWidth * 0.06),
+/// Tarjeta de anuncio patrocinado / comunicado especial
+class _SponsoredNotificationCard extends StatelessWidget {
+  const _SponsoredNotificationCard({
+    required this.title,
+    required this.message,
+    required this.advertiser,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.amarilloOro,
+    required this.l10n,
+  });
+
+  final String title;
+  final String message;
+  final String advertiser;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color amarilloOro;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: usableHeight * 0.015),
+      padding: EdgeInsets.all(screenWidth * 0.035),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF9E6),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        border: Border.all(color: amarilloOro.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(screenWidth * 0.02),
+            decoration: BoxDecoration(
+              color: amarilloOro.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.campaign_rounded,
+              color: const Color(0xFF9E6500),
+              size: screenWidth * 0.055,
             ),
           ),
-          padding: EdgeInsets.only(
-            left: screenWidth * 0.06,
-            right: screenWidth * 0.06,
-            top: usableHeight * 0.018,
-            bottom:
-                MediaQuery.of(modalContext).padding.bottom +
-                usableHeight * 0.02,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Barra de arrastre
-              Center(
-                child: Container(
-                  width: screenWidth * 0.12,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.02),
-
-              // Cabecera del aviso
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.032,
-                      vertical: usableHeight * 0.006,
-                    ),
-                    decoration: BoxDecoration(
-                      color: noti.esUrgente
-                          ? amarilloOro.withValues(alpha: 0.20)
-                          : azulFondo.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(screenWidth * 0.020),
-                    ),
-                    child: Text(
-                      noti.categoria.toUpperCase(),
-                      style: TextStyle(
-                        color: noti.esUrgente
-                            ? const Color(0xFF9E6500)
-                            : azulFondo,
-                        fontSize: screenWidth * 0.032,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+          SizedBox(width: screenWidth * 0.03),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.02),
-                  Expanded(
-                    child: Text(
-                      '${noti.fecha} · ${noti.hora}',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: screenWidth * 0.034,
-                        fontWeight: FontWeight.w600,
+                      decoration: BoxDecoration(
+                        color: amarilloOro.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.02),
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.red.shade400,
-                      size: screenWidth * 0.065,
-                    ),
-                    tooltip: l10n.eliminarEsteAviso,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      Navigator.pop(modalContext);
-                      _eliminarNotificacion(noti);
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: usableHeight * 0.014),
-
-              // Imagen destacada si existe (estilo modal Odoo / comunicado)
-              if (noti.imageUrl != null && noti.imageUrl!.isNotEmpty) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                  child: Image.network(
-                    Provider.of<UserProvider>(context, listen: false)
-                        .api
-                        .imageUrl(noti.imageUrl!),
-                    width: double.infinity,
-                    height: usableHeight * 0.22,
-                    fit: BoxFit.cover,
-                    headers: Provider.of<UserProvider>(context, listen: false)
-                        .api
-                        .imageHeaders,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                    loadingBuilder: (ctx, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: usableHeight * 0.22,
-                        decoration: BoxDecoration(
-                          color: azulFondo.withValues(alpha: 0.06),
-                          borderRadius:
-                              BorderRadius.circular(screenWidth * 0.035),
-                        ),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: amarilloOro,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: usableHeight * 0.016),
-              ],
-
-              // Título ampliado
-              Text(
-                noti.titulo,
-                style: TextStyle(
-                  color: azulFondo,
-                  fontSize: screenWidth * 0.056,
-                  fontWeight: FontWeight.bold,
-                  height: 1.25,
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.008),
-
-              // Emisor
-              Row(
-                children: [
-                  Icon(
-                    Icons.account_balance_rounded,
-                    size: screenWidth * 0.045,
-                    color: Colors.grey.shade700,
-                  ),
-                  SizedBox(width: screenWidth * 0.018),
-                  Expanded(
-                    child: Text(
-                      noti.remitente,
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: screenWidth * 0.038,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: usableHeight * 0.02),
-
-              // Cuerpo completo con tipografía generosa y alto contraste
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(screenWidth * 0.045),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                  border: Border.all(color: const Color(0xFFE5E5E5)),
-                ),
-                child: Text(
-                  noti.cuerpo,
-                  style: TextStyle(
-                    color: Colors.grey.shade900,
-                    fontSize: screenWidth * 0.042,
-                    height: 1.55,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ),
-              SizedBox(height: usableHeight * 0.025),
-
-              // Botones de acción accesibles
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade600,
-                      side: BorderSide(color: Colors.red.shade300, width: 1.5),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.045,
-                        vertical: usableHeight * 0.016,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.025,
-                        ),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(modalContext);
-                      _eliminarNotificacion(noti);
-                    },
-                    icon: const Icon(Icons.delete_outline_rounded, size: 22),
-                    label: Text(
-                      l10n.eliminar,
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.038,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.03),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: azulFondo,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(
-                          vertical: usableHeight * 0.016,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            screenWidth * 0.025,
-                          ),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(modalContext),
                       child: Text(
-                        l10n.entendido,
+                        l10n.publicidad,
                         style: TextStyle(
-                          fontSize: screenWidth * 0.042,
+                          color: const Color(0xFF9E6500),
+                          fontSize: screenWidth * 0.026,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    if (advertiser.isNotEmpty)
+                      Text(
+                        advertiser,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: screenWidth * 0.028,
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: usableHeight * 0.005),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: azulFondo,
+                    fontSize: screenWidth * 0.040,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (message.isNotEmpty) ...[
+                  SizedBox(height: usableHeight * 0.003),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontSize: screenWidth * 0.034,
+                    ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hoja modal inferior con el detalle completo de la notificación
+class _NotificacionDetailSheet extends StatelessWidget {
+  const _NotificacionDetailSheet({
+    required this.noti,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.amarilloOro,
+    required this.blancoFondo,
+    required this.onDelete,
+    required this.l10n,
+  });
+
+  final NotificacionModel noti;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color amarilloOro;
+  final Color blancoFondo;
+  final VoidCallback onDelete;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: blancoFondo,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.06),
+        ),
+      ),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        screenWidth * 0.06,
+        usableHeight * 0.018,
+        screenWidth * 0.06,
+        MediaQuery.of(context).padding.bottom + usableHeight * 0.02,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Barra de arrastre
+          Center(
+            child: Container(
+              width: screenWidth * 0.12,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.02),
+
+          // Cabecera del aviso
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.032,
+                  vertical: usableHeight * 0.006,
+                ),
+                decoration: BoxDecoration(
+                  color: noti.esUrgente
+                      ? amarilloOro.withValues(alpha: 0.20)
+                      : azulFondo.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.020),
+                ),
+                child: Text(
+                  noti.categoria.toUpperCase(),
+                  style: TextStyle(
+                    color: noti.esUrgente ? const Color(0xFF9E6500) : azulFondo,
+                    fontSize: screenWidth * 0.032,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              Expanded(
+                child: Text(
+                  '${noti.fecha} · ${noti.hora}',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: screenWidth * 0.034,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red.shade400,
+                  size: screenWidth * 0.065,
+                ),
+                tooltip: l10n.eliminarEsteAviso,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: onDelete,
               ),
             ],
           ),
-        );
-      },
+          SizedBox(height: usableHeight * 0.014),
+
+          // Imagen destacada si existe (estilo modal Odoo / comunicado)
+          if (noti.imageUrl != null && noti.imageUrl!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(screenWidth * 0.035),
+              child: Image.network(
+                Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                ).api.imageUrl(noti.imageUrl!),
+                width: double.infinity,
+                height: usableHeight * 0.22,
+                fit: BoxFit.cover,
+                headers: Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                ).api.imageHeaders,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                loadingBuilder: (ctx, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    height: usableHeight * 0.22,
+                    decoration: BoxDecoration(
+                      color: azulFondo.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.035),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: amarilloOro,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: usableHeight * 0.016),
+          ],
+
+          // Título ampliado
+          Text(
+            noti.titulo,
+            style: TextStyle(
+              color: azulFondo,
+              fontSize: screenWidth * 0.056,
+              fontWeight: FontWeight.bold,
+              height: 1.25,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.008),
+
+          // Emisor
+          Row(
+            children: [
+              Icon(
+                Icons.account_balance_rounded,
+                size: screenWidth * 0.045,
+                color: Colors.grey.shade700,
+              ),
+              SizedBox(width: screenWidth * 0.018),
+              Expanded(
+                child: Text(
+                  noti.remitente,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: screenWidth * 0.038,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: usableHeight * 0.02),
+
+          // Cuerpo completo con tipografía generosa y alto contraste
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(screenWidth * 0.045),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              border: Border.all(color: const Color(0xFFE5E5E5)),
+            ),
+            child: Text(
+              noti.cuerpo,
+              style: TextStyle(
+                color: Colors.grey.shade900,
+                fontSize: screenWidth * 0.042,
+                height: 1.55,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.025),
+
+          // Botones de acción accesibles
+          Row(
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red.shade600,
+                  side: BorderSide(color: Colors.red.shade300, width: 1.5),
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: screenWidth * 0.045,
+                    vertical: usableHeight * 0.016,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  ),
+                ),
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline_rounded, size: 22),
+                label: Text(
+                  l10n.eliminar,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.038,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.03),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azulFondo,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: EdgeInsetsDirectional.symmetric(
+                      vertical: usableHeight * 0.016,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    l10n.entendido,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.042,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

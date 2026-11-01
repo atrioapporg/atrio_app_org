@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -11,6 +12,40 @@ import '../modelos/iglesia_explorar_model.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/explorar_provider.dart';
 import '../servicios/map_style_service.dart';
+import '../widgets/atrio_connectivity_alert.dart';
+
+const Color azulFondo = Color(0xFF072B4F);
+const Color amarilloOro = Color(0xFFE5A023);
+const Color blancoFondo = Color(0xFFFAF7F0);
+const Color grisBorde = Color(0xFFE5E5E5);
+
+const List<String> _filtrosKeys = [
+  'todos',
+  'catolica',
+  'evangelica',
+  'pentecostal',
+  'bautista',
+  'adventista',
+];
+
+String _getFiltroLabel(int index, AppLocalizations? l10n) {
+  switch (index) {
+    case 0:
+      return l10n?.todos ?? 'Todas';
+    case 1:
+      return l10n?.catolica ?? 'Católica';
+    case 2:
+      return l10n?.evangelica ?? 'Evangélica';
+    case 3:
+      return l10n?.pentecostal ?? 'Pentecostal';
+    case 4:
+      return l10n?.bautista ?? 'Bautista';
+    case 5:
+      return l10n?.adventista ?? 'Adventista';
+    default:
+      return '';
+  }
+}
 
 /// Pantalla IglesiasEnMapaScreen: Visualización geográfica interactiva con
 /// persistencia en ambos modos (Radio 10/25/50 km vs. Nacional por país actual),
@@ -33,20 +68,6 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
   bool _permisoUbicacionConcedido = false;
   bool _isInit = true;
   String? _mapDarkStyle;
-
-  static const Color azulFondo = Color(0xFF072B4F);
-  static const Color amarilloOro = Color(0xFFE5A023);
-  static const Color blancoFondo = Color(0xFFFAF7F0);
-  static const Color grisBorde = Color(0xFFE5E5E5);
-
-  final List<String> _filtrosKeys = [
-    'todos',
-    'catolica',
-    'evangelica',
-    'pentecostal',
-    'bautista',
-    'adventista',
-  ];
 
   static const LatLng _coordSantoDomingo = LatLng(18.4812, -69.9158);
   static const LatLng _coordTegucigalpa = LatLng(14.0818, -87.2068);
@@ -256,6 +277,10 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
 
   Future<void> _abrirNavegacion(LatLng? latLng, String nombre) async {
     if (latLng == null) return;
+
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) return;
+
     final double lat = latLng.latitude;
     final double lng = latLng.longitude;
 
@@ -288,26 +313,10 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
     }
   }
 
-  String _getFiltroLabel(int index, AppLocalizations? l10n) {
-    switch (index) {
-      case 0:
-        return l10n?.todos ?? 'Todas';
-      case 1:
-        return l10n?.catolica ?? 'Católica';
-      case 2:
-        return l10n?.evangelica ?? 'Evangélica';
-      case 3:
-        return l10n?.pentecostal ?? 'Pentecostal';
-      case 4:
-        return l10n?.bautista ?? 'Bautista';
-      case 5:
-        return l10n?.adventista ?? 'Adventista';
-      default:
-        return '';
-    }
-  }
-
-  Set<Marker> _crearMarkers(List<IglesiaExplorarModel> iglesias) {
+  Set<Marker> _crearMarkers(
+    List<IglesiaExplorarModel> iglesias,
+    String locale,
+  ) {
     return <Marker>{
       for (final iglesia in iglesias)
         if (iglesia.latLng != null)
@@ -319,7 +328,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
             infoWindow: InfoWindow(
               title: iglesia.nombre,
               snippet:
-                  '${iglesia.denominacion} · ${iglesia.distanciaKm > 0 ? '${iglesia.distanciaKm.toStringAsFixed(1)} km' : ''}',
+                  '${iglesia.denominacion} · ${iglesia.distanciaKm > 0 ? '${NumberFormat('0.0', locale).format(iglesia.distanciaKm)} km' : ''}',
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(
               _iglesiaSeleccionada?.id == iglesia.id
@@ -341,6 +350,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
     final screenWidth = size.width;
@@ -360,7 +370,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
               // 1. Encabezado Superior con controles de búsqueda y modo
               Container(
                 width: screenWidth,
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.045,
                   vertical: usableHeight * 0.012,
                 ),
@@ -403,10 +413,12 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                               Text(
                                 provider.modo == ModoExploracion.radio
                                     ? (l10n?.radioKmEnPais(
-                                            provider.radioKm.toInt().toString(),
+                                            NumberFormat.decimalPattern(
+                                              locale,
+                                            ).format(provider.radioKm.toInt()),
                                             provider.paisNombre,
                                           ) ??
-                                          'Radio < ${provider.radioKm.toInt()} km en ${provider.paisNombre}')
+                                          'Radio < ${NumberFormat.decimalPattern(locale).format(provider.radioKm.toInt())} km en ${provider.paisNombre}')
                                     : (l10n?.todoElPaisConBandera(
                                             provider.paisNombre,
                                             provider.paisBandera,
@@ -428,7 +440,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                               l10n?.busquedaExclusivaEn(provider.paisNombre) ??
                               'Búsqueda exclusiva en ${provider.paisNombre}',
                           child: Container(
-                            padding: EdgeInsets.symmetric(
+                            padding: EdgeInsetsDirectional.symmetric(
                               horizontal: screenWidth * 0.025,
                               vertical: usableHeight * 0.006,
                             ),
@@ -468,24 +480,56 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                     SizedBox(height: usableHeight * 0.012),
 
                     // Fila 2: Selector de Modo (Radio vs. Nacional)
-                    _buildModeSelector(
-                      provider,
-                      l10n,
-                      screenWidth,
-                      usableHeight,
+                    _MapModeSelector(
+                      provider: provider,
+                      l10n: l10n,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      onModeChanged: (modo) {
+                        provider.cambiarModo(modo);
+                        _ajustarCamaraSegunResultados(
+                          provider.iglesiasMostradas,
+                          modo,
+                          provider.radioKm,
+                          provider.currentPosition,
+                        );
+                      },
+                      onRadioChanged: (km) {
+                        provider.cambiarRadio(km);
+                        _ajustarCamaraSegunResultados(
+                          provider.bufferResultados,
+                          ModoExploracion.radio,
+                          km,
+                          provider.currentPosition,
+                        );
+                      },
                     ),
                     SizedBox(height: usableHeight * 0.01),
 
                     // Fila 3: Buscador con Debounce de 500 ms
-                    _buildSearchBar(provider, l10n, screenWidth, usableHeight),
+                    _MapSearchBar(
+                      provider: provider,
+                      l10n: l10n,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      searchController: _searchController,
+                      searchFocusNode: _searchFocusNode,
+                      onSubmitted: (val) {
+                        _searchFocusNode.unfocus();
+                        provider.ejecutarBusquedaInmediata(val);
+                      },
+                    ),
                     SizedBox(height: usableHeight * 0.01),
 
                     // Fila 4: Filtros de Denominación
-                    _buildDenominacionChips(
-                      provider,
-                      l10n,
-                      screenWidth,
-                      usableHeight,
+                    _MapDenominacionChips(
+                      provider: provider,
+                      l10n: l10n,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      onDenominacionChanged: (index) {
+                        provider.cambiarDenominacion(index);
+                      },
                     ),
                   ],
                 ),
@@ -497,15 +541,13 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                   width: screenWidth,
                   decoration: BoxDecoration(
                     color: blancoFondo,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.075),
-                      topRight: Radius.circular(screenWidth * 0.075),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.075),
                     ),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(screenWidth * 0.075),
-                      topRight: Radius.circular(screenWidth * 0.075),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(screenWidth * 0.075),
                     ),
                     child: Stack(
                       children: [
@@ -526,13 +568,14 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                             provider.modo == ModoExploracion.radio
                                 ? provider.bufferResultados
                                 : provider.iglesiasMostradas,
+                            locale,
                           ),
                           onMapCreated: (GoogleMapController controller) {
                             _mapController = controller;
                             final iglesias =
                                 provider.modo == ModoExploracion.radio
-                                    ? provider.bufferResultados
-                                    : provider.iglesiasMostradas;
+                                ? provider.bufferResultados
+                                : provider.iglesiasMostradas;
                             if (iglesias.isNotEmpty) {
                               _ajustarCamaraSegunResultados(
                                 iglesias,
@@ -549,8 +592,8 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                         ),
 
                         // Botón flotante para recientes/centrar ubicación
-                        Positioned(
-                          right: screenWidth * 0.045,
+                        PositionedDirectional(
+                          end: screenWidth * 0.045,
                           top: usableHeight * 0.02,
                           child: Material(
                             color: Colors.white,
@@ -587,28 +630,50 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                         ),
 
                         // Barra Flotante Superior: Contador e Indicador de Carga de 15 en 15
-                        Positioned(
-                          left: screenWidth * 0.045,
+                        PositionedDirectional(
+                          start: screenWidth * 0.045,
                           top: usableHeight * 0.02,
-                          child: _buildFloatingPaginationChip(
-                            provider,
-                            screenWidth,
-                            usableHeight,
-                            l10n,
+                          child: _MapFloatingPaginationChip(
+                            provider: provider,
+                            screenWidth: screenWidth,
+                            usableHeight: usableHeight,
+                            l10n: l10n,
+                            onTap: provider.hasMoreData
+                                ? () async {
+                                    final hasInternet =
+                                        await AtrioConnectivityAlert.checkAndNotify(
+                                          context,
+                                        );
+                                    if (!hasInternet) return;
+                                    await provider.cargarSiguientePagina();
+                                    _ajustarCamaraSegunResultados(
+                                      provider.iglesiasMostradas,
+                                      provider.modo,
+                                      provider.radioKm,
+                                      provider.currentPosition,
+                                    );
+                                  }
+                                : null,
                           ),
                         ),
 
                         // Tarjeta Inferior de Información de Iglesia Seleccionada
                         if (_iglesiaSeleccionada != null)
-                          Positioned(
-                            left: screenWidth * 0.045,
-                            right: screenWidth * 0.045,
+                          PositionedDirectional(
+                            start: screenWidth * 0.045,
+                            end: screenWidth * 0.045,
                             bottom: usableHeight * 0.03 + padding.bottom,
-                            child: _buildChurchInfoCard(
+                            child: _MapChurchInfoCard(
                               iglesia: _iglesiaSeleccionada!,
                               screenWidth: screenWidth,
                               usableHeight: usableHeight,
                               l10n: l10n,
+                              onClose: () =>
+                                  setState(() => _iglesiaSeleccionada = null),
+                              onNavigate: () => _abrirNavegacion(
+                                _iglesiaSeleccionada!.latLng,
+                                _iglesiaSeleccionada!.nombre,
+                              ),
                             ),
                           ),
                       ],
@@ -622,31 +687,37 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
       ),
     );
   }
+}
 
-  /// Selector de Modo Dual (Radio vs. Nacional) + Selector de Radio
-  Widget _buildModeSelector(
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _MapModeSelector extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final ValueChanged<ModoExploracion> onModeChanged;
+  final ValueChanged<double> onRadioChanged;
+
+  const _MapModeSelector({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onModeChanged,
+    required this.onRadioChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
     final esRadio = provider.modo == ModoExploracion.radio;
 
     return Row(
       children: [
         // Botón modo radio
         GestureDetector(
-          onTap: () {
-            provider.cambiarModo(ModoExploracion.radio);
-            _ajustarCamaraSegunResultados(
-              provider.iglesiasMostradas,
-              ModoExploracion.radio,
-              provider.radioKm,
-              provider.currentPosition,
-            );
-          },
+          onTap: () => onModeChanged(ModoExploracion.radio),
           child: Container(
-            padding: EdgeInsets.symmetric(
+            padding: EdgeInsetsDirectional.symmetric(
               horizontal: screenWidth * 0.03,
               vertical: usableHeight * 0.007,
             ),
@@ -681,17 +752,9 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
 
         // Botón modo nacional
         GestureDetector(
-          onTap: () {
-            provider.cambiarModo(ModoExploracion.nacional);
-            _ajustarCamaraSegunResultados(
-              provider.iglesiasMostradas,
-              ModoExploracion.nacional,
-              provider.radioKm,
-              provider.currentPosition,
-            );
-          },
+          onTap: () => onModeChanged(ModoExploracion.nacional),
           child: Container(
-            padding: EdgeInsets.symmetric(
+            padding: EdgeInsetsDirectional.symmetric(
               horizontal: screenWidth * 0.03,
               vertical: usableHeight * 0.007,
             ),
@@ -730,20 +793,17 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [10.0, 25.0, 50.0].map((km) {
                 final isSelected = provider.radioKm == km;
+                final kmFormatted = NumberFormat.decimalPattern(locale)
+                    .format(km.toInt());
+
                 return Padding(
-                  padding: EdgeInsets.only(left: screenWidth * 0.015),
+                  padding: EdgeInsetsDirectional.only(
+                    start: screenWidth * 0.015,
+                  ),
                   child: GestureDetector(
-                    onTap: () {
-                      provider.cambiarRadio(km);
-                      _ajustarCamaraSegunResultados(
-                        provider.bufferResultados,
-                        ModoExploracion.radio,
-                        km,
-                        provider.currentPosition,
-                      );
-                    },
+                    onTap: () => onRadioChanged(km),
                     child: Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: EdgeInsetsDirectional.symmetric(
                         horizontal: screenWidth * 0.025,
                         vertical: usableHeight * 0.005,
                       ),
@@ -754,7 +814,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                         borderRadius: BorderRadius.circular(screenWidth * 0.02),
                       ),
                       child: Text(
-                        '${km.toInt()}k',
+                        '${kmFormatted}k',
                         style: TextStyle(
                           color: isSelected ? azulFondo : Colors.white,
                           fontSize: screenWidth * 0.028,
@@ -784,14 +844,29 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
       ],
     );
   }
+}
 
-  /// Buscador Material 3 con Debounce de 500 ms integrado
-  Widget _buildSearchBar(
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _MapSearchBar extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final TextEditingController searchController;
+  final FocusNode searchFocusNode;
+  final ValueChanged<String> onSubmitted;
+
+  const _MapSearchBar({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.searchController,
+    required this.searchFocusNode,
+    required this.onSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final hint = provider.modo == ModoExploracion.nacional
         ? (l10n?.buscarEnPaisPlaceholder(provider.paisNombre) ??
               'Buscar en ${provider.paisNombre} (ej. Altagracia...)')
@@ -812,16 +887,13 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
         ],
       ),
       child: TextField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
+        controller: searchController,
+        focusNode: searchFocusNode,
         textInputAction: TextInputAction.search,
         onChanged: (val) {
           provider.onTextoBusquedaCambiado(val);
         },
-        onSubmitted: (val) {
-          _searchFocusNode.unfocus();
-          provider.ejecutarBusquedaInmediata(val);
-        },
+        onSubmitted: onSubmitted,
         style: TextStyle(
           color: azulFondo,
           fontSize: screenWidth * 0.036,
@@ -846,7 +918,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                   color: azulFondo,
                   size: screenWidth * 0.052,
                 ),
-          suffixIcon: _searchController.text.isNotEmpty
+          suffixIcon: searchController.text.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.cancel_rounded,
@@ -854,25 +926,38 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                     size: screenWidth * 0.045,
                   ),
                   onPressed: () {
-                    _searchController.clear();
+                    searchController.clear();
                     provider.ejecutarBusquedaInmediata('');
                   },
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: usableHeight * 0.012),
+          contentPadding: EdgeInsetsDirectional.symmetric(
+            vertical: usableHeight * 0.012,
+          ),
         ),
       ),
     );
   }
+}
 
-  /// Barra horizontal interactiva de denominaciones
-  Widget _buildDenominacionChips(
-    ExplorarProvider provider,
-    AppLocalizations? l10n,
-    double screenWidth,
-    double usableHeight,
-  ) {
+class _MapDenominacionChips extends StatelessWidget {
+  final ExplorarProvider provider;
+  final AppLocalizations? l10n;
+  final double screenWidth;
+  final double usableHeight;
+  final ValueChanged<int> onDenominacionChanged;
+
+  const _MapDenominacionChips({
+    required this.provider,
+    required this.l10n,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onDenominacionChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: usableHeight * 0.04,
       child: ListView.separated(
@@ -886,11 +971,11 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
           final label = _getFiltroLabel(index, l10n);
 
           return GestureDetector(
-            onTap: () {
-              provider.cambiarDenominacion(index);
-            },
+            onTap: () => onDenominacionChanged(index),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: screenWidth * 0.035,
+              ),
               decoration: BoxDecoration(
                 color: isSelected
                     ? amarilloOro
@@ -913,16 +998,35 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
       ),
     );
   }
+}
 
-  /// Chip Flotante de Paginación de 15 en 15 y Carga Perezosa en Mapa
-  Widget _buildFloatingPaginationChip(
-    ExplorarProvider provider,
-    double screenWidth,
-    double usableHeight,
-    AppLocalizations? l10n,
-  ) {
+class _MapFloatingPaginationChip extends StatelessWidget {
+  final ExplorarProvider provider;
+  final double screenWidth;
+  final double usableHeight;
+  final AppLocalizations? l10n;
+  final VoidCallback? onTap;
+
+  const _MapFloatingPaginationChip({
+    required this.provider,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.l10n,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
     final totalMostradas = provider.iglesiasMostradas.length;
     final totalCargadas = provider.totalResultadosCargados;
+
+    final mostradasFormatted = NumberFormat.decimalPattern(locale)
+        .format(totalMostradas);
+    final cargadasFormatted = NumberFormat.decimalPattern(locale)
+        .format(totalCargadas);
+    final bufferLengthFormatted = NumberFormat.decimalPattern(locale)
+        .format(provider.bufferResultados.length);
 
     return Container(
       decoration: BoxDecoration(
@@ -939,20 +1043,10 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: provider.hasMoreData
-              ? () async {
-                  await provider.cargarSiguientePagina();
-                  _ajustarCamaraSegunResultados(
-                    provider.iglesiasMostradas,
-                    provider.modo,
-                    provider.radioKm,
-                    provider.currentPosition,
-                  );
-                }
-              : null,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(screenWidth * 0.05),
           child: Padding(
-            padding: EdgeInsets.symmetric(
+            padding: EdgeInsetsDirectional.symmetric(
               horizontal: screenWidth * 0.035,
               vertical: usableHeight * 0.008,
             ),
@@ -979,17 +1073,15 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                 SizedBox(width: screenWidth * 0.015),
                 Text(
                   provider.modo == ModoExploracion.radio
-                      ? '${provider.bufferResultados.length} ${l10n?.iglesiasEnMapa ?? "iglesias en mapa"}'
+                      ? '$bufferLengthFormatted ${l10n?.iglesiasEnMapa ?? "iglesias en mapa"}'
                       : (provider.hasMoreData
-                          ? (l10n?.verMasPaginacion(
-                                  totalMostradas.toString(),
-                                  totalCargadas.toString(),
-                                ) ??
-                              'Ver 15 más ($totalMostradas de $totalCargadas)')
-                          : (l10n?.totalIglesiasEnMapa(
-                                  totalMostradas.toString(),
-                                ) ??
-                              '$totalMostradas iglesias en mapa')),
+                            ? (l10n?.verMasPaginacion(
+                                    mostradasFormatted,
+                                    cargadasFormatted,
+                                  ) ??
+                                  'Ver 15 más ($mostradasFormatted de $cargadasFormatted)')
+                            : (l10n?.totalIglesiasEnMapa(mostradasFormatted) ??
+                                  '$mostradasFormatted iglesias en mapa')),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: screenWidth * 0.029,
@@ -1003,17 +1095,36 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
       ),
     );
   }
+}
 
-  /// Tarjeta flotante de información de la iglesia seleccionada
-  Widget _buildChurchInfoCard({
-    required IglesiaExplorarModel iglesia,
-    required double screenWidth,
-    required double usableHeight,
-    required AppLocalizations? l10n,
-  }) {
+class _MapChurchInfoCard extends StatelessWidget {
+  final IglesiaExplorarModel iglesia;
+  final double screenWidth;
+  final double usableHeight;
+  final AppLocalizations? l10n;
+  final VoidCallback onClose;
+  final VoidCallback onNavigate;
+
+  const _MapChurchInfoCard({
+    required this.iglesia,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.l10n,
+    required this.onClose,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    final ratingFormatted = NumberFormat('0.0', locale).format(iglesia.rating);
+    final distanciaFormatted = NumberFormat(
+      '0.0',
+      locale,
+    ).format(iglesia.distanciaKm);
+
     final distanciaStr = iglesia.distanciaKm > 0
-        ? (l10n?.aDistanciaKm(iglesia.distanciaKm.toStringAsFixed(1)) ??
-              'A ${iglesia.distanciaKm.toStringAsFixed(1)} km')
+        ? (l10n?.aDistanciaKm(distanciaFormatted) ?? 'A $distanciaFormatted km')
         : '';
 
     return Container(
@@ -1059,7 +1170,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                   ),
                   SizedBox(width: screenWidth * 0.008),
                   Text(
-                    iglesia.rating.toStringAsFixed(1),
+                    ratingFormatted,
                     style: TextStyle(
                       color: azulFondo,
                       fontSize: screenWidth * 0.032,
@@ -1068,7 +1179,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                   ),
                   if (iglesia.totalResenas > 0)
                     Text(
-                      ' (${iglesia.totalResenas})',
+                      ' (${NumberFormat.decimalPattern(locale).format(iglesia.totalResenas)})',
                       style: TextStyle(
                         color: Colors.grey.shade500,
                         fontSize: screenWidth * 0.028,
@@ -1076,7 +1187,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                     ),
                   SizedBox(width: screenWidth * 0.02),
                   GestureDetector(
-                    onTap: () => setState(() => _iglesiaSeleccionada = null),
+                    onTap: onClose,
                     child: Icon(
                       Icons.close_rounded,
                       color: Colors.grey.shade400,
@@ -1137,7 +1248,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                   backgroundColor: amarilloOro,
                   foregroundColor: azulFondo,
                   elevation: 0,
-                  padding: EdgeInsets.symmetric(
+                  padding: EdgeInsetsDirectional.symmetric(
                     horizontal: screenWidth * 0.045,
                     vertical: usableHeight * 0.01,
                   ),
@@ -1145,8 +1256,7 @@ class _IglesiasEnMapaScreenState extends State<IglesiasEnMapaScreen> {
                     borderRadius: BorderRadius.circular(screenWidth * 0.025),
                   ),
                 ),
-                onPressed: () =>
-                    _abrirNavegacion(iglesia.latLng, iglesia.nombre),
+                onPressed: onNavigate,
                 icon: Icon(Icons.directions_rounded, size: screenWidth * 0.042),
                 label: Text(
                   l10n?.comoLlegar ?? 'Cómo llegar',

@@ -1115,7 +1115,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                       ? 'Iglesia Asignada'
                       : ((iglesiaGuardada != null &&
                                 iglesiaGuardada.trim().isNotEmpty &&
-                                !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada))
+                                !UserModel.isDefaultOrDemoChurchName(
+                                  iglesiaGuardada,
+                                ))
                             ? 'Iglesia Guardada'
                             : 'Sin iglesia seleccionada'));
 
@@ -1617,7 +1619,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         usuario != null &&
         usuario['iglesia_nombre'] != null &&
         usuario['iglesia_nombre'].toString().trim().isNotEmpty &&
-        !UserModel.isDefaultOrDemoChurchName(usuario['iglesia_nombre'].toString());
+        !UserModel.isDefaultOrDemoChurchName(
+          usuario['iglesia_nombre'].toString(),
+        );
 
     final bool usuarioTieneIglesia =
         tieneIglesiaLocal ||

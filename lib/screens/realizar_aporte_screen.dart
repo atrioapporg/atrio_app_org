@@ -1,4 +1,6 @@
+import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/screens/confirmar_donacion_screen.dart';
+import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -191,9 +193,55 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
     }
     if (provider.errorMessage != null || config == null) {
       return Center(
-        child: Text(
-          provider.errorMessage ?? l10n?.errorCargarDatos ?? 'Error al cargar datos',
-          style: TextStyle(color: azulFondo, fontSize: screenWidth * 0.04),
+        child: Padding(
+          padding: EdgeInsetsDirectional.all(screenWidth * 0.06),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.wifi_off_rounded,
+                color: const Color(0xFFE53935),
+                size: screenWidth * 0.12,
+              ),
+              SizedBox(height: usableHeight * 0.015),
+              Text(
+                provider.errorMessage ??
+                    l10n?.errorConexionInternet ??
+                    'Error de conexión. Verifica tu internet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.04,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.02),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: amarilloOro,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  ),
+                ),
+                onPressed: () async {
+                  final hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () => provider.cargarConfiguracion(),
+                      );
+                  if (hasInternet) {
+                    provider.cargarConfiguracion();
+                  }
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  l10n?.reintentar ?? 'Reintentar',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -499,30 +547,21 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                     borderRadius: BorderRadius.circular(screenWidth * 0.03),
                   ),
                 ),
-                onPressed: () {
-                  if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
+                onPressed: () async {
+                  final bool hasInternet =
+                      await AtrioConnectivityAlert.checkAndNotify(
+                        context,
+                        onRetry: () =>
+                            _continuarDonacion(config, formatCurrency, l10n),
+                      );
+                  if (!hasInternet || !mounted) return;
+
+                  if (!ModalRestriccionDonacion.verificarDonacionGeneral(
+                    context: context,
+                  )) {
                     return;
                   }
-                  Navigator.pushNamed(
-                    context,
-                    ConfirmarDonacionScreen.routeName,
-                    arguments: {
-                      'comunidad': 'Comunidad de Esperanza',
-                      'concepto': _getNombreTipoDonacion(
-                        _selectedTipoDonacion,
-                        l10n,
-                      ),
-                      'monto': _selectedAmountIndex == -1
-                          ? 'RD\$${formatCurrency.format(_montoPersonalizado ?? 0)}'
-                          : 'RD\$${formatCurrency.format(config.configPago.montosSugeridos[_selectedAmountIndex])}',
-                      'frecuencia': _selectedFrequencyIndex == 0
-                          ? (l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez')
-                          : (l10n?.frecuenciaMensual ?? 'Mensual'),
-                      'metodoPago': _selectedPaymentMethod == 'Transferencia'
-                          ? (l10n?.transferencia ?? 'Transferencia')
-                          : _selectedPaymentMethod,
-                    },
-                  );
+                  _continuarDonacion(config, formatCurrency, l10n);
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -550,6 +589,40 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _continuarDonacion(
+    dynamic config,
+    NumberFormat formatCurrency,
+    AppLocalizations? l10n,
+  ) {
+    if (!mounted) return;
+    final userProvider = context.read<UserProvider>();
+    final rawIglesia = userProvider.currentUser?.iglesiaActual.trim();
+    final String nombreIglesia =
+        (rawIglesia != null &&
+            rawIglesia.isNotEmpty &&
+            rawIglesia != 'Sin iglesia seleccionada')
+        ? rawIglesia
+        : (l10n?.miIglesia ?? 'Mi Iglesia');
+
+    Navigator.pushNamed(
+      context,
+      ConfirmarDonacionScreen.routeName,
+      arguments: {
+        'comunidad': nombreIglesia,
+        'concepto': _getNombreTipoDonacion(_selectedTipoDonacion, l10n),
+        'monto': _selectedAmountIndex == -1
+            ? 'RD\$${formatCurrency.format(_montoPersonalizado ?? 0)}'
+            : 'RD\$${formatCurrency.format(config.configPago.montosSugeridos[_selectedAmountIndex])}',
+        'frecuencia': _selectedFrequencyIndex == 0
+            ? (l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez')
+            : (l10n?.frecuenciaMensual ?? 'Mensual'),
+        'metodoPago': _selectedPaymentMethod == 'Transferencia'
+            ? (l10n?.transferencia ?? 'Transferencia')
+            : _selectedPaymentMethod,
+      },
     );
   }
 
@@ -963,8 +1036,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                       ),
                       SizedBox(height: usableHeight * 0.015),
                       Text(
-                        l10n?.aceptamosTransferenciasDesc ??
-                            'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
+                        l10n?.aceptamosTransferenciasDesc ?? 'Aceptamos transferencias bancarias desde\ncualquier banco de la República Dominicana.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: azulFondo.withValues(alpha: 0.8),
@@ -1065,8 +1137,7 @@ class _RealizarAporteScreenState extends State<RealizarAporteScreen> {
                                     ),
                                   ),
                                   Text(
-                                    l10n?.tuPagoSeguroDesc ??
-                                        'Confianza, rapidez y seguridad en cada transacción.',
+                                    l10n?.tuPagoSeguroDesc ?? 'Confianza, rapidez y seguridad en cada transacción.',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: screenWidth * 0.026,

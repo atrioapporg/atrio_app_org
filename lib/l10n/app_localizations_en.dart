@@ -993,6 +993,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todosLosDerechosReservados => 'All rights reserved';
 
   @override
+  String get reportarConCapturaPantalla => 'Report with screenshot';
+
+  @override
+  String get reportarConCapturaPantallaDesc =>
+      'Draw and send us suggestions or technical issues.';
+
+  @override
   String get tiposDeSolicitud => 'Request types';
 
   @override
@@ -3339,7 +3346,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get solicitudesRecientes => 'Recent Pastoral Requests';
 
   @override
-  String get verTodasSolicitudes => 'View all requests';
+  String get verTodasSolicitudes => 'View all';
 
   @override
   String get sinSolicitudesRecientes => 'No pending requests at this time';
@@ -3432,5 +3439,209 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String atendidaEl(String fecha) {
     return 'Answered on $fecha';
+  }
+
+  @override
+  String get actualizarRespuesta => 'Update Response';
+
+  @override
+  String get placeholderRespuestaPastoral => 'Type your response here...';
+
+  @override
+  String get verMenos => 'See less';
+
+  @override
+  String get refrescar => 'Refresh';
+
+  @override
+  String solicitudRechazadaMotivo(String motivo) {
+    return 'Rejected: $motivo';
+  }
+
+  @override
+  String get sinConexionTitulo => 'No internet connection';
+
+  @override
+  String get sinConexionMensajeDefecto =>
+      'Check your Wi-Fi or mobile data signal to continue.';
+
+  @override
+  String get nuevoEvento => 'New Event';
+
+  @override
+  String get enTiempoReal => 'In real time';
+
+  @override
+  String get iglesiaEnRevision => 'Church under review';
+
+  @override
+  String get verEstadoSolicitud => 'View request status';
+
+  @override
+  String get peticionesApareceranAqui =>
+      'Your pastoral requests will appear here.';
+
+  @override
+  String get respuestaPastoralTitulo => 'Pastoral response:';
+
+  @override
+  String get iglesiaEnRevisionDesc =>
+      'Your church is currently undergoing administrative review. Once approved, you will be able to manage and view the history of your requests and pastoral petitions.';
+
+  @override
+  String pertenecesAIglesiaEnRevisionDesc(String iglesia) {
+    return 'You belong to $iglesia, but your approval is currently pending by the administration. Your church is currently undergoing administrative review. Once approved, you will be able to manage and view the history of your requests and pastoral petitions.';
+  }
+
+  @override
+  String get estadoDesconocido => 'Unknown';
+
+  @override
+  String get confirmarPedidoTitulo => 'Confirm Order';
+
+  @override
+  String confirmarCompraPregunta(int cantidad, String total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      cantidad,
+      locale: localeName,
+      other: '$cantidad items',
+      one: '1 item',
+    );
+    return 'Do you want to confirm the purchase of $_temp0 for a total of $total?';
+  }
+
+  @override
+  String pedidoRegistradoTitulo(String ref) {
+    return 'Order $ref Placed!';
+  }
+
+  @override
+  String get pedidoRegistradoExito =>
+      'Your order has been successfully generated in Odoo.';
+
+  @override
+  String referenciaOdooItem(String ref) {
+    return '• Odoo Reference: $ref';
+  }
+
+  @override
+  String estadoOdooItem(String estado) {
+    return '• Status: $estado';
+  }
+
+  @override
+  String totalOdooItem(String total) {
+    return '• Total: $total';
+  }
+
+  @override
+  String modalidadEntregaItem(String modalidad) {
+    return '• Delivery Method: $modalidad';
+  }
+
+  @override
+  String get instruccionesPagoTienda =>
+      'You can make the payment via bank transfer or in cash at the church offices.';
+
+  @override
+  String get carritoDeCompras => 'Shopping cart';
+
+  @override
+  String get vaciarCarrito => 'Clear';
+
+  @override
+  String get carritoVacio => 'Your cart is empty';
+
+  @override
+  String get carritoVacioDesc =>
+      'Explore our catalog and add your favorite products.';
+
+  @override
+  String confirmarPedidoConTotal(String total) {
+    return 'Confirm Order · $total';
+  }
+
+  @override
+  String get catalogoNoSincronizado =>
+      'The catalog is not synced with the store. Pull down to refresh.';
+
+  @override
+  String get errorConexionTienda =>
+      'Could not connect to the store. Please try again.';
+
+  @override
+  String get aceptar => 'OK';
+
+  @override
+  String get estadoPedidoEntregado => 'Delivered';
+
+  @override
+  String get estadoPedidoPagado => 'Paid';
+
+  @override
+  String get errorSincronizacion => 'Sync error';
+
+  @override
+  String get errorSincronizacionPedidosDesc =>
+      'We couldn\'t connect to the server to check your orders. Please retry the connection.';
+
+  @override
+  String get verOrdenPortalOdoo => 'View order in Odoo Portal';
+
+  @override
+  String get verDetalle => 'View details';
+
+  @override
+  String get iglesiaAprobadaTitulo => 'Your church has been approved!';
+
+  @override
+  String iglesiaAprobadaMensaje(String churchName) {
+    return 'You are now an active member of $churchName. Full access unlocked.';
+  }
+
+  @override
+  String estadoCongregacionCambiado(String churchName, String newStatus) {
+    return 'Your congregation\'s status ($churchName) has changed to: $newStatus.';
+  }
+
+  @override
+  String get eliminandoCuentaYDatos => 'Deleting account and personal data...';
+
+  @override
+  String get eliminandoCuentaSubtitulo =>
+      'Notifying Odoo, revoking Google Sign-In, and resetting state...';
+
+  @override
+  String get estadoDonacionProcesada => 'Processed';
+
+  @override
+  String get estadoDonacionPendiente => 'Pending';
+
+  @override
+  String get estadoDonacionDenegada => 'Denied';
+
+  @override
+  String get estadoDonacionEnProceso => 'In process';
+
+  @override
+  String get errorSincronizacionDonacionesDesc =>
+      'We couldn\'t connect to the server to update your contributions. Please retry the connection.';
+
+  @override
+  String get tusAportesApareceranAqui =>
+      'Your ministry contributions will appear here.';
+
+  @override
+  String get metodoTransferenciaBancaria => 'Bank transfer';
+
+  @override
+  String get metodoTransferenciaOnline => 'Transfer / Online';
+
+  @override
+  String get fechaReciente => 'Recent';
+
+  @override
+  String aporteConMetodo(String metodo) {
+    return 'Contribution ($metodo)';
   }
 }

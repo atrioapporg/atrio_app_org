@@ -17,6 +17,7 @@ import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/l10n/app_localizations.dart';
+import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 
 import 'package:atrio/atrio_api.dart';
 
@@ -1069,6 +1070,11 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       return;
     }
 
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) {
+      return;
+    }
+
     setModalState?.call(() {});
     setState(() {
       _isLoadingCredentials = true;
@@ -1259,6 +1265,18 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     setState(() => _isLoadingGoogle = true);
     FocusScope.of(context).unfocus();
 
+    // 1. Verificación previa de conectividad (Pre-flight Check)
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+      message: AppLocalizations.of(context)?.errorGoogleRed ??
+          'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+      onRetry: () => _iniciarSesionGoogle(),
+    );
+    if (!hasInternet || !mounted) {
+      if (mounted) setState(() => _isLoadingGoogle = false);
+      return;
+    }
+
     try {
       final l10n = AppLocalizations.of(context);
       GoogleSignInAccount? googleUser;
@@ -1269,24 +1287,115 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         debugPrint(
           '[AUTH_ERROR] PlatformException en Google Sign-In: code=${pe.code}, message=${pe.message}',
         );
+        // Limpiar sesión residual ante cualquier fallo nativo
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+
         if (!mounted) return;
-        if (pe.code == 'sign_in_failed' &&
-            (pe.message?.contains('10') == true ||
-                pe.toString().contains('10'))) {
-          _mostrarMensajeError(
-            'Error de configuración en Google Sign-In (ApiException 10). Verifica que la huella digital SHA-1 y el paquete com.atrio.atrio_app estén registrados en Google Cloud Console.',
+
+        // 1. Cancelado voluntariamente por el usuario (cierre del selector de cuentas)
+        final bool isCanceled = pe.code == 'sign_in_canceled' ||
+            pe.code == '12501' ||
+            pe.message?.contains('12501') == true ||
+            (pe.message?.toLowerCase().contains('canceled') ?? false) ||
+            (pe.message?.toLowerCase().contains('cancelled') ?? false);
+
+        if (isCanceled) {
+          debugPrint('[AUTH] Selector de cuentas de Google cancelado por el usuario.');
+          return;
+        }
+
+        // 2. Error de Red (ApiException 7: NETWORK_ERROR) o timeout de conexión con Google Play Services
+        final bool isNetworkError = pe.code == 'network_error' ||
+            (pe.message?.contains('ApiException: 7') ?? false) ||
+            (pe.message?.contains(' 7:') ?? false) ||
+            (pe.message?.contains(': 7') ?? false) ||
+            (pe.message?.contains('NETWORK_ERROR') ?? false) ||
+            pe.toString().contains('ApiException: 7');
+
+        if (isNetworkError) {
+          AtrioConnectivityAlert.show(
+            context,
+            title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
+            message: l10n?.errorGoogleRed ??
+                'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+            onRetry: () => _iniciarSesionGoogle(),
           );
-        } else if (pe.code != 'sign_in_canceled') {
+          return;
+        }
+
+        // 3. Error de configuración de desarrollador (ApiException 10: DEVELOPER_ERROR)
+        final bool isConfigError =
+            (pe.message?.contains('ApiException: 10') ?? false) ||
+            (pe.message?.contains('10:') ?? false) ||
+            (pe.code == 'sign_in_failed' &&
+                ((pe.message?.contains('10') ?? false) ||
+                    pe.toString().contains('10')));
+
+        if (isConfigError) {
           _mostrarMensajeError(
-            'Error al iniciar sesión con Google: ${pe.message ?? pe.code}',
+            l10n?.errorGoogleConfig ??
+                'Error de configuración en Google Sign-In (ApiException 10). Verifica que la huella digital SHA-1 y el paquete com.atrio.atrio_app estén registrados en Google Cloud Console.',
+          );
+          return;
+        }
+
+        // 4. Operación concurrente en progreso (12502)
+        if (pe.code == 'sign_in_currently_in_progress' ||
+            (pe.message?.contains('12502') ?? false)) {
+          debugPrint('[AUTH] Flujo de Google Sign-In ya en progreso.');
+          return;
+        }
+
+        // 5. Fallo general con pistas de red
+        final bool hasNetworkHints =
+            (pe.message?.toLowerCase().contains('network') ?? false) ||
+            (pe.message?.toLowerCase().contains('timeout') ?? false) ||
+            (pe.message?.toLowerCase().contains('connection') ?? false);
+
+        if (hasNetworkHints) {
+          AtrioConnectivityAlert.show(
+            context,
+            title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
+            message: l10n?.errorGoogleRed ??
+                'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+            onRetry: () => _iniciarSesionGoogle(),
+          );
+        } else {
+          // Jamás mostrar la excepción técnica sin formatear (com.google.android.gms...)
+          _mostrarMensajeError(
+            l10n?.errorGoogleGenerico ??
+                'No se pudo completar el inicio de sesión con Google. Por favor, intenta de nuevo.',
           );
         }
         return;
       } catch (e) {
         debugPrint('[AUTH_ERROR] Error invocando Google Sign-In: $e');
-        if (mounted) {
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+
+        if (!mounted) return;
+
+        final bool isNetwork = e.toString().contains('SocketException') ||
+            e.toString().contains('ClientException') ||
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('ApiException: 7') ||
+            e.toString().contains(' 7:');
+
+        if (isNetwork) {
+          AtrioConnectivityAlert.show(
+            context,
+            title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
+            message: l10n?.errorGoogleRed ??
+                'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+            onRetry: () => _iniciarSesionGoogle(),
+          );
+        } else {
           _mostrarMensajeError(
-            'No se pudo conectar con los servicios de Google.',
+            l10n?.errorGoogleGenerico ??
+                'No se pudo conectar con los servicios de Google.',
           );
         }
         return;
@@ -1304,8 +1413,36 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? googleUser.displayName!.trim()
           : (l10n?.usuarioGoogle ?? 'Usuario Google');
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      GoogleSignInAuthentication? googleAuth;
+      try {
+        googleAuth = await googleUser.authentication;
+      } on PlatformException catch (pe) {
+        debugPrint('[AUTH_ERROR] PlatformException en googleUser.authentication: $pe');
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+        if (!mounted) return;
+        AtrioConnectivityAlert.show(
+          context,
+          title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
+          message: l10n?.errorGoogleRed ??
+              'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+          onRetry: () => _iniciarSesionGoogle(),
+        );
+        return;
+      } catch (e) {
+        debugPrint('[AUTH_ERROR] Error en googleUser.authentication: $e');
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
+        if (!mounted) return;
+        _mostrarMensajeError(
+          l10n?.errorGoogleGenerico ??
+              'No se pudo completar la autenticación con Google. Intenta nuevamente.',
+        );
+        return;
+      }
+
       final String? idToken = googleAuth.idToken;
 
       debugPrint(
@@ -1316,7 +1453,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         debugPrint('[AUTH_ERROR] Google Sign-In no generó idToken.');
         if (mounted) {
           _mostrarMensajeError(
-            'Google no devolvió un token de identidad (idToken). Verifica la configuración de OAuth Web Client en Google Cloud Console.',
+            l10n?.errorGoogleNoToken ??
+                'Google no devolvió un token de identidad (idToken). Verifica la configuración de OAuth Web Client en Google Cloud Console.',
           );
         }
         await AuthService.revokeGoogleSession();
@@ -1331,7 +1469,22 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         final res = await userProvider.loginWithGoogle(idToken: idToken);
         if (!mounted) return;
 
-        final bool created = res?['created'] == true;
+        if (res == null) {
+          final err = userProvider.errorMessage;
+          _mostrarMensajeError(
+            err ??
+                (l10n?.errorGoogleGenerico ??
+                    'No se pudo completar el inicio de sesión con Google.'),
+          );
+          return;
+        }
+
+        final bool created = res['created'] == true;
+        final String nombreUsuario =
+            userProvider.currentUser?.nombre.isNotEmpty == true
+                ? userProvider.currentUser!.nombre
+                : nombre;
+
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1346,8 +1499,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                 Expanded(
                   child: Text(
                     created
-                        ? '¡Bienvenido a ATRIO, ${userProvider.currentUser?.nombre ?? nombre}!'
-                        : '¡Bienvenido de nuevo, ${userProvider.currentUser?.nombre ?? nombre}!',
+                        ? (l10n?.bienvenidoAtrioUsuario(nombreUsuario) ??
+                            '¡Bienvenido a ATRIO, $nombreUsuario!')
+                        : (l10n?.bienvenidoDeNuevoUsuario(nombreUsuario) ??
+                            '¡Bienvenido de nuevo, $nombreUsuario!'),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -1382,16 +1537,20 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         String mensaje;
         switch (apiEx.code) {
           case 'account_exists':
-            mensaje = 'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
+            mensaje = l10n?.errorGoogleCuentaExiste ??
+                'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
             break;
           case 'email_not_verified':
-            mensaje = 'Tu cuenta de Google no tiene el correo electrónico verificado.';
+            mensaje = l10n?.errorGoogleEmailNoVerificado ??
+                'Tu cuenta de Google no tiene el correo electrónico verificado.';
             break;
           case 'invalid_google_token':
-            mensaje = 'El token de autenticación de Google no es válido o ha expirado.';
+            mensaje = l10n?.errorGoogleTokenInvalido ??
+                'El token de autenticación de Google no es válido o ha expirado.';
             break;
           case 'google_disabled':
-            mensaje = 'El inicio de sesión con Google está temporalmente desactivado.';
+            mensaje = l10n?.errorGoogleDesactivado ??
+                'El inicio de sesión con Google está temporalmente desactivado.';
             break;
           default:
             mensaje = userProvider.errorMessage ?? apiEx.message;
@@ -1404,9 +1563,26 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         await _googleSignIn.signOut();
       } catch (_) {}
       if (mounted) {
-        _mostrarMensajeError(
-          'No se pudo conectar con Google. Revisa tu conexión a internet.',
-        );
+        final l10n = AppLocalizations.of(context);
+        final bool isNetwork = error.toString().contains('SocketException') ||
+            error.toString().contains('ClientException') ||
+            error.toString().contains('TimeoutException') ||
+            error.toString().contains('ApiException: 7');
+
+        if (isNetwork) {
+          AtrioConnectivityAlert.show(
+            context,
+            title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
+            message: l10n?.errorGoogleRed ??
+                'No se pudo conectar con Google. Revisa tu conexión a internet.',
+            onRetry: () => _iniciarSesionGoogle(),
+          );
+        } else {
+          _mostrarMensajeError(
+            l10n?.errorGoogleGenerico ??
+                'No se pudo conectar con Google. Revisa tu conexión a internet.',
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoadingGoogle = false);
@@ -1420,6 +1596,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     if (defaultTargetPlatform == TargetPlatform.android) {
       return;
     }
+
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) {
+      return;
+    }
+
     setState(() => _isLoadingApple = true);
 
     try {

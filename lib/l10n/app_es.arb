@@ -1904,7 +1904,32 @@
         "type": "String"
       }
     }
+  },
+  "errorConexionGoogleTitulo": "Conexión con Google",
+  "errorGoogleRed": "No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.",
+  "errorGoogleConfig": "Error de configuración de Google Sign-In (ApiException 10). Verifica la huella digital SHA-1 y el registro en Google Cloud Console.",
+  "errorGoogleGenerico": "No se pudo completar el inicio de sesión con Google. Por favor, intenta de nuevo.",
+  "errorGoogleTokenInvalido": "El token de autenticación de Google no es válido o ha expirado.",
+  "errorGoogleNoToken": "Google no devolvió un token de identidad válido. Intenta nuevamente.",
+  "errorGoogleCuentaExiste": "Ya existe una cuenta con este correo. Ingresa con tu contraseña.",
+  "errorGoogleEmailNoVerificado": "Tu cuenta de Google no tiene el correo electrónico verificado.",
+  "errorGoogleDesactivado": "El inicio de sesión con Google está temporalmente desactivado.",
+  "bienvenidoAtrioUsuario": "¡Bienvenido a ATRIO, {nombre}!",
+  "@bienvenidoAtrioUsuario": {
+    "description": "Mensaje de bienvenida para usuario nuevo",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
+  },
+  "bienvenidoDeNuevoUsuario": "¡Bienvenido de nuevo, {nombre}!",
+  "@bienvenidoDeNuevoUsuario": {
+    "description": "Mensaje de bienvenida para usuario recurrente",
+    "placeholders": {
+      "nombre": {
+        "type": "String"
+      }
+    }
   }
 }
-
-

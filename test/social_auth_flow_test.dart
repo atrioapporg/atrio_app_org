@@ -253,5 +253,72 @@ void main() {
       );
       expect(find.text('Iniciar sesión'), findsWidgets);
     });
+
+    test('UserProvider.loginWithGoogle captura excepciones de red sin filtrar texto técnico crudo', () async {
+      final mockStorage = MockTokenStorageService();
+      final api = AtrioApi(
+        baseUrl: 'https://test.atrioapp.org',
+        storageService: mockStorage,
+      );
+      final userProvider = UserProvider(api: api, storageService: mockStorage);
+
+      // Simulamos llamada con token inválido que provoca fallo
+      final result = await userProvider.loginWithGoogle(idToken: 'invalid_token_test');
+
+      expect(result, isNull);
+      expect(userProvider.isAuthenticated, isFalse);
+      expect(userProvider.errorMessage, isNotNull);
+      // Blindaje: El mensaje NUNCA debe contener trazas de Java/ApiException ni objetos crudos
+      expect(userProvider.errorMessage!.contains('com.google.android.gms'), isFalse);
+      expect(userProvider.errorMessage!.contains('ApiException'), isFalse);
+    });
+
+    testWidgets('AppLocalizations contiene claves para blindaje y feedback de Google Sign-In',
+        (tester) async {
+      late AppLocalizations l10nEs;
+      late AppLocalizations l10nEn;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('es'),
+          home: Builder(
+            builder: (ctx) {
+              l10nEs = AppLocalizations.of(ctx)!;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(l10nEs.errorConexionGoogleTitulo, 'Conexión con Google');
+      expect(l10nEs.errorGoogleRed.contains('servicios de Google'), isTrue);
+      expect(l10nEs.errorGoogleConfig.contains('ApiException 10'), isTrue);
+      expect(l10nEs.errorGoogleGenerico.isNotEmpty, isTrue);
+      expect(l10nEs.bienvenidoAtrioUsuario('Carlos'), '¡Bienvenido a ATRIO, Carlos!');
+      expect(l10nEs.bienvenidoDeNuevoUsuario('Carlos'), '¡Bienvenido de nuevo, Carlos!');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: Builder(
+            builder: (ctx) {
+              l10nEn = AppLocalizations.of(ctx)!;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(l10nEn.errorConexionGoogleTitulo, 'Google Connection');
+      expect(l10nEn.errorGoogleRed.contains('Google services'), isTrue);
+      expect(l10nEn.bienvenidoAtrioUsuario('John'), 'Welcome to ATRIO, John!');
+      expect(l10nEn.bienvenidoDeNuevoUsuario('John'), 'Welcome back, John!');
+    });
   });
 }

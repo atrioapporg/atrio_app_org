@@ -6533,6 +6533,72 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Aporte ({metodo})'**
   String aporteConMetodo(String metodo);
+
+  /// No description provided for @errorConexionGoogleTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Conexión con Google'**
+  String get errorConexionGoogleTitulo;
+
+  /// No description provided for @errorGoogleRed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.'**
+  String get errorGoogleRed;
+
+  /// No description provided for @errorGoogleConfig.
+  ///
+  /// In es, this message translates to:
+  /// **'Error de configuración de Google Sign-In (ApiException 10). Verifica la huella digital SHA-1 y el registro en Google Cloud Console.'**
+  String get errorGoogleConfig;
+
+  /// No description provided for @errorGoogleGenerico.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo completar el inicio de sesión con Google. Por favor, intenta de nuevo.'**
+  String get errorGoogleGenerico;
+
+  /// No description provided for @errorGoogleTokenInvalido.
+  ///
+  /// In es, this message translates to:
+  /// **'El token de autenticación de Google no es válido o ha expirado.'**
+  String get errorGoogleTokenInvalido;
+
+  /// No description provided for @errorGoogleNoToken.
+  ///
+  /// In es, this message translates to:
+  /// **'Google no devolvió un token de identidad válido. Intenta nuevamente.'**
+  String get errorGoogleNoToken;
+
+  /// No description provided for @errorGoogleCuentaExiste.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya existe una cuenta con este correo. Ingresa con tu contraseña.'**
+  String get errorGoogleCuentaExiste;
+
+  /// No description provided for @errorGoogleEmailNoVerificado.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta de Google no tiene el correo electrónico verificado.'**
+  String get errorGoogleEmailNoVerificado;
+
+  /// No description provided for @errorGoogleDesactivado.
+  ///
+  /// In es, this message translates to:
+  /// **'El inicio de sesión con Google está temporalmente desactivado.'**
+  String get errorGoogleDesactivado;
+
+  /// Mensaje de bienvenida para usuario nuevo
+  ///
+  /// In es, this message translates to:
+  /// **'¡Bienvenido a ATRIO, {nombre}!'**
+  String bienvenidoAtrioUsuario(String nombre);
+
+  /// Mensaje de bienvenida para usuario recurrente
+  ///
+  /// In es, this message translates to:
+  /// **'¡Bienvenido de nuevo, {nombre}!'**
+  String bienvenidoDeNuevoUsuario(String nombre);
 }
 
 class _AppLocalizationsDelegate

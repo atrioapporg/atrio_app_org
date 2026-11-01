@@ -77,36 +77,12 @@ class UserProvider extends ChangeNotifier {
           final meData = await _api.me();
           _rawMeData = meData;
           _currentUser = UserModel.fromOdooJson(meData);
+          await _persistCurrentUserLocally();
         } catch (meError) {
           debugPrint(
-            'ℹ️ [UserProvider] /me no disponible en restauración: $meError. Cargando desde SQLite...',
+            'ℹ️ [UserProvider] /me no disponible en restauración: $meError. Cargando desde almacenamiento local...',
           );
-          final localData = await AtrioDatabaseHelper.instance.getUsuario();
-          if (localData != null &&
-              ((localData['email'] as String?)?.isNotEmpty == true ||
-                  (localData['nombre'] as String?)?.isNotEmpty == true)) {
-            final String name = (localData['nombre'] as String?) ?? 'Usuario';
-            _currentUser = UserModel(
-              id: 0,
-              nombre: name,
-              email: (localData['email'] as String?) ?? '',
-              telefono: localData['celular'] as String?,
-              iglesiaActual: (localData['iglesia_nombre'] as String?) ??
-                  'Sin iglesia seleccionada',
-              fechaRegistro: (localData['creado_en'] as String?) ?? '',
-              avatarIniciales: name.trim().isNotEmpty
-                  ? name.trim()[0].toUpperCase()
-                  : 'U',
-              esMiembroVerificado: false,
-              role: UserRole.user,
-              permissions: const {
-                'view_content',
-                'manage_profile',
-                'donate',
-              },
-              isReadOnly: false,
-            );
-          }
+          _currentUser = await _restaurarUsuarioLocal();
         }
         if (_currentUser != null) {
           _api.defaultChurchId = _currentUser?.iglesiaId;
@@ -119,6 +95,117 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('[UserProvider] Restauración pasiva de sesión: $e');
     }
+  }
+
+  /// Persiste el modelo de usuario actual en SharedPreferences y SQLite para soporte offline.
+  Future<void> _persistCurrentUserLocally() async {
+    if (_currentUser == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'cached_user_profile',
+        jsonEncode(_currentUser!.toJson()),
+      );
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('user_email', _currentUser!.email);
+      await prefs.setString('user_name', _currentUser!.nombre);
+      await prefs.setString('userEmail', _currentUser!.email);
+      await prefs.setString('userName', _currentUser!.nombre);
+      await prefs.setString('membership_status', _currentUser!.membershipStatus);
+      if (_currentUser!.iglesiaId != null) {
+        await prefs.setInt('user_church_id', _currentUser!.iglesiaId!);
+      }
+      if (_currentUser!.iglesiaActual.isNotEmpty) {
+        await prefs.setString('user_church_name', _currentUser!.iglesiaActual);
+      }
+    } catch (e) {
+      debugPrint('[UserProvider] Advertencia guardando perfil en SharedPreferences: $e');
+    }
+
+    try {
+      await AtrioDatabaseHelper.instance.guardarUsuario(<String, dynamic>{
+        'nombre': _currentUser!.nombre,
+        'email': _currentUser!.email,
+        'celular': _currentUser!.telefono ?? '',
+        'iglesia_nombre': _currentUser!.iglesiaActual,
+        'creado_en': _currentUser!.fechaRegistro.isNotEmpty
+            ? _currentUser!.fechaRegistro
+            : DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[UserProvider] Advertencia guardando en SQLite: $e');
+    }
+  }
+
+  /// Restaura de forma robusta el UserModel cuando el dispositivo está offline (modo avión)
+  /// utilizando la caché JSON de SharedPreferences y la base de datos local SQLite (atrio.db).
+  Future<UserModel?> _restaurarUsuarioLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // 1. Intentar restaurar desde el JSON completo cacheado en SharedPreferences
+      final cachedJsonStr = prefs.getString('cached_user_profile');
+      if (cachedJsonStr != null && cachedJsonStr.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(cachedJsonStr) as Map<String, dynamic>;
+          final user = UserModel.fromJson(decoded);
+          debugPrint(
+            '✅ [UserProvider] Usuario restaurado desde cached_user_profile: ${user.nombre} (${user.iglesiaActual}, ${user.membershipStatus})',
+          );
+          return user;
+        } catch (e) {
+          debugPrint('⚠️ [UserProvider] Error parseando cached_user_profile: $e');
+        }
+      }
+
+      // 2. Fallback: Reconstruir desde SQLite (atrio.db) + SharedPreferences
+      final localData = await AtrioDatabaseHelper.instance.getUsuario();
+      if (localData != null &&
+          ((localData['email'] as String?)?.isNotEmpty == true ||
+              (localData['nombre'] as String?)?.isNotEmpty == true)) {
+        final String name = (localData['nombre'] as String?) ?? 'Usuario';
+        final String iglesiaNombre =
+            (localData['iglesia_nombre'] as String?)?.trim() ?? '';
+        final bool tieneIglesiaValida = iglesiaNombre.isNotEmpty &&
+            !UserModel.isDefaultOrDemoChurchName(iglesiaNombre);
+
+        // Consultar estatus de membresía persistido en SharedPreferences si existe
+        final String savedStatus = prefs.getString('membership_status') ??
+            (tieneIglesiaValida ? 'approved' : 'none');
+        final int? savedChurchId = prefs.getInt('user_church_id') ??
+            (tieneIglesiaValida ? 1 : null);
+        final bool esPendiente = savedStatus == 'membership_pending' ||
+            savedStatus == 'pending';
+        final bool esAprobado = tieneIglesiaValida && !esPendiente;
+
+        return UserModel(
+          id: localData['id'] as int? ?? 1,
+          nombre: name,
+          email: (localData['email'] as String?) ?? '',
+          telefono: localData['celular'] as String?,
+          iglesiaActual:
+              tieneIglesiaValida ? iglesiaNombre : 'Sin iglesia seleccionada',
+          iglesiaId: savedChurchId,
+          fechaRegistro: (localData['creado_en'] as String?) ?? '',
+          avatarIniciales: name.trim().isNotEmpty
+              ? name.trim()[0].toUpperCase()
+              : 'U',
+          esMiembroVerificado: esAprobado,
+          role: esAprobado ? UserRole.member : UserRole.user,
+          membershipStatus: savedStatus,
+          requestedChurchId: esPendiente ? savedChurchId : null,
+          permissions: const {
+            'view_content',
+            'manage_profile',
+            'donate',
+          },
+          isReadOnly: false,
+        );
+      }
+    } catch (e) {
+      debugPrint('[UserProvider] Error restaurando usuario localmente: $e');
+    }
+    return null;
   }
 
   UserModel? get currentUser => _currentUser;
@@ -398,7 +485,9 @@ class UserProvider extends ChangeNotifier {
             iglesiaActual: prevIglesia,
             membershipStatus: _currentUser!.isMembershipPending
                 ? _currentUser!.membershipStatus
-                : 'membership_pending',
+                : (prevStatus.isNotEmpty && prevStatus != 'none'
+                    ? prevStatus
+                    : 'approved'),
           );
         }
       }
@@ -416,6 +505,7 @@ class UserProvider extends ChangeNotifier {
 
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+      await _persistCurrentUserLocally();
       notifyListeners();
 
       // Detección automática y emisión inmediata si cambió de estado o fue aprobada
@@ -435,6 +525,13 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('[UserProvider] Error al refrescar perfil: $e');
+      if (_currentUser == null || !_currentUser!.hasChurchAssigned) {
+        final restored = await _restaurarUsuarioLocal();
+        if (restored != null) {
+          _currentUser = restored;
+          notifyListeners();
+        }
+      }
     }
   }
 
@@ -667,6 +764,7 @@ class UserProvider extends ChangeNotifier {
       _currentUser = UserModel.fromOdooJson(data);
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+      await _persistCurrentUserLocally();
 
       // Si el usuario no tiene iglesia seleccionada o vinculada legítima, limpiar cualquier
       // iglesia residual o demo en almacenamiento local (SharedPreferences y SQLite).
@@ -782,6 +880,7 @@ class UserProvider extends ChangeNotifier {
       _currentUser = user;
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+      await _persistCurrentUserLocally();
 
       // Sincronizar SharedPreferences
       try {
@@ -829,7 +928,14 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     } catch (e) {
-      _errorMessage = 'Error al iniciar sesión con $provider: $e';
+      debugPrint('[UserProvider] Error no controlado en loginWithSocial: $e');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('TimeoutException')) {
+        _errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet.';
+      } else {
+        _errorMessage = 'Error al iniciar sesión con $provider. Intenta nuevamente.';
+      }
       _isLoading = false;
       notifyListeners();
       return false;
@@ -857,6 +963,7 @@ class UserProvider extends ChangeNotifier {
       _currentUser = UserModel.fromOdooJson(data);
       _api.defaultChurchId = _currentUser?.iglesiaId;
       _api.isReadOnly = _currentUser?.isReadOnly ?? false;
+      await _persistCurrentUserLocally();
 
       // Si el usuario nuevo o sin iglesia no tiene asignación legítima, limpiar residuos locales
       if (!(_currentUser?.hasSelectedOrLinkedChurch ?? false)) {
@@ -911,7 +1018,14 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     } catch (e) {
-      _errorMessage = 'Error al iniciar sesión con Google: $e';
+      debugPrint('[UserProvider] Error no controlado en loginWithGoogle: $e');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('TimeoutException')) {
+        _errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet.';
+      } else {
+        _errorMessage = 'Error al iniciar sesión con Google. Intenta nuevamente.';
+      }
       _isLoading = false;
       notifyListeners();
       return null;
@@ -961,36 +1075,12 @@ class UserProvider extends ChangeNotifier {
         final meData = await _api.me();
         _rawMeData = meData;
         _currentUser = UserModel.fromOdooJson(meData);
+        await _persistCurrentUserLocally();
       } catch (e) {
         debugPrint(
-          'ℹ️ [UserProvider] /me no disponible en tryAutoLogin: $e. Restaurando desde SQLite...',
+          'ℹ️ [UserProvider] /me no disponible en tryAutoLogin: $e. Restaurando desde almacenamiento local...',
         );
-        final localData = await AtrioDatabaseHelper.instance.getUsuario();
-        if (localData != null &&
-            ((localData['email'] as String?)?.isNotEmpty == true ||
-                (localData['nombre'] as String?)?.isNotEmpty == true)) {
-          final String name = (localData['nombre'] as String?) ?? 'Usuario';
-          _currentUser = UserModel(
-            id: 0,
-            nombre: name,
-            email: (localData['email'] as String?) ?? '',
-            telefono: localData['celular'] as String?,
-            iglesiaActual: (localData['iglesia_nombre'] as String?) ??
-                'Sin iglesia seleccionada',
-            fechaRegistro: (localData['creado_en'] as String?) ?? '',
-            avatarIniciales: name.trim().isNotEmpty
-                ? name.trim()[0].toUpperCase()
-                : 'U',
-            esMiembroVerificado: false,
-            role: UserRole.user,
-            permissions: const {
-              'view_content',
-              'manage_profile',
-              'donate',
-            },
-            isReadOnly: false,
-          );
-        }
+        _currentUser = await _restaurarUsuarioLocal();
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -1034,6 +1124,12 @@ class UserProvider extends ChangeNotifier {
         await prefs.setBool('isLoggedIn', false);
         await prefs.remove('user_email');
         await prefs.remove('user_name');
+        await prefs.remove('userEmail');
+        await prefs.remove('userName');
+        await prefs.remove('cached_user_profile');
+        await prefs.remove('membership_status');
+        await prefs.remove('user_church_id');
+        await prefs.remove('user_church_name');
         await prefs.remove('iglesia_guardada');
         await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
       } catch (e) {

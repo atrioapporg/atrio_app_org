@@ -113,7 +113,7 @@ class _AtrioConnectivityToastOverlayState
     extends State<_AtrioConnectivityToastOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<Offset> _offsetAnimation;
+  late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
 
   // Paleta corporativa ATRIO
@@ -127,22 +127,23 @@ class _AtrioConnectivityToastOverlayState
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
-      reverseDuration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 320),
+      reverseDuration: const Duration(milliseconds: 240),
     );
 
-    _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -0.6),
-      end: Offset.zero,
+    _scaleAnimation = Tween<double>(
+      begin: 0.84,
+      end: 1.0,
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutBack,
-      reverseCurve: Curves.easeInQuad,
+      reverseCurve: Curves.easeInCubic,
     ));
 
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeIn,
+      reverseCurve: Curves.easeOut,
     );
 
     _controller.forward();
@@ -161,112 +162,134 @@ class _AtrioConnectivityToastOverlayState
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final topPadding = mediaQuery.padding.top + 8;
     final l10n = AppLocalizations.of(context);
 
-    return PositionedDirectional(
-      top: topPadding,
-      start: 16,
-      end: 16,
+    return Positioned.fill(
       child: Material(
         type: MaterialType.transparency,
-        child: SlideTransition(
-          position: _offsetAnimation,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: GestureDetector(
-              onVerticalDragUpdate: (details) {
-                if (details.primaryDelta != null && details.primaryDelta! < -4) {
-                  _handleDismiss();
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: _azulFondo.withValues(alpha: 0.96),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _amarilloOro.withValues(alpha: 0.6),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 2,
-                    ),
-                    BoxShadow(
-                      color: _rojoAlerta.withValues(alpha: 0.20),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsetsDirectional.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    const _IconoAlerta(
-                      colorAlerta: _rojoAlerta,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            widget.title,
-                            style: const TextStyle(
-                              color: _blancoTexto,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.message,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _blancoTexto.withValues(alpha: 0.88),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              height: 1.25,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (widget.onRetry != null) ...[
-                      const SizedBox(width: 8),
-                      _BotonReintentar(
-                        label: l10n?.reintentar ?? 'Reintentar',
-                        colorOro: _amarilloOro,
-                        onPressed: () {
-                          _handleDismiss();
-                          widget.onRetry!();
-                        },
-                      ),
-                    ] else ...[
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          size: 18,
-                          color: _blancoTexto.withValues(alpha: 0.6),
-                        ),
-                        onPressed: _handleDismiss,
-                      ),
-                    ],
-                  ],
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Telón sutil táctil que descarta la alerta al pulsar fuera de la tarjeta
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _handleDismiss,
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.28),
                 ),
               ),
             ),
-          ),
+            // Tarjeta de alerta centrada en la pantalla con tipografía un ~30% más grande
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: GestureDetector(
+                      onVerticalDragUpdate: (details) {
+                        if (details.primaryDelta != null &&
+                            details.primaryDelta!.abs() > 4) {
+                          _handleDismiss();
+                        }
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _azulFondo.withValues(alpha: 0.98),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _amarilloOro.withValues(alpha: 0.7),
+                            width: 1.4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                              spreadRadius: 3,
+                            ),
+                            BoxShadow(
+                              color: _rojoAlerta.withValues(alpha: 0.25),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsetsDirectional.all(18),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            const _IconoAlerta(
+                              colorAlerta: _rojoAlerta,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    widget.title,
+                                    style: const TextStyle(
+                                      color: _blancoTexto,
+                                      fontSize: 18, // ~28.5% más grande para título
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    widget.message,
+                                    maxLines: 4,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: _blancoTexto.withValues(alpha: 0.92),
+                                      fontSize: 15.5, // ~30% más grande que los 12 originales
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  // Botón "Reintentar" colocado justo debajo del mensaje
+                                  if (widget.onRetry != null) ...[
+                                    const SizedBox(height: 12),
+                                    Align(
+                                      alignment: AlignmentDirectional.centerEnd,
+                                      child: _BotonReintentar(
+                                        label: l10n?.reintentar ?? 'Reintentar',
+                                        colorOro: _amarilloOro,
+                                        onPressed: () {
+                                          _handleDismiss();
+                                          widget.onRetry!();
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                size: 22,
+                                color: _blancoTexto.withValues(alpha: 0.7),
+                              ),
+                              onPressed: _handleDismiss,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -283,8 +306,8 @@ class _IconoAlerta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: colorAlerta.withValues(alpha: 0.16),
         shape: BoxShape.circle,
@@ -297,7 +320,7 @@ class _IconoAlerta extends StatelessWidget {
         child: Icon(
           Icons.wifi_off_rounded,
           color: Color(0xFFFF5252),
-          size: 22,
+          size: 25,
         ),
       ),
     );
@@ -317,24 +340,37 @@ class _BotonReintentar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
+    return TextButton.icon(
       style: TextButton.styleFrom(
         foregroundColor: colorOro,
+        backgroundColor: colorOro.withValues(alpha: 0.12),
         padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: 10,
-          vertical: 6,
+          horizontal: 14,
+          vertical: 8,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(
+            color: colorOro.withValues(alpha: 0.35),
+            width: 1,
+          ),
         ),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      onPressed: onPressed,
-      child: Text(
+      icon: Icon(
+        Icons.refresh_rounded,
+        size: 16,
+        color: colorOro,
+      ),
+      label: Text(
         label,
         style: const TextStyle(
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize: 15,
         ),
       ),
+      onPressed: onPressed,
     );
   }
 }

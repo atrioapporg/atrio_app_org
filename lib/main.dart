@@ -9,7 +9,6 @@ import 'package:feedback/feedback.dart';
 import 'package:atrio/theme/atrio_feedback_theme.dart';
 import 'package:atrio/widgets/atrio_better_feedback.dart';
 import 'package:atrio/widgets/atrio_feedback_form.dart';
-import 'package:atrio/modelos/app_stage.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 
 // Paquetes - Google Maps
@@ -87,6 +86,15 @@ import 'package:atrio/screens/moderation_words_screen.dart';
 import 'package:atrio/screens/church_admin_dashboard_screen.dart';
 import 'package:atrio/screens/admin_requests_screen.dart';
 
+import 'package:atrio/data/atrio_database_helper.dart';
+import 'package:atrio/data/database_helper.dart';
+import 'package:atrio/servicios/connectivity_service.dart';
+import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:atrio/atrio_api.dart';
+import 'package:atrio/data/app_config.dart';
+import 'package:atrio/modelos/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 // Screens - Pruebas
 import 'package:atrio/screens/test_pago_screen.dart';
 import 'package:atrio/screens/splash_screen.dart';
@@ -111,8 +119,136 @@ Future<void> main() async {
     debugPrint('Error al inicializar Google Maps Renderer: $e');
   }
 
-  // 4. Arrancar la app de inmediato proyectando la SplashScreen inmersiva
-  runApp(const AppState(initialRoute: SplashScreen.routeName));
+  // 4. Inicialización segura de bases de datos locales SQLite
+  try {
+    await DatabaseHelper.instance.database;
+    await AtrioDatabaseHelper.instance.database;
+  } catch (e) {
+    debugPrint('💥 Error inicializando bases de datos SQLite: $e');
+  }
+
+  // 5. Determinar la ruta inicial de forma condicional y nativa.
+  // Mientras este proceso asíncrono se ejecuta, el sistema operativo presenta nativamente
+  // el Splash Screen (API oficial de Splash Screen en Android 12+ o LaunchTheme en Android <12)
+  // sin incurrir en demoras artificiales ni mostrar pantallas intermedias innecesarias.
+  final prefs = await SharedPreferences.getInstance();
+  final bool introVista = prefs.getBool('intro_vista') ?? false;
+
+  final tokenStorage = TokenStorageService();
+  final api = AtrioApi(
+    baseUrl: AppConfig.odooBaseUrl,
+    storageService: tokenStorage,
+  );
+  await api.initFromStorage();
+
+  final bool prefsLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final bool tieneSesionActiva = prefsLoggedIn || api.isAuthenticated;
+
+  String rutaInicial;
+
+  if (!introVista) {
+    // Usuario nuevo que no ha completado el onboarding inicial
+    rutaInicial = IntroEncuentraScreen.routeName;
+  } else if (!tieneSesionActiva) {
+    // Usuario que ya completó onboarding pero no tiene sesión activa
+    rutaInicial = InicioSesionScreen.routeName;
+  } else {
+    // Usuario con sesión activa: predeterminar HomeScreen para no mostrar login
+    rutaInicial = InicioAtrioScreen.routeName;
+
+    // Si cuenta con autenticación en Odoo 19, resolver AppStage exacto
+    if (api.isAuthenticated) {
+      try {
+        final me = await api.me().timeout(const Duration(seconds: 2));
+        final stage = resolveStage(me);
+        switch (stage) {
+          case AppStage.chooseChurch:
+            // Regla de bypass: si el usuario ya seleccionó una iglesia localmente en SQLite o SharedPreferences,
+            // omitir la pantalla de elección y entrar directo a HomeScreen.
+            final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
+            Map<String, dynamic>? usuario;
+            try {
+              usuario = await AtrioDatabaseHelper.instance.getUsuario();
+            } catch (_) {}
+            final bool tieneIglesiaLocal =
+                (iglesiaGuardada != null &&
+                    iglesiaGuardada.trim().isNotEmpty &&
+                    !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
+                (usuario != null &&
+                    usuario['iglesia_nombre'] != null &&
+                    !UserModel.isDefaultOrDemoChurchName(
+                      usuario['iglesia_nombre'].toString(),
+                    ));
+
+            rutaInicial = tieneIglesiaLocal
+                ? InicioAtrioScreen.routeName
+                : SeleccionarIglesiaScreen.routeName;
+            break;
+          case AppStage.waitingApproval:
+            // Solicitud pendiente de aprobación: redirigir a HomeScreen donde se presenta el banner reactivo
+            rutaInicial = InicioAtrioScreen.routeName;
+            break;
+          case AppStage.churchPendingActivation:
+            rutaInicial = IglesiaPendienteActivacionScreen.routeName;
+            break;
+          case AppStage.welcome:
+          case AppStage.memberHome:
+          case AppStage.adminHome:
+          case AppStage.platformAdmin:
+            rutaInicial = InicioAtrioScreen.routeName;
+            break;
+        }
+      } catch (e) {
+        debugPrint(
+          'ℹ️ [MAIN] Timeout o arranque offline al resolver AppStage: $e. Aplicando bypass con datos locales.',
+        );
+        final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
+        Map<String, dynamic>? usuario;
+        try {
+          usuario = await AtrioDatabaseHelper.instance.getUsuario();
+        } catch (_) {}
+        final bool tieneIglesiaLocal =
+            (iglesiaGuardada != null &&
+                iglesiaGuardada.trim().isNotEmpty &&
+                !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
+            (usuario != null &&
+                usuario['iglesia_nombre'] != null &&
+                !UserModel.isDefaultOrDemoChurchName(
+                  usuario['iglesia_nombre'].toString(),
+                ));
+
+        rutaInicial = tieneIglesiaLocal
+            ? InicioAtrioScreen.routeName
+            : SeleccionarIglesiaScreen.routeName;
+      }
+    } else {
+      // Sesión activa respaldada por SharedPreferences (prefsLoggedIn == true)
+      final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
+      Map<String, dynamic>? usuario;
+      try {
+        usuario = await AtrioDatabaseHelper.instance.getUsuario();
+      } catch (_) {}
+      final bool tieneIglesiaLocal =
+          (iglesiaGuardada != null &&
+              iglesiaGuardada.trim().isNotEmpty &&
+              !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
+          (usuario != null &&
+              usuario['iglesia_nombre'] != null &&
+              !UserModel.isDefaultOrDemoChurchName(
+                usuario['iglesia_nombre'].toString(),
+              ));
+
+      rutaInicial = tieneIglesiaLocal
+          ? InicioAtrioScreen.routeName
+          : SeleccionarIglesiaScreen.routeName;
+    }
+  }
+
+  // 6. Iniciar monitoreo de conectividad en toda la app
+  ConnectivityService.instance.startMonitoring();
+
+  // 7. Arrancar la app proyectando directamente la ruta calculada
+  runApp(AppState(initialRoute: rutaInicial));
 }
 
 class AppState extends StatelessWidget {

@@ -687,13 +687,18 @@ class _DonationCard extends StatelessWidget {
                       fontSize: screenWidth * 0.045,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: usableHeight * 0.003),
-                  Row(
+                  Wrap(
+                    spacing: screenWidth * 0.02,
+                    runSpacing: usableHeight * 0.003,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
                         padding: EdgeInsetsDirectional.symmetric(
-                          horizontal: screenWidth * 0.022,
+                          horizontal: screenWidth * 0.020,
                           vertical: usableHeight * 0.002,
                         ),
                         decoration: BoxDecoration(
@@ -711,24 +716,20 @@ class _DonationCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (dateInfo != null) ...[
-                        SizedBox(width: screenWidth * 0.02),
-                        Flexible(
-                          child: Text(
-                            dateInfo!,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: screenWidth * 0.028,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                      if (dateInfo != null)
+                        Text(
+                          dateInfo!,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: screenWidth * 0.028,
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ],
               ),
             ),
+            SizedBox(width: screenWidth * 0.02),
 
             // Monto destacado a la derecha
             Column(

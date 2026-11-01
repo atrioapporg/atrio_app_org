@@ -3644,4 +3644,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String aporteConMetodo(String metodo) {
     return 'Contribution ($metodo)';
   }
+
+  @override
+  String get errorConexionGoogleTitulo => 'Google Connection';
+
+  @override
+  String get errorGoogleRed =>
+      'Could not connect to Google services. Please check your internet connection and try again.';
+
+  @override
+  String get errorGoogleConfig =>
+      'Google Sign-In configuration error (ApiException 10). Check the SHA-1 fingerprint and Google Cloud Console settings.';
+
+  @override
+  String get errorGoogleGenerico =>
+      'Could not complete sign-in with Google. Please try again.';
+
+  @override
+  String get errorGoogleTokenInvalido =>
+      'The Google authentication token is invalid or has expired.';
+
+  @override
+  String get errorGoogleNoToken =>
+      'Google did not return a valid identity token. Please try again.';
+
+  @override
+  String get errorGoogleCuentaExiste =>
+      'An account already exists with this email. Please sign in with your password.';
+
+  @override
+  String get errorGoogleEmailNoVerificado =>
+      'Your Google account does not have a verified email address.';
+
+  @override
+  String get errorGoogleDesactivado =>
+      'Sign in with Google is temporarily disabled.';
+
+  @override
+  String bienvenidoAtrioUsuario(String nombre) {
+    return 'Welcome to ATRIO, $nombre!';
+  }
+
+  @override
+  String bienvenidoDeNuevoUsuario(String nombre) {
+    return 'Welcome back, $nombre!';
+  }
 }

@@ -73,14 +73,9 @@ class ModalRestriccionSolicitud {
     final bool tieneIglesiaPendiente = userProvider.isMembershipPending ||
         userProvider.churchStatus == 'membership_pending' ||
         userProvider.churchStatus == 'pending' ||
-        (!userProvider.isChurchApproved &&
-            (userProvider.hasChurchAssigned ||
-                userProvider.requestedChurchId != null ||
-                (userProvider.currentUser?.iglesiaActual != null &&
-                    userProvider.currentUser?.iglesiaActual !=
-                        'Sin iglesia seleccionada' &&
-                    userProvider.currentUser?.iglesiaActual !=
-                        'Iglesia Atrio')));
+        userProvider.isWaitingApproval ||
+        userProvider.requestedChurchId != null ||
+        (userProvider.currentUser?.isMembershipPending == true);
 
     if (tieneIglesiaPendiente) {
       mostrarIglesiaPendiente(

@@ -78,6 +78,7 @@ class _PerfilScreenState extends State<PerfilScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
+      _cargarDatosUsuario();
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       if (userProvider.isAuthenticated) {
         userProvider.refreshUserProfile();
@@ -325,11 +326,26 @@ class _PerfilScreenState extends State<PerfilScreen>
             currentUser?.isChangePending == true ||
             userProvider.membershipStatus == 'change_pending');
 
+    // Validación offline de respaldo: si el usuario está autenticado localmente,
+    // cuenta con congregación legítima seleccionada/asignada (SQLite o Provider),
+    // no tiene solicitudes pendientes de membresía/cambio, y está verificado como miembro
+    // o registrado con su iglesia previa, se confirma su membresía aprobada.
+    final bool isOfflineApproved = estaAutenticado &&
+        hasChurchSelected &&
+        !isChangePending &&
+        (currentUser?.isMember == true ||
+            currentUser?.esMiembroVerificado == true ||
+            currentUser?.membershipStatus == 'approved' ||
+            ((currentUser?.membershipStatus.isEmpty ?? true) &&
+                currentUser?.role == UserRole.member &&
+                _usuarioData != null &&
+                (_usuarioData!['iglesia_nombre'] as String?)?.isNotEmpty == true));
+
     final bool isChurchApproved =
         estaAutenticado &&
-        userProvider.isChurchApproved &&
-        !userProvider.isMembershipPending &&
-        userProvider.membershipStatus != 'pending';
+        userProvider.membershipStatus != 'pending' &&
+        userProvider.membershipStatus != 'membership_pending' &&
+        (userProvider.isChurchApproved || isOfflineApproved);
 
     final bool isMembershipPending =
         estaAutenticado &&
@@ -342,7 +358,9 @@ class _PerfilScreenState extends State<PerfilScreen>
             userProvider.membershipStatus == 'pending' ||
             userProvider.churchStatus == 'pending' ||
             userProvider.churchStatus == 'membership_pending' ||
-            hasChurchSelected);
+            (hasChurchSelected &&
+                currentUser?.role == UserRole.user &&
+                currentUser?.esMiembroVerificado != true));
 
     final bool hasChurchAssigned =
         estaAutenticado &&

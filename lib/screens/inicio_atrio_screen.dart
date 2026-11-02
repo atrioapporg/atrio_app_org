@@ -26,6 +26,7 @@ import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
 import 'perfil_screen.dart';
+import 'qr_join_scanner_screen.dart';
 import 'tradicion_cristiana_screen.dart';
 import '../servicios/atrio_upgrader_messages.dart';
 
@@ -797,61 +798,87 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       ),
                     ),
                     // Fin Encabezado Superior--------------------
-                    Builder(
-                      builder: (context) {
-                        final esAutenticado = context
-                            .watch<UserProvider>()
-                            .isAuthenticated;
-                        final bool tieneNotis =
-                            esAutenticado && _notificacionesSinLeer > 0;
-
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              NotificacionesScreen.routeName,
-                            );
-                          },
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Icon(
-                                Icons.notifications_none_rounded,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Tooltip(
+                          message: l10n?.escanearQrIglesia ?? 'Escanear QR de Iglesia',
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                QrJoinScannerScreen.routeName,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                            child: Padding(
+                              padding: EdgeInsets.all(screenWidth * 0.015),
+                              child: Icon(
+                                Icons.qr_code_scanner_rounded,
                                 color: Colors.white,
-                                size: screenWidth * 0.080,
+                                size: screenWidth * 0.076,
                               ),
-                              if (tieneNotis)
-                                Positioned(
-                                  top: -2,
-                                  right: -2,
-                                  child: Container(
-                                    padding: EdgeInsets.all(
-                                      screenWidth * 0.008,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: amarilloOro,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    constraints: BoxConstraints(
-                                      minWidth: screenWidth * 0.04,
-                                      minHeight: screenWidth * 0.04,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '$_notificacionesSinLeer',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.015),
+                        Builder(
+                          builder: (context) {
+                            final esAutenticado = context
+                                .watch<UserProvider>()
+                                .isAuthenticated;
+                            final bool tieneNotis =
+                                esAutenticado && _notificacionesSinLeer > 0;
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  NotificacionesScreen.routeName,
+                                );
+                              },
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Icon(
+                                    Icons.notifications_none_rounded,
+                                    color: Colors.white,
+                                    size: screenWidth * 0.080,
+                                  ),
+                                  if (tieneNotis)
+                                    Positioned(
+                                      top: -2,
+                                      right: -2,
+                                      child: Container(
+                                        padding: EdgeInsets.all(
+                                          screenWidth * 0.008,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: amarilloOro,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: BoxConstraints(
+                                          minWidth: screenWidth * 0.04,
+                                          minHeight: screenWidth * 0.04,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '$_notificacionesSinLeer',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

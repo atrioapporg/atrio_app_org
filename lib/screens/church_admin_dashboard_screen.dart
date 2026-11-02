@@ -9,6 +9,7 @@ import 'package:atrio/screens/admin_requests_screen.dart';
 import 'package:atrio/screens/admin_ads_screen.dart';
 import 'package:atrio/screens/crear_evento_screen.dart';
 import 'package:atrio/screens/crear_predica_screen.dart';
+import 'package:atrio/screens/church_poster_preview_screen.dart';
 import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 
 /// Pantalla Principal del Dashboard Pastoral Móvil para el Admin de Iglesia (Odoo 19).
@@ -568,6 +569,18 @@ class _QuickActionsSection extends StatelessWidget {
                   if (hasInternet && context.mounted) {
                     Navigator.pushNamed(context, AdminAdsScreen.routeName);
                   }
+                },
+              ),
+              const SizedBox(width: 12),
+              _QuickActionCard(
+                icon: Icons.qr_code_2_rounded,
+                label: l10n?.aficheQrOficial ?? 'Afiche y QR Oficial',
+                color: const Color(0xFF0D9488),
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    ChurchPosterPreviewScreen.routeName,
+                  );
                 },
               ),
             ],

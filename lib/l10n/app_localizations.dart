@@ -6599,6 +6599,138 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'¡Bienvenido de nuevo, {nombre}!'**
   String bienvenidoDeNuevoUsuario(String nombre);
+
+  /// No description provided for @escanearQrIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Escanear QR de Iglesia'**
+  String get escanearQrIglesia;
+
+  /// No description provided for @apuntaCamaraQr.
+  ///
+  /// In es, this message translates to:
+  /// **'Enfoca el código QR oficial de tu congregación en el recuadro'**
+  String get apuntaCamaraQr;
+
+  /// No description provided for @confirmarVinculacionTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar Vinculación'**
+  String get confirmarVinculacionTitulo;
+
+  /// No description provided for @deseasUnirteIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas solicitar tu vinculación a esta congregación?'**
+  String get deseasUnirteIglesia;
+
+  /// No description provided for @solicitarMembresia.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitar Membresía'**
+  String get solicitarMembresia;
+
+  /// No description provided for @unirseCongregacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Unirme a esta congregación'**
+  String get unirseCongregacion;
+
+  /// No description provided for @yaEresMiembroTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Membresía Activa'**
+  String get yaEresMiembroTitulo;
+
+  /// No description provided for @yaEresMiembroDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya perteneces a esta congregación.'**
+  String get yaEresMiembroDesc;
+
+  /// No description provided for @solicitudEnviadaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Solicitud Enviada con Éxito!'**
+  String get solicitudEnviadaTitulo;
+
+  /// No description provided for @solicitudEnviadaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu solicitud fue registrada en Odoo y está pendiente de aprobación por el equipo pastoral.'**
+  String get solicitudEnviadaDesc;
+
+  /// No description provided for @iniciarSesionRequerido.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio de Sesión Requerido'**
+  String get iniciarSesionRequerido;
+
+  /// No description provided for @iniciarSesionRequeridoDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Para vincularte a esta iglesia, primero debes ingresar con tu cuenta de ATRIO. Guardaremos tu selección para reanudarla automáticamente.'**
+  String get iniciarSesionRequeridoDesc;
+
+  /// No description provided for @irAInicioSesion.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar Sesión Ahora'**
+  String get irAInicioSesion;
+
+  /// No description provided for @congregacionOficial.
+  ///
+  /// In es, this message translates to:
+  /// **'Congregación Oficial'**
+  String get congregacionOficial;
+
+  /// No description provided for @noSePudoCargarLogo.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin imagen disponible'**
+  String get noSePudoCargarLogo;
+
+  /// No description provided for @errorQrInvalido.
+  ///
+  /// In es, this message translates to:
+  /// **'El código QR escaneado no es válido para ATRIO.'**
+  String get errorQrInvalido;
+
+  /// No description provided for @aficheQrOficial.
+  ///
+  /// In es, this message translates to:
+  /// **'Afiche y QR Oficial'**
+  String get aficheQrOficial;
+
+  /// No description provided for @descargarAfichePdf.
+  ///
+  /// In es, this message translates to:
+  /// **'Descargar / Imprimir Afiche (PDF)'**
+  String get descargarAfichePdf;
+
+  /// No description provided for @compartirEnlaceIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir Enlace'**
+  String get compartirEnlaceIglesia;
+
+  /// No description provided for @aficheParaTuIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Afiche Oficial para tu Congregación'**
+  String get aficheParaTuIglesia;
+
+  /// No description provided for @imprimeColocaAfiche.
+  ///
+  /// In es, this message translates to:
+  /// **'Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.'**
+  String get imprimeColocaAfiche;
+
+  /// No description provided for @cargandoAfiche.
+  ///
+  /// In es, this message translates to:
+  /// **'Generando afiche oficial...'**
+  String get cargandoAfiche;
 }
 
 class _AppLocalizationsDelegate

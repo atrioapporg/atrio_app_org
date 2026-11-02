@@ -1931,5 +1931,29 @@
         "type": "String"
       }
     }
-  }
+  },
+  "escanearQrIglesia": "Escanear QR de Iglesia",
+  "apuntaCamaraQr": "Enfoca el código QR oficial de tu congregación en el recuadro",
+  "confirmarVinculacionTitulo": "Confirmar Vinculación",
+  "deseasUnirteIglesia": "¿Deseas solicitar tu vinculación a esta congregación?",
+  "solicitarMembresia": "Solicitar Membresía",
+  "unirseCongregacion": "Unirme a esta congregación",
+  "yaEresMiembroTitulo": "Membresía Activa",
+  "yaEresMiembroDesc": "Ya perteneces a esta congregación.",
+  "solicitudEnviadaTitulo": "¡Solicitud Enviada con Éxito!",
+  "solicitudEnviadaDesc": "Tu solicitud fue registrada en Odoo y está pendiente de aprobación por el equipo pastoral.",
+  "iniciarSesionRequerido": "Inicio de Sesión Requerido",
+  "iniciarSesionRequeridoDesc": "Para vincularte a esta iglesia, primero debes ingresar con tu cuenta de ATRIO. Guardaremos tu selección para reanudarla automáticamente.",
+  "irAInicioSesion": "Iniciar Sesión Ahora",
+  "congregacionOficial": "Congregación Oficial",
+  "noSePudoCargarLogo": "Sin imagen disponible",
+  "errorQrInvalido": "El código QR escaneado no es válido para ATRIO.",
+  "aficheQrOficial": "Afiche y QR Oficial",
+  "descargarAfichePdf": "Descargar / Imprimir Afiche (PDF)",
+  "compartirEnlaceIglesia": "Compartir Enlace",
+  "aficheParaTuIglesia": "Afiche Oficial para tu Congregación",
+  "imprimeColocaAfiche": "Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.",
+  "cargandoAfiche": "Generando afiche oficial..."
 }
+
+

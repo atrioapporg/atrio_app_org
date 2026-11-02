@@ -1840,7 +1840,31 @@
         "type": "String"
       }
     }
-  }
+  },
+  "escanearQrIglesia": "Scan Church QR",
+  "apuntaCamaraQr": "Align your congregation's official QR code within the frame",
+  "confirmarVinculacionTitulo": "Confirm Affiliation",
+  "deseasUnirteIglesia": "Do you want to request membership in this congregation?",
+  "solicitarMembresia": "Request Membership",
+  "unirseCongregacion": "Join this congregation",
+  "yaEresMiembroTitulo": "Active Membership",
+  "yaEresMiembroDesc": "You are already a member of this congregation.",
+  "solicitudEnviadaTitulo": "Request Submitted!",
+  "solicitudEnviadaDesc": "Your request has been registered and is pending pastoral approval.",
+  "iniciarSesionRequerido": "Login Required",
+  "iniciarSesionRequeridoDesc": "To join this church, please log in first. We will save your QR code and continue automatically.",
+  "irAInicioSesion": "Log In Now",
+  "congregacionOficial": "Official Congregation",
+  "noSePudoCargarLogo": "No image available",
+  "errorQrInvalido": "The scanned QR code is not valid for ATRIO.",
+  "aficheQrOficial": "Official QR Poster",
+  "descargarAfichePdf": "Download / Print Poster (PDF)",
+  "compartirEnlaceIglesia": "Share Link",
+  "aficheParaTuIglesia": "Official Poster for your Congregation",
+  "imprimeColocaAfiche": "Print this poster and place it at your church entrance or bulletin so parishioners can join by scanning the QR code.",
+  "cargandoAfiche": "Generating official poster..."
 }
+
+
 
 

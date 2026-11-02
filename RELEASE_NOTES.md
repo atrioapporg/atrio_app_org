@@ -1,5 +1,36 @@
 # 🚀 ATRIO App — Release Notes
 
+## [2026-11-02] (v0.1.0+32) - Sistema Integral de Vinculación a Iglesia por Código QR, Deep Linking Universal, Generador PDF A4 de Afiche Pastoral y Accesos Globales en la App
+
+### 📌 Resumen Ejecutivo
+
+Esta actualización introduce el sistema completo de **Vinculación a Iglesia mediante Código QR y Deep Linking** para feligreses y líderes pastorales en ATRIO, conectado con los servicios REST de Odoo 19 ERP:
+
+1. **Flujo de Escaneo y Vinculación Inmediata (Feligrés):**
+   - **Escáner Óptico de Hardware:** Pantalla dedicada [QrJoinScannerScreen](file:///c:/APPS/ATRIO/lib/screens/qr_join_scanner_screen.dart) con `mobile_scanner: ^6.0.0`, control de linterna, alternancia de cámara y parada instantánea del hardware al detectar el código.
+   - **Parser de Tokens Resiliente:** [QrTokenParser](file:///c:/APPS/ATRIO/lib/utils/qr_token_parser.dart) con soporte para URLs canónicas (`https://atrioapp.odoo19rd.com/c/<uuid>` y `http://...`), esquemas personalizados (`atrio://app/c/<uuid>`) y UUIDs planos RFC 4122.
+   - **Deep Linking Nativo (Universal Links & App Links):** [DeepLinkService](file:///c:/APPS/ATRIO/lib/servicios/deep_link_service.dart) con `app_links: ^6.3.0` para captura en frío (*cold-start*) y escucha reactiva en primer plano (*foreground stream*).
+   - **Modal Pastoral de Confirmación:** [ChurchJoinConfirmationModal](file:///c:/APPS/ATRIO/lib/widgets/church_join_confirmation_modal.dart) con identidad visual de la congregación, verificación y confirmación formal.
+   - **Membresía Diferida (*Deferred Join*):** Almacenamiento seguro del token (`pending_join_token`) en `FlutterSecureStorage` para usuarios invitados, reanudando la vinculación automáticamente tras iniciar sesión en [InicioSesionScreen](file:///c:/APPS/ATRIO/lib/screens/inicio_sesion_screen.dart).
+
+2. **Generador y Descargador de Afiche Oficial en PDF A4 (Pastoral):**
+   - **Previsualización y Exportación:** [ChurchPosterPreviewScreen](file:///c:/APPS/ATRIO/lib/screens/church_poster_preview_screen.dart) recrea el diseño gráfico del cartel oficial de ATRIO.
+   - **Generación Vectorial de Alta Resolución:** Uso de `pdf: ^3.13.1` y `printing: ^5.15.1` para emitir el afiche en formato estándar A4 con código QR vectorial nítido (`pw.BarcodeWidget`), garantizando legibilidad física al imprimirse en vinilo o papel.
+   - **Acceso en Dashboard Pastoral:** Botón *"Afiche y QR Oficial"* agregado en la sección de Acciones Rápidas de [ChurchAdminDashboardScreen](file:///c:/APPS/ATRIO/lib/screens/church_admin_dashboard_screen.dart).
+
+3. **Accesos Directos de Escaneo en Toda la Aplicación:**
+   - **Pantalla de Inicio ([InicioAtrioScreen](file:///c:/APPS/ATRIO/lib/screens/inicio_atrio_screen.dart)):** Icono de escaneo QR integrado en la cabecera superior junto a las notificaciones.
+   - **Buscador de Iglesias ([SeleccionarIglesiaScreen](file:///c:/APPS/ATRIO/lib/screens/seleccionar_iglesia_screen.dart)):** Icono dorado de escaneo QR integrado dentro de la barra de búsqueda para vinculación directa sin escribir.
+   - **Pestaña Iglesia ([IglesiaScreen](file:///c:/APPS/ATRIO/lib/screens/iglesia_screen.dart)):** Vista amigable de invitación para feligreses sin congregación (`_SinIglesiaSeleccionadaView`) y botón de escaneo debajo de *"Cambiar de iglesia"*.
+
+4. **Calidad, Pruebas y Certificación:**
+   - **Certificación en Vivo Odoo 19:** Validación exitosa de todo el ciclo contra endpoints reales (`GET /churches/join/{token}`, `POST /membership/request` y `POST /auth/login`) con la Parroquia San Pedro Nolasco (ID: 18).
+   - **Tests Automatizados:** 16/16 pruebas aprobadas al 100% (`test/qr_church_join_test.dart`, `test/join_church_provider_test.dart`, `test/odoo_live_qr_certification_test.dart`).
+   - **Internacionalización y Bidi:** Cero textos hardcodeados; todas las cadenas registradas en `app_es.arb` y `app_en.arb` y compiladas con `flutter gen-l10n`.
+   - **Análisis Estático:** 0 errores y 0 advertencias con `flutter analyze`.
+
+---
+
 ## [2026-11-01] (v0.1.0+31) - Corrección de Desbordamiento RenderFlex en MisDonacionesScreen y Optimización Responsiva
 
 ### 📌 Resumen Ejecutivo

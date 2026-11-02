@@ -15,7 +15,11 @@ import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/providers/join_church_provider.dart';
+import 'package:atrio/widgets/church_join_confirmation_modal.dart';
+import 'package:atrio/main.dart';
 import 'package:atrio/servicios/auth_service.dart';
+
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 
@@ -1774,8 +1778,36 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     if (!mounted) return;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
-    // Si tiene sesión activa autenticada en Odoo, validar primero si ya cuenta con iglesia
+    // Si tiene sesión activa autenticada en Odoo, validar primero si hay vinculación QR pendiente
     if (userProvider.isAuthenticated) {
+      final joinProvider = Provider.of<JoinChurchProvider>(context, listen: false);
+      final String? pendingToken = await joinProvider.getPendingToken();
+      if (!mounted) return;
+
+      if (pendingToken != null && pendingToken.isNotEmpty) {
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          InicioAtrioScreen.routeName,
+          (route) => false,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await joinProvider.checkAndResumePendingJoin(userProvider: userProvider);
+          if (joinProvider.step == JoinChurchStep.previewReady) {
+            final navContext = MyApp.navigatorKey.currentContext;
+            if (navContext != null && navContext.mounted) {
+              await showModalBottomSheet<void>(
+                context: navContext,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const ChurchJoinConfirmationModal(),
+              );
+            }
+          }
+        });
+        return;
+      }
+
       if (userProvider.hasSelectedOrLinkedChurch) {
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -1787,6 +1819,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       _navegarSegunStage(userProvider.currentStage);
       return;
     }
+
 
     // Fallback para usuarios offline o basados exclusivamente en persistencia SQLite
     final SharedPreferences prefs = await SharedPreferences.getInstance();

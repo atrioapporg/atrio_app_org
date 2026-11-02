@@ -20,6 +20,7 @@ import '../providers/user_provider.dart';
 import '../servicios/map_style_service.dart';
 import '../widgets/church_welcome_modal.dart';
 import 'inicio_atrio_screen.dart';
+import 'qr_join_scanner_screen.dart';
 
 /// Pantalla SeleccionarIglesiaScreen: Permite al usuario explorar y seleccionar su iglesia
 /// en el mapa interactivo con soporte de persistencia en ambos modos (Modo Radio 10/25/50 km
@@ -1142,8 +1143,11 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                   color: azulFondo,
                   size: screenWidth * 0.052,
                 ),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchController.text.isNotEmpty)
+                IconButton(
                   icon: Icon(
                     Icons.cancel_rounded,
                     color: Colors.grey.shade400,
@@ -1153,8 +1157,22 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
                     _searchController.clear();
                     provider.ejecutarBusquedaInmediata('');
                   },
-                )
-              : null,
+                ),
+              Tooltip(
+                message: l10n?.escanearQrIglesia ?? 'Escanear QR de Iglesia',
+                child: IconButton(
+                  icon: Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: amarilloOro,
+                    size: screenWidth * 0.056,
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, QrJoinScannerScreen.routeName);
+                  },
+                ),
+              ),
+            ],
+          ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(vertical: usableHeight * 0.012),
         ),

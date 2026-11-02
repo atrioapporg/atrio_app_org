@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/iglesia_model.dart';
 import '../providers/iglesia_provider.dart';
+import 'qr_join_scanner_screen.dart';
+import 'seleccionar_iglesia_screen.dart';
 
 class IglesiaScreen extends StatefulWidget {
   const IglesiaScreen({super.key});
@@ -399,7 +401,10 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     }
 
     if (iglesia == null) {
-      return const SizedBox.shrink();
+      return _SinIglesiaSeleccionadaView(
+        screenWidth: screenWidth,
+        usableHeight: usableHeight,
+      );
     }
 
     return Column(
@@ -584,6 +589,92 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                     Text(
                                       l10n?.exploraYSeleccionaComunidad ??
                                           'Explora y selecciona otra comunidad',
+                                      style: TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: screenWidth * 0.029,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.black38,
+                                size: screenWidth * 0.055,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: usableHeight * 0.012),
+                    // Botón para Vincularse con Código QR
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          QrJoinScannerScreen.routeName,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.035,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04,
+                            vertical: usableHeight * 0.014,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.035,
+                            ),
+                            border: Border.all(
+                              color: amarilloOro.withValues(alpha: 0.35),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: amarilloOro.withValues(alpha: 0.06),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(screenWidth * 0.024),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFFBEB),
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.025,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.qr_code_scanner_rounded,
+                                  color: amarilloOro,
+                                  size: screenWidth * 0.058,
+                                ),
+                              ),
+                              SizedBox(width: screenWidth * 0.035),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n?.escanearQrIglesia ??
+                                          'Escanear QR de Iglesia',
+                                      style: TextStyle(
+                                        color: azulFondo,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: screenWidth * 0.038,
+                                      ),
+                                    ),
+                                    SizedBox(height: usableHeight * 0.002),
+                                    Text(
+                                      l10n?.unirseCongregacion ??
+                                          'Unirme a esta congregación',
                                       style: TextStyle(
                                         color: Colors.black54,
                                         fontSize: screenWidth * 0.029,
@@ -1044,4 +1135,141 @@ class _InfoRow {
     this.trailingIcon,
     this.onTap,
   });
+}
+
+class _SinIglesiaSeleccionadaView extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+
+  const _SinIglesiaSeleccionadaView({
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+
+    return Container(
+      color: azulFondo,
+      width: screenWidth,
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: screenWidth * 0.22,
+                height: screenWidth * 0.22,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: amarilloOro.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  Icons.church_outlined,
+                  color: amarilloOro,
+                  size: screenWidth * 0.11,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.025),
+              Text(
+                l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: screenWidth * 0.052,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.012),
+              Text(
+                l10n?.modalBienvenidaIglesiaMensaje ??
+                    'Conéctate a tu iglesia local para acceder a devocionales, eventos, oraciones y la vida de tu comunidad',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: screenWidth * 0.035,
+                  height: 1.4,
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.035),
+              // Botón 1: Escanear Código QR
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: amarilloOro,
+                    foregroundColor: azulFondo,
+                    padding: EdgeInsets.symmetric(
+                      vertical: usableHeight * 0.016,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        screenWidth * 0.035,
+                      ),
+                    ),
+                    elevation: 3,
+                  ),
+                  icon: const Icon(Icons.qr_code_scanner_rounded),
+                  label: Text(
+                    l10n?.escanearQrIglesia ?? 'Escanear QR de Iglesia',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      QrJoinScannerScreen.routeName,
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: usableHeight * 0.015),
+              // Botón 2: Explorar en el mapa
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white38),
+                    padding: EdgeInsets.symmetric(
+                      vertical: usableHeight * 0.016,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        screenWidth * 0.035,
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text(
+                    l10n?.explorar ?? 'Explorar en el mapa',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.038,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      SeleccionarIglesiaScreen.routeName,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

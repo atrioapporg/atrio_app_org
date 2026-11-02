@@ -3715,4 +3715,76 @@ class AppLocalizationsEs extends AppLocalizations {
   String bienvenidoDeNuevoUsuario(String nombre) {
     return '¡Bienvenido de nuevo, $nombre!';
   }
+
+  @override
+  String get escanearQrIglesia => 'Escanear QR de Iglesia';
+
+  @override
+  String get apuntaCamaraQr =>
+      'Enfoca el código QR oficial de tu congregación en el recuadro';
+
+  @override
+  String get confirmarVinculacionTitulo => 'Confirmar Vinculación';
+
+  @override
+  String get deseasUnirteIglesia =>
+      '¿Deseas solicitar tu vinculación a esta congregación?';
+
+  @override
+  String get solicitarMembresia => 'Solicitar Membresía';
+
+  @override
+  String get unirseCongregacion => 'Unirme a esta congregación';
+
+  @override
+  String get yaEresMiembroTitulo => 'Membresía Activa';
+
+  @override
+  String get yaEresMiembroDesc => 'Ya perteneces a esta congregación.';
+
+  @override
+  String get solicitudEnviadaTitulo => '¡Solicitud Enviada con Éxito!';
+
+  @override
+  String get solicitudEnviadaDesc =>
+      'Tu solicitud fue registrada en Odoo y está pendiente de aprobación por el equipo pastoral.';
+
+  @override
+  String get iniciarSesionRequerido => 'Inicio de Sesión Requerido';
+
+  @override
+  String get iniciarSesionRequeridoDesc =>
+      'Para vincularte a esta iglesia, primero debes ingresar con tu cuenta de ATRIO. Guardaremos tu selección para reanudarla automáticamente.';
+
+  @override
+  String get irAInicioSesion => 'Iniciar Sesión Ahora';
+
+  @override
+  String get congregacionOficial => 'Congregación Oficial';
+
+  @override
+  String get noSePudoCargarLogo => 'Sin imagen disponible';
+
+  @override
+  String get errorQrInvalido =>
+      'El código QR escaneado no es válido para ATRIO.';
+
+  @override
+  String get aficheQrOficial => 'Afiche y QR Oficial';
+
+  @override
+  String get descargarAfichePdf => 'Descargar / Imprimir Afiche (PDF)';
+
+  @override
+  String get compartirEnlaceIglesia => 'Compartir Enlace';
+
+  @override
+  String get aficheParaTuIglesia => 'Afiche Oficial para tu Congregación';
+
+  @override
+  String get imprimeColocaAfiche =>
+      'Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.';
+
+  @override
+  String get cargandoAfiche => 'Generando afiche oficial...';
 }

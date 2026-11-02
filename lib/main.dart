@@ -29,8 +29,13 @@ import 'package:atrio/providers/admin_provider.dart';
 import 'package:atrio/providers/ads_provider.dart';
 import 'package:atrio/providers/moderation_provider.dart';
 import 'package:atrio/providers/recomendacion_iglesia_provider.dart';
+import 'package:atrio/providers/join_church_provider.dart';
+import 'package:atrio/servicios/deep_link_service.dart';
+import 'package:atrio/screens/qr_join_scanner_screen.dart';
+import 'package:atrio/screens/church_poster_preview_screen.dart';
 
 // Screens - Autenticación / Onboarding
+
 import 'package:atrio/screens/intro_encuentra_screen.dart';
 import 'package:atrio/screens/inicio_sesion_screen.dart';
 import 'package:atrio/screens/acceso_social_screen.dart';
@@ -268,7 +273,9 @@ class AppState extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TradicionCristianaProvider()),
         ChangeNotifierProvider(create: (_) => ExplorarProvider()),
         ChangeNotifierProvider(create: (_) => AjustesProvider()),
+        ChangeNotifierProvider(create: (_) => JoinChurchProvider()),
         ChangeNotifierProxyProvider<UserProvider, AdminProvider>(
+
           create: (ctx) => AdminProvider(api: ctx.read<UserProvider>().api),
           update: (ctx, userProvider, previous) =>
               previous ?? AdminProvider(api: userProvider.api),
@@ -322,8 +329,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           userProvider: userProvider,
           navigatorKey: MyApp.navigatorKey,
         );
+        DeepLinkService().initDeepLinks();
       }
     });
+
+
   }
 
   @override
@@ -441,8 +451,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     RecomendarIglesiaMapaScreen.routeName: (_) =>
         const RecomendarIglesiaMapaScreen(),
     ExitoRecomendacionScreen.routeName: (_) => const ExitoRecomendacionScreen(),
+    QrJoinScannerScreen.routeName: (_) => const QrJoinScannerScreen(),
+    ChurchPosterPreviewScreen.routeName: (_) =>
+        const ChurchPosterPreviewScreen(),
 
     // ---------- Principal ----------
+
     InicioAtrioScreen.routeName: (_) => const InicioAtrioScreen(),
     PerfilScreen.routeName: (_) => const PerfilScreen(),
     BibliaScreen.routeName: (_) => const BibliaScreen(),

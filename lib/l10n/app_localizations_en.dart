@@ -3689,4 +3689,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String bienvenidoDeNuevoUsuario(String nombre) {
     return 'Welcome back, $nombre!';
   }
+
+  @override
+  String get escanearQrIglesia => 'Scan Church QR';
+
+  @override
+  String get apuntaCamaraQr =>
+      'Align your congregation\'s official QR code within the frame';
+
+  @override
+  String get confirmarVinculacionTitulo => 'Confirm Affiliation';
+
+  @override
+  String get deseasUnirteIglesia =>
+      'Do you want to request membership in this congregation?';
+
+  @override
+  String get solicitarMembresia => 'Request Membership';
+
+  @override
+  String get unirseCongregacion => 'Join this congregation';
+
+  @override
+  String get yaEresMiembroTitulo => 'Active Membership';
+
+  @override
+  String get yaEresMiembroDesc =>
+      'You are already a member of this congregation.';
+
+  @override
+  String get solicitudEnviadaTitulo => 'Request Submitted!';
+
+  @override
+  String get solicitudEnviadaDesc =>
+      'Your request has been registered and is pending pastoral approval.';
+
+  @override
+  String get iniciarSesionRequerido => 'Login Required';
+
+  @override
+  String get iniciarSesionRequeridoDesc =>
+      'To join this church, please log in first. We will save your QR code and continue automatically.';
+
+  @override
+  String get irAInicioSesion => 'Log In Now';
+
+  @override
+  String get congregacionOficial => 'Official Congregation';
+
+  @override
+  String get noSePudoCargarLogo => 'No image available';
+
+  @override
+  String get errorQrInvalido => 'The scanned QR code is not valid for ATRIO.';
+
+  @override
+  String get aficheQrOficial => 'Official QR Poster';
+
+  @override
+  String get descargarAfichePdf => 'Download / Print Poster (PDF)';
+
+  @override
+  String get compartirEnlaceIglesia => 'Share Link';
+
+  @override
+  String get aficheParaTuIglesia => 'Official Poster for your Congregation';
+
+  @override
+  String get imprimeColocaAfiche =>
+      'Print this poster and place it at your church entrance or bulletin so parishioners can join by scanning the QR code.';
+
+  @override
+  String get cargandoAfiche => 'Generating official poster...';
 }

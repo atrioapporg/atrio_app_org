@@ -76,6 +76,21 @@
 		<string>ATRIO necesita acceder a tu ubicación para encontrar iglesias cercanas a ti.</string>
 		<key>GMSApiKey</key>
 		<string>$(MAPS_API_KEY)</string>
+		<key>GIDClientID</key>
+		<string>613074584216-0f60fd4ublhmrmg0jb4eicfvndrhua71.apps.googleusercontent.com</string>
+		<key>GIDServerClientID</key>
+		<string>641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.613074584216-0f60fd4ublhmrmg0jb4eicfvndrhua71</string>
+				</array>
+			</dict>
+		</array>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>fetch</string>

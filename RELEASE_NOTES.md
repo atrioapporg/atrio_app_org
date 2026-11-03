@@ -1,5 +1,29 @@
 # 🚀 ATRIO App — Release Notes
 
+## [2026-11-03] (v0.1.0+33) - Integración de Pruebas en iOS Físico desde Windows (xcross), Automatización con Flutter Driver y Configuración OAuth de Google Sign-In en iOS
+
+### 📌 Resumen Ejecutivo
+
+Esta actualización habilita el despliegue, depuración y automatización asistida por IA de **ATRIO** directamente en dispositivos **iPhone físicos (iOS 17+ / iOS 26.5)** desde un entorno host Windows mediante **xcross**, junto con la corrección de la configuración nativa de **Google Sign-In** en iOS:
+
+1. **Automatización e Inspección en Vivo con Flutter Driver (`test_driver/main_driver.dart`):**
+   - **Entrypoint de Pruebas ([main_driver.dart](file:///c:/APPS/ATRIO/test_driver/main_driver.dart)):** Nuevo punto de entrada que inicializa `enableFlutterDriverExtension(enableTextEntryEmulation: false)` antes de arrancar `app.main()`.
+   - **Coexistencia de Teclado Físico y Agente IA:** La desactivación de la emulación exclusiva de texto (`enableTextEntryEmulation: false`) permite que el teclado nativo de iOS se despliegue normalmente al tocar campos (`TextFormField`), al tiempo que el servidor Dart MCP (`flutter_driver_command` y `widget_inspector`) puede conducir e inspeccionar la interfaz en tiempo real vía `vm-service`.
+   - **Dependencia de Desarrollo:** Incorporación de `flutter_driver` (`sdk: flutter`) en `dev_dependencies` de [pubspec.yaml](file:///c:/APPS/ATRIO/pubspec.yaml).
+
+2. **Configuración Nativa de Google Sign-In en iOS ([Info.plist](file:///c:/APPS/ATRIO/ios/Runner/Info.plist)):**
+   - **Corrección de Excepción Nativa (`SIGABRT / NSInvalidArgumentException`):** Resolución del cierre inesperado al invocar `GoogleSignIn` en iOS por ausencia de configuración en `Info.plist`.
+   - **Credenciales OAuth Diferenciadas (iOS + Web Server):**
+     - `GIDClientID`: Configurado con el Client ID nativo de tipo iOS (`613074584216-0f60fd4ublhmrmg0jb4eicfvndrhua71.apps.googleusercontent.com`) asociado al Bundle ID prefijado (`XCR-8NY6488LNH.com.example.atrio`), resolviendo el bloqueo `Error 400: invalid_request (Custom scheme URIs are not allowed for 'WEB' client type)`.
+     - `GIDServerClientID`: Configurado con el Client ID de aplicación Web (`641023137906-6m8nt5665cljeeb0ob56q6kbl7ks8cad.apps.googleusercontent.com`) para la validación de tokens en el backend de Odoo 19.
+     - `CFBundleURLTypes` / `CFBundleURLSchemes`: Registro del esquema de retorno OAuth `com.googleusercontent.apps.613074584216-0f60fd4ublhmrmg0jb4eicfvndrhua71`.
+
+3. **Configuración de Firma y Despliegue con `xcross` (`pubspec.yaml`):**
+   - Registro de la directiva `xcross: bundle_id: prefixed` en [pubspec.yaml](file:///c:/APPS/ATRIO/pubspec.yaml) para aprovisionamiento automático sin colisiones en cuentas Apple Developer individuales.
+   - Documentación operativa paso a paso en PDF ([Guia_Pruebas_Atrio_iPhone11.pdf](file:///c:/APPS/ATRIO/Guia_Pruebas_Atrio_iPhone11.pdf)) para la ejecución diaria en modos Agente IA, Debug estándar y Release autónomo.
+
+---
+
 ## [2026-11-02] (v0.1.0+32) - Sistema Integral de Vinculación a Iglesia por Código QR, Deep Linking Universal, Generador PDF A4 de Afiche Pastoral y Accesos Globales en la App
 
 ### 📌 Resumen Ejecutivo
@@ -9,19 +33,19 @@ Esta actualización introduce el sistema completo de **Vinculación a Iglesia me
 1. **Flujo de Escaneo y Vinculación Inmediata (Feligrés):**
    - **Escáner Óptico de Hardware:** Pantalla dedicada [QrJoinScannerScreen](file:///c:/APPS/ATRIO/lib/screens/qr_join_scanner_screen.dart) con `mobile_scanner: ^6.0.0`, control de linterna, alternancia de cámara y parada instantánea del hardware al detectar el código.
    - **Parser de Tokens Resiliente:** [QrTokenParser](file:///c:/APPS/ATRIO/lib/utils/qr_token_parser.dart) con soporte para URLs canónicas (`https://atrioapp.odoo19rd.com/c/<uuid>` y `http://...`), esquemas personalizados (`atrio://app/c/<uuid>`) y UUIDs planos RFC 4122.
-   - **Deep Linking Nativo (Universal Links & App Links):** [DeepLinkService](file:///c:/APPS/ATRIO/lib/servicios/deep_link_service.dart) con `app_links: ^6.3.0` para captura en frío (*cold-start*) y escucha reactiva en primer plano (*foreground stream*).
+   - **Deep Linking Nativo (Universal Links & App Links):** [DeepLinkService](file:///c:/APPS/ATRIO/lib/servicios/deep_link_service.dart) con `app_links: ^6.3.0` para captura en frío (_cold-start_) y escucha reactiva en primer plano (_foreground stream_).
    - **Modal Pastoral de Confirmación:** [ChurchJoinConfirmationModal](file:///c:/APPS/ATRIO/lib/widgets/church_join_confirmation_modal.dart) con identidad visual de la congregación, verificación y confirmación formal.
-   - **Membresía Diferida (*Deferred Join*):** Almacenamiento seguro del token (`pending_join_token`) en `FlutterSecureStorage` para usuarios invitados, reanudando la vinculación automáticamente tras iniciar sesión en [InicioSesionScreen](file:///c:/APPS/ATRIO/lib/screens/inicio_sesion_screen.dart).
+   - **Membresía Diferida (_Deferred Join_):** Almacenamiento seguro del token (`pending_join_token`) en `FlutterSecureStorage` para usuarios invitados, reanudando la vinculación automáticamente tras iniciar sesión en [InicioSesionScreen](file:///c:/APPS/ATRIO/lib/screens/inicio_sesion_screen.dart).
 
 2. **Generador y Descargador de Afiche Oficial en PDF A4 (Pastoral):**
    - **Previsualización y Exportación:** [ChurchPosterPreviewScreen](file:///c:/APPS/ATRIO/lib/screens/church_poster_preview_screen.dart) recrea el diseño gráfico del cartel oficial de ATRIO.
    - **Generación Vectorial de Alta Resolución:** Uso de `pdf: ^3.13.1` y `printing: ^5.15.1` para emitir el afiche en formato estándar A4 con código QR vectorial nítido (`pw.BarcodeWidget`), garantizando legibilidad física al imprimirse en vinilo o papel.
-   - **Acceso en Dashboard Pastoral:** Botón *"Afiche y QR Oficial"* agregado en la sección de Acciones Rápidas de [ChurchAdminDashboardScreen](file:///c:/APPS/ATRIO/lib/screens/church_admin_dashboard_screen.dart).
+   - **Acceso en Dashboard Pastoral:** Botón _"Afiche y QR Oficial"_ agregado en la sección de Acciones Rápidas de [ChurchAdminDashboardScreen](file:///c:/APPS/ATRIO/lib/screens/church_admin_dashboard_screen.dart).
 
 3. **Accesos Directos de Escaneo en Toda la Aplicación:**
    - **Pantalla de Inicio ([InicioAtrioScreen](file:///c:/APPS/ATRIO/lib/screens/inicio_atrio_screen.dart)):** Icono de escaneo QR integrado en la cabecera superior junto a las notificaciones.
    - **Buscador de Iglesias ([SeleccionarIglesiaScreen](file:///c:/APPS/ATRIO/lib/screens/seleccionar_iglesia_screen.dart)):** Icono dorado de escaneo QR integrado dentro de la barra de búsqueda para vinculación directa sin escribir.
-   - **Pestaña Iglesia ([IglesiaScreen](file:///c:/APPS/ATRIO/lib/screens/iglesia_screen.dart)):** Vista amigable de invitación para feligreses sin congregación (`_SinIglesiaSeleccionadaView`) y botón de escaneo debajo de *"Cambiar de iglesia"*.
+   - **Pestaña Iglesia ([IglesiaScreen](file:///c:/APPS/ATRIO/lib/screens/iglesia_screen.dart)):** Vista amigable de invitación para feligreses sin congregación (`_SinIglesiaSeleccionadaView`) y botón de escaneo debajo de _"Cambiar de iglesia"_.
 
 4. **Calidad, Pruebas y Certificación:**
    - **Certificación en Vivo Odoo 19:** Validación exitosa de todo el ciclo contra endpoints reales (`GET /churches/join/{token}`, `POST /membership/request` y `POST /auth/login`) con la Parroquia San Pedro Nolasco (ID: 18).

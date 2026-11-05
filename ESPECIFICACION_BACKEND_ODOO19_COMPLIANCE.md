@@ -360,17 +360,25 @@ Llamado por `AtrioApi.blockUgcUser` y `ModerationService.blockUgcUser`.
 
 ## Tabla Resumen de Endpoints para Verificación en Odoo 19
 
+> **Nota de Sincronización Backend (5 de noviembre de 2026):**
+> Tras validación conjunta con el equipo de Backend, se confirman las siguientes precisiones:
+> 1. **Donaciones Web:** La URL pública operativa en producción es `/donaciones` (`https://atrioapp.odoo19rd.com/donaciones` o `https://atrioapp.org/donaciones`), destinada a donaciones generales a ATRIO. La app ya apunta a esta ruta oficial.
+> 2. **Eliminación de Cuenta:** Odoo 19 expone `DELETE /atrio/portal/api/auth/account` y `POST /atrio/portal/api/auth/delete_account`. La app móvil ha sido actualizada para consumir prioritariamente `DELETE /auth/account` con fallback a `POST /auth/delete_account`.
+> 3. **Moderación UGC:** Se adopta formalmente el prefijo `/ugc/*` para acciones de usuarios finales (`POST /ugc/report` y `POST /ugc/block-user`), manteniendo `/platform/moderation/*` reservado para el Super Admin.
+> 4. **Suscripción de Iglesia (Tienda / Carrito):** El error `403 subscription_required` en la iglesia demo 22 se subsana creando o renovando una suscripción desde la consola de Atrio en Odoo.
+
 | Etapa | Método | Ruta Completa en Odoo 19 | Acción en Odoo 19 | Consumido en Flutter por |
 | :---: | :---: | :--- | :--- | :--- |
 | **1** | `GET` | `/atrio/portal/api/me` | **Actualizar:** Añadir `church.kyc_status` y `church_kyc_status` (`draft`, `pending_kyc`, `approved`, `suspended`). | `UserModel.fromOdooJson` |
 | **1** | `GET` | `/atrio/portal/api/churches` y `/churches/{id}` | **Actualizar:** Añadir `kyc_status` en cada iglesia. | `IglesiaModel.fromJson` |
 | **1** | `GET` | `/atrio/portal/api/admin/stats` | **Actualizar:** Añadir `kyc_status` en raíz y/o en `offerings.kyc_status`. | `AdminChurchStatsModel.fromJson` |
-| **2** | `GET` | `/atrio/portal/donate/checkout` | **Crear (QWeb):** Portal web externo de ofrendas con retorno `atrio://donation-completed?tx_id=...&status=completed`. | `AtrioApi.createDonationWebCheckoutUrl` |
+| **2** | `GET` | `/donaciones` | **Confirmado:** Pasarela web externa oficial de donaciones de ATRIO (`https://atrioapp.odoo19rd.com/donaciones`). | `AtrioApi.createDonationWebCheckoutUrl` |
 | **2** | `GET` | `/atrio/portal/api/donations/status?tx_id=...` | **Crear (API):** Verifica el estado de la transacción tras el Deep Link de retorno. | `AtrioApi.donationStatus` y `DeepLinkService` |
 | **3** | `GET/POST` | Catálogo y Pedidos (`product.template` / `sale.order`) | **Actualizar:** Campo `atrio_product_type` (`physical`/`digital`) y constraint `_check_single_product_type`. | `ProductoModel.fromJson` y `CarritoModel` |
 | **4** | `GET` | `/atrio/portal/ads/{ad_id}/billing` | **Crear (QWeb):** Portal web externo para pago B2B de campañas publicitarias aprobadas. | `AdsProvider.openExternalBillingPortal` |
-| **5** | `POST` | `/atrio/portal/api/ugc/report` | **Crear (API):** Recibe reportes de contenido inapropiado y alimenta `/platform/moderation/content`. | `AtrioApi.reportUgcContent` |
-| **5** | `POST` | `/atrio/portal/api/ugc/block-user` | **Crear (API):** Registra bloqueo de autor/contenido por parte de un feligrés. | `AtrioApi.blockUgcUser` |
+| **5** | `DELETE` / `POST` | `/atrio/portal/api/auth/account` o `/auth/delete_account` | **Confirmado:** Supresión definitiva de cuenta y datos personales. | `AtrioApi.deleteAccount` |
+| **6** | `POST` | `/atrio/portal/api/ugc/report` | **Confirmado:** Recibe reportes de contenido inapropiado por parte de feligreses y alimenta la cola de moderación. | `AtrioApi.reportUgcContent` |
+| **6** | `POST` | `/atrio/portal/api/ugc/block-user` | **Confirmado:** Registra bloqueo de autor/contenido por parte de un feligrés (con alias `/ugc/block`). | `AtrioApi.blockUgcUser` |
 
 ---
 

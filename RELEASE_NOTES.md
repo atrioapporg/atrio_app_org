@@ -12,13 +12,13 @@
 ### 1. Cumplimiento Normativo App Store & Google Play (Etapas 1 a 6)
 
 - **Apple Guideline 3.1.1 (Donaciones Caritativas y Recaudación de Fondos):**
-  - Implementación de la pasarela web externa oficial (`SFSafariViewController` en iOS y `Chrome Custom Tabs` en Android) vía Odoo 19 (`/odoo/portal/donations`), garantizando que las ofrendas y diezmos voluntarios no utilicen el sistema de compras dentro de la aplicación (_In-App Purchase_).
+  - Implementación de la pasarela web externa oficial (`SFSafariViewController` en iOS y `Chrome Custom Tabs` en Android) vía Odoo 19 (`https://atrioapp.odoo19rd.com/donaciones`), garantizando que las ofrendas y donaciones voluntarias no utilicen el sistema de compras dentro de la aplicación (_In-App Purchase_).
   - Verificación institucional previa (**KYC**): Módulo de ofrendas habilitado exclusivamente para congregaciones verificadas con estatus legal (República Dominicana: _ISFL Ley 122-05_ | Honduras: _Personería Jurídica y RTN_).
 - **Apple Guideline 5.1.1(v) (Eliminación de Cuenta y Datos Personales):**
-  - Incorporación del flujo de eliminación incondicional, inmediata e irreversible de cuenta y datos personales directamente desde la pantalla de Perfil (`DELETE /api/user/account`), con diálogo de confirmación y advertencias de consecuencias.
+  - Incorporación del flujo de eliminación incondicional, inmediata e irreversible de cuenta y datos personales directamente desde la pantalla de Perfil (`DELETE /atrio/portal/api/auth/account` o `POST /auth/delete_account`), con diálogo de confirmación y advertencias de consecuencias.
 - **Apple Guideline 1.2 & Google Play (Seguridad de Contenido Generado por Usuarios - UGC):**
   - Sistema de moderación y tolerancia cero en avisos comunitarios, peticiones y publicaciones.
-  - Menú contextual interactivo para **reportar contenido inapropiado** (revisado por el equipo en < 24 horas) y **bloquear al autor** de forma inmediata (`POST /api/ugc/report` y `POST /api/ugc/block`).
+  - Menú contextual interactivo para **reportar contenido inapropiado** (revisado por el equipo en < 24 horas) y **bloquear al autor** de forma inmediata (`POST /atrio/portal/api/ugc/report` y `POST /atrio/portal/api/ugc/block-user`).
 - **Términos de Servicio y EULA:**
   - Actualización de los Términos y Política de Privacidad reflejando la retención de datos, tolerancia cero ante lenguaje abusivo y directrices de donaciones.
 - **Especificación Técnica Odoo 19 Backend:**

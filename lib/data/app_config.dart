@@ -22,7 +22,7 @@ class AppConfig {
 
   static const String odooDeleteAccountEndpoint = String.fromEnvironment(
     'ODOO_DELETE_ACCOUNT_ENDPOINT',
-    defaultValue: '/api/v1/user/delete_account',
+    defaultValue: '/auth/account',
   );
 
   /// ID de la iglesia plataforma por defecto de Odoo 19 para altas iniciales.

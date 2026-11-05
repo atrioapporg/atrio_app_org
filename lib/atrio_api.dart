@@ -645,20 +645,20 @@ class AtrioApi {
 
     try {
       return await _send(
-        'POST',
+        'DELETE',
         configuredEndpoint,
         body: payload,
         retryAuth: true,
       );
     } on AtrioApiException catch (e) {
       debugPrint(
-        '⚠️ [AtrioApi] Falló POST a $configuredEndpoint (${e.status} ${e.code}). Probando endpoint alternativo...',
+        '⚠️ [AtrioApi] Falló DELETE a $configuredEndpoint (${e.status} ${e.code}). Probando alternativa POST /auth/delete_account...',
       );
       if (e.statusCode == 404 || e.statusCode == 405) {
         try {
           return await _send(
-            'DELETE',
-            '/auth/account',
+            'POST',
+            '/auth/delete_account',
             body: payload,
             retryAuth: true,
           );
@@ -666,7 +666,7 @@ class AtrioApi {
           if (e2.statusCode == 404 || e2.statusCode == 405) {
             return await _send(
               'POST',
-              '/auth/delete_account',
+              configuredEndpoint,
               body: payload,
               retryAuth: true,
             );
@@ -1155,7 +1155,7 @@ class AtrioApi {
     );
     final encodedConcept = Uri.encodeComponent(notes ?? 'Ofrenda');
     final portalUrl =
-        '$baseUrl/donations/portal?amount=${amount.toStringAsFixed(2)}'
+        '$baseUrl/donaciones?amount=${amount.toStringAsFixed(2)}'
         '&concept=$encodedConcept'
         '&return_url=$encodedReturn';
     return {'checkout_url': portalUrl, 'reference': fallbackRef};
@@ -1746,13 +1746,26 @@ class AtrioApi {
     },
   );
 
-  /// Bloquea inmediatamente al autor o fuente de un contenido inapropiado (POST /ugc/block-user).
+  /// Bloquea inmediatamente al autor o fuente de un contenido inapropiado (POST /ugc/block-user con fallback a /ugc/block).
   Future<Map<String, dynamic>> blockUgcUser({
     required int targetId,
     String targetType = 'author',
-  }) => _send(
-    'POST',
-    '/ugc/block-user',
-    body: {'target_id': targetId, 'target_type': targetType},
-  );
+  }) async {
+    try {
+      return await _send(
+        'POST',
+        '/ugc/block-user',
+        body: {'target_id': targetId, 'target_type': targetType},
+      );
+    } on AtrioApiException catch (e) {
+      if (e.statusCode == 404 || e.statusCode == 405) {
+        return await _send(
+          'POST',
+          '/ugc/block',
+          body: {'target_id': targetId, 'target_type': targetType},
+        );
+      }
+      rethrow;
+    }
+  }
 }

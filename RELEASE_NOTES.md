@@ -10,9 +10,10 @@
 ## 🌟 Novedades y Mejoras Principales
 
 ### 1. Cumplimiento Normativo App Store & Google Play (Etapas 1 a 6)
+
 - **Apple Guideline 3.1.1 (Donaciones Caritativas y Recaudación de Fondos):**
-  - Implementación de la pasarela web externa oficial (`SFSafariViewController` en iOS y `Chrome Custom Tabs` en Android) vía Odoo 19 (`/odoo/portal/donations`), garantizando que las ofrendas y diezmos voluntarios no utilicen el sistema de compras dentro de la aplicación (*In-App Purchase*).
-  - Verificación institucional previa (**KYC**): Módulo de ofrendas habilitado exclusivamente para congregaciones verificadas con estatus legal (República Dominicana: *ISFL Ley 122-05* | Honduras: *Personería Jurídica y RTN*).
+  - Implementación de la pasarela web externa oficial (`SFSafariViewController` en iOS y `Chrome Custom Tabs` en Android) vía Odoo 19 (`/odoo/portal/donations`), garantizando que las ofrendas y diezmos voluntarios no utilicen el sistema de compras dentro de la aplicación (_In-App Purchase_).
+  - Verificación institucional previa (**KYC**): Módulo de ofrendas habilitado exclusivamente para congregaciones verificadas con estatus legal (República Dominicana: _ISFL Ley 122-05_ | Honduras: _Personería Jurídica y RTN_).
 - **Apple Guideline 5.1.1(v) (Eliminación de Cuenta y Datos Personales):**
   - Incorporación del flujo de eliminación incondicional, inmediata e irreversible de cuenta y datos personales directamente desde la pantalla de Perfil (`DELETE /api/user/account`), con diálogo de confirmación y advertencias de consecuencias.
 - **Apple Guideline 1.2 & Google Play (Seguridad de Contenido Generado por Usuarios - UGC):**
@@ -26,6 +27,7 @@
 ---
 
 ### 2. Depuración de Métodos de Pago y Pasarelas
+
 - Eliminación de leyendas y botones de pago redundantes (`Transferencia Bancaria`, `Apple Pay`, `Google Pay`, `PayPal`) en las pantallas:
   - [`realizar_aporte_screen.dart`](./lib/screens/realizar_aporte_screen.dart)
   - [`aportar_a_proyecto_screen.dart`](./lib/screens/aportar_a_proyecto_screen.dart)
@@ -37,18 +39,21 @@
 ### 3. Auditoría y Refactorización UI/UX Integral (`ui-ux-pro-max`)
 
 #### A. Pantalla de Perfil ([`perfil_screen.dart`](./lib/screens/perfil_screen.dart))
+
 - **Cero Textos Hardcodeados:** 20 nuevas claves en `app_es.arb` y `app_en.arb` eliminando textos literales y erradicando mojibake histórico (`ó`, `í`, `é`).
 - **Touch Targets (WCAG 2.5.5):** Botón principal de estado de iglesia elevado de 38dp a **48dp** ergonómico.
 - **Accesibilidad y Contraste (WCAG AAA):** Botón de edición con `tooltip` y accesibilidad semántica; contraste tipográfico sobre degradados oscuros elevado a **> 7:1**.
 - **Direccionalidad Bidi:** Adopción de `EdgeInsetsDirectional.fromSTEB` en modales.
 
 #### B. Pantalla de Inicio ([`inicio_atrio_screen.dart`](./lib/screens/inicio_atrio_screen.dart))
+
 - **Optimización de Rendimiento:** Desacoplamiento del `setState()` global en el banner rotativo de avisos, eliminando la reconstrucción continua de la pantalla cada 3–5 segundos.
-- **Feedback Táctil:** Reemplazo de `GestureDetector` por `Material` + `InkWell` interactivo en la matriz de 8 acciones y en las tarjetas del feed, ofreciendo confirmación háptica/visual (*ripple*).
+- **Feedback Táctil:** Reemplazo de `GestureDetector` por `Material` + `InkWell` interactivo en la matriz de 8 acciones y en las tarjetas del feed, ofreciendo confirmación háptica/visual (_ripple_).
 - **Ergonomía Táctil:** Botón de cierre del modal emergente ampliado de 22x22dp a **48x48dp**. Botones de escaneo QR y notificaciones estandarizados a 48dp con soporte TalkBack/VoiceOver.
 - **Contraste de Etiquetas:** Ajuste de contraste en chips a **> 5.5:1** (WCAG AA).
 
 #### C. Pantalla de Iglesia ([`iglesia_screen.dart`](./lib/screens/iglesia_screen.dart))
+
 - **Internacionalización Completa:** Plantillas de correo y mensajes de compartir Plus Code migradas a formato ICU con parámetros.
 - **Áreas Táctiles:** Botón "Ver ahora" (próximo culto) elevado a 44dp y menú de seguridad UGC envuelto en contenedor táctil de **48x48dp**.
 - **Accesibilidad Semántica:** Calificación por estrellas y contador de reseñas verbalizados audiblemente mediante `Semantics`.
@@ -56,6 +61,13 @@
 ---
 
 ## 🛠️ Verificación y Calidad de Código
+ (próximo culto) elevado a 44dp y menú de seguridad UGC envuelto en contenedor táctil de **48x48dp**.
+- **Accesibilidad Semántica:** Calificación por estrellas y contador de reseñas verbalizados audiblemente mediante `Semantics`.
+
+---
+
+## 🛠️ Verificación y Calidad de Código
+
 - **Dart Analyzer:** `dart analyze` ejecutado con **0 errores y 0 advertencias**.
 - **Localización:** `flutter gen-l10n` ejecutado con sincronización perfecta ES/EN.
 - **Seguridad:** Purgadas credenciales locales del control de versiones (`.gitignore`).

@@ -1,108 +1,100 @@
-import 'package:atrio/screens/emisoras_screen.dart';
-import 'package:atrio/screens/mis_favoritos_screen.dart';
-import 'package:atrio/screens/mis_notas_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:atrio/atrio_api.dart';
+import 'package:atrio/data/app_config.dart';
+import 'package:atrio/data/atrio_database_helper.dart';
+import 'package:atrio/data/database_helper.dart';
 import 'package:atrio/l10n/app_localizations.dart';
-import 'package:provider/provider.dart';
-import 'package:feedback/feedback.dart';
-import 'package:atrio/theme/atrio_feedback_theme.dart';
-import 'package:atrio/widgets/atrio_better_feedback.dart';
-import 'package:atrio/widgets/atrio_feedback_form.dart';
-import 'package:atrio/servicios/device_notification_service.dart';
-
-// Paquetes - Google Maps
-import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-
-// Providers
-import 'package:atrio/providers/app_provider.dart';
-import 'package:atrio/providers/user_provider.dart';
-import 'package:atrio/providers/iglesia_provider.dart';
-import 'package:atrio/providers/aporte_provider.dart';
-import 'package:atrio/providers/proyecto_solidario_provider.dart';
-import 'package:atrio/providers/explorar_provider.dart';
-import 'package:atrio/providers/biblia_provider.dart';
-import 'package:atrio/providers/tradicion_cristiana_provider.dart';
-import 'package:atrio/providers/ajustes_provider.dart';
+import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/admin_provider.dart';
 import 'package:atrio/providers/ads_provider.dart';
-import 'package:atrio/providers/moderation_provider.dart';
-import 'package:atrio/providers/recomendacion_iglesia_provider.dart';
+import 'package:atrio/providers/ajustes_provider.dart';
+import 'package:atrio/providers/aporte_provider.dart';
+// Providers
+import 'package:atrio/providers/app_provider.dart';
+import 'package:atrio/providers/biblia_provider.dart';
+import 'package:atrio/providers/explorar_provider.dart';
+import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/join_church_provider.dart';
-import 'package:atrio/servicios/deep_link_service.dart';
-import 'package:atrio/screens/qr_join_scanner_screen.dart';
+import 'package:atrio/providers/moderation_provider.dart';
+import 'package:atrio/providers/proyecto_solidario_provider.dart';
+import 'package:atrio/providers/recomendacion_iglesia_provider.dart';
+import 'package:atrio/providers/tradicion_cristiana_provider.dart';
+import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/screens/acceso_social_screen.dart';
+import 'package:atrio/screens/admin_ads_screen.dart';
+import 'package:atrio/screens/admin_requests_screen.dart';
+import 'package:atrio/screens/aportar_a_proyecto_screen.dart';
+import 'package:atrio/screens/ayuda_soporte_screen.dart';
+import 'package:atrio/screens/biblia_screen.dart';
+import 'package:atrio/screens/church_admin_dashboard_screen.dart';
 import 'package:atrio/screens/church_poster_preview_screen.dart';
-
+import 'package:atrio/screens/configuracion_screen.dart';
+import 'package:atrio/screens/confirmar_donacion_screen.dart';
+import 'package:atrio/screens/crear_cuenta_screen.dart';
+import 'package:atrio/screens/crear_evento_screen.dart';
+import 'package:atrio/screens/crear_mi_iglesia_screen.dart';
+import 'package:atrio/screens/crear_predica_screen.dart';
+import 'package:atrio/screens/create_ad_campaign_screen.dart';
+import 'package:atrio/screens/detalle_libro_biblia_screen.dart';
+// Screens - Donaciones / Aportes
+import 'package:atrio/screens/donaciones_screen.dart';
+import 'package:atrio/screens/emisoras_screen.dart';
+// Screens - Contenido / Tienda / Biblia
+import 'package:atrio/screens/escuchar_libro_biblia_screen.dart';
+import 'package:atrio/screens/esperando_aprobacion_screen.dart';
+import 'package:atrio/screens/eventos_screen.dart';
+import 'package:atrio/screens/exito_recomendacion_screen.dart';
+import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
+import 'package:atrio/screens/iglesias_en_mapa_screen.dart';
+// Screens - Principal
+import 'package:atrio/screens/inicio_atrio_screen.dart';
+import 'package:atrio/screens/inicio_sesion_screen.dart';
 // Screens - Autenticación / Onboarding
 
 import 'package:atrio/screens/intro_encuentra_screen.dart';
-import 'package:atrio/screens/inicio_sesion_screen.dart';
-import 'package:atrio/screens/acceso_social_screen.dart';
-import 'package:atrio/screens/crear_cuenta_screen.dart';
-import 'package:atrio/screens/recuperar_clave_screen.dart';
-import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
-import 'package:atrio/screens/tradicion_cristiana_screen.dart';
-import 'package:atrio/screens/esperando_aprobacion_screen.dart';
-import 'package:atrio/screens/iglesia_pendiente_activacion_screen.dart';
-import 'package:atrio/screens/crear_mi_iglesia_screen.dart';
-import 'package:atrio/screens/recomendar_iglesia_mapa_screen.dart';
-import 'package:atrio/screens/exito_recomendacion_screen.dart';
-
-// Screens - Principal
-import 'package:atrio/screens/inicio_atrio_screen.dart';
-import 'package:atrio/screens/perfil_screen.dart';
-import 'package:atrio/screens/biblia_screen.dart';
-import 'package:atrio/screens/eventos_screen.dart';
-import 'package:atrio/screens/iglesias_en_mapa_screen.dart';
-import 'package:atrio/screens/notificaciones_screen.dart';
-import 'package:atrio/screens/ayuda_soporte_screen.dart';
-import 'package:atrio/screens/terminos_privacidad_screen.dart';
-import 'package:atrio/screens/configuracion_screen.dart';
-
-// Screens - Donaciones / Aportes
-import 'package:atrio/screens/donaciones_screen.dart';
-import 'package:atrio/screens/mis_donaciones_screen.dart';
-import 'package:atrio/screens/confirmar_donacion_screen.dart';
-import 'package:atrio/screens/realizar_aporte_screen.dart';
-import 'package:atrio/screens/aportar_a_proyecto_screen.dart';
-import 'package:atrio/screens/proyecto_solidario_screen.dart';
-
-// Screens - Solicitudes
-import 'package:atrio/screens/tipos_solicitud_screen.dart';
-import 'package:atrio/screens/nueva_solicitud_screen.dart';
-import 'package:atrio/screens/seguimiento_solicitud_screen.dart';
-
-// Screens - Contenido / Tienda / Biblia
-import 'package:atrio/screens/escuchar_libro_biblia_screen.dart';
 import 'package:atrio/screens/lectura_capitulo_screen.dart';
-import 'package:atrio/screens/detalle_libro_biblia_screen.dart';
 import 'package:atrio/screens/libros_de_biblia.dart';
-import 'package:atrio/screens/tienda_screen.dart';
-import 'package:atrio/screens/mis_pedidos_screen.dart';
 import 'package:atrio/screens/libros_screen.dart';
-import 'package:atrio/screens/videos_transmisiones_screen.dart';
-import 'package:atrio/screens/crear_evento_screen.dart';
-import 'package:atrio/screens/crear_predica_screen.dart';
-import 'package:atrio/screens/admin_ads_screen.dart';
-import 'package:atrio/screens/create_ad_campaign_screen.dart';
+import 'package:atrio/screens/mis_donaciones_screen.dart';
+import 'package:atrio/screens/mis_favoritos_screen.dart';
+import 'package:atrio/screens/mis_notas_screen.dart';
+import 'package:atrio/screens/mis_pedidos_screen.dart';
 import 'package:atrio/screens/moderation_screen.dart';
 import 'package:atrio/screens/moderation_words_screen.dart';
-import 'package:atrio/screens/church_admin_dashboard_screen.dart';
-import 'package:atrio/screens/admin_requests_screen.dart';
-
-import 'package:atrio/data/atrio_database_helper.dart';
-import 'package:atrio/data/database_helper.dart';
-import 'package:atrio/servicios/connectivity_service.dart';
-import 'package:atrio/servicios/token_storage_service.dart';
-import 'package:atrio/atrio_api.dart';
-import 'package:atrio/data/app_config.dart';
-import 'package:atrio/modelos/user_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:atrio/screens/notificaciones_screen.dart';
+import 'package:atrio/screens/nueva_solicitud_screen.dart';
+import 'package:atrio/screens/perfil_screen.dart';
+import 'package:atrio/screens/proyecto_solidario_screen.dart';
+import 'package:atrio/screens/qr_join_scanner_screen.dart';
+import 'package:atrio/screens/realizar_aporte_screen.dart';
+import 'package:atrio/screens/recomendar_iglesia_mapa_screen.dart';
+import 'package:atrio/screens/recuperar_clave_screen.dart';
+import 'package:atrio/screens/seguimiento_solicitud_screen.dart';
+import 'package:atrio/screens/seleccionar_iglesia_screen.dart';
+import 'package:atrio/screens/splash_screen.dart';
+import 'package:atrio/screens/terminos_privacidad_screen.dart';
 // Screens - Pruebas
 import 'package:atrio/screens/test_pago_screen.dart';
-import 'package:atrio/screens/splash_screen.dart';
+import 'package:atrio/screens/tienda_screen.dart';
+// Screens - Solicitudes
+import 'package:atrio/screens/tipos_solicitud_screen.dart';
+import 'package:atrio/screens/tradicion_cristiana_screen.dart';
+import 'package:atrio/screens/videos_transmisiones_screen.dart';
+import 'package:atrio/servicios/connectivity_service.dart';
+import 'package:atrio/servicios/daily_verse_notification_service.dart';
+import 'package:atrio/servicios/deep_link_service.dart';
+import 'package:atrio/servicios/device_notification_service.dart';
+import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:atrio/theme/atrio_feedback_theme.dart';
+import 'package:atrio/widgets/atrio_better_feedback.dart';
+import 'package:atrio/widgets/atrio_feedback_form.dart';
+import 'package:feedback/feedback.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+// Paquetes - Google Maps
+import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   // 1. Vincular motor de Flutter
@@ -275,7 +267,6 @@ class AppState extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AjustesProvider()),
         ChangeNotifierProvider(create: (_) => JoinChurchProvider()),
         ChangeNotifierProxyProvider<UserProvider, AdminProvider>(
-
           create: (ctx) => AdminProvider(api: ctx.read<UserProvider>().api),
           update: (ctx, userProvider, previous) =>
               previous ?? AdminProvider(api: userProvider.api),
@@ -321,7 +312,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         final userProvider = context.read<UserProvider>();
         DeviceNotificationService.instance.initialize(
@@ -330,10 +321,81 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           navigatorKey: MyApp.navigatorKey,
         );
         DeepLinkService().initDeepLinks();
+
+        // Inicialización y manejo de toque (redirección in-app) para la Palabra del Día
+        final navContext = MyApp.navigatorKey.currentContext;
+        final activeLocale =
+            context.read<AjustesProvider>().locale ?? const Locale('es');
+        final l10n =
+            (navContext != null ? AppLocalizations.of(navContext) : null) ??
+            lookupAppLocalizations(
+              AppLocalizations.supportedLocales.any(
+                    (l) => l.languageCode == activeLocale.languageCode,
+                  )
+                  ? Locale(activeLocale.languageCode)
+                  : const Locale('es'),
+            );
+        await DailyVerseNotificationService.instance.initialize(
+          channelName: l10n.dailyWordChannelName,
+          channelDescription: l10n.dailyWordChannelDescription,
+          onSelectPayload: (Map<String, dynamic> data) {
+            if (data['type'] == 'daily_verse') {
+              final navState = MyApp.navigatorKey.currentState;
+              if (navState != null) {
+                navState.pushNamed(
+                  LecturaCapituloScreen.routeName,
+                  arguments: {
+                    'id': data['bookId'] is int
+                        ? data['bookId']
+                        : 50, // Filipenses por defecto
+                    'nombre':
+                        data['reference']?.toString().split(' ').first ??
+                        'Filipenses',
+                    'capitulo': data['chapter'] ?? 4,
+                    'totalCapitulos': 4,
+                    'subtitulo': data['reference'] ?? '',
+                    'verso': data['verse'] ?? 6,
+                  },
+                );
+              }
+            }
+          },
+        );
+
+        // Solicitar permisos y programar la oración matutina diaria (7:00 AM)
+        final granted = await DailyVerseNotificationService.instance
+            .requestPermissions();
+        if (granted && mounted) {
+          final morningItem = DailyVerseNotificationItem(
+            dayOffset: 0,
+            title: l10n.dailyPrayerMorningTitle,
+            reference: 'Filipenses 4:6-7',
+            body: l10n.dailyPrayerDefaultBody,
+            bookId: 'PHP',
+            chapter: 4,
+            verse: 6,
+          );
+          await DailyVerseNotificationService.instance
+              .scheduleDailyMorningVerse(
+                item: morningItem,
+                channelName: l10n.dailyWordChannelName,
+                channelDescription: l10n.dailyWordChannelDescription,
+                actionAmenLabel: l10n.dailyPrayerAmenAction,
+                hour: 7,
+                minute: 0,
+              );
+          // Disparo de prueba inmediato (4 segundos) para validar en el dispositivo
+          await DailyVerseNotificationService.instance
+              .showTestNotificationImmediately(
+                item: morningItem,
+                channelName: l10n.dailyWordChannelName,
+                channelDescription: l10n.dailyWordChannelDescription,
+                actionAmenLabel: l10n.dailyPrayerAmenAction,
+                delaySeconds: 4,
+              );
+        }
       }
     });
-
-
   }
 
   @override
@@ -456,7 +518,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         const ChurchPosterPreviewScreen(),
 
     // ---------- Principal ----------
-
     InicioAtrioScreen.routeName: (_) => const InicioAtrioScreen(),
     PerfilScreen.routeName: (_) => const PerfilScreen(),
     BibliaScreen.routeName: (_) => const BibliaScreen(),

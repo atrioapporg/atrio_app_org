@@ -7295,6 +7295,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Explorar en el mapa'**
   String get explorarEnElMapa;
+
+  /// No description provided for @dailyWordChannelName.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabra y Oración del Día'**
+  String get dailyWordChannelName;
+
+  /// No description provided for @dailyWordChannelDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones diarias matutinas con versículos y oraciones'**
+  String get dailyWordChannelDescription;
+
+  /// No description provided for @dailyPrayerMorningTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Oración Matutina'**
+  String get dailyPrayerMorningTitle;
+
+  /// No description provided for @dailyPrayerAmenAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Amén ›'**
+  String get dailyPrayerAmenAction;
+
+  /// No description provided for @dailyPrayerDefaultBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.'**
+  String get dailyPrayerDefaultBody;
 }
 
 class _AppLocalizationsDelegate

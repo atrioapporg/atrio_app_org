@@ -4128,4 +4128,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get explorarEnElMapa => 'Explorar en el mapa';
+
+  @override
+  String get dailyWordChannelName => 'Palabra y Oración del Día';
+
+  @override
+  String get dailyWordChannelDescription =>
+      'Notificaciones diarias matutinas con versículos y oraciones';
+
+  @override
+  String get dailyPrayerMorningTitle => 'Oración Matutina';
+
+  @override
+  String get dailyPrayerAmenAction => 'Amén ›';
+
+  @override
+  String get dailyPrayerDefaultBody =>
+      'Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.';
 }

@@ -4099,4 +4099,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get explorarEnElMapa => 'Explore on map';
+
+  @override
+  String get dailyWordChannelName => 'Daily Word and Prayer';
+
+  @override
+  String get dailyWordChannelDescription =>
+      'Daily morning notifications with scriptures and prayers';
+
+  @override
+  String get dailyPrayerMorningTitle => 'Morning Prayer';
+
+  @override
+  String get dailyPrayerAmenAction => 'Amen ›';
+
+  @override
+  String get dailyPrayerDefaultBody =>
+      'O Lord, in these difficult times for the world, I pray that You give me strength to not falter in adversity and keep my faith in You.';
 }

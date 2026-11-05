@@ -6731,6 +6731,570 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Generando afiche oficial...'**
   String get cargandoAfiche;
+
+  /// No description provided for @articuloFisicoBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'Artículo físico impreso / tangible'**
+  String get articuloFisicoBadge;
+
+  /// No description provided for @articuloFisicoCorto.
+  ///
+  /// In es, this message translates to:
+  /// **'Artículo Físico'**
+  String get articuloFisicoCorto;
+
+  /// No description provided for @avisoTiendaSoloBienesFisicos.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los artículos de la tienda eclesial son bienes físicos tangibles sujetos a envío postal o retiro presencial en el templo.'**
+  String get avisoTiendaSoloBienesFisicos;
+
+  /// No description provided for @carritoContieneArticulosFisicosError.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu carrito contiene artículos físicos. Finaliza esta orden antes de añadir contenido digital.'**
+  String get carritoContieneArticulosFisicosError;
+
+  /// No description provided for @carritoContieneArticulosDigitalesError.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu carrito contiene contenido digital. Finaliza esta orden antes de añadir artículos físicos.'**
+  String get carritoContieneArticulosDigitalesError;
+
+  /// No description provided for @pasoLogisticoObligatorioTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos de entrega física (Obligatorio)'**
+  String get pasoLogisticoObligatorioTitulo;
+
+  /// No description provided for @direccionEntregaLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Dirección física de entrega (Calle, número, sector y ciudad)'**
+  String get direccionEntregaLabel;
+
+  /// No description provided for @direccionEntregaHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Ej. Av. Winston Churchill #45, Ensanche Piantini, Santo Domingo'**
+  String get direccionEntregaHint;
+
+  /// No description provided for @direccionEntregaRequeridaError.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa una dirección física válida para el envío a domicilio antes de continuar.'**
+  String get direccionEntregaRequeridaError;
+
+  /// No description provided for @confirmarRetiroPresencialLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmo que retiraré presencialmente estos artículos físicos en el templo de mi congregación.'**
+  String get confirmarRetiroPresencialLabel;
+
+  /// No description provided for @confirmarRetiroPresencialRequeridoError.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes marcar la casilla de retiro presencial en el templo antes de confirmar el pedido.'**
+  String get confirmarRetiroPresencialRequeridoError;
+
+  /// No description provided for @verOrdenFacturacionB2B.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver Orden / Facturación'**
+  String get verOrdenFacturacionB2B;
+
+  /// No description provided for @resumenFacturacionB2BTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Orden de Pauta B2B'**
+  String get resumenFacturacionB2BTitulo;
+
+  /// No description provided for @avisoFacturacionExternaB2B.
+  ///
+  /// In es, this message translates to:
+  /// **'Por políticas de la plataforma, la facturación y liquidación de pautas publicitarias institucionales (B2B) se gestiona exclusivamente a través del portal web administrativo de Odoo 19 o mediante la factura enviada al correo de tu congregación.'**
+  String get avisoFacturacionExternaB2B;
+
+  /// No description provided for @instruccionesFacturacionExternaSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa la orden desde tu navegador web institucional o con el departamento contable de tu iglesia usando la referencia oficial.'**
+  String get instruccionesFacturacionExternaSubtitulo;
+
+  /// No description provided for @abrirPortalFacturacionWeb.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir Portal de Facturación en Navegador'**
+  String get abrirPortalFacturacionWeb;
+
+  /// No description provided for @solicitarFacturaPorCorreo.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar / Solicitar Factura por Correo'**
+  String get solicitarFacturaPorCorreo;
+
+  /// Confirmación al solicitar factura B2B por correo
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud de facturación preparada para la referencia {ref}.'**
+  String facturaEnviadaCorreoConfirmacion(String ref);
+
+  /// No description provided for @datosReferenciaContableB2B.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos Institucionales de Referencia Contable'**
+  String get datosReferenciaContableB2B;
+
+  /// No description provided for @avisoRedireccionWebDonacion.
+  ///
+  /// In es, this message translates to:
+  /// **'En cumplimiento con las normativas de seguridad, tu ofrenda o donación se completará íntegramente en el portal web seguro de tu congregación (vía navegador seguro del sistema) con 0% de retención.'**
+  String get avisoRedireccionWebDonacion;
+
+  /// No description provided for @continuarPortalWebOfrendas.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar al Portal Web de Ofrendas'**
+  String get continuarPortalWebOfrendas;
+
+  /// No description provided for @abriendoPortalSeguroOdoo.
+  ///
+  /// In es, this message translates to:
+  /// **'Abriendo portal web seguro...'**
+  String get abriendoPortalSeguroOdoo;
+
+  /// No description provided for @completarAporteEnNavegadorDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa tu aporte en la ventana segura del navegador. Al finalizar regresarás automáticamente a ATRIO.'**
+  String get completarAporteEnNavegadorDesc;
+
+  /// No description provided for @abrirPortalWebSeguro.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir Portal Web Seguro'**
+  String get abrirPortalWebSeguro;
+
+  /// No description provided for @gratitudPastoralTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Gracias por tu Generosidad!'**
+  String get gratitudPastoralTitulo;
+
+  /// No description provided for @gratitudPastoralSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ofrenda ha sido recibida y registrada exitosamente en el sistema ministerial de tu congregación.'**
+  String get gratitudPastoralSubtitulo;
+
+  /// Estado de la donación devuelto por GET /donations/status
+  ///
+  /// In es, this message translates to:
+  /// **'Estado verificado en Odoo 19: {estado}'**
+  String estadoVerificadoEnOdoo(String estado);
+
+  /// No description provided for @portalWebExternoOdoo.
+  ///
+  /// In es, this message translates to:
+  /// **'Portal Web Oficial (SFSafariViewController / Chrome Tabs)'**
+  String get portalWebExternoOdoo;
+
+  /// No description provided for @kycStatusDraftTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Verificación Institucional Pendiente de Inicio (Borrador)'**
+  String get kycStatusDraftTitle;
+
+  /// No description provided for @kycStatusDraftDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'La recaudación de ofrendas se encuentra oculta en la aplicación. Para habilitarla, carga en Odoo 19 la documentación institucional (RD: RNC ISFL Ley 122-05 | HN: Personería Jurídica y RTN) y la cuenta bancaria oficial de la iglesia.'**
+  String get kycStatusDraftDesc;
+
+  /// No description provided for @kycStatusPendingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Validación en curso (KYC Institucional)'**
+  String get kycStatusPendingTitle;
+
+  /// No description provided for @kycStatusPendingDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'El equipo legal de ATRIO está verificando la documentación legal (ISFL Ley 122-05 / Personería Jurídica) y la cuenta bancaria institucional de tu congregación. El botón de ofrendas se activará al aprobarse.'**
+  String get kycStatusPendingDesc;
+
+  /// No description provided for @kycStatusApprovedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Congregación Verificada (KYC Aprobado)'**
+  String get kycStatusApprovedTitle;
+
+  /// No description provided for @kycStatusApprovedDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Documentación legal e institucional validada. Recepción de ofrendas y pasarela web oficial activas.'**
+  String get kycStatusApprovedDesc;
+
+  /// No description provided for @kycStatusSuspendedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recaudación Suspendida por Auditoría Legal'**
+  String get kycStatusSuspendedTitle;
+
+  /// No description provided for @kycStatusSuspendedDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Se han detectado inconsistencias o revisiones pendientes en la documentación legal de la congregación. La recepción de ofrendas ha sido desactivada temporalmente.'**
+  String get kycStatusSuspendedDesc;
+
+  /// No description provided for @donacionesDeshabilitadasKycTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Ofrendas en Proceso de Habilitación'**
+  String get donacionesDeshabilitadasKycTitulo;
+
+  /// No description provided for @donacionesDeshabilitadasKycMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu congregación se encuentra completando el proceso de validación legal e institucional (KYC) en ATRIO. El módulo de ofrendas estará disponible tan pronto concluya la verificación.'**
+  String get donacionesDeshabilitadasKycMensaje;
+
+  /// No description provided for @ofrendarACongregacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Ofrendar a la congregación'**
+  String get ofrendarACongregacion;
+
+  /// No description provided for @ofrendarSubtituloVerificado.
+  ///
+  /// In es, this message translates to:
+  /// **'Aporte voluntario y diezmos (Entidad verificada)'**
+  String get ofrendarSubtituloVerificado;
+
+  /// No description provided for @ugcReportarContenido.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar contenido inapropiado'**
+  String get ugcReportarContenido;
+
+  /// No description provided for @ugcBloquearUsuario.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear autor / contenido'**
+  String get ugcBloquearUsuario;
+
+  /// No description provided for @ugcMotivoReporteTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar contenido'**
+  String get ugcMotivoReporteTitulo;
+
+  /// No description provided for @ugcMotivoReporteSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona el motivo por el cual deseas reportar esta publicación al equipo de moderación de ATRIO:'**
+  String get ugcMotivoReporteSubtitulo;
+
+  /// No description provided for @ugcMotivoOfensivo.
+  ///
+  /// In es, this message translates to:
+  /// **'Lenguaje ofensivo o inapropiado'**
+  String get ugcMotivoOfensivo;
+
+  /// No description provided for @ugcMotivoSpam.
+  ///
+  /// In es, this message translates to:
+  /// **'Spam o información engañosa'**
+  String get ugcMotivoSpam;
+
+  /// No description provided for @ugcMotivoAcoso.
+  ///
+  /// In es, this message translates to:
+  /// **'Acoso o conducta abusiva'**
+  String get ugcMotivoAcoso;
+
+  /// No description provided for @ugcReporteEnviadoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Reporte enviado. Nuestro equipo de moderación revisará el contenido en menos de 24 horas.'**
+  String get ugcReporteEnviadoExito;
+
+  /// No description provided for @ugcUsuarioBloqueadoExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Autor bloqueado. Sus publicaciones han sido ocultadas de tu vista inmediatamente.'**
+  String get ugcUsuarioBloqueadoExito;
+
+  /// No description provided for @ugcPoliticaToleranciaCeroTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Política de Contenido Generado por el Usuario (UGC) y Tolerancia Cero'**
+  String get ugcPoliticaToleranciaCeroTitulo;
+
+  /// No description provided for @ugcPoliticaToleranciaCeroParrafo.
+  ///
+  /// In es, this message translates to:
+  /// **'ATRIO mantiene una política de tolerancia cero frente a contenido objetable, difamatorio, abusivo, discriminatorio o fraudulento en muros comunitarios, avisos y peticiones pastorales. Los usuarios pueden reportar publicaciones inapropiadas y bloquear de inmediato a cualquier autor abusivo desde el menú de opciones de cada contenido. El equipo de moderación actúa sobre los reportes en un plazo máximo de 24 horas eliminando el contenido infractor y suspendiendo la cuenta responsable.'**
+  String get ugcPoliticaToleranciaCeroParrafo;
+
+  /// No description provided for @ugcAvisoToleranciaCeroSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Compromiso comunitario (EULA): ATRIO aplica tolerancia cero ante lenguaje ofensivo, spam o abuso. Las solicitudes infractoras serán eliminadas y la cuenta podrá ser suspendida.'**
+  String get ugcAvisoToleranciaCeroSolicitud;
+
+  /// Ítem de dirección de envío en confirmación de pedido
+  ///
+  /// In es, this message translates to:
+  /// **'• Dirección de envío: {direccion}'**
+  String direccionItem(String direccion);
+
+  /// No description provided for @perfilIglesiaAprobada.
+  ///
+  /// In es, this message translates to:
+  /// **'Iglesia aprobada'**
+  String get perfilIglesiaAprobada;
+
+  /// No description provided for @perfilPendienteAprobacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente de aprobación'**
+  String get perfilPendienteAprobacion;
+
+  /// No description provided for @perfilCambioEnRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambio en revisión'**
+  String get perfilCambioEnRevision;
+
+  /// No description provided for @perfilSinCongregacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin congregación'**
+  String get perfilSinCongregacion;
+
+  /// No description provided for @perfilBadgeAprobada.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprobada'**
+  String get perfilBadgeAprobada;
+
+  /// No description provided for @perfilCongregacionActiva.
+  ///
+  /// In es, this message translates to:
+  /// **'Congregación activa'**
+  String get perfilCongregacionActiva;
+
+  /// No description provided for @perfilCongregacionActivaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.'**
+  String get perfilCongregacionActivaDesc;
+
+  /// No description provided for @perfilVerDetallesIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver detalles de iglesia'**
+  String get perfilVerDetallesIglesia;
+
+  /// No description provided for @perfilBadgeEnRevision.
+  ///
+  /// In es, this message translates to:
+  /// **'En revisión'**
+  String get perfilBadgeEnRevision;
+
+  /// No description provided for @perfilSolicitudMembresia.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud de membresía'**
+  String get perfilSolicitudMembresia;
+
+  /// Mensaje de membresía pendiente con nombre de iglesia
+  ///
+  /// In es, this message translates to:
+  /// **'Perteneces a {iglesia}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.'**
+  String perfilMembresiaPendienteDesc(String iglesia);
+
+  /// No description provided for @perfilVerEstadoSolicitud.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver estado de solicitud'**
+  String get perfilVerEstadoSolicitud;
+
+  /// No description provided for @perfilBadgeTrasladoEnCurso.
+  ///
+  /// In es, this message translates to:
+  /// **'Traslado en curso'**
+  String get perfilBadgeTrasladoEnCurso;
+
+  /// No description provided for @perfilCambioCongregacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambio de congregación'**
+  String get perfilCambioCongregacion;
+
+  /// No description provided for @perfilCambioCongregacionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.'**
+  String get perfilCambioCongregacionDesc;
+
+  /// No description provided for @perfilConsultarEstado.
+  ///
+  /// In es, this message translates to:
+  /// **'Consultar estado'**
+  String get perfilConsultarEstado;
+
+  /// No description provided for @perfilBadgeSinVincular.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin vincular'**
+  String get perfilBadgeSinVincular;
+
+  /// No description provided for @perfilSinCongregacionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.'**
+  String get perfilSinCongregacionDesc;
+
+  /// No description provided for @perfilBuscarUnirseIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar y unirse a una iglesia'**
+  String get perfilBuscarUnirseIglesia;
+
+  /// No description provided for @perfilEstadoMembresiaAprobadaActiva.
+  ///
+  /// In es, this message translates to:
+  /// **'Estado: Membresía aprobada y activa'**
+  String get perfilEstadoMembresiaAprobadaActiva;
+
+  /// No description provided for @perfilDetalleMembresiaModal.
+  ///
+  /// In es, this message translates to:
+  /// **'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.'**
+  String get perfilDetalleMembresiaModal;
+
+  /// No description provided for @perfilBadgeLider.
+  ///
+  /// In es, this message translates to:
+  /// **'LÍDER'**
+  String get perfilBadgeLider;
+
+  /// No description provided for @perfilGestionCuidadoCongregacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestión y cuidado de la congregación'**
+  String get perfilGestionCuidadoCongregacion;
+
+  /// No description provided for @perfilSubtituloBandejaSolicitudes.
+  ///
+  /// In es, this message translates to:
+  /// **'Atención y respuesta pastoral a feligreses'**
+  String get perfilSubtituloBandejaSolicitudes;
+
+  /// No description provided for @perfilSubtituloAvisos.
+  ///
+  /// In es, this message translates to:
+  /// **'Publicar comunicados y avisos clave'**
+  String get perfilSubtituloAvisos;
+
+  /// No description provided for @perfilSubtituloGrupos.
+  ///
+  /// In es, this message translates to:
+  /// **'Segmentación de ministerios y membresía'**
+  String get perfilSubtituloGrupos;
+
+  /// No description provided for @perfilSubtituloCentroModeracion.
+  ///
+  /// In es, this message translates to:
+  /// **'Auditar contenidos marcados y bloqueados'**
+  String get perfilSubtituloCentroModeracion;
+
+  /// No description provided for @perfilSubtituloPalabrasRestringidas.
+  ///
+  /// In es, this message translates to:
+  /// **'Reglas automáticas flag y block'**
+  String get perfilSubtituloPalabrasRestringidas;
+
+  /// No description provided for @perfilBotonEditarDatosTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar mis datos personales'**
+  String get perfilBotonEditarDatosTooltip;
+
+  /// No description provided for @perfilBotonIniciarSesionTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión en ATRIO'**
+  String get perfilBotonIniciarSesionTooltip;
+
+  /// No description provided for @comunicadoNuevo.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo comunicado'**
+  String get comunicadoNuevo;
+
+  /// No description provided for @comunicadoNuevoHeader.
+  ///
+  /// In es, this message translates to:
+  /// **'NUEVO COMUNICADO'**
+  String get comunicadoNuevoHeader;
+
+  /// No description provided for @comunicadoRemitenteDefault.
+  ///
+  /// In es, this message translates to:
+  /// **'Comunidad ATRIO'**
+  String get comunicadoRemitenteDefault;
+
+  /// No description provided for @comunicadoVerTodas.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver todas'**
+  String get comunicadoVerTodas;
+
+  /// No description provided for @avisoPredeterminado.
+  ///
+  /// In es, this message translates to:
+  /// **'Aviso'**
+  String get avisoPredeterminado;
+
+  /// Mensaje para compartir Plus Code
+  ///
+  /// In es, this message translates to:
+  /// **'Ubicación de {iglesia}: {plusCode}'**
+  String compartirUbicacionMensaje(String iglesia, String plusCode);
+
+  /// Asunto de correo para compartir Plus Code
+  ///
+  /// In es, this message translates to:
+  /// **'Plus Code de {iglesia}'**
+  String asuntoCorreoPlusCode(String iglesia);
+
+  /// Cuerpo de correo para compartir Plus Code
+  ///
+  /// In es, this message translates to:
+  /// **'{mensaje}\\n\\nPuedes buscar este código directamente en Google Maps.'**
+  String cuerpoCorreoPlusCode(String mensaje);
+
+  /// No description provided for @iglesiaVerificadaTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Congregación verificada'**
+  String get iglesiaVerificadaTooltip;
+
+  /// Semántica para accesibilidad de calificación y reseñas
+  ///
+  /// In es, this message translates to:
+  /// **'Calificación {rating} de 5, basada en {count} reseñas'**
+  String resenasCalificacionSemantics(String rating, int count);
+
+  /// No description provided for @explorarEnElMapa.
+  ///
+  /// In es, this message translates to:
+  /// **'Explorar en el mapa'**
+  String get explorarEnElMapa;
 }
 
 class _AppLocalizationsDelegate

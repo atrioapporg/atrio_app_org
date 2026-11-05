@@ -1,9 +1,11 @@
 import 'auth_permissions.dart';
 import 'church_recommendation_model.dart';
+import 'iglesia_model.dart';
 
 export 'app_stage.dart';
 export 'auth_permissions.dart';
 export 'church_recommendation_model.dart';
+export 'iglesia_model.dart' show ChurchKycStatus;
 
 class UserModel {
   final int id;
@@ -31,6 +33,9 @@ class UserModel {
   /// Indica si la iglesia a la que pertenece el usuario cuenta con una suscripción/plan activo en ATRIO.
   final bool hasActiveSubscription;
 
+  /// Estatus de verificación institucional (KYC) de la iglesia del usuario en Odoo 19.
+  final ChurchKycStatus churchKycStatus;
+
   /// Información de la iglesia recomendada por el usuario en proceso de incorporación (Odoo 19).
   final ChurchRecommendationModel? churchRecommendation;
 
@@ -54,6 +59,7 @@ class UserModel {
     this.requestedChurchId,
     this.requestedChurchData,
     this.hasActiveSubscription = false,
+    this.churchKycStatus = ChurchKycStatus.approved,
     this.churchRecommendation,
     this.estadisticas = const UserStats(),
   });
@@ -193,6 +199,7 @@ class UserModel {
     int? requestedChurchId,
     Map<String, dynamic>? requestedChurchData,
     bool? hasActiveSubscription,
+    ChurchKycStatus? churchKycStatus,
     ChurchRecommendationModel? churchRecommendation,
     UserStats? estadisticas,
   }) {
@@ -214,6 +221,7 @@ class UserModel {
       requestedChurchData: requestedChurchData ?? this.requestedChurchData,
       hasActiveSubscription:
           hasActiveSubscription ?? this.hasActiveSubscription,
+      churchKycStatus: churchKycStatus ?? this.churchKycStatus,
       churchRecommendation: churchRecommendation ?? this.churchRecommendation,
       estadisticas: estadisticas ?? this.estadisticas,
     );
@@ -250,6 +258,10 @@ class UserModel {
           (json['has_active_subscription'] ?? json['hasActiveSubscription'])
               as bool? ??
           false,
+      churchKycStatus: ChurchKycStatus.fromString(
+        (json['church_kyc_status'] ?? json['kyc_status']) as String?,
+        fallbackVerified: true,
+      ),
       churchRecommendation:
           json['church_recommendation'] is Map<String, dynamic>
           ? ChurchRecommendationModel.fromJson(
@@ -451,6 +463,14 @@ class UserModel {
       requestedChurchId: requestedChurchId,
       requestedChurchData: requestedChurchData,
       hasActiveSubscription: hasActiveSubscription,
+      churchKycStatus: ChurchKycStatus.fromString(
+        (church['kyc_status'] ??
+                church['verification_status'] ??
+                odooData['church_kyc_status'] ??
+                odooData['kyc_status'])
+            as String?,
+        fallbackVerified: true,
+      ),
       churchRecommendation: churchRecommendation,
       estadisticas: UserStats.fromJson(statsMap),
     );
@@ -476,6 +496,7 @@ class UserModel {
       'requested_church_id': requestedChurchId,
       'requested_church_data': requestedChurchData,
       'has_active_subscription': hasActiveSubscription,
+      'church_kyc_status': churchKycStatus.toOdooString(),
       'church_recommendation': churchRecommendation?.toJson(),
       'estadisticas': {
         'solicitudes_activas': estadisticas.solicitudesActivas,

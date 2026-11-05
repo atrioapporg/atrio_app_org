@@ -148,3 +148,5 @@ migrate_working_dir/
 scratch/
 Gemini Notebook y Antigravity IDE.txt
 TODO_*.txt
+android/*.properties.txt
+*.properties.txt

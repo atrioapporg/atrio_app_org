@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/modelos/admin_models.dart';
 import 'package:atrio/providers/admin_provider.dart';
+import 'package:atrio/modelos/iglesia_model.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
+import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/screens/admin_requests_screen.dart';
 import 'package:atrio/screens/admin_ads_screen.dart';
 import 'package:atrio/screens/crear_evento_screen.dart';
@@ -144,6 +146,10 @@ class _ChurchAdminDashboardScreenState
               _AdminHeaderCard(
                 iglesiaNombre: iglesia?.nombre ?? 'Comunidad Atrio',
               ),
+              const SizedBox(height: 16),
+
+              // 1.5 Banner de Ciclo de Vida y Verificación Institucional (KYC)
+              const _ChurchKycStatusBanner(),
               const SizedBox(height: 16),
 
               // 2. Grilla de Indicadores Clave (KPIs)
@@ -1036,6 +1042,127 @@ class _AdminNotificationsModal extends StatelessWidget {
                       );
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Banner institucional de estado KYC en el Dashboard Pastoral Móvil.
+/// Muestra en tiempo real el ciclo de vida legal de la congregación (`draft`, `pending_kyc`, `approved`, `suspended`)
+/// conforme a los requisitos de organizaciones sin fines de lucro (RD Ley 122-05 / HN Personería Jurídica y RTN).
+class _ChurchKycStatusBanner extends StatelessWidget {
+  const _ChurchKycStatusBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final adminStats = context.watch<AdminProvider>().churchStats;
+    final userProv = context.watch<UserProvider>();
+    final iglesia = context.watch<IglesiaProvider>().iglesiaActual;
+
+    final ChurchKycStatus status = adminStats != null
+        ? ChurchKycStatus.fromString(
+            adminStats.kycStatus,
+            fallbackVerified: userProv.isChurchKycApproved,
+          )
+        : (iglesia?.kycStatus ?? userProv.churchKycStatus);
+
+    final Color bgColor;
+    final Color borderColor;
+    final Color iconColor;
+    final IconData icon;
+    final String title;
+    final String description;
+
+    switch (status) {
+      case ChurchKycStatus.draft:
+        bgColor = const Color(0xFFFFF8E1);
+        borderColor = const Color(0xFFE5A023);
+        iconColor = const Color(0xFFB45309);
+        icon = Icons.pending_actions_rounded;
+        title = l10n?.kycStatusDraftTitle ??
+            'Verificación Institucional Pendiente de Inicio (Borrador)';
+        description = l10n?.kycStatusDraftDesc ??
+            'La recaudación de ofrendas se encuentra oculta en la aplicación.';
+        break;
+      case ChurchKycStatus.pendingKyc:
+        bgColor = const Color(0xFFEFF6FF);
+        borderColor = const Color(0xFF3B82F6);
+        iconColor = const Color(0xFF1D4ED8);
+        icon = Icons.fact_check_outlined;
+        title = l10n?.kycStatusPendingTitle ??
+            'Validación en curso (KYC Institucional)';
+        description = l10n?.kycStatusPendingDesc ??
+            'El equipo legal de ATRIO está verificando la documentación legal.';
+        break;
+      case ChurchKycStatus.approved:
+        bgColor = const Color(0xFFECFDF5);
+        borderColor = const Color(0xFF10B981);
+        iconColor = const Color(0xFF047857);
+        icon = Icons.verified_user_rounded;
+        title = l10n?.kycStatusApprovedTitle ??
+            'Congregación Verificada (KYC Aprobado)';
+        description = l10n?.kycStatusApprovedDesc ??
+            'Documentación legal e institucional validada. Recepción de ofrendas activa.';
+        break;
+      case ChurchKycStatus.suspended:
+        bgColor = const Color(0xFFFEF2F2);
+        borderColor = const Color(0xFFEF4444);
+        iconColor = const Color(0xFFB91C1C);
+        icon = Icons.gpp_bad_rounded;
+        title = l10n?.kycStatusSuspendedTitle ??
+            'Recaudación Suspendida por Auditoría Legal';
+        description = l10n?.kycStatusSuspendedDesc ??
+            'La recepción de ofrendas ha sido desactivada temporalmente.';
+        break;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsetsDirectional.all(14),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsetsDirectional.all(8),
+            decoration: BoxDecoration(
+              color: borderColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: iconColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Color(0xFF334155),
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

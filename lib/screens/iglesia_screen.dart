@@ -7,6 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/iglesia_model.dart';
 import '../providers/iglesia_provider.dart';
+import '../providers/user_provider.dart';
+import '../servicios/moderation_service.dart';
+import 'donaciones_screen.dart';
 import 'qr_join_scanner_screen.dart';
 import 'seleccionar_iglesia_screen.dart';
 
@@ -22,6 +25,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
   static const Color amarilloOro = Color(0xFFE5A023);
   static const Color blancoFondo = Color(0xFFFAF7F0);
   static const Color grisBorde = Color(0xFFEFEFEF);
+  bool _avisoBloqueadoPorUgc = false;
 
   @override
   void initState() {
@@ -121,7 +125,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
   ) async {
     final l10n = AppLocalizations.of(context);
     final plusCode = iglesia.plusCode;
-    final mensaje = 'Ubicación de ${iglesia.nombre}: $plusCode';
+    final mensaje = l10n?.compartirUbicacionMensaje(iglesia.nombre, plusCode) ??
+        'Ubicación de ${iglesia.nombre}: $plusCode';
     await Clipboard.setData(ClipboardData(text: plusCode));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -186,8 +191,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
           children: [
             SizedBox(height: usableHeight * 0.008),
             Text(
-              l10n?.plusCodeCopiadoPregunta ??
-                  'El Plus Code ha sido copiado al portapapeles. ¿Deseas compartirlo directamente?',
+              l10n?.plusCodeCopiadoPregunta ?? 'El Plus Code ha sido copiado al portapapeles. ¿Deseas compartirlo directamente?',
               style: TextStyle(
                 color: Colors.black87,
                 fontSize: screenWidth * 0.035,
@@ -305,8 +309,9 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       final Uri emailUri = Uri(
                         scheme: 'mailto',
                         queryParameters: {
-                          'subject': 'Plus Code de ${iglesia.nombre}',
-                          'body':
+                          'subject': l10n?.asuntoCorreoPlusCode(iglesia.nombre) ??
+                              'Plus Code de ${iglesia.nombre}',
+                          'body': l10n?.cuerpoCorreoPlusCode(mensaje) ??
                               '$mensaje\n\nPuedes buscar este código directamente en Google Maps.',
                         },
                       );
@@ -454,41 +459,52 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                         ),
                         if (iglesia.esVerificada) ...[
                           SizedBox(width: screenWidth * 0.015),
-                          Icon(
-                            Icons.verified_rounded,
-                            color: amarilloOro,
-                            size: screenWidth * 0.045,
+                          Tooltip(
+                            message: l10n?.iglesiaVerificadaTooltip ??
+                                'Congregación verificada',
+                            child: Icon(
+                              Icons.verified_rounded,
+                              color: amarilloOro,
+                              size: screenWidth * 0.045,
+                            ),
                           ),
                         ],
                       ],
                     ),
                     SizedBox(height: usableHeight * 0.004),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star_rounded,
-                          color: amarilloOro,
-                          size: screenWidth * 0.038,
-                        ),
-                        SizedBox(width: screenWidth * 0.01),
-                        Text(
-                          '${iglesia.calificacion} (${iglesia.totalResenas}) · ',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: screenWidth * 0.03,
+                    Semantics(
+                      label: l10n?.resenasCalificacionSemantics(
+                            iglesia.calificacion.toString(),
+                            iglesia.totalResenas,
+                          ) ??
+                          'Calificación ${iglesia.calificacion} de 5',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            color: amarilloOro,
+                            size: screenWidth * 0.038,
                           ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            '${iglesia.denominacion} · ${iglesia.distancia}',
+                          SizedBox(width: screenWidth * 0.01),
+                          Text(
+                            '${iglesia.calificacion} (${iglesia.totalResenas}) · ',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: screenWidth * 0.03,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                          Expanded(
+                            child: Text(
+                              '${iglesia.denominacion} · ${iglesia.distancia}',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: screenWidth * 0.03,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -719,6 +735,18 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                         ),
                       ],
                     ),
+                    if (iglesia.puedeRecibirOfrendas &&
+                        context.watch<UserProvider>().isChurchKycApproved) ...[
+                      SizedBox(height: usableHeight * 0.018),
+                      _OfferingVerifiedActionCard(
+                        screenWidth: screenWidth,
+                        usableHeight: usableHeight,
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          DonacionesScreen.routeName,
+                        ),
+                      ),
+                    ],
                     SizedBox(height: usableHeight * 0.025),
 
                     // Tarjeta próximo culto
@@ -781,14 +809,15 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                               backgroundColor: amarilloOro,
                               foregroundColor: azulFondo,
                               elevation: 0,
+                              minimumSize: const Size(0, 44),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   screenWidth * 0.025,
                                 ),
                               ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.035,
-                                vertical: usableHeight * 0.009,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
                               ),
                             ),
                             onPressed: () => Navigator.pushNamed(
@@ -871,79 +900,90 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     ),
                     SizedBox(height: usableHeight * 0.025),
 
-                    // Aviso actual
-                    _sectionLabel(
-                      l10n?.avisos ?? 'Avisos',
-                      screenWidth,
-                      usableHeight,
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: usableHeight * 0.015,
+                    if (!_avisoBloqueadoPorUgc) ...[
+                      // Aviso actual
+                      _sectionLabel(
+                        l10n?.avisos ?? 'Avisos',
+                        screenWidth,
+                        usableHeight,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.035,
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: usableHeight * 0.015,
                         ),
-                        border: Border.all(
-                          color: const Color(0xFF0F4C81)
-                              .withValues(alpha: 0.15),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.035,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(screenWidth * 0.022),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8F1F5),
-                              borderRadius: BorderRadius.circular(
-                                screenWidth * 0.025,
+                          border: Border.all(
+                            color: const Color(0xFF0F4C81)
+                                .withValues(alpha: 0.15),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(screenWidth * 0.022),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F1F5),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.025,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.campaign_rounded,
+                                color: azulFondo,
+                                size: screenWidth * 0.058,
                               ),
                             ),
-                            child: Icon(
-                              Icons.campaign_rounded,
-                              color: azulFondo,
-                              size: screenWidth * 0.058,
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.035),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  iglesia.avisoActual.titulo,
-                                  style: TextStyle(
-                                    color: azulFondo,
-                                    fontSize: screenWidth * 0.036,
-                                    fontWeight: FontWeight.bold,
+                            SizedBox(width: screenWidth * 0.035),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    iglesia.avisoActual.titulo,
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.036,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: usableHeight * 0.004),
-                                Text(
-                                  iglesia.avisoActual.descripcion,
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: screenWidth * 0.032,
-                                    height: 1.35,
+                                  SizedBox(height: usableHeight * 0.004),
+                                  Text(
+                                    iglesia.avisoActual.descripcion,
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: screenWidth * 0.032,
+                                      height: 1.35,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            _UgcSafetyMenuButton(
+                              contentId: iglesia.id,
+                              contentType: 'church_notice',
+                              onAuthorBlocked: () {
+                                setState(() {
+                                  _avisoBloqueadoPorUgc = true;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                     SizedBox(height: usableHeight * 0.03),
                   ],
                 ),
@@ -1190,8 +1230,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
               ),
               SizedBox(height: usableHeight * 0.012),
               Text(
-                l10n?.modalBienvenidaIglesiaMensaje ??
-                    'Conéctate a tu iglesia local para acceder a devocionales, eventos, oraciones y la vida de tu comunidad',
+                l10n?.modalBienvenidaIglesiaMensaje ?? 'Conéctate a tu iglesia local para acceder a devocionales, eventos, oraciones y la vida de tu comunidad',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white70,
@@ -1211,9 +1250,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                       vertical: usableHeight * 0.016,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        screenWidth * 0.035,
-                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.035),
                     ),
                     elevation: 3,
                   ),
@@ -1226,10 +1263,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      QrJoinScannerScreen.routeName,
-                    );
+                    Navigator.pushNamed(context, QrJoinScannerScreen.routeName);
                   },
                 ),
               ),
@@ -1245,14 +1279,12 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                       vertical: usableHeight * 0.016,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        screenWidth * 0.035,
-                      ),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.035),
                     ),
                   ),
                   icon: const Icon(Icons.map_outlined),
                   label: Text(
-                    l10n?.explorar ?? 'Explorar en el mapa',
+                    l10n?.explorarEnElMapa ?? 'Explorar en el mapa',
                     style: TextStyle(
                       fontSize: screenWidth * 0.038,
                       fontWeight: FontWeight.w600,
@@ -1271,5 +1303,287 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Tarjeta de acceso rápido para ofrendar, visible exclusivamente cuando la
+/// congregación tiene su verificación legal e institucional (KYC) en estado `approved`.
+class _OfferingVerifiedActionCard extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onTap;
+
+  const _OfferingVerifiedActionCard({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsetsDirectional.symmetric(
+            horizontal: screenWidth * 0.04,
+            vertical: usableHeight * 0.015,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(screenWidth * 0.035),
+            border: Border.all(
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2E7D32).withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsetsDirectional.all(screenWidth * 0.024),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                ),
+                child: Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: const Color(0xFF2E7D32),
+                  size: screenWidth * 0.058,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.035),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            l10n?.ofrendarACongregacion ??
+                                'Ofrendar a la congregación',
+                            style: TextStyle(
+                              color: azulFondo,
+                              fontWeight: FontWeight.bold,
+                              fontSize: screenWidth * 0.038,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.015),
+                        Icon(
+                          Icons.verified_rounded,
+                          color: amarilloOro,
+                          size: screenWidth * 0.042,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: usableHeight * 0.002),
+                    Text(
+                      l10n?.ofrendarSubtituloVerificado ??
+                          'Aporte voluntario y diezmos (Entidad verificada)',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: screenWidth * 0.029,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.black38,
+                size: screenWidth * 0.055,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Menú contextual de seguridad UGC (Apple Guideline 1.2 / Google Play UGC)
+/// que permite al feligrés reportar contenido inapropiado o bloquear inmediatamente al autor.
+class _UgcSafetyMenuButton extends StatelessWidget {
+  final int contentId;
+  final String contentType;
+  final VoidCallback onAuthorBlocked;
+
+  const _UgcSafetyMenuButton({
+    required this.contentId,
+    required this.contentType,
+    required this.onAuthorBlocked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const Color azulFondo = Color(0xFF072B4F);
+
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: PopupMenuButton<String>(
+        icon: const Icon(
+          Icons.more_vert_rounded,
+          color: Colors.black45,
+          size: 22,
+        ),
+        padding: EdgeInsetsDirectional.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (value) async {
+        if (value == 'report') {
+          await _mostrarDialogoReporte(context, l10n, azulFondo);
+        } else if (value == 'block') {
+          final service = ModerationService(
+            api: context.read<UserProvider>().api,
+          );
+          await service.blockUgcUser(
+            targetId: contentId,
+            targetType: contentType,
+          );
+          onAuthorBlocked();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  l10n?.ugcUsuarioBloqueadoExito ?? 'Autor bloqueado. Sus publicaciones han sido ocultadas de tu vista inmediatamente.',
+                ),
+                backgroundColor: azulFondo,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      },
+      itemBuilder: (ctx) => [
+        PopupMenuItem<String>(
+          value: 'report',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.flag_outlined,
+                color: Color(0xFFD97706),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n?.ugcReportarContenido ??
+                      'Reportar contenido inapropiado',
+                  style: const TextStyle(fontSize: 13.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'block',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.block_rounded,
+                color: Color(0xFFDC2626),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n?.ugcBloquearUsuario ?? 'Bloquear autor / contenido',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    color: Color(0xFFDC2626),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      ),
+    );
+  }
+
+  Future<void> _mostrarDialogoReporte(
+    BuildContext context,
+    AppLocalizations? l10n,
+    Color azulFondo,
+  ) async {
+    final reasons = <String>[
+      l10n?.ugcMotivoOfensivo ?? 'Lenguaje ofensivo o inapropiado',
+      l10n?.ugcMotivoSpam ?? 'Spam o información engañosa',
+      l10n?.ugcMotivoAcoso ?? 'Acoso o conducta abusiva',
+    ];
+
+    final selectedReason = await showDialog<String>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          l10n?.ugcMotivoReporteTitulo ?? 'Reportar contenido',
+          style: TextStyle(
+            color: azulFondo,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n?.ugcMotivoReporteSubtitulo ?? 'Selecciona el motivo por el cual deseas reportar esta publicación:',
+              style: const TextStyle(fontSize: 13.5, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            ...reasons.map(
+              (r) => ListTile(
+                contentPadding: EdgeInsetsDirectional.zero,
+                leading: const Icon(
+                  Icons.report_problem_outlined,
+                  color: Color(0xFFD97706),
+                ),
+                title: Text(r, style: const TextStyle(fontSize: 14)),
+                onTap: () => Navigator.of(dialogCtx).pop(r),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selectedReason != null && context.mounted) {
+      final service = ModerationService(api: context.read<UserProvider>().api);
+      await service.reportUgcContent(
+        contentType: contentType,
+        contentId: contentId,
+        reason: selectedReason,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.ugcReporteEnviadoExito ?? 'Reporte enviado. Nuestro equipo de moderación revisará el contenido en menos de 24 horas.',
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

@@ -88,6 +88,7 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>com.googleusercontent.apps.613074584216-0f60fd4ublhmrmg0jb4eicfvndrhua71</string>
+					<string>atrio</string>
 				</array>
 			</dict>
 		</array>

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../atrio_api.dart';
+import '../data/app_config.dart';
 import '../modelos/ad_models.dart';
 import '../servicios/ads_service.dart';
 
@@ -334,6 +335,72 @@ class AdsProvider extends ChangeNotifier {
     } finally {
       _isPaymentLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Abre el portal web administrativo de facturación de Odoo 19 en el navegador
+  /// externo ([LaunchMode.externalApplication]) para cumplir con las políticas B2B
+  /// de Apple App Store y Google Play (facturación y pago fuera de la app móvil).
+  Future<bool> openExternalBillingPortal(int adId) async {
+    _isPaymentLoading = true;
+    _paymentError = null;
+    notifyListeners();
+
+    try {
+      String targetUrl;
+      try {
+        targetUrl = await _adsService.payWithPaypal(adId);
+      } catch (_) {
+        targetUrl = '${AppConfig.odooBaseUrl}/my/invoices';
+      }
+      final uri = Uri.parse(targetUrl);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      unawaited(loadChurchAds(force: true));
+      return launched;
+    } catch (e) {
+      _paymentError = e.toString();
+      debugPrint('[AdsProvider] Error abriendo portal de facturación B2B: $e');
+      return false;
+    } finally {
+      _isPaymentLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Abre el cliente de correo del administrador pastoral para solicitar o remitir
+  /// la factura institucional B2B fuera de la aplicación móvil.
+  Future<bool> requestInvoiceByEmail({
+    required AdModel ad,
+    String? reference,
+    required String formattedAmount,
+  }) async {
+    final effectiveRef =
+        (reference != null && reference.trim().isNotEmpty)
+            ? reference.trim()
+            : 'AD-${ad.id}';
+    final subject = Uri.encodeComponent(
+      'Facturación Pauta B2B ATRIO - $effectiveRef (${ad.name})',
+    );
+    final body = Uri.encodeComponent(
+      'Solicitud de factura institucional B2B:\n'
+      '• Campaña: ${ad.name}\n'
+      '• Referencia Odoo 19: $effectiveRef\n'
+      '• Monto cotizado: $formattedAmount\n',
+    );
+    final mailtoUri = Uri.parse(
+      'mailto:facturacion@atrio.app?subject=$subject&body=$body',
+    );
+    try {
+      return await launchUrl(
+        mailtoUri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      debugPrint('[AdsProvider] Error abriendo cliente de correo B2B: $e');
+      return false;
     }
   }
 

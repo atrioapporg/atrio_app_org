@@ -472,7 +472,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                           icon: Icons.edit_note_outlined,
                           label: l10n?.misSolicitudes ?? 'Mis solicitudes',
                           badge: (!isChurchApproved && estaAutenticado)
-                              ? 'Pendiente'
+                              ? (l10n?.estadoDonacionPendiente ?? 'Pendiente')
                               : null,
                           route: isChurchApproved
                               ? SeguimientoSolicitudScreen.routeName
@@ -1179,6 +1179,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     _buildHeaderChurchStatusBadge(
+                      context: context,
                       isChurchApproved: isChurchApproved,
                       isMembershipPending: isMembershipPending,
                       isChangePending: isChangePending,
@@ -1243,6 +1244,11 @@ class _PerfilScreenState extends State<PerfilScreen>
                 ),
               ),
               IconButton(
+                tooltip: estaAutenticado
+                    ? (l10n?.perfilBotonEditarDatosTooltip ??
+                        'Editar mis datos personales')
+                    : (l10n?.perfilBotonIniciarSesionTooltip ??
+                        'Iniciar sesión en ATRIO'),
                 onPressed: () {
                   if (estaAutenticado) {
                     _mostrarDialogoEditarDatos(
@@ -1270,11 +1276,13 @@ class _PerfilScreenState extends State<PerfilScreen>
 
   /// Badge compacto de alta visibilidad para el encabezado superior
   Widget _buildHeaderChurchStatusBadge({
+    required BuildContext context,
     required bool isChurchApproved,
     required bool isMembershipPending,
     required bool isChangePending,
     required bool hasChurchAssigned,
   }) {
+    final l10n = AppLocalizations.of(context);
     Color bg;
     Color border;
     Color textCol;
@@ -1286,25 +1294,25 @@ class _PerfilScreenState extends State<PerfilScreen>
       border = const Color(0xFF22C55E);
       textCol = const Color(0xFF15803D);
       icon = Icons.verified_rounded;
-      label = 'Iglesia aprobada';
+      label = l10n?.perfilIglesiaAprobada ?? 'Iglesia aprobada';
     } else if (isMembershipPending) {
       bg = const Color(0xFFFEF3C7);
       border = const Color(0xFFF59E0B);
       textCol = const Color(0xFFB45309);
       icon = Icons.hourglass_top_rounded;
-      label = 'Pendiente de aprobación';
+      label = l10n?.perfilPendienteAprobacion ?? 'Pendiente de aprobación';
     } else if (isChangePending) {
       bg = const Color(0xFFE0E7FF);
       border = const Color(0xFF6366F1);
       textCol = const Color(0xFF4338CA);
       icon = Icons.swap_horiz_rounded;
-      label = 'Cambio en revisión';
+      label = l10n?.perfilCambioEnRevision ?? 'Cambio en revisión';
     } else {
       bg = Colors.white.withValues(alpha: 0.15);
       border = Colors.white.withValues(alpha: 0.35);
       textCol = Colors.white;
       icon = Icons.church_outlined;
-      label = 'Sin congregación';
+      label = l10n?.perfilSinCongregacion ?? 'Sin congregación';
     }
 
     return Container(
@@ -1344,6 +1352,7 @@ class _PerfilScreenState extends State<PerfilScreen>
     required bool hasChurchAssigned,
     required bool estaAutenticado,
   }) {
+    final l10n = AppLocalizations.of(context);
     Color cardBorder;
     Color iconBg;
     Color iconColor;
@@ -1362,12 +1371,13 @@ class _PerfilScreenState extends State<PerfilScreen>
       iconBg = const Color(0xFFDCFCE7);
       iconColor = const Color(0xFF16A34A);
       iconData = Icons.verified_rounded;
-      badgeText = 'Aprobada';
+      badgeText = l10n?.perfilBadgeAprobada ?? 'Aprobada';
       badgeBg = const Color(0xFFDCFCE7);
       badgeTextCol = const Color(0xFF15803D);
-      headerTitle = 'Congregación activa';
-      description = 'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.';
-      buttonText = 'Ver detalles de iglesia';
+      headerTitle = l10n?.perfilCongregacionActiva ?? 'Congregación activa';
+      description = l10n?.perfilCongregacionActivaDesc ??
+          'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.';
+      buttonText = l10n?.perfilVerDetallesIglesia ?? 'Ver detalles de iglesia';
       buttonIcon = Icons.info_outline_rounded;
       onButtonTap = () {
         _mostrarDetallesIglesiaAprobada(context, iglesia);
@@ -1377,18 +1387,13 @@ class _PerfilScreenState extends State<PerfilScreen>
       iconBg = const Color(0xFFFEF3C7);
       iconColor = const Color(0xFFB45309);
       iconData = Icons.hourglass_top_rounded;
-      badgeText = 'En revisión';
+      badgeText = l10n?.perfilBadgeEnRevision ?? 'En revisión';
       badgeBg = const Color(0xFFFEF3C7);
       badgeTextCol = const Color(0xFFB45309);
-      headerTitle = 'Solicitud de membresía';
-      final String prefix =
-          (iglesia.toLowerCase().startsWith('el ') ||
-              iglesia.toLowerCase().startsWith('templo '))
-          ? 'al '
-          : (iglesia.toLowerCase().startsWith('la ') ? '' : 'a la ');
-      description =
-          'Perteneces $prefix$iglesia, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
-      buttonText = 'Ver estado de solicitud';
+      headerTitle = l10n?.perfilSolicitudMembresia ?? 'Solicitud de membresía';
+      description = l10n?.perfilMembresiaPendienteDesc(iglesia) ??
+          'Perteneces a $iglesia, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
+      buttonText = l10n?.perfilVerEstadoSolicitud ?? 'Ver estado de solicitud';
       buttonIcon = Icons.hourglass_top_rounded;
       onButtonTap = () {
         Navigator.pushNamed(context, EsperandoAprobacionScreen.routeName);
@@ -1398,12 +1403,13 @@ class _PerfilScreenState extends State<PerfilScreen>
       iconBg = const Color(0xFFE0E7FF);
       iconColor = const Color(0xFF4338CA);
       iconData = Icons.swap_horiz_rounded;
-      badgeText = 'Traslado en curso';
+      badgeText = l10n?.perfilBadgeTrasladoEnCurso ?? 'Traslado en curso';
       badgeBg = const Color(0xFFE0E7FF);
       badgeTextCol = const Color(0xFF4338CA);
-      headerTitle = 'Cambio de congregación';
-      description = 'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.';
-      buttonText = 'Consultar estado';
+      headerTitle = l10n?.perfilCambioCongregacion ?? 'Cambio de congregación';
+      description = l10n?.perfilCambioCongregacionDesc ??
+          'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.';
+      buttonText = l10n?.perfilConsultarEstado ?? 'Consultar estado';
       buttonIcon = Icons.visibility_outlined;
       onButtonTap = () {
         Navigator.pushNamed(context, EsperandoAprobacionScreen.routeName);
@@ -1413,12 +1419,14 @@ class _PerfilScreenState extends State<PerfilScreen>
       iconBg = const Color(0xFFF1F5F9);
       iconColor = const Color(0xFF475569);
       iconData = Icons.church_outlined;
-      badgeText = 'Sin vincular';
+      badgeText = l10n?.perfilBadgeSinVincular ?? 'Sin vincular';
       badgeBg = const Color(0xFFF1F5F9);
       badgeTextCol = const Color(0xFF475569);
-      headerTitle = 'Sin congregación';
-      description = 'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.';
-      buttonText = 'Buscar y unirse a una iglesia';
+      headerTitle = l10n?.perfilSinCongregacion ?? 'Sin congregación';
+      description = l10n?.perfilSinCongregacionDesc ??
+          'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.';
+      buttonText =
+          l10n?.perfilBuscarUnirseIglesia ?? 'Buscar y unirse a una iglesia';
       buttonIcon = Icons.search_rounded;
       onButtonTap = () {
         Navigator.pushNamed(context, TradicionCristianaScreen.routeName);
@@ -1517,27 +1525,30 @@ class _PerfilScreenState extends State<PerfilScreen>
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            height: 38,
+            height: 48,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
                   color: isChurchApproved ? const Color(0xFF16A34A) : azulFondo,
-                  width: 1.2,
+                  width: 1.4,
                 ),
                 foregroundColor: isChurchApproved
                     ? const Color(0xFF15803D)
                     : azulFondo,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               onPressed: onButtonTap,
-              icon: Icon(buttonIcon, size: 16),
+              icon: Icon(buttonIcon, size: 18),
               label: Text(
                 buttonText,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1552,6 +1563,7 @@ class _PerfilScreenState extends State<PerfilScreen>
     BuildContext context,
     String iglesiaNombre,
   ) {
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1562,7 +1574,7 @@ class _PerfilScreenState extends State<PerfilScreen>
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          padding: const EdgeInsetsDirectional.fromSTEB(24, 24, 24, 20),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1595,10 +1607,11 @@ class _PerfilScreenState extends State<PerfilScreen>
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Estado: Membresía aprobada y activa',
+                Text(
+                  l10n?.perfilEstadoMembresiaAprobadaActiva ??
+                      'Estado: Membresía aprobada y activa',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xFF15803D),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -1606,7 +1619,8 @@ class _PerfilScreenState extends State<PerfilScreen>
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.',
+                  l10n?.perfilDetalleMembresiaModal ??
+                      'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade700,
@@ -1617,7 +1631,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  height: 46,
+                  height: 48,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: azulFondo,
@@ -1625,11 +1639,15 @@ class _PerfilScreenState extends State<PerfilScreen>
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                    label: const Text(
-                      'Cambiar de congregación',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    label: Text(
+                      l10n?.cambiarDeIglesia ?? 'Cambiar de congregación',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     onPressed: () {
                       Navigator.pop(ctx);
@@ -1643,9 +1661,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text(
-                    'Cerrar',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n?.cerrar ?? 'Cerrar',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -1852,19 +1870,19 @@ class _PerfilScreenState extends State<PerfilScreen>
       (
         icon: Icons.inbox_rounded,
         title: l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
-        subtitle: 'Atención y respuesta pastoral a feligreses',
+        subtitle: l10n?.perfilSubtituloBandejaSolicitudes ?? 'Atención y respuesta pastoral a feligreses',
         onTap: () => _mostrarModeracionPeticiones(context),
       ),
       (
         icon: Icons.campaign_rounded,
         title: l10n?.gestionAvisos ?? 'Avisos congregacionales',
-        subtitle: 'Publicar comunicados y avisos clave',
+        subtitle: l10n?.perfilSubtituloAvisos ?? 'Publicar comunicados y avisos clave',
         onTap: () => _mostrarGestionAvisos(context),
       ),
       (
         icon: Icons.groups_rounded,
         title: l10n?.gestionGrupos ?? 'Audiencias y grupos',
-        subtitle: 'Segmentación de ministerios y membresía',
+        subtitle: l10n?.perfilSubtituloGrupos ?? 'Segmentación de ministerios y membresía',
         onTap: () => _mostrarGruposAudiencia(context),
       ),
       if (context.hasPermission(AppPermissions.manageAds))
@@ -1968,8 +1986,8 @@ class _PerfilScreenState extends State<PerfilScreen>
                                     color: amarilloOro,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: const Text(
-                                    'LÍDER',
+                                  child: Text(
+                                    l10n?.perfilBadgeLider ?? 'LÍDER',
                                     style: TextStyle(
                                       color: azulFondo,
                                       fontSize: 10,
@@ -1982,9 +2000,9 @@ class _PerfilScreenState extends State<PerfilScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Gestión y cuidado de la congregación',
+                              l10n?.perfilGestionCuidadoCongregacion ?? 'Gestión y cuidado de la congregación',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.72),
+                                color: Colors.white.withValues(alpha: 0.88),
                                 fontSize: screenWidth * 0.03,
                               ),
                             ),
@@ -2064,7 +2082,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                                               item.subtitle,
                                               style: TextStyle(
                                                 color: Colors.white.withValues(
-                                                  alpha: 0.65,
+                                                  alpha: 0.88,
                                                 ),
                                                 fontSize: screenWidth * 0.029,
                                               ),
@@ -2117,13 +2135,13 @@ class _PerfilScreenState extends State<PerfilScreen>
       (
         icon: Icons.shield_rounded,
         title: l10n?.centroModeracion ?? 'Centro de Moderación',
-        subtitle: 'Auditar contenidos marcados y bloqueados',
+        subtitle: l10n?.perfilSubtituloCentroModeracion ?? 'Auditar contenidos marcados y bloqueados',
         onTap: () => Navigator.pushNamed(context, ModerationScreen.routeName),
       ),
       (
         icon: Icons.rule_rounded,
         title: l10n?.palabrasRestringidas ?? 'Palabras Restringidas',
-        subtitle: 'Reglas automáticas flag y block',
+        subtitle: l10n?.perfilSubtituloPalabrasRestringidas ?? 'Reglas automáticas flag y block',
         onTap: () =>
             Navigator.pushNamed(context, ModerationWordsScreen.routeName),
       ),
@@ -2235,7 +2253,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                               l10n?.subtituloModeracion ??
                                   'Audita y modera contenido público',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.72),
+                                color: Colors.white.withValues(alpha: 0.88),
                                 fontSize: screenWidth * 0.03,
                               ),
                             ),
@@ -2314,7 +2332,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                                               item.subtitle,
                                               style: TextStyle(
                                                 color: Colors.white.withValues(
-                                                  alpha: 0.65,
+                                                  alpha: 0.88,
                                                 ),
                                                 fontSize: screenWidth * 0.029,
                                               ),

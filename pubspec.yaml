@@ -1,7 +1,7 @@
 name: atrio
 description: "Vive tu Fe en comunidad"
 publish_to: "none" # Evita que el paquete se publique accidentalmente en pub.dev
-version: 0.1.0+33 # Versión semántica (0.1.0) y número de compilación interno (+33)
+version: 0.1.0+35 # Versión semántica (0.1.0) y número de compilación interno (+33)
 
 environment:
   sdk: ^3.13.0 # Versión mínima y compatible del SDK de Dart
@@ -151,4 +151,3 @@ flutter_native_splash:
     image: assets/images/android12_splash.png # Emblema de alta definición centrado dentro de la máscara circular
 xcross:
   bundle_id: prefixed
-

@@ -29,7 +29,7 @@
   "eliminarCuentaYDatos": "Delete account and data",
   "solicitarEliminacion": "Request deletion",
   "opcionNoDisponible": "Option not available",
-  "entendido": "Understood",
+  "entendido": "Got it",
   "inicio": "Home",
   "perfil": "Profile",
   "biblia": "Bible",
@@ -230,7 +230,7 @@
   "misDatos": "My personal data",
   "ajustesDeLaApp": "App settings",
   "ayudaYSoporte": "Help & support",
-  "terminosYPrivacidad": "Terms & privacy",
+  "terminosYPrivacidad": "Terms and Privacy",
   "cerrarSesion": "Log out",
   "misDatosDePerfil": "My profile details",
   "nombreCompleto": "Full name",
@@ -321,7 +321,6 @@
     }
   },
   "cerrarBusqueda": "Close search",
-  "eventos": "Events",
   "buscarEventosPlaceholder": "Search events, speakers, or venues...",
   "categorias": "Categories",
   "categoriaTodos": "All",
@@ -329,7 +328,6 @@
   "categoriaAdoracion": "Worship",
   "categoriaJovenes": "Youth",
   "categoriaFamilias": "Families",
-  "categoriaComunidad": "Community",
   "explorarEventos": "Explore events",
   "verTodos": "See all",
   "noEventosEnCategoria": "No events found in this category",
@@ -405,11 +403,10 @@
   "modoInvitado": "Guest mode",
   "usuarioInvitado": "Guest user",
   "perfilInvitadoDesc": "You are browsing as a guest. Sign in to access your history, requests, and donations.",
-  "sinSolicitudesRegistradas": "You have no recorded requests or petitions.",
-  "solicitudesInvitadoDesc": "Requests are not recorded or displayed in guest mode. Sign in to create and track your requests.",
-  "sinDonacionesRegistradas": "You have no recorded donations or offerings.",
-  "donacionesInvitadoDesc": "Donations are not recorded or displayed in guest mode. Sign in to view your contribution history and receipts.",
-  "entendido": "Understood",
+  "sinSolicitudesRegistradas": "No requests registered",
+  "solicitudesInvitadoDesc": "In guest mode, requests are not recorded or displayed. Sign in to create and track pastoral requests.",
+  "sinDonacionesRegistradas": "No donations registered",
+  "donacionesInvitadoDesc": "In guest mode, donations are not recorded. Sign in to contribute and view your donation history.",
   "eventoAnadidoACalendario": "Event \"{titulo}\" added to your calendar.",
   "@eventoAnadidoACalendario": {
     "description": "Message when event is added to calendar",
@@ -466,14 +463,12 @@
   "tipoDeFuente": "Font type",
   "modoDeLectura": "Reading mode",
   "papiro": "Papyrus",
-  "claro": "Light",
   "noche": "Night",
   "cambiarTonoLecturaTooltip": "Change reading tone",
   "comoPodemosAyudarte": "How can we help you?",
   "descripcionAyudaSoporte": "Find quick answers or contact our ATRIO technical support team directly.",
   "canalesDeAtencion": "Support channels",
   "chatDirecto": "Direct chat",
-  "correo": "Email",
   "preguntasFrecuentes": "Frequently asked questions",
   "faq1Pregunta": "How do I make an offering or donation to my church?",
   "faq1Respuesta": "Access the \"My donations\" section from your profile or tap the \"Give / Donate\" button on your church's screen. You will be able to select the mission project, enter the amount, and proceed securely.",
@@ -545,7 +540,6 @@
     }
   },
   "buscarProductosPlaceholder": "Search Bibles, books, or gifts...",
-  "categoriaTodos": "All",
   "categoriaBiblias": "Bibles",
   "categoriaLibros": "Books",
   "categoriaRegalos": "Gifts",
@@ -587,7 +581,6 @@
   "buscarLibrosPlaceholder": "Search books or authors...",
   "categoriaVidaCristiana": "Christian life",
   "categoriaCrecimiento": "Growth",
-  "categoriaLiderazgo": "Leadership",
   "explorarLibros": "Explore books",
   "noSeEncontraronLibrosCategoria": "No books found in this category",
   "leerAhora": "Read now",
@@ -601,7 +594,6 @@
       }
     }
   },
-  "continuarLeyendo": "Continue reading",
   "totalPaginas": "{paginas} pages",
   "@totalPaginas": {
     "description": "Total pages of a book",
@@ -633,7 +625,6 @@
   "videosYTransmisiones": "Videos and streams",
   "buscarVideosPlaceholder": "Search sermons, channels or topics...",
   "enVivoBadge": "LIVE",
-  "verAhora": "Watch now",
   "categoriaEnVivo": "Live",
   "categoriaPredicas": "Sermons",
   "categoriaEstudios": "Bible studies",
@@ -784,7 +775,7 @@
   "solicitudPrivadaDesc": "Only the pastoral team will be able to see it",
   "general": "General",
   "completaCamposObligatorios": "Please complete all required fields.",
-  "enviarSolicitud": "Submit request",
+  "enviarSolicitud": "Send Request",
   "realizaTuAporte": "Make your contribution",
   "errorCargarDatos": "Error loading data",
   "tipoDonacion": "Donation type",
@@ -904,15 +895,11 @@
   "otra": "Other",
   "prefieroIndicarloDespues": "I prefer to indicate later",
   "gpsDesactivadoMensaje": "GPS is turned off. Turn it on to find churches near you.",
-  "ajustes": "Settings",
   "permisoUbicacionNoConcedido": "Location permission not granted. Default location will be shown.",
   "permisosUbicacionDenegadosPermanentemente": "Location permissions permanently denied in settings.",
   "errorServidorCodigo": "Server error: {codigo}",
   "noSeEncontraronIglesiasCercanas": "No nearby churches found for \"{query}\".",
   "errorConexionInternet": "Connection error. Please check your internet.",
-  "sinNombre": "Unnamed",
-  "comunidadCristiana": "Christian community",
-  "aDistanciaKm": "{distancia} km away",
   "ubicacionExacta": "Exact location",
   "seleccionaTuIglesia": "Select your church",
   "buscarIglesiaPlaceholder": "Search church or denomination...",
@@ -932,9 +919,7 @@
   "descripcionRegistroIglesia": "You have successfully registered in this church through ATRIO.",
   "filtroTodas": "All",
   "filtroNoLeidas": "Unread",
-  "categoriaServicios": "Services",
   "categoriaEventos": "Events",
-  "categoriaComunidad": "Community",
   "notiHorarioServicioTitulo": "Service time change",
   "notiHorarioServicioResumen": "Prayer Wednesday · 7:00 PM in the Main Sanctuary.",
   "notiHorarioServicioCuerpo": "Dear congregation: Due to pastoral work and preparations for this month's activities, our intercession and Bible study service this Wednesday will start 30 minutes earlier, beginning at 7:00 PM. We invite you to arrive early with your family.",
@@ -958,11 +943,9 @@
   "deshacer": "Undo",
   "borrarAvisos": "Delete notices",
   "confirmarBorrarTodasMensaje": "Do you want to delete all received notifications? You can undo this action immediately if you wish.",
-  "cancelar": "Cancel",
   "borrarTodas": "Delete all",
   "todasNotificacionesEliminadas": "All notifications have been deleted",
   "avisosEjemploRestaurados": "Sample notices restored",
-  "notificaciones": "Notifications",
   "marcarTodasComoLeidas": "Mark all as read",
   "buscarEnAvisosPlaceholder": "Search notices...",
   "avisosDeLaComunidad": "Community notices",
@@ -971,14 +954,10 @@
   "noHayAvisosMomento": "No notices at this time",
   "avisosOdooApareceranAqui": "Notices published in Odoo will appear here.",
   "restaurarAvisosEjemplo": "Restore sample notices",
-  "eliminar": "Delete",
   "eliminarAviso": "Delete notice",
   "eliminarEsteAviso": "Delete this notice",
-  "entendido": "Got it",
   "personalizaTuExperienciaAtrio": "Customize your experience in ATRIO",
   "idiomaYRegion": "Language and Region",
-  "idiomaPreferido": "Preferred language",
-  "seleccionarIdioma": "Select Language",
   "aparienciaYTema": "Appearance and Theme",
   "modoDeVisualizacion": "Display mode",
   "temaClaro": "Light",
@@ -992,7 +971,6 @@
   "segundosPredeterminado": "5 sec (Default)",
   "segundosMaximo": "10 sec",
   "notificacionesYRecordatorios": "Notifications and Reminders",
-  "versiculoDelDia": "Verse of the day",
   "recibePorcionBiblica": "Receive a biblical portion every morning",
   "horaDelRecordatorio": "Reminder time",
   "palabraDelDia": "Word of the day",
@@ -1031,13 +1009,14 @@
   "restablecer": "Reset",
   "idiomaEspanolLatino": "Spanish (Latin America)",
   "idiomaInglesUSA": "English (United States)",
-  "terminosYPrivacidad": "Terms and Privacy",
   "politicaDePrivacidad": "Privacy Policy",
   "politicaPrivacidadIntro": "Last updated: {fecha}\n\nWelcome to ATRIO (\"Live your Faith in community\"). We respect your privacy and are deeply committed to protecting your personal data and your spiritual journey.\n\nThis policy outlines how we collect, manage, protect, and safeguard your information.",
   "@politicaPrivacidadIntro": {
     "description": "Introduction to the privacy policy",
     "placeholders": {
-      "fecha": { "type": "String" }
+      "fecha": {
+        "type": "String"
+      }
     }
   },
   "seccionInfoQueRecopilamos": "1. Information We Collect",
@@ -1062,10 +1041,8 @@
   "confirmarSolicitudTitulo": "Confirm Request",
   "solicitudEnviadaEquipoPastoral": "Your request will be sent to the church's pastoral team.",
   "tipo": "Type",
-  "asunto": "Subject",
   "privada": "Private",
   "publica": "Public",
-  "enviarSolicitud": "Send Request",
   "enviandoAOdoo": "Sending to Odoo...",
   "registrandoSolicitudSistema": "We are registering your request in the system.",
   "solicitudEnviadaExito": "Request Sent!",
@@ -1266,8 +1243,8 @@
   "registroExitosoMensaje": "Your account has been created successfully in Odoo. The church administrator will validate your membership.",
   "registroExitosoMensajeSinIglesia": "Your account has been created successfully. Choose your church to get started.",
   "iniciarSesionAhora": "Log in now",
-  "comprobanteTransferencia": "Transfer receipt",
-  "adjuntarComprobante": "Attach receipt",
+  "comprobanteTransferencia": "Transfer Receipt",
+  "adjuntarComprobante": "Attach Receipt",
   "cambiarComprobante": "Change receipt",
   "comprobanteAdjuntado": "Receipt attached successfully",
   "subirComprobanteDesc": "Attach a photo or screenshot of your bank receipt to validate your contribution quickly.",
@@ -1275,7 +1252,6 @@
   "galeria": "Photo gallery",
   "eliminarComprobante": "Remove receipt",
   "redirigiendoPaypal": "Redirecting to secure PayPal gateway...",
-  "reintentar": "Retry",
   "donacionPendienteVerificacion": "Your donation has been recorded in Odoo and is pending accounting verification.",
   "errorProcesarDonacion": "An error occurred while processing donation: {error}",
   "@errorProcesarDonacion": {
@@ -1365,14 +1341,9 @@
   },
   "noSePudieronCargarIglesias": "😕 Could not load churches.\nCheck your internet connection and try again.",
   "localizandoComunidades": "Locating Christian communities...",
-  "sinSolicitudesRegistradas": "No requests registered",
-  "solicitudesInvitadoDesc": "In guest mode, requests are not recorded or displayed. Sign in to create and track pastoral requests.",
-  "sinDonacionesRegistradas": "No donations registered",
-  "donacionesInvitadoDesc": "In guest mode, donations are not recorded. Sign in to contribute and view your donation history.",
   "pedidosInvitadoDesc": "In guest mode, orders are not recorded. Sign in to view your order history.",
   "notificacionesInvitadoDesc": "In guest mode, personal notices and notifications are not available. Sign in to stay up to date with your community.",
   "omitir": "Skip",
-  "reintentar": "Retry",
   "errorConexionServidor": "Server connection error",
   "errorCargarSolicitudesDesc": "A temporary issue occurred while retrieving your requests from the server. You can try again.",
   "reintentarConexionServidor": "Retry server connection",
@@ -1405,7 +1376,6 @@
   "nuevaCampana": "New Campaign",
   "sinCampanas": "No campaigns registered",
   "sinCampanasSubtitulo": "Create your first campaign to reach more churches and members.",
-  "filtroTodas": "All",
   "filtroActivas": "Active",
   "filtroPorPagar": "To Pay",
   "filtroEnRevision": "In Review",
@@ -1418,7 +1388,7 @@
   "estadoPausada": "Paused",
   "estadoFinalizada": "Finished",
   "estadoRechazada": "Rejected",
-  "motivoRechazo": "Rejection reason",
+  "motivoRechazo": "Rejection reason (optional)",
   "pagarCampana": "Pay Campaign",
   "verEstadisticas": "View Statistics",
   "cancelarCampana": "Cancel Campaign",
@@ -1475,8 +1445,6 @@
   "numeroCopiado": "Account number copied to clipboard",
   "referenciaBancaria": "Bank Reference / Deposit Number",
   "referenciaBancariaHint": "e.g. DEP-12345678",
-  "comprobanteTransferencia": "Transfer Receipt",
-  "adjuntarComprobante": "Attach Receipt",
   "enviarComprobante": "Submit Receipt",
   "comprobanteEnviadoExito": "Receipt submitted. Your campaign will be reviewed for payment.",
   "rendimientoCampana": "Campaign Performance",
@@ -1493,8 +1461,6 @@
   "marcados": "Flagged",
   "bloqueados": "Banned",
   "publicaciones": "Posts",
-  "eventos": "Events",
-  "notificaciones": "Notifications",
   "todosLosTipos": "All types",
   "bloquearContenido": "Ban Content",
   "desbloquearContenido": "Unban Content",
@@ -1622,13 +1588,11 @@
   "estadoNueva": "New",
   "estadoEnProgreso": "In Progress",
   "estadoRespondida": "Answered",
-  "estadoRechazada": "Rejected",
   "responderSolicitud": "Answer Request",
   "escribirRespuestaPastoral": "Write your pastoral message to the member...",
   "enviarRespuesta": "Send Response",
   "aprobarSolicitud": "Approve",
   "rechazarSolicitud": "Reject",
-  "motivoRechazo": "Rejection reason (optional)",
   "respuestaEnviadaExito": "Pastoral response sent successfully!",
   "solicitudAprobadaExito": "Request approved successfully.",
   "solicitudRechazadaExito": "Request rejected.",
@@ -1862,9 +1826,169 @@
   "compartirEnlaceIglesia": "Share Link",
   "aficheParaTuIglesia": "Official Poster for your Congregation",
   "imprimeColocaAfiche": "Print this poster and place it at your church entrance or bulletin so parishioners can join by scanning the QR code.",
-  "cargandoAfiche": "Generating official poster..."
+  "cargandoAfiche": "Generating official poster...",
+  "articuloFisicoBadge": "Printed / tangible physical item",
+  "articuloFisicoCorto": "Physical Item",
+  "avisoTiendaSoloBienesFisicos": "All items in the church store are tangible physical goods subject to postal shipping or in-person pickup at the temple.",
+  "carritoContieneArticulosFisicosError": "Your cart contains physical items. Complete this order before adding digital content.",
+  "carritoContieneArticulosDigitalesError": "Your cart contains digital content. Complete this order before adding physical items.",
+  "pasoLogisticoObligatorioTitulo": "Physical delivery details (Required)",
+  "direccionEntregaLabel": "Physical shipping address (Street, number, neighborhood, and city)",
+  "direccionEntregaHint": "E.g., 45 Winston Churchill Ave, Piantini, Santo Domingo",
+  "direccionEntregaRequeridaError": "Please enter a valid physical shipping address before proceeding.",
+  "confirmarRetiroPresencialLabel": "I confirm that I will pick up these physical items in person at my congregation's temple.",
+  "confirmarRetiroPresencialRequeridoError": "You must check the in-person temple pickup confirmation box before confirming the order.",
+  "verOrdenFacturacionB2B": "View Order / Billing",
+  "resumenFacturacionB2BTitulo": "B2B Ad Order Summary",
+  "avisoFacturacionExternaB2B": "Per platform policies, invoicing and settlement for institutional (B2B) advertising campaigns are managed exclusively through the Odoo 19 administrative web portal or via the invoice sent to your congregation's email.",
+  "instruccionesFacturacionExternaSubtitulo": "Complete the order from your institutional web browser or with your church's accounting department using the official reference.",
+  "abrirPortalFacturacionWeb": "Open Billing Portal in Browser",
+  "solicitarFacturaPorCorreo": "Send / Request Invoice by Email",
+  "facturaEnviadaCorreoConfirmacion": "Billing request prepared for reference {ref}.",
+  "@facturaEnviadaCorreoConfirmacion": {
+    "description": "Confirmation when requesting B2B invoice by email",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "datosReferenciaContableB2B": "Institutional Accounting Reference Details",
+  "avisoRedireccionWebDonacion": "In compliance with platform security guidelines, your offering or donation will be completed entirely on your congregation's secure web portal (via the system's secure browser) with 0% platform fee.",
+  "continuarPortalWebOfrendas": "Continue to Offerings Web Portal",
+  "abriendoPortalSeguroOdoo": "Opening secure web portal...",
+  "completarAporteEnNavegadorDesc": "Complete your contribution in the secure browser window. Once finished, you will automatically return to ATRIO.",
+  "abrirPortalWebSeguro": "Open Secure Web Portal",
+  "gratitudPastoralTitulo": "Thank You for Your Generosity!",
+  "gratitudPastoralSubtitulo": "Your offering has been received and successfully recorded in your congregation's ministry system.",
+  "estadoVerificadoEnOdoo": "Verified status in Odoo 19: {estado}",
+  "@estadoVerificadoEnOdoo": {
+    "description": "Donation status returned by GET /donations/status",
+    "placeholders": {
+      "estado": {
+        "type": "String"
+      }
+    }
+  },
+  "portalWebExternoOdoo": "Official Web Portal (SFSafariViewController / Chrome Tabs)",
+  "kycStatusDraftTitle": "Institutional Verification Pending Start (Draft)",
+  "kycStatusDraftDesc": "Offering collection is currently hidden in the app. To enable it, upload your institutional documentation in Odoo 19 (DO: Non-Profit RNC Law 122-05 | HN: Legal Personality & RTN) and official church bank account.",
+  "kycStatusPendingTitle": "Validation in progress (Institutional KYC)",
+  "kycStatusPendingDesc": "ATRIO's legal team is verifying your congregation's legal documentation (Law 122-05 / Legal Personality) and institutional bank account. The offering button will activate upon approval.",
+  "kycStatusApprovedTitle": "Verified Congregation (KYC Approved)",
+  "kycStatusApprovedDesc": "Legal and institutional documentation validated. Offering collection and official web gateway are active.",
+  "kycStatusSuspendedTitle": "Fundraising Suspended by Legal Audit",
+  "kycStatusSuspendedDesc": "Inconsistencies or pending reviews were detected in the congregation's legal documentation. Offering collection has been temporarily disabled.",
+  "donacionesDeshabilitadasKycTitulo": "Offerings Activation in Progress",
+  "donacionesDeshabilitadasKycMensaje": "Your congregation is currently completing the legal and institutional validation process (KYC) in ATRIO. The offerings module will be available as soon as verification concludes.",
+  "ofrendarACongregacion": "Give to Congregation",
+  "ofrendarSubtituloVerificado": "Voluntary offerings and tithes (Verified entity)",
+  "ugcReportarContenido": "Report inappropriate content",
+  "ugcBloquearUsuario": "Block author / content",
+  "ugcMotivoReporteTitulo": "Report Content",
+  "ugcMotivoReporteSubtitulo": "Select the reason why you want to report this post to ATRIO's moderation team:",
+  "ugcMotivoOfensivo": "Offensive or inappropriate language",
+  "ugcMotivoSpam": "Spam or misleading information",
+  "ugcMotivoAcoso": "Harassment or abusive conduct",
+  "ugcReporteEnviadoExito": "Report submitted. Our moderation team will review the content within 24 hours.",
+  "ugcUsuarioBloqueadoExito": "Author blocked. Their posts have been immediately hidden from your view.",
+  "ugcPoliticaToleranciaCeroTitulo": "User-Generated Content (UGC) & Zero-Tolerance Policy",
+  "ugcPoliticaToleranciaCeroParrafo": "ATRIO enforces a strict zero-tolerance policy against objectionable, defamatory, abusive, discriminatory, or fraudulent content in community walls, notices, and pastoral requests. Users can report inappropriate posts and immediately block any abusive author from the options menu of each item. Our moderation team acts on reports within 24 hours by removing offending content and suspending the responsible account.",
+  "ugcAvisoToleranciaCeroSolicitud": "Community commitment (EULA): ATRIO enforces zero tolerance against offensive language, spam, or abuse. Infringing requests will be removed and the account may be suspended.",
+  "direccionItem": "• Shipping address: {direccion}",
+  "@direccionItem": {
+    "description": "Shipping address item in order confirmation",
+    "placeholders": {
+      "direccion": {
+        "type": "String"
+      }
+    }
+  },
+  "perfilIglesiaAprobada": "Approved church",
+  "perfilPendienteAprobacion": "Pending approval",
+  "perfilCambioEnRevision": "Transfer in review",
+  "perfilSinCongregacion": "No congregation",
+  "perfilBadgeAprobada": "Approved",
+  "perfilCongregacionActiva": "Active congregation",
+  "perfilCongregacionActivaDesc": "You actively belong to this congregation. Your membership is verified and you have full access to pastoral requests, petitions, and activities.",
+  "perfilVerDetallesIglesia": "View church details",
+  "perfilBadgeEnRevision": "In review",
+  "perfilSolicitudMembresia": "Membership request",
+  "perfilMembresiaPendienteDesc": "You belong to {iglesia}, but your approval is currently pending by the administration.",
+  "@perfilMembresiaPendienteDesc": {
+    "description": "Pending membership message with church name",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "perfilVerEstadoSolicitud": "View request status",
+  "perfilBadgeTrasladoEnCurso": "Transfer in progress",
+  "perfilCambioCongregacion": "Change congregation",
+  "perfilCambioCongregacionDesc": "Your request to transfer to a new congregation is currently being reviewed by the administration.",
+  "perfilConsultarEstado": "Check status",
+  "perfilBadgeSinVincular": "Not linked",
+  "perfilSinCongregacionDesc": "You do not belong to a church community in ATRIO yet. Choose your congregation to participate in activities and pastoral services.",
+  "perfilBuscarUnirseIglesia": "Search and join a church",
+  "perfilEstadoMembresiaAprobadaActiva": "Status: Membership approved and active",
+  "perfilDetalleMembresiaModal": "You are an active part of this congregation. From ATRIO you can interact with your pastor, submit requests, and participate in events.",
+  "perfilBadgeLider": "LEADER",
+  "perfilGestionCuidadoCongregacion": "Congregation care and management",
+  "perfilSubtituloBandejaSolicitudes": "Pastoral care and member responses",
+  "perfilSubtituloAvisos": "Publish key announcements and notices",
+  "perfilSubtituloGrupos": "Ministry and membership segmentation",
+  "perfilSubtituloCentroModeracion": "Audit flagged and blocked content",
+  "perfilSubtituloPalabrasRestringidas": "Automatic flag and block rules",
+  "perfilBotonEditarDatosTooltip": "Edit my personal data",
+  "perfilBotonIniciarSesionTooltip": "Log in to ATRIO",
+  "comunicadoNuevo": "New announcement",
+  "comunicadoNuevoHeader": "NEW ANNOUNCEMENT",
+  "comunicadoRemitenteDefault": "ATRIO Community",
+  "comunicadoVerTodas": "View all",
+  "avisoPredeterminado": "Notice",
+  "compartirUbicacionMensaje": "Location of {iglesia}: {plusCode}",
+  "@compartirUbicacionMensaje": {
+    "description": "Message to share Plus Code",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      },
+      "plusCode": {
+        "type": "String"
+      }
+    }
+  },
+  "asuntoCorreoPlusCode": "Plus Code for {iglesia}",
+  "@asuntoCorreoPlusCode": {
+    "description": "Email subject to share Plus Code",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "cuerpoCorreoPlusCode": "{mensaje}\\n\\nYou can search this code directly in Google Maps.",
+  "@cuerpoCorreoPlusCode": {
+    "description": "Email body to share Plus Code",
+    "placeholders": {
+      "mensaje": {
+        "type": "String"
+      }
+    }
+  },
+  "iglesiaVerificadaTooltip": "Verified congregation",
+  "resenasCalificacionSemantics": "Rating {rating} out of 5, based on {count} reviews",
+  "@resenasCalificacionSemantics": {
+    "description": "Accessibility semantics for rating and reviews",
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorarEnElMapa": "Explore on map"
 }
-
-
-
-

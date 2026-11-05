@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/screens/mis_donaciones_screen.dart';
 import 'package:atrio/screens/realizar_aporte_screen.dart';
@@ -34,6 +35,9 @@ class DonacionesScreen extends StatelessWidget {
 
     final l10n = AppLocalizations.of(context);
     final userProvider = context.watch<UserProvider>();
+    final iglesiaProvider = context.watch<IglesiaProvider>();
+    final bool isKycApproved = userProvider.isChurchKycApproved &&
+        (iglesiaProvider.iglesiaActual?.puedeRecibirOfrendas ?? true);
     final rawIglesia = userProvider.currentUser?.iglesiaActual.trim();
     final String nombreIglesia = (rawIglesia != null &&
             rawIglesia.isNotEmpty &&
@@ -167,6 +171,13 @@ class DonacionesScreen extends StatelessWidget {
                           ),
                           SizedBox(height: usableHeight * 0.02),
 
+                          if (!isKycApproved) ...[
+                            _KycFundraisingDisabledCard(
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                            ),
+                            SizedBox(height: usableHeight * 0.02),
+                          ] else ...[
                           // 1. Diezmo
                           _DonationCategoryTile(
                             title: l10n?.diezmo ?? 'Diezmo',
@@ -234,6 +245,7 @@ class DonacionesScreen extends StatelessWidget {
                           ),
                           SizedBox(height: usableHeight * 0.02),
 
+                          ],
                           // Tarjeta Destacada "Mis donaciones"
                           _HistoryCard(
                             screenWidth: screenWidth,
@@ -270,6 +282,13 @@ class DonacionesScreen extends StatelessWidget {
     if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
       return;
     }
+    if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
+      return;
+    }
+    if (!context.read<UserProvider>().isChurchKycApproved) {
+      ModalRestriccionDonacion.mostrar(context: context);
+      return;
+    }
     Navigator.pushNamed(
       context,
       RealizarAporteScreen.routeName,
@@ -290,6 +309,13 @@ class DonacionesScreen extends StatelessWidget {
     );
     if (!hasInternet || !context.mounted) return;
 
+    if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
+      return;
+    }
+    if (!context.read<UserProvider>().isChurchKycApproved) {
+      ModalRestriccionDonacion.mostrar(context: context);
+      return;
+    }
     Navigator.pushNamed(
       context,
       MisDonacionesScreen.routeName,
@@ -514,6 +540,75 @@ class _HistoryCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+/// Tarjeta informativa mostrada cuando la congregación aún no tiene
+/// su validación legal e institucional (KYC) en estado `approved`.
+class _KycFundraisingDisabledCard extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+
+  const _KycFundraisingDisabledCard({
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsetsDirectional.all(screenWidth * 0.045),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        border: Border.all(
+          color: amarilloOro.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.verified_user_outlined,
+            color: amarilloOro,
+            size: screenWidth * 0.065,
+          ),
+          SizedBox(width: screenWidth * 0.035),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n?.donacionesDeshabilitadasKycTitulo ??
+                      'Ofrendas en Proceso de Habilitación',
+                  style: TextStyle(
+                    color: azulFondo,
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: usableHeight * 0.006),
+                Text(
+                  l10n?.donacionesDeshabilitadasKycMensaje ??
+                      'Tu congregación se encuentra completando el proceso de validación legal e institucional (KYC) en ATRIO.',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: screenWidth * 0.033,
+                    height: 1.38,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

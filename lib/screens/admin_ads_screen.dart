@@ -493,9 +493,9 @@ class _AdminAdCard extends StatelessWidget {
                       context.read<AdsProvider>().loadChurchAds(force: true);
                     }
                   },
-                  icon: const Icon(Icons.payment_rounded, size: 16),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 16),
                   label: Text(
-                    l10n?.pagarCampana ?? 'Pagar Campaña',
+                    l10n?.verOrdenFacturacionB2B ?? 'Ver Orden / Facturación',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

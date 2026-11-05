@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +6,11 @@ import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 
+/// Diálogo de redirección controlada al navegador seguro (SFSafariViewController en iOS /
+/// Chrome Custom Tabs en Android) para procesar ofrendas y donaciones en el portal web de Odoo 19.
+///
+/// Cumple estrictamente con Apple Guideline 3.2.1(vi) y Google Play Payments Policy:
+/// la app no recolecta ni procesa fondos de donación de forma nativa.
 class OdooPagoDialog {
   static Future<void> mostrarConfirmacionPago({
     required BuildContext context,
@@ -36,7 +40,6 @@ class OdooPagoDialog {
     const Color verdeExito = Color(0xFF2E7D32);
     const Color rojoError = Color(0xFFD32F2F);
 
-    final bool esPaypal = metodoPago.toLowerCase().contains('paypal');
     if (!ModalRestriccionDonacion.verificarDonacionGeneral(context: context)) {
       return Future.value();
     }
@@ -56,7 +59,7 @@ class OdooPagoDialog {
           builder: (modalContext, setStateModal) {
             return Container(
               width: screenWidth,
-              padding: EdgeInsets.fromLTRB(
+              padding: EdgeInsetsDirectional.fromSTEB(
                 screenWidth * 0.06,
                 usableHeight * 0.025,
                 screenWidth * 0.06,
@@ -84,7 +87,6 @@ class OdooPagoDialog {
                   SizedBox(height: usableHeight * 0.025),
 
                   if (!procesando && !completado && !error) ...[
-                    // Ícono de validación de pago
                     Container(
                       width: screenWidth * 0.16,
                       height: screenWidth * 0.16,
@@ -93,9 +95,7 @@ class OdooPagoDialog {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        esPaypal
-                            ? Icons.account_balance_wallet_rounded
-                            : Icons.payment_rounded,
+                        Icons.open_in_browser_rounded,
                         color: amarilloOro,
                         size: screenWidth * 0.08,
                       ),
@@ -109,21 +109,22 @@ class OdooPagoDialog {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: usableHeight * 0.005),
+                    SizedBox(height: usableHeight * 0.006),
                     Text(
-                      l10n?.transaccionValidaraOdoo ??
-                          'La transacción se validará mediante la pasarela segura de Odoo.',
+                      l10n?.avisoRedireccionWebDonacion ??
+                          'En cumplimiento con las normativas de seguridad, tu ofrenda o donación se completará íntegramente en el portal web seguro de tu congregación (vía navegador seguro del sistema) con 0% de retención.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: screenWidth * 0.032,
+                        fontSize: screenWidth * 0.031,
+                        height: 1.3,
                       ),
                     ),
                     SizedBox(height: usableHeight * 0.02),
 
                     // Tarjeta Resumen rápido protegido contra Overflows
                     Container(
-                      padding: EdgeInsets.all(screenWidth * 0.04),
+                      padding: EdgeInsetsDirectional.all(screenWidth * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(
@@ -133,7 +134,6 @@ class OdooPagoDialog {
                       ),
                       child: Column(
                         children: [
-                          // Fila: Concepto
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -165,8 +165,6 @@ class OdooPagoDialog {
                             height: usableHeight * 0.02,
                             color: grisBorde,
                           ),
-
-                          // Fila: Método de pago
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -180,12 +178,13 @@ class OdooPagoDialog {
                               SizedBox(width: screenWidth * 0.03),
                               Flexible(
                                 child: Text(
-                                  metodoPago,
+                                  l10n?.portalWebExternoOdoo ??
+                                      'Portal Web Oficial (SFSafariViewController / Chrome Tabs)',
                                   textAlign: TextAlign.end,
                                   style: TextStyle(
                                     color: azulFondo,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: screenWidth * 0.033,
+                                    fontSize: screenWidth * 0.031,
                                   ),
                                 ),
                               ),
@@ -195,8 +194,6 @@ class OdooPagoDialog {
                             height: usableHeight * 0.02,
                             color: grisBorde,
                           ),
-
-                          // Fila: Total a procesar
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -226,11 +223,11 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.03),
 
-                    // Botón Procesar
+                    // Botón Abrir Portal Web Seguro (Browser Redirect)
                     SizedBox(
                       width: screenWidth,
                       height: usableHeight * 0.062,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: amarilloOro,
                           foregroundColor: azulFondo,
@@ -241,6 +238,7 @@ class OdooPagoDialog {
                             ),
                           ),
                         ),
+                        icon: const Icon(Icons.open_in_new_rounded, size: 19),
                         onPressed: () async {
                           final userProvider = Provider.of<UserProvider>(
                             context,
@@ -265,21 +263,21 @@ class OdooPagoDialog {
 
                             final effectiveName =
                                 (donorName != null &&
-                                    donorName.trim().isNotEmpty)
-                                ? donorName.trim()
-                                : ((user != null &&
-                                          user.nombre.trim().isNotEmpty)
-                                      ? user.nombre.trim()
-                                      : 'Donante Atrio');
+                                        donorName.trim().isNotEmpty)
+                                    ? donorName.trim()
+                                    : ((user != null &&
+                                              user.nombre.trim().isNotEmpty)
+                                          ? user.nombre.trim()
+                                          : 'Donante Atrio');
 
                             final effectiveEmail =
                                 (donorEmail != null &&
-                                    donorEmail.trim().isNotEmpty)
-                                ? donorEmail.trim()
-                                : ((user != null &&
-                                          user.email.trim().isNotEmpty)
-                                      ? user.email.trim()
-                                      : 'donaciones@atrio.app');
+                                        donorEmail.trim().isNotEmpty)
+                                    ? donorEmail.trim()
+                                    : ((user != null &&
+                                              user.email.trim().isNotEmpty)
+                                          ? user.email.trim()
+                                          : 'donaciones@atrio.app');
 
                             final cleanStr = monto
                                 .replaceAll(',', '')
@@ -289,79 +287,51 @@ class OdooPagoDialog {
                                 double.tryParse(cleanStr) ??
                                 100.0;
 
-                            if (esPaypal) {
-                              final res = await userProvider.api
-                                  .donateWithPaypal(
-                                    name: effectiveName,
-                                    email: effectiveEmail,
-                                    amount: amountVal,
-                                    notes: mensajeApoyo ?? concepto,
-                                    publicConsent: !esAnonimo,
-                                  );
+                            final res = await userProvider.api
+                                .createDonationWebCheckoutUrl(
+                                  name: effectiveName,
+                                  email: effectiveEmail,
+                                  amount: amountVal,
+                                  notes: mensajeApoyo ?? concepto,
+                                  publicConsent: !esAnonimo,
+                                  paymentMethod: metodoPago,
+                                );
 
-                              final checkoutUrl =
-                                  res['checkout_url'] as String?;
-                              if (checkoutUrl != null &&
-                                  checkoutUrl.isNotEmpty) {
-                                final uri = Uri.parse(checkoutUrl);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(
-                                    uri,
-                                    mode: LaunchMode.externalApplication,
-                                  );
-                                }
+                            final checkoutUrl = res['checkout_url'] as String?;
+                            if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
+                              final uri = Uri.parse(checkoutUrl);
+                              // Apertura controlada mediante SFSafariViewController (iOS)
+                              // y Chrome Custom Tabs (Android) según Apple Guideline 3.2.1(vi)
+                              bool launched = false;
+                              try {
+                                launched = await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.inAppBrowserView,
+                                );
+                              } catch (_) {
+                                launched = await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                );
                               }
-
-                              final ref =
-                                  res['reference'] ??
-                                  (res['donation_id'] != null
-                                      ? 'DON-${res['donation_id']}'
-                                      : 'DON-PAYPAL');
-
-                              setStateModal(() {
-                                procesando = false;
-                                completado = true;
-                                ordenOdoo = ref.toString();
-                              });
-                            } else {
-                              // Transferencia bancaria
-                              final String b64 =
-                                  (receiptBase64 != null &&
-                                      receiptBase64.isNotEmpty)
-                                  ? receiptBase64
-                                  : base64Encode(
-                                      utf8.encode(
-                                        'COMPROBANTE-APP-$effectiveName-$amountVal',
-                                      ),
-                                    );
-                              final String filename =
-                                  receiptFilename ??
-                                  'comprobante_transferencia.jpg';
-
-                              final res = await userProvider.api
-                                  .donateWithTransfer(
-                                    name: effectiveName,
-                                    email: effectiveEmail,
-                                    amount: amountVal,
-                                    receiptBase64: b64,
-                                    receiptFilename: filename,
-                                    reference:
-                                        'APP-${DateTime.now().millisecondsSinceEpoch}',
-                                    currency: 'DOP',
-                                  );
-
-                              final ref =
-                                  res['reference'] ??
-                                  (res['donation_id'] != null
-                                      ? 'DON-${res['donation_id']}'
-                                      : 'DON-Odoo');
-
-                              setStateModal(() {
-                                procesando = false;
-                                completado = true;
-                                ordenOdoo = ref.toString();
-                              });
+                              if (!launched) {
+                                await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              }
                             }
+
+                            final ref = res['reference'] ??
+                                (res['donation_id'] != null
+                                    ? 'DON-${res['donation_id']}'
+                                    : 'DON-WEB');
+
+                            setStateModal(() {
+                              procesando = false;
+                              completado = true;
+                              ordenOdoo = ref.toString();
+                            });
                           } catch (e) {
                             String msg =
                                 e.toString().replaceFirst('Exception: ', '');
@@ -375,8 +345,9 @@ class OdooPagoDialog {
                             });
                           }
                         },
-                        child: Text(
-                          l10n?.pagarYValidar ?? 'Pagar y Validar',
+                        label: Text(
+                          l10n?.abrirPortalWebSeguro ??
+                              'Abrir Portal Web Seguro',
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,
@@ -400,7 +371,8 @@ class OdooPagoDialog {
                     const CircularProgressIndicator(color: amarilloOro),
                     SizedBox(height: usableHeight * 0.03),
                     Text(
-                      l10n?.validandoConOdoo ?? 'Validando con Odoo...',
+                      l10n?.abriendoPortalSeguroOdoo ??
+                          'Abriendo portal web seguro...',
                       style: TextStyle(
                         color: azulFondo,
                         fontSize: screenWidth * 0.048,
@@ -409,11 +381,8 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.005),
                     Text(
-                      esPaypal
-                          ? (l10n?.redirigiendoPaypal ??
-                              'Redirigiendo a PayPal para completar tu donación...')
-                          : (l10n?.registrandoOrdenConfirmandoPago ??
-                              'Estamos registrando tu orden y confirmando el pago.'),
+                      l10n?.completarAporteEnNavegadorDesc ??
+                          'Completa tu aporte en la ventana segura del navegador. Al finalizar regresarás automáticamente a ATRIO.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
@@ -422,7 +391,6 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.04),
                   ] else if (error) ...[
-                    // Estado de Error controlado
                     Container(
                       width: screenWidth * 0.16,
                       height: screenWidth * 0.16,
@@ -489,7 +457,6 @@ class OdooPagoDialog {
                       ),
                     ),
                   ] else if (completado) ...[
-                    // Estado de Éxito
                     Container(
                       width: screenWidth * 0.16,
                       height: screenWidth * 0.16,
@@ -524,8 +491,8 @@ class OdooPagoDialog {
                     ),
                     SizedBox(height: usableHeight * 0.01),
                     Text(
-                      l10n?.donacionPendienteVerificacion ??
-                          'Tu donación ha sido registrada en Odoo y está pendiente de verificación contable.',
+                      l10n?.completarAporteEnNavegadorDesc ??
+                          'Completa tu aporte en la ventana segura del navegador. Al finalizar regresarás automáticamente a ATRIO.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade700,
@@ -568,6 +535,153 @@ class OdooPagoDialog {
           },
         );
       },
+    );
+  }
+}
+
+/// Modal nativo de gratitud pastoral desplegado automáticamente cuando el usuario
+/// retorna a la aplicación mediante el esquema `atrio://donation-completed?tx_id=...`
+/// tras completarse y verificarse (`GET /donations/status`) la ofrenda en Odoo 19.
+class DonationGratitudeModal extends StatelessWidget {
+  final String txId;
+  final String status;
+
+  const DonationGratitudeModal({
+    super.key,
+    required this.txId,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final usableHeight =
+        MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+
+    const Color azulFondo = Color(0xFF072B4F);
+    const Color amarilloOro = Color(0xFFE5A023);
+    const Color blancoFondo = Color(0xFFFAF7F0);
+    const Color verdeExito = Color(0xFF2E7D32);
+
+    return Container(
+      width: screenWidth,
+      padding: EdgeInsetsDirectional.fromSTEB(
+        screenWidth * 0.06,
+        usableHeight * 0.025,
+        screenWidth * 0.06,
+        usableHeight * 0.03 + safeAreaBottom,
+      ),
+      decoration: BoxDecoration(
+        color: blancoFondo,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(screenWidth * 0.08),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: screenWidth * 0.12,
+            height: screenWidth * 0.012,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(screenWidth * 0.01),
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.025),
+          Container(
+            width: screenWidth * 0.18,
+            height: screenWidth * 0.18,
+            decoration: const BoxDecoration(
+              color: Color(0xFFE8F5E9),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.volunteer_activism_rounded,
+              color: verdeExito,
+              size: screenWidth * 0.1,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.018),
+          Text(
+            l10n?.gratitudPastoralTitulo ?? '¡Gracias por tu Generosidad!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: azulFondo,
+              fontSize: screenWidth * 0.055,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.008),
+          Text(
+            l10n?.gratitudPastoralSubtitulo ??
+                'Tu ofrenda ha sido recibida y registrada exitosamente en el sistema ministerial de tu congregación.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontSize: screenWidth * 0.034,
+              height: 1.35,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.018),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsetsDirectional.all(screenWidth * 0.035),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              border: Border.all(color: const Color(0xFFE8ECEF)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  l10n?.referenciaOdoo(txId) ?? 'Referencia Odoo: $txId',
+                  style: TextStyle(
+                    color: azulFondo,
+                    fontSize: screenWidth * 0.034,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n?.estadoVerificadoEnOdoo(status) ??
+                      'Estado verificado en Odoo 19: $status',
+                  style: TextStyle(
+                    color: verdeExito,
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.025),
+          SizedBox(
+            width: screenWidth,
+            height: usableHeight * 0.06,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: amarilloOro,
+                foregroundColor: azulFondo,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                l10n?.aceptar ?? 'Aceptar',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.04,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -381,13 +381,21 @@ class UserProvider extends ChangeNotifier {
       !isReadOnly &&
       isChurchApproved;
 
+  /// Estatus de verificación institucional (KYC) de la iglesia del usuario.
+  ChurchKycStatus get churchKycStatus =>
+      _currentUser?.churchKycStatus ?? ChurchKycStatus.approved;
+
+  /// Indica si la congregación del usuario tiene su verificación KYC aprobada para recaudar ofrendas.
+  bool get isChurchKycApproved => churchKycStatus == ChurchKycStatus.approved;
+
   /// Valida si el usuario está plenamente habilitado para realizar ofrendas congregacionales locales.
-  /// Requiere membresía activa e iglesia asignada en Odoo.
+  /// Requiere membresía activa, iglesia asignada y verificación institucional KYC aprobada en Odoo.
   bool get canDonate =>
       isAuthenticated &&
       !isReadOnly &&
       (role == UserRole.member || role == UserRole.churchAdmin) &&
-      hasChurchAssigned;
+      hasChurchAssigned &&
+      isChurchKycApproved;
 
   /// Indica si el usuario o visitante puede realizar donaciones generales a la plataforma ATRIO.
   /// Conforme a Odoo 19 (Pablo Oliveros Págs. 2 y 6), está permitido tanto para miembros como para invitados.

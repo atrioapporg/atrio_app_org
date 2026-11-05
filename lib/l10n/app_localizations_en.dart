@@ -3761,4 +3761,342 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cargandoAfiche => 'Generating official poster...';
+
+  @override
+  String get articuloFisicoBadge => 'Printed / tangible physical item';
+
+  @override
+  String get articuloFisicoCorto => 'Physical Item';
+
+  @override
+  String get avisoTiendaSoloBienesFisicos =>
+      'All items in the church store are tangible physical goods subject to postal shipping or in-person pickup at the temple.';
+
+  @override
+  String get carritoContieneArticulosFisicosError =>
+      'Your cart contains physical items. Complete this order before adding digital content.';
+
+  @override
+  String get carritoContieneArticulosDigitalesError =>
+      'Your cart contains digital content. Complete this order before adding physical items.';
+
+  @override
+  String get pasoLogisticoObligatorioTitulo =>
+      'Physical delivery details (Required)';
+
+  @override
+  String get direccionEntregaLabel =>
+      'Physical shipping address (Street, number, neighborhood, and city)';
+
+  @override
+  String get direccionEntregaHint =>
+      'E.g., 45 Winston Churchill Ave, Piantini, Santo Domingo';
+
+  @override
+  String get direccionEntregaRequeridaError =>
+      'Please enter a valid physical shipping address before proceeding.';
+
+  @override
+  String get confirmarRetiroPresencialLabel =>
+      'I confirm that I will pick up these physical items in person at my congregation\'s temple.';
+
+  @override
+  String get confirmarRetiroPresencialRequeridoError =>
+      'You must check the in-person temple pickup confirmation box before confirming the order.';
+
+  @override
+  String get verOrdenFacturacionB2B => 'View Order / Billing';
+
+  @override
+  String get resumenFacturacionB2BTitulo => 'B2B Ad Order Summary';
+
+  @override
+  String get avisoFacturacionExternaB2B =>
+      'Per platform policies, invoicing and settlement for institutional (B2B) advertising campaigns are managed exclusively through the Odoo 19 administrative web portal or via the invoice sent to your congregation\'s email.';
+
+  @override
+  String get instruccionesFacturacionExternaSubtitulo =>
+      'Complete the order from your institutional web browser or with your church\'s accounting department using the official reference.';
+
+  @override
+  String get abrirPortalFacturacionWeb => 'Open Billing Portal in Browser';
+
+  @override
+  String get solicitarFacturaPorCorreo => 'Send / Request Invoice by Email';
+
+  @override
+  String facturaEnviadaCorreoConfirmacion(String ref) {
+    return 'Billing request prepared for reference $ref.';
+  }
+
+  @override
+  String get datosReferenciaContableB2B =>
+      'Institutional Accounting Reference Details';
+
+  @override
+  String get avisoRedireccionWebDonacion =>
+      'In compliance with platform security guidelines, your offering or donation will be completed entirely on your congregation\'s secure web portal (via the system\'s secure browser) with 0% platform fee.';
+
+  @override
+  String get continuarPortalWebOfrendas => 'Continue to Offerings Web Portal';
+
+  @override
+  String get abriendoPortalSeguroOdoo => 'Opening secure web portal...';
+
+  @override
+  String get completarAporteEnNavegadorDesc =>
+      'Complete your contribution in the secure browser window. Once finished, you will automatically return to ATRIO.';
+
+  @override
+  String get abrirPortalWebSeguro => 'Open Secure Web Portal';
+
+  @override
+  String get gratitudPastoralTitulo => 'Thank You for Your Generosity!';
+
+  @override
+  String get gratitudPastoralSubtitulo =>
+      'Your offering has been received and successfully recorded in your congregation\'s ministry system.';
+
+  @override
+  String estadoVerificadoEnOdoo(String estado) {
+    return 'Verified status in Odoo 19: $estado';
+  }
+
+  @override
+  String get portalWebExternoOdoo =>
+      'Official Web Portal (SFSafariViewController / Chrome Tabs)';
+
+  @override
+  String get kycStatusDraftTitle =>
+      'Institutional Verification Pending Start (Draft)';
+
+  @override
+  String get kycStatusDraftDesc =>
+      'Offering collection is currently hidden in the app. To enable it, upload your institutional documentation in Odoo 19 (DO: Non-Profit RNC Law 122-05 | HN: Legal Personality & RTN) and official church bank account.';
+
+  @override
+  String get kycStatusPendingTitle =>
+      'Validation in progress (Institutional KYC)';
+
+  @override
+  String get kycStatusPendingDesc =>
+      'ATRIO\'s legal team is verifying your congregation\'s legal documentation (Law 122-05 / Legal Personality) and institutional bank account. The offering button will activate upon approval.';
+
+  @override
+  String get kycStatusApprovedTitle => 'Verified Congregation (KYC Approved)';
+
+  @override
+  String get kycStatusApprovedDesc =>
+      'Legal and institutional documentation validated. Offering collection and official web gateway are active.';
+
+  @override
+  String get kycStatusSuspendedTitle => 'Fundraising Suspended by Legal Audit';
+
+  @override
+  String get kycStatusSuspendedDesc =>
+      'Inconsistencies or pending reviews were detected in the congregation\'s legal documentation. Offering collection has been temporarily disabled.';
+
+  @override
+  String get donacionesDeshabilitadasKycTitulo =>
+      'Offerings Activation in Progress';
+
+  @override
+  String get donacionesDeshabilitadasKycMensaje =>
+      'Your congregation is currently completing the legal and institutional validation process (KYC) in ATRIO. The offerings module will be available as soon as verification concludes.';
+
+  @override
+  String get ofrendarACongregacion => 'Give to Congregation';
+
+  @override
+  String get ofrendarSubtituloVerificado =>
+      'Voluntary offerings and tithes (Verified entity)';
+
+  @override
+  String get ugcReportarContenido => 'Report inappropriate content';
+
+  @override
+  String get ugcBloquearUsuario => 'Block author / content';
+
+  @override
+  String get ugcMotivoReporteTitulo => 'Report Content';
+
+  @override
+  String get ugcMotivoReporteSubtitulo =>
+      'Select the reason why you want to report this post to ATRIO\'s moderation team:';
+
+  @override
+  String get ugcMotivoOfensivo => 'Offensive or inappropriate language';
+
+  @override
+  String get ugcMotivoSpam => 'Spam or misleading information';
+
+  @override
+  String get ugcMotivoAcoso => 'Harassment or abusive conduct';
+
+  @override
+  String get ugcReporteEnviadoExito =>
+      'Report submitted. Our moderation team will review the content within 24 hours.';
+
+  @override
+  String get ugcUsuarioBloqueadoExito =>
+      'Author blocked. Their posts have been immediately hidden from your view.';
+
+  @override
+  String get ugcPoliticaToleranciaCeroTitulo =>
+      'User-Generated Content (UGC) & Zero-Tolerance Policy';
+
+  @override
+  String get ugcPoliticaToleranciaCeroParrafo =>
+      'ATRIO enforces a strict zero-tolerance policy against objectionable, defamatory, abusive, discriminatory, or fraudulent content in community walls, notices, and pastoral requests. Users can report inappropriate posts and immediately block any abusive author from the options menu of each item. Our moderation team acts on reports within 24 hours by removing offending content and suspending the responsible account.';
+
+  @override
+  String get ugcAvisoToleranciaCeroSolicitud =>
+      'Community commitment (EULA): ATRIO enforces zero tolerance against offensive language, spam, or abuse. Infringing requests will be removed and the account may be suspended.';
+
+  @override
+  String direccionItem(String direccion) {
+    return '• Shipping address: $direccion';
+  }
+
+  @override
+  String get perfilIglesiaAprobada => 'Approved church';
+
+  @override
+  String get perfilPendienteAprobacion => 'Pending approval';
+
+  @override
+  String get perfilCambioEnRevision => 'Transfer in review';
+
+  @override
+  String get perfilSinCongregacion => 'No congregation';
+
+  @override
+  String get perfilBadgeAprobada => 'Approved';
+
+  @override
+  String get perfilCongregacionActiva => 'Active congregation';
+
+  @override
+  String get perfilCongregacionActivaDesc =>
+      'You actively belong to this congregation. Your membership is verified and you have full access to pastoral requests, petitions, and activities.';
+
+  @override
+  String get perfilVerDetallesIglesia => 'View church details';
+
+  @override
+  String get perfilBadgeEnRevision => 'In review';
+
+  @override
+  String get perfilSolicitudMembresia => 'Membership request';
+
+  @override
+  String perfilMembresiaPendienteDesc(String iglesia) {
+    return 'You belong to $iglesia, but your approval is currently pending by the administration.';
+  }
+
+  @override
+  String get perfilVerEstadoSolicitud => 'View request status';
+
+  @override
+  String get perfilBadgeTrasladoEnCurso => 'Transfer in progress';
+
+  @override
+  String get perfilCambioCongregacion => 'Change congregation';
+
+  @override
+  String get perfilCambioCongregacionDesc =>
+      'Your request to transfer to a new congregation is currently being reviewed by the administration.';
+
+  @override
+  String get perfilConsultarEstado => 'Check status';
+
+  @override
+  String get perfilBadgeSinVincular => 'Not linked';
+
+  @override
+  String get perfilSinCongregacionDesc =>
+      'You do not belong to a church community in ATRIO yet. Choose your congregation to participate in activities and pastoral services.';
+
+  @override
+  String get perfilBuscarUnirseIglesia => 'Search and join a church';
+
+  @override
+  String get perfilEstadoMembresiaAprobadaActiva =>
+      'Status: Membership approved and active';
+
+  @override
+  String get perfilDetalleMembresiaModal =>
+      'You are an active part of this congregation. From ATRIO you can interact with your pastor, submit requests, and participate in events.';
+
+  @override
+  String get perfilBadgeLider => 'LEADER';
+
+  @override
+  String get perfilGestionCuidadoCongregacion =>
+      'Congregation care and management';
+
+  @override
+  String get perfilSubtituloBandejaSolicitudes =>
+      'Pastoral care and member responses';
+
+  @override
+  String get perfilSubtituloAvisos => 'Publish key announcements and notices';
+
+  @override
+  String get perfilSubtituloGrupos => 'Ministry and membership segmentation';
+
+  @override
+  String get perfilSubtituloCentroModeracion =>
+      'Audit flagged and blocked content';
+
+  @override
+  String get perfilSubtituloPalabrasRestringidas =>
+      'Automatic flag and block rules';
+
+  @override
+  String get perfilBotonEditarDatosTooltip => 'Edit my personal data';
+
+  @override
+  String get perfilBotonIniciarSesionTooltip => 'Log in to ATRIO';
+
+  @override
+  String get comunicadoNuevo => 'New announcement';
+
+  @override
+  String get comunicadoNuevoHeader => 'NEW ANNOUNCEMENT';
+
+  @override
+  String get comunicadoRemitenteDefault => 'ATRIO Community';
+
+  @override
+  String get comunicadoVerTodas => 'View all';
+
+  @override
+  String get avisoPredeterminado => 'Notice';
+
+  @override
+  String compartirUbicacionMensaje(String iglesia, String plusCode) {
+    return 'Location of $iglesia: $plusCode';
+  }
+
+  @override
+  String asuntoCorreoPlusCode(String iglesia) {
+    return 'Plus Code for $iglesia';
+  }
+
+  @override
+  String cuerpoCorreoPlusCode(String mensaje) {
+    return '$mensaje\\n\\nYou can search this code directly in Google Maps.';
+  }
+
+  @override
+  String get iglesiaVerificadaTooltip => 'Verified congregation';
+
+  @override
+  String resenasCalificacionSemantics(String rating, int count) {
+    return 'Rating $rating out of 5, based on $count reviews';
+  }
+
+  @override
+  String get explorarEnElMapa => 'Explore on map';
 }

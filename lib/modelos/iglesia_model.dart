@@ -1,3 +1,69 @@
+/// Ciclo de vida de verificación institucional (KYC) de una congregación en Odoo 19
+/// conforme a las directrices de cumplimiento para organizaciones sin fines de lucro
+/// (RD: RNC ISFL Ley 122-05 | HN: Personería Jurídica y RTN).
+enum ChurchKycStatus {
+  /// Creación inicial del perfil por el `church_admin`: El botón "Ofrendar" permanece oculto.
+  draft,
+
+  /// Carga de RNC/RTN y cuenta bancaria institucional: "Validación en curso" en Dashboard Pastoral.
+  pendingKyc,
+
+  /// Validación manual aprobada por el equipo legal de ATRIO: Botón de ofrenda y pasarela activos.
+  approved,
+
+  /// Disputas o inconsistencias legales detectadas: Desactivación inmediata de la recaudación.
+  suspended;
+
+  static ChurchKycStatus fromString(
+    String? raw, {
+    bool fallbackVerified = true,
+  }) {
+    if (raw == null || raw.trim().isEmpty) {
+      return fallbackVerified
+          ? ChurchKycStatus.approved
+          : ChurchKycStatus.draft;
+    }
+    switch (raw.trim().toLowerCase()) {
+      case 'draft':
+      case 'borrador':
+      case 'unverified':
+        return ChurchKycStatus.draft;
+      case 'pending_kyc':
+      case 'pending':
+      case 'in_review':
+      case 'en_revision':
+        return ChurchKycStatus.pendingKyc;
+      case 'approved':
+      case 'verified':
+      case 'aprobado':
+      case 'verificada':
+        return ChurchKycStatus.approved;
+      case 'suspended':
+      case 'rejected':
+      case 'suspendida':
+      case 'rechazada':
+        return ChurchKycStatus.suspended;
+      default:
+        return fallbackVerified
+            ? ChurchKycStatus.approved
+            : ChurchKycStatus.draft;
+    }
+  }
+
+  String toOdooString() {
+    switch (this) {
+      case ChurchKycStatus.draft:
+        return 'draft';
+      case ChurchKycStatus.pendingKyc:
+        return 'pending_kyc';
+      case ChurchKycStatus.approved:
+        return 'approved';
+      case ChurchKycStatus.suspended:
+        return 'suspended';
+    }
+  }
+}
+
 class IglesiaModel {
   final int id;
   final String nombre;
@@ -6,6 +72,7 @@ class IglesiaModel {
   final int totalResenas;
   final String distancia;
   final bool esVerificada;
+  final ChurchKycStatus kycStatus;
   final String direccion;
   final String plusCode;
   final String telefono;
@@ -22,6 +89,7 @@ class IglesiaModel {
     required this.totalResenas,
     required this.distancia,
     required this.esVerificada,
+    this.kycStatus = ChurchKycStatus.approved,
     required this.direccion,
     required this.plusCode,
     required this.telefono,
@@ -31,7 +99,14 @@ class IglesiaModel {
     required this.avisoActual,
   });
 
+  /// Indica si la congregación tiene la validación legal e institucional (KYC) aprobada
+  /// para mostrar el botón "Ofrendar" y recibir donaciones.
+  bool get puedeRecibirOfrendas => kycStatus == ChurchKycStatus.approved;
+
   factory IglesiaModel.fromJson(Map<String, dynamic> json) {
+    final bool verified = json['es_verificada'] as bool? ?? false;
+    final String? rawKyc =
+        (json['kyc_status'] ?? json['verification_status']) as String?;
     return IglesiaModel(
       id: json['id'] as int,
       nombre: json['nombre'] as String,
@@ -39,7 +114,11 @@ class IglesiaModel {
       calificacion: (json['calificacion'] as num).toDouble(),
       totalResenas: json['total_resenas'] as int,
       distancia: json['distancia'] as String,
-      esVerificada: json['es_verificada'] as bool,
+      esVerificada: verified,
+      kycStatus: ChurchKycStatus.fromString(
+        rawKyc,
+        fallbackVerified: verified,
+      ),
       direccion: json['direccion'] as String,
       plusCode: json['plus_code'] as String,
       telefono: json['telefono'] as String,

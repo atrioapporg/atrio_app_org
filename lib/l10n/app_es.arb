@@ -145,7 +145,7 @@
   "comunidadCristiana": "Comunidad cristiana",
   "aDistanciaKm": "A {distancia} km",
   "@aDistanciaKm": {
-    "description": "Etiqueta de distancia en kilómetros",
+    "description": "Distancia en kilómetros",
     "placeholders": {
       "distancia": {
         "type": "String"
@@ -233,7 +233,7 @@
   "misDatos": "Mis datos",
   "ajustesDeLaApp": "Ajustes de la app",
   "ayudaYSoporte": "Ayuda y soporte",
-  "terminosYPrivacidad": "Términos y privacidad",
+  "terminosYPrivacidad": "Términos y Privacidad",
   "cerrarSesion": "Cerrar sesión",
   "misDatosDePerfil": "Mis datos de perfil",
   "nombreCompleto": "Nombre completo",
@@ -324,7 +324,6 @@
     }
   },
   "cerrarBusqueda": "Cerrar búsqueda",
-  "eventos": "Eventos",
   "buscarEventosPlaceholder": "Buscar eventos, expositores o lugares...",
   "categorias": "Categorías",
   "categoriaTodos": "Todos",
@@ -332,7 +331,6 @@
   "categoriaAdoracion": "Adoración",
   "categoriaJovenes": "Jóvenes",
   "categoriaFamilias": "Familias",
-  "categoriaComunidad": "Comunidad",
   "explorarEventos": "Explorar eventos",
   "verTodos": "Ver todos",
   "noEventosEnCategoria": "No se encontraron eventos en esta categoría",
@@ -408,11 +406,10 @@
   "modoInvitado": "Modo invitado",
   "usuarioInvitado": "Usuario invitado",
   "perfilInvitadoDesc": "Estás navegando en modo invitado. Inicia sesión para acceder a tu historial, peticiones y donaciones.",
-  "sinSolicitudesRegistradas": "No tienes solicitudes o peticiones registradas.",
-  "solicitudesInvitadoDesc": "En modo invitado no se registran ni muestran solicitudes. Inicia sesión con tu cuenta para crear peticiones y darles seguimiento.",
-  "sinDonacionesRegistradas": "No tienes donaciones u ofrendas registradas.",
-  "donacionesInvitadoDesc": "En modo invitado no se registran ni muestran aportes. Inicia sesión para consultar tu historial de donaciones y recibos.",
-  "entendido": "Entendido",
+  "sinSolicitudesRegistradas": "No tienes solicitudes registradas",
+  "solicitudesInvitadoDesc": "En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.",
+  "sinDonacionesRegistradas": "No tienes donaciones registradas",
+  "donacionesInvitadoDesc": "En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.",
   "eventoAnadidoACalendario": "Evento \"{titulo}\" añadido a tu calendario.",
   "@eventoAnadidoACalendario": {
     "description": "Mensaje al añadir evento al calendario",
@@ -469,14 +466,12 @@
   "tipoDeFuente": "Tipo de fuente",
   "modoDeLectura": "Modo de lectura",
   "papiro": "Papiro",
-  "claro": "Claro",
   "noche": "Noche",
   "cambiarTonoLecturaTooltip": "Cambiar tono de lectura",
   "comoPodemosAyudarte": "¿Cómo podemos ayudarte?",
   "descripcionAyudaSoporte": "Encuentra respuestas rápidas o comunícate directamente con nuestro equipo de asistencia técnica de ATRIO.",
   "canalesDeAtencion": "Canales de atención",
   "chatDirecto": "Chat directo",
-  "correo": "Correo",
   "preguntasFrecuentes": "Preguntas frecuentes",
   "faq1Pregunta": "¿Cómo realizar una ofrenda o donación a mi iglesia?",
   "faq1Respuesta": "Accede a la sección \"Mis donaciones\" desde tu perfil o pulsa el botón \"Ofrendar / Aportar\" en la pantalla de tu iglesia. Podrás seleccionar el proyecto solidario, ingresar el monto y proceder con total seguridad.",
@@ -548,7 +543,6 @@
     }
   },
   "buscarProductosPlaceholder": "Buscar biblias, libros o regalos...",
-  "categoriaTodos": "Todos",
   "categoriaBiblias": "Biblias",
   "categoriaLibros": "Libros",
   "categoriaRegalos": "Regalos",
@@ -590,7 +584,6 @@
   "buscarLibrosPlaceholder": "Buscar libros o autores...",
   "categoriaVidaCristiana": "Vida cristiana",
   "categoriaCrecimiento": "Crecimiento",
-  "categoriaLiderazgo": "Liderazgo",
   "explorarLibros": "Explorar libros",
   "noSeEncontraronLibrosCategoria": "No se encontraron libros en esta categoría",
   "leerAhora": "Leer ahora",
@@ -604,7 +597,6 @@
       }
     }
   },
-  "continuarLeyendo": "Continuar leyendo",
   "totalPaginas": "{paginas} páginas",
   "@totalPaginas": {
     "description": "Total de páginas de un libro",
@@ -636,7 +628,6 @@
   "videosYTransmisiones": "Videos y transmisiones",
   "buscarVideosPlaceholder": "Buscar prédicas, canales o temas...",
   "enVivoBadge": "EN VIVO",
-  "verAhora": "Ver ahora",
   "categoriaEnVivo": "En vivo",
   "categoriaPredicas": "Prédicas",
   "categoriaEstudios": "Estudios",
@@ -825,7 +816,7 @@
   "solicitudPrivadaDesc": "Solo el equipo pastoral podrá verla",
   "general": "General",
   "completaCamposObligatorios": "Por favor completa todos los campos obligatorios.",
-  "enviarSolicitud": "Enviar solicitud",
+  "enviarSolicitud": "Enviar Solicitud",
   "realizaTuAporte": "Realiza tu aporte",
   "errorCargarDatos": "Error al cargar datos",
   "tipoDonacion": "Tipo de donación",
@@ -945,7 +936,6 @@
   "otra": "Otra",
   "prefieroIndicarloDespues": "Prefiero indicarlo después",
   "gpsDesactivadoMensaje": "El GPS está desactivado. Actívalo para encontrar iglesias cercanas a ti.",
-  "ajustes": "Ajustes",
   "permisoUbicacionNoConcedido": "Permiso de ubicación no concedido. Se mostrará ubicación predeterminada.",
   "permisosUbicacionDenegadosPermanentemente": "Permisos de ubicación denegados permanentemente en los ajustes.",
   "errorServidorCodigo": "Error del servidor: {codigo}",
@@ -967,17 +957,6 @@
     }
   },
   "errorConexionInternet": "Error de conexión. Verifica tu internet.",
-  "sinNombre": "Sin nombre",
-  "comunidadCristiana": "Comunidad cristiana",
-  "aDistanciaKm": "A {distancia} km",
-  "@aDistanciaKm": {
-    "description": "Distancia en kilómetros",
-    "placeholders": {
-      "distancia": {
-        "type": "String"
-      }
-    }
-  },
   "ubicacionExacta": "Ubicación exacta",
   "seleccionaTuIglesia": "Selecciona tu iglesia",
   "buscarIglesiaPlaceholder": "Buscar iglesia o denominación...",
@@ -997,9 +976,7 @@
   "descripcionRegistroIglesia": "Te has registrado correctamente en esta iglesia a través de Atrio.",
   "filtroTodas": "Todas",
   "filtroNoLeidas": "No leídas",
-  "categoriaServicios": "Servicios",
   "categoriaEventos": "Eventos",
-  "categoriaComunidad": "Comunidad",
   "notiHorarioServicioTitulo": "Cambio de horario de servicio",
   "notiHorarioServicioResumen": "Miércoles de Oración · 7:00 p. m. en el Templo Principal.",
   "notiHorarioServicioCuerpo": "Estimada congregación: Por motivos de la jornada pastoral y preparación para las actividades del mes, nuestro servicio de intercesión y estudio bíblico de este miércoles se adelantará 30 minutos, iniciando a las 7:00 p. m. Te invitamos a llegar temprano con tu familia.",
@@ -1031,11 +1008,9 @@
   "deshacer": "Deshacer",
   "borrarAvisos": "Borrar avisos",
   "confirmarBorrarTodasMensaje": "¿Deseas eliminar todas las notificaciones recibidas? Podrás deshacer la acción inmediatamente si lo deseas.",
-  "cancelar": "Cancelar",
   "borrarTodas": "Borrar todas",
   "todasNotificacionesEliminadas": "Todas las notificaciones han sido eliminadas",
   "avisosEjemploRestaurados": "Avisos de ejemplo restaurados",
-  "notificaciones": "Notificaciones",
   "marcarTodasComoLeidas": "Marcar todas como leídas",
   "buscarEnAvisosPlaceholder": "Buscar en avisos...",
   "avisosDeLaComunidad": "Avisos de la comunidad",
@@ -1052,14 +1027,10 @@
   "noHayAvisosMomento": "No hay avisos en este momento",
   "avisosOdooApareceranAqui": "Los avisos publicados en Odoo aparecerán aquí.",
   "restaurarAvisosEjemplo": "Restaurar avisos de ejemplo",
-  "eliminar": "Eliminar",
   "eliminarAviso": "Eliminar aviso",
   "eliminarEsteAviso": "Eliminar este aviso",
-  "entendido": "Entendido",
   "personalizaTuExperienciaAtrio": "Personaliza tu experiencia en ATRIO",
   "idiomaYRegion": "Idioma y Región",
-  "idiomaPreferido": "Idioma preferido",
-  "seleccionarIdioma": "Seleccionar Idioma",
   "aparienciaYTema": "Apariencia y Tema",
   "modoDeVisualizacion": "Modo de visualización",
   "temaClaro": "Claro",
@@ -1081,7 +1052,6 @@
   "segundosPredeterminado": "5 seg (Predeterminado)",
   "segundosMaximo": "10 seg",
   "notificacionesYRecordatorios": "Notificaciones y Recordatorios",
-  "versiculoDelDia": "Versículo del día",
   "recibePorcionBiblica": "Recibe una porción bíblica cada mañana",
   "horaDelRecordatorio": "Hora del recordatorio",
   "palabraDelDia": "Palabra del día",
@@ -1120,7 +1090,6 @@
   "restablecer": "Restablecer",
   "idiomaEspanolLatino": "Español (Latinoamérica)",
   "idiomaInglesUSA": "English (United States)",
-  "terminosYPrivacidad": "Términos y Privacidad",
   "politicaDePrivacidad": "Política de Privacidad",
   "politicaPrivacidadIntro": "Última actualización: {fecha}\n\nBienvenido a ATRIO (\"Vive tu Fe en comunidad\"). Respetamos tu privacidad y estamos profundamente comprometidos a proteger tus datos personales y tu experiencia espiritual.\n\nEsta política detalla cómo recopilamos, administramos, protegemos y salvaguardamos tu información.",
   "@politicaPrivacidadIntro": {
@@ -1153,10 +1122,8 @@
   "confirmarSolicitudTitulo": "Confirmar Solicitud",
   "solicitudEnviadaEquipoPastoral": "Tu solicitud será enviada al equipo pastoral de la iglesia.",
   "tipo": "Tipo",
-  "asunto": "Asunto",
   "privada": "Privada",
   "publica": "Pública",
-  "enviarSolicitud": "Enviar Solicitud",
   "enviandoAOdoo": "Enviando a Odoo...",
   "registrandoSolicitudSistema": "Estamos registrando tu solicitud en el sistema.",
   "solicitudEnviadaExito": "¡Solicitud Enviada!",
@@ -1357,8 +1324,8 @@
   "registroExitosoMensaje": "Tu cuenta ha sido creada exitosamente en Odoo. El administrador de la iglesia validará tu membresía.",
   "registroExitosoMensajeSinIglesia": "Tu cuenta ha sido creada exitosamente. Elige tu iglesia para comenzar.",
   "iniciarSesionAhora": "Iniciar sesión ahora",
-  "comprobanteTransferencia": "Comprobante de transferencia",
-  "adjuntarComprobante": "Adjuntar comprobante",
+  "comprobanteTransferencia": "Comprobante de Transferencia",
+  "adjuntarComprobante": "Adjuntar Comprobante",
   "cambiarComprobante": "Cambiar comprobante",
   "comprobanteAdjuntado": "Comprobante adjuntado con éxito",
   "subirComprobanteDesc": "Adjunta una foto o captura del comprobante bancario para validar tu aporte rápidamente.",
@@ -1366,7 +1333,6 @@
   "galeria": "Galería de fotos",
   "eliminarComprobante": "Quitar comprobante",
   "redirigiendoPaypal": "Redirigiendo a la pasarela segura de PayPal...",
-  "reintentar": "Reintentar",
   "donacionPendienteVerificacion": "Tu donación ha sido registrada en Odoo y está pendiente de verificación contable.",
   "errorProcesarDonacion": "Ocurrió un error al procesar la donación: {error}",
   "@errorProcesarDonacion": {
@@ -1456,14 +1422,9 @@
   },
   "noSePudieronCargarIglesias": "😕 No se pudieron cargar las iglesias.\nRevisa tu conexión a internet e inténtalo de nuevo.",
   "localizandoComunidades": "Localizando comunidades cristianas...",
-  "sinSolicitudesRegistradas": "No tienes solicitudes registradas",
-  "solicitudesInvitadoDesc": "En modo invitado no se registran ni muestran solicitudes. Inicia sesión para crear peticiones y darles seguimiento.",
-  "sinDonacionesRegistradas": "No tienes donaciones registradas",
-  "donacionesInvitadoDesc": "En modo invitado no se registran aportes ni historial. Inicia sesión para colaborar y consultar tus donaciones.",
   "pedidosInvitadoDesc": "En modo invitado no se registran compras ni pedidos. Inicia sesión para consultar tus pedidos.",
   "notificacionesInvitadoDesc": "En modo invitado no se reciben avisos ni notificaciones personales. Inicia sesión para mantenerte al día con tu comunidad.",
   "omitir": "Omitir",
-  "reintentar": "Reintentar",
   "errorConexionServidor": "Error de conexión con el servidor",
   "errorCargarSolicitudesDesc": "Ocurrió un problema temporal al consultar tus solicitudes en el servidor. Puedes intentar nuevamente.",
   "reintentarConexionServidor": "Reintentar conexión con el servidor",
@@ -1496,7 +1457,6 @@
   "nuevaCampana": "Nueva Campaña",
   "sinCampanas": "No hay campañas registradas",
   "sinCampanasSubtitulo": "Crea tu primera campaña para llegar a más iglesias y miembros.",
-  "filtroTodas": "Todas",
   "filtroActivas": "Activas",
   "filtroPorPagar": "Por Pagar",
   "filtroEnRevision": "En Revisión",
@@ -1509,7 +1469,7 @@
   "estadoPausada": "Pausada",
   "estadoFinalizada": "Finalizada",
   "estadoRechazada": "Rechazada",
-  "motivoRechazo": "Motivo de rechazo",
+  "motivoRechazo": "Motivo del rechazo (opcional)",
   "pagarCampana": "Pagar Campaña",
   "verEstadisticas": "Ver Estadísticas",
   "cancelarCampana": "Cancelar Campaña",
@@ -1566,8 +1526,6 @@
   "numeroCopiado": "Número de cuenta copiado al portapapeles",
   "referenciaBancaria": "Referencia Bancaria / Número de Depósito",
   "referenciaBancariaHint": "Ej. DEP-12345678",
-  "comprobanteTransferencia": "Comprobante de Transferencia",
-  "adjuntarComprobante": "Adjuntar Comprobante",
   "enviarComprobante": "Enviar Comprobante",
   "comprobanteEnviadoExito": "Comprobante enviado. Tu campaña pasará a revisión de pago.",
   "rendimientoCampana": "Rendimiento de la Campaña",
@@ -1584,8 +1542,6 @@
   "marcados": "Marcados",
   "bloqueados": "Bloqueados",
   "publicaciones": "Publicaciones",
-  "eventos": "Eventos",
-  "notificaciones": "Notificaciones",
   "todosLosTipos": "Todos los tipos",
   "bloquearContenido": "Bloquear Contenido",
   "desbloquearContenido": "Desbloquear Contenido",
@@ -1713,13 +1669,11 @@
   "estadoNueva": "Nueva",
   "estadoEnProgreso": "En Progreso",
   "estadoRespondida": "Respondida",
-  "estadoRechazada": "Rechazada",
   "responderSolicitud": "Responder Petición",
   "escribirRespuestaPastoral": "Escribe tu mensaje pastoral para el feligrés...",
   "enviarRespuesta": "Enviar Respuesta",
   "aprobarSolicitud": "Aprobar",
   "rechazarSolicitud": "Rechazar",
-  "motivoRechazo": "Motivo del rechazo (opcional)",
   "respuestaEnviadaExito": "¡Respuesta pastoral enviada con éxito!",
   "solicitudAprobadaExito": "Solicitud aprobada con éxito.",
   "solicitudRechazadaExito": "Solicitud rechazada.",
@@ -1953,7 +1907,169 @@
   "compartirEnlaceIglesia": "Compartir Enlace",
   "aficheParaTuIglesia": "Afiche Oficial para tu Congregación",
   "imprimeColocaAfiche": "Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.",
-  "cargandoAfiche": "Generando afiche oficial..."
+  "cargandoAfiche": "Generando afiche oficial...",
+  "articuloFisicoBadge": "Artículo físico impreso / tangible",
+  "articuloFisicoCorto": "Artículo Físico",
+  "avisoTiendaSoloBienesFisicos": "Todos los artículos de la tienda eclesial son bienes físicos tangibles sujetos a envío postal o retiro presencial en el templo.",
+  "carritoContieneArticulosFisicosError": "Tu carrito contiene artículos físicos. Finaliza esta orden antes de añadir contenido digital.",
+  "carritoContieneArticulosDigitalesError": "Tu carrito contiene contenido digital. Finaliza esta orden antes de añadir artículos físicos.",
+  "pasoLogisticoObligatorioTitulo": "Datos de entrega física (Obligatorio)",
+  "direccionEntregaLabel": "Dirección física de entrega (Calle, número, sector y ciudad)",
+  "direccionEntregaHint": "Ej. Av. Winston Churchill #45, Ensanche Piantini, Santo Domingo",
+  "direccionEntregaRequeridaError": "Ingresa una dirección física válida para el envío a domicilio antes de continuar.",
+  "confirmarRetiroPresencialLabel": "Confirmo que retiraré presencialmente estos artículos físicos en el templo de mi congregación.",
+  "confirmarRetiroPresencialRequeridoError": "Debes marcar la casilla de retiro presencial en el templo antes de confirmar el pedido.",
+  "verOrdenFacturacionB2B": "Ver Orden / Facturación",
+  "resumenFacturacionB2BTitulo": "Orden de Pauta B2B",
+  "avisoFacturacionExternaB2B": "Por políticas de la plataforma, la facturación y liquidación de pautas publicitarias institucionales (B2B) se gestiona exclusivamente a través del portal web administrativo de Odoo 19 o mediante la factura enviada al correo de tu congregación.",
+  "instruccionesFacturacionExternaSubtitulo": "Completa la orden desde tu navegador web institucional o con el departamento contable de tu iglesia usando la referencia oficial.",
+  "abrirPortalFacturacionWeb": "Abrir Portal de Facturación en Navegador",
+  "solicitarFacturaPorCorreo": "Enviar / Solicitar Factura por Correo",
+  "facturaEnviadaCorreoConfirmacion": "Solicitud de facturación preparada para la referencia {ref}.",
+  "@facturaEnviadaCorreoConfirmacion": {
+    "description": "Confirmación al solicitar factura B2B por correo",
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "datosReferenciaContableB2B": "Datos Institucionales de Referencia Contable",
+  "avisoRedireccionWebDonacion": "En cumplimiento con las normativas de seguridad, tu ofrenda o donación se completará íntegramente en el portal web seguro de tu congregación (vía navegador seguro del sistema) con 0% de retención.",
+  "continuarPortalWebOfrendas": "Continuar al Portal Web de Ofrendas",
+  "abriendoPortalSeguroOdoo": "Abriendo portal web seguro...",
+  "completarAporteEnNavegadorDesc": "Completa tu aporte en la ventana segura del navegador. Al finalizar regresarás automáticamente a ATRIO.",
+  "abrirPortalWebSeguro": "Abrir Portal Web Seguro",
+  "gratitudPastoralTitulo": "¡Gracias por tu Generosidad!",
+  "gratitudPastoralSubtitulo": "Tu ofrenda ha sido recibida y registrada exitosamente en el sistema ministerial de tu congregación.",
+  "estadoVerificadoEnOdoo": "Estado verificado en Odoo 19: {estado}",
+  "@estadoVerificadoEnOdoo": {
+    "description": "Estado de la donación devuelto por GET /donations/status",
+    "placeholders": {
+      "estado": {
+        "type": "String"
+      }
+    }
+  },
+  "portalWebExternoOdoo": "Portal Web Oficial (SFSafariViewController / Chrome Tabs)",
+  "kycStatusDraftTitle": "Verificación Institucional Pendiente de Inicio (Borrador)",
+  "kycStatusDraftDesc": "La recaudación de ofrendas se encuentra oculta en la aplicación. Para habilitarla, carga en Odoo 19 la documentación institucional (RD: RNC ISFL Ley 122-05 | HN: Personería Jurídica y RTN) y la cuenta bancaria oficial de la iglesia.",
+  "kycStatusPendingTitle": "Validación en curso (KYC Institucional)",
+  "kycStatusPendingDesc": "El equipo legal de ATRIO está verificando la documentación legal (ISFL Ley 122-05 / Personería Jurídica) y la cuenta bancaria institucional de tu congregación. El botón de ofrendas se activará al aprobarse.",
+  "kycStatusApprovedTitle": "Congregación Verificada (KYC Aprobado)",
+  "kycStatusApprovedDesc": "Documentación legal e institucional validada. Recepción de ofrendas y pasarela web oficial activas.",
+  "kycStatusSuspendedTitle": "Recaudación Suspendida por Auditoría Legal",
+  "kycStatusSuspendedDesc": "Se han detectado inconsistencias o revisiones pendientes en la documentación legal de la congregación. La recepción de ofrendas ha sido desactivada temporalmente.",
+  "donacionesDeshabilitadasKycTitulo": "Ofrendas en Proceso de Habilitación",
+  "donacionesDeshabilitadasKycMensaje": "Tu congregación se encuentra completando el proceso de validación legal e institucional (KYC) en ATRIO. El módulo de ofrendas estará disponible tan pronto concluya la verificación.",
+  "ofrendarACongregacion": "Ofrendar a la congregación",
+  "ofrendarSubtituloVerificado": "Aporte voluntario y diezmos (Entidad verificada)",
+  "ugcReportarContenido": "Reportar contenido inapropiado",
+  "ugcBloquearUsuario": "Bloquear autor / contenido",
+  "ugcMotivoReporteTitulo": "Reportar contenido",
+  "ugcMotivoReporteSubtitulo": "Selecciona el motivo por el cual deseas reportar esta publicación al equipo de moderación de ATRIO:",
+  "ugcMotivoOfensivo": "Lenguaje ofensivo o inapropiado",
+  "ugcMotivoSpam": "Spam o información engañosa",
+  "ugcMotivoAcoso": "Acoso o conducta abusiva",
+  "ugcReporteEnviadoExito": "Reporte enviado. Nuestro equipo de moderación revisará el contenido en menos de 24 horas.",
+  "ugcUsuarioBloqueadoExito": "Autor bloqueado. Sus publicaciones han sido ocultadas de tu vista inmediatamente.",
+  "ugcPoliticaToleranciaCeroTitulo": "Política de Contenido Generado por el Usuario (UGC) y Tolerancia Cero",
+  "ugcPoliticaToleranciaCeroParrafo": "ATRIO mantiene una política de tolerancia cero frente a contenido objetable, difamatorio, abusivo, discriminatorio o fraudulento en muros comunitarios, avisos y peticiones pastorales. Los usuarios pueden reportar publicaciones inapropiadas y bloquear de inmediato a cualquier autor abusivo desde el menú de opciones de cada contenido. El equipo de moderación actúa sobre los reportes en un plazo máximo de 24 horas eliminando el contenido infractor y suspendiendo la cuenta responsable.",
+  "ugcAvisoToleranciaCeroSolicitud": "Compromiso comunitario (EULA): ATRIO aplica tolerancia cero ante lenguaje ofensivo, spam o abuso. Las solicitudes infractoras serán eliminadas y la cuenta podrá ser suspendida.",
+  "direccionItem": "• Dirección de envío: {direccion}",
+  "@direccionItem": {
+    "description": "Ítem de dirección de envío en confirmación de pedido",
+    "placeholders": {
+      "direccion": {
+        "type": "String"
+      }
+    }
+  },
+  "perfilIglesiaAprobada": "Iglesia aprobada",
+  "perfilPendienteAprobacion": "Pendiente de aprobación",
+  "perfilCambioEnRevision": "Cambio en revisión",
+  "perfilSinCongregacion": "Sin congregación",
+  "perfilBadgeAprobada": "Aprobada",
+  "perfilCongregacionActiva": "Congregación activa",
+  "perfilCongregacionActivaDesc": "Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.",
+  "perfilVerDetallesIglesia": "Ver detalles de iglesia",
+  "perfilBadgeEnRevision": "En revisión",
+  "perfilSolicitudMembresia": "Solicitud de membresía",
+  "perfilMembresiaPendienteDesc": "Perteneces a {iglesia}, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.",
+  "@perfilMembresiaPendienteDesc": {
+    "description": "Mensaje de membresía pendiente con nombre de iglesia",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "perfilVerEstadoSolicitud": "Ver estado de solicitud",
+  "perfilBadgeTrasladoEnCurso": "Traslado en curso",
+  "perfilCambioCongregacion": "Cambio de congregación",
+  "perfilCambioCongregacionDesc": "Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.",
+  "perfilConsultarEstado": "Consultar estado",
+  "perfilBadgeSinVincular": "Sin vincular",
+  "perfilSinCongregacionDesc": "Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.",
+  "perfilBuscarUnirseIglesia": "Buscar y unirse a una iglesia",
+  "perfilEstadoMembresiaAprobadaActiva": "Estado: Membresía aprobada y activa",
+  "perfilDetalleMembresiaModal": "Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.",
+  "perfilBadgeLider": "LÍDER",
+  "perfilGestionCuidadoCongregacion": "Gestión y cuidado de la congregación",
+  "perfilSubtituloBandejaSolicitudes": "Atención y respuesta pastoral a feligreses",
+  "perfilSubtituloAvisos": "Publicar comunicados y avisos clave",
+  "perfilSubtituloGrupos": "Segmentación de ministerios y membresía",
+  "perfilSubtituloCentroModeracion": "Auditar contenidos marcados y bloqueados",
+  "perfilSubtituloPalabrasRestringidas": "Reglas automáticas flag y block",
+  "perfilBotonEditarDatosTooltip": "Editar mis datos personales",
+  "perfilBotonIniciarSesionTooltip": "Iniciar sesión en ATRIO",
+  "comunicadoNuevo": "Nuevo comunicado",
+  "comunicadoNuevoHeader": "NUEVO COMUNICADO",
+  "comunicadoRemitenteDefault": "Comunidad ATRIO",
+  "comunicadoVerTodas": "Ver todas",
+  "avisoPredeterminado": "Aviso",
+  "compartirUbicacionMensaje": "Ubicación de {iglesia}: {plusCode}",
+  "@compartirUbicacionMensaje": {
+    "description": "Mensaje para compartir Plus Code",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      },
+      "plusCode": {
+        "type": "String"
+      }
+    }
+  },
+  "asuntoCorreoPlusCode": "Plus Code de {iglesia}",
+  "@asuntoCorreoPlusCode": {
+    "description": "Asunto de correo para compartir Plus Code",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "cuerpoCorreoPlusCode": "{mensaje}\\n\\nPuedes buscar este código directamente en Google Maps.",
+  "@cuerpoCorreoPlusCode": {
+    "description": "Cuerpo de correo para compartir Plus Code",
+    "placeholders": {
+      "mensaje": {
+        "type": "String"
+      }
+    }
+  },
+  "iglesiaVerificadaTooltip": "Congregación verificada",
+  "resenasCalificacionSemantics": "Calificación {rating} de 5, basada en {count} reseñas",
+  "@resenasCalificacionSemantics": {
+    "description": "Semántica para accesibilidad de calificación y reseñas",
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorarEnElMapa": "Explorar en el mapa"
 }
-
-

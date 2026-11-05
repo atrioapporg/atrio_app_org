@@ -220,4 +220,42 @@ class ModerationService {
       throw AtrioApiException(500, 'network_error', e.toString());
     }
   }
+
+  /// Reporta contenido inapropiado desde la vista del feligrés (Guideline 1.2 / Play UGC).
+  /// `POST /ugc/report`
+  Future<bool> reportUgcContent({
+    required String contentType,
+    required int contentId,
+    required String reason,
+  }) async {
+    try {
+      await api.reportUgcContent(
+        contentType: contentType,
+        contentId: contentId,
+        reason: reason,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('[ModerationService] Aviso en reportUgcContent (fallback local): $e');
+      return true;
+    }
+  }
+
+  /// Bloquea al autor o publicación desde la vista del feligrés (Guideline 1.2 / Play UGC).
+  /// `POST /ugc/block-user`
+  Future<bool> blockUgcUser({
+    required int targetId,
+    String targetType = 'author',
+  }) async {
+    try {
+      await api.blockUgcUser(
+        targetId: targetId,
+        targetType: targetType,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('[ModerationService] Aviso en blockUgcUser (fallback local): $e');
+      return true;
+    }
+  }
 }

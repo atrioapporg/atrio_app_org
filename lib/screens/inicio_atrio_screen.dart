@@ -12,23 +12,23 @@ import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/anuncio_model.dart';
 import '../modelos/post_model.dart';
-import '../providers/ajustes_provider.dart';
 import '../providers/ads_provider.dart';
+import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../servicios/anuncio_service.dart';
-import '../widgets/hero_banner_card.dart';
-import '../widgets/sponsored_ad_card.dart';
-import '../widgets/read_only_banner.dart';
+import '../servicios/atrio_upgrader_messages.dart';
 import '../widgets/change_pending_banner.dart';
+import '../widgets/hero_banner_card.dart';
 import '../widgets/membership_pending_banner.dart';
+import '../widgets/read_only_banner.dart';
+import '../widgets/sponsored_ad_card.dart';
 import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
 import 'perfil_screen.dart';
 import 'qr_join_scanner_screen.dart';
 import 'tradicion_cristiana_screen.dart';
-import '../servicios/atrio_upgrader_messages.dart';
 
 class InicioAtrioScreen extends StatefulWidget {
   static const routeName = 'inicio_atrio_screen';
@@ -244,6 +244,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
   void _mostrarModalNotificacionEmergente(Map<String, dynamic> noti) {
     if (!mounted) return;
 
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
 
@@ -255,7 +256,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         noti['title']?.toString() ??
         noti['subject']?.toString() ??
         noti['name']?.toString() ??
-        'Nuevo Comunicado';
+        (l10n?.comunicadoNuevo ?? 'Nuevo comunicado');
     final String mensaje =
         noti['message']?.toString() ??
         noti['body']?.toString() ??
@@ -265,7 +266,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     final String remitente =
         noti['church_name']?.toString() ??
         noti['author']?.toString() ??
-        'Comunidad ATRIO';
+        (l10n?.comunicadoRemitenteDefault ?? 'Comunidad ATRIO');
 
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final String? fullImageUrl = (imagePath != null && imagePath.isNotEmpty)
@@ -326,8 +327,8 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'NUEVO COMUNICADO',
+                            Text(
+                              l10n?.comunicadoNuevoHeader ?? 'NUEVO COMUNICADO',
                               style: TextStyle(
                                 color: amarilloOro,
                                 fontSize: 11,
@@ -348,16 +349,18 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          color: Colors.white70,
-                          size: 22,
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white70,
+                            size: 24,
+                          ),
+                          onPressed: () => Navigator.of(dialogCtx).pop(),
+                          tooltip: l10n?.cerrar ?? 'Cerrar',
                         ),
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Cerrar',
                       ),
                     ],
                   ),
@@ -440,9 +443,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                               NotificacionesScreen.routeName,
                             );
                           },
-                          child: const Text(
-                            'Ver todas',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          child: Text(
+                            l10n?.comunicadoVerTodas ?? 'Ver todas',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -459,9 +462,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           onPressed: () => Navigator.of(dialogCtx).pop(),
-                          child: const Text(
-                            'Entendido',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          child: Text(
+                            l10n?.entendido ?? 'Entendido',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -802,21 +805,26 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Tooltip(
-                          message: l10n?.escanearQrIglesia ?? 'Escanear QR de Iglesia',
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                QrJoinScannerScreen.routeName,
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                            child: Padding(
-                              padding: EdgeInsets.all(screenWidth * 0.015),
-                              child: Icon(
-                                Icons.qr_code_scanner_rounded,
-                                color: Colors.white,
-                                size: screenWidth * 0.076,
+                          message:
+                              l10n?.escanearQrIglesia ??
+                              'Escanear QR de Iglesia',
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  QrJoinScannerScreen.routeName,
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(24),
+                              child: Center(
+                                child: Icon(
+                                  Icons.qr_code_scanner_rounded,
+                                  color: Colors.white,
+                                  size: screenWidth * 0.076,
+                                ),
                               ),
                             ),
                           ),
@@ -830,50 +838,63 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                             final bool tieneNotis =
                                 esAutenticado && _notificacionesSinLeer > 0;
 
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  NotificacionesScreen.routeName,
-                                );
-                              },
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Icon(
-                                    Icons.notifications_none_rounded,
-                                    color: Colors.white,
-                                    size: screenWidth * 0.080,
-                                  ),
-                                  if (tieneNotis)
-                                    Positioned(
-                                      top: -2,
-                                      right: -2,
-                                      child: Container(
-                                        padding: EdgeInsets.all(
-                                          screenWidth * 0.008,
+                            return Semantics(
+                              button: true,
+                              label: tieneNotis
+                                  ? '$_notificacionesSinLeer notificaciones'
+                                  : (l10n?.notificaciones ?? 'Notificaciones'),
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(24),
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      NotificacionesScreen.routeName,
+                                    );
+                                  },
+                                  child: Center(
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Icon(
+                                          Icons.notifications_none_rounded,
+                                          color: Colors.white,
+                                          size: screenWidth * 0.080,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: amarilloOro,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        constraints: BoxConstraints(
-                                          minWidth: screenWidth * 0.04,
-                                          minHeight: screenWidth * 0.04,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '$_notificacionesSinLeer',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
+                                        if (tieneNotis)
+                                          Positioned(
+                                            top: -2,
+                                            right: -2,
+                                            child: Container(
+                                              padding: EdgeInsets.all(
+                                                screenWidth * 0.008,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: amarilloOro,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              constraints: BoxConstraints(
+                                                minWidth: screenWidth * 0.04,
+                                                minHeight: screenWidth * 0.04,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  '$_notificacionesSinLeer',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
-                                ],
+                                  ),
+                                ),
                               ),
                             );
                           },
@@ -970,9 +991,9 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
-                                            child: const Text(
-                                              'Pendiente',
-                                              style: TextStyle(
+                                            child: Text(
+                                              l10n?.estadoDonacionPendiente ?? 'Pendiente',
+                                              style: const TextStyle(
                                                 color: Color(0xFFB45309),
                                                 fontSize: 9.5,
                                                 fontWeight: FontWeight.bold,
@@ -1181,9 +1202,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                 controller: _avisosPageController,
                 itemCount: _obtenerAvisos(l10n).length,
                 onPageChanged: (index) {
-                  setState(() {
-                    _avisoActivoIndex = index;
-                  });
+                  _avisoActivoIndex = index;
                   _iniciarTimerAvisos(_ultimoIntervaloAvisos);
                 },
                 itemBuilder: (context, index) {
@@ -1195,7 +1214,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                       Row(
                         children: [
                           Text(
-                            aviso['titulo'] ?? 'Aviso',
+                            aviso['titulo'] ?? (l10n?.avisoPredeterminado ?? 'Aviso'),
                             style: TextStyle(
                               color: azulFondo,
                               fontSize: screenWidth * 0.042,
@@ -1216,7 +1235,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                             child: Text(
                               aviso['tag'] ?? '',
                               style: TextStyle(
-                                color: const Color(0xFF9E6500),
+                                color: const Color(0xFF78350F),
                                 fontSize: screenWidth * 0.028,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1320,44 +1339,48 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return GestureDetector(
-          onTap: () {
-            if (item['route'] != null) {
-              Navigator.pushNamed(context, item['route']);
-            }
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              border: Border.all(color: grisBorde),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
-            child: Row(
-              children: [
-                Icon(
-                  item['icon'],
-                  color: item['color'],
-                  size: screenWidth * 0.07,
-                ),
-                SizedBox(width: screenWidth * 0.025),
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      item['title'],
-                      maxLines: 2,
-                      style: TextStyle(
-                        color: azulFondo,
-                        fontSize: screenWidth * 0.040,
-                        height: 1.15,
-                        fontWeight: FontWeight.bold,
+        return Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            onTap: () {
+              if (item['route'] != null) {
+                Navigator.pushNamed(context, item['route']);
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                border: Border.all(color: grisBorde),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+              child: Row(
+                children: [
+                  Icon(
+                    item['icon'],
+                    color: item['color'],
+                    size: screenWidth * 0.07,
+                  ),
+                  SizedBox(width: screenWidth * 0.025),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        item['title'],
+                        maxLines: 2,
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.040,
+                          height: 1.15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -1485,15 +1508,19 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
     required Color grisBorde,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.005),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFF7FC),
-          borderRadius: BorderRadius.circular(screenWidth * 0.035),
-          border: Border.all(color: grisBorde),
-        ),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(screenWidth * 0.035),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        onTap: onTap,
+        child: Container(
+          margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.005),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF7FC),
+            borderRadius: BorderRadius.circular(screenWidth * 0.035),
+            border: Border.all(color: grisBorde),
+          ),
         padding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.030,
           vertical: usableHeight * 0.008,
@@ -1635,6 +1662,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -1735,7 +1763,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     child: Text(
                       anuncio.etiqueta,
                       style: TextStyle(
-                        color: const Color(0xFF9E6500),
+                        color: const Color(0xFF78350F),
                         fontSize: screenWidth * 0.030,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -2102,23 +2130,26 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
         ? userProvider.api.imageUrl(post.imageUrl)
         : null;
 
-    return GestureDetector(
-      onTap: () =>
-          _mostrarDetallePublicacion(context, post, l10n, fullImageUrl),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(screenWidth * 0.035),
-          border: Border.all(color: grisBorde),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(screenWidth * 0.035),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        onTap: () =>
+            _mostrarDetallePublicacion(context, post, l10n, fullImageUrl),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(screenWidth * 0.035),
+            border: Border.all(color: grisBorde),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2160,7 +2191,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                         ),
                         child: Text(
                           post.audience == 'todos'
-                              ? 'Comunidad'
+                              ? (l10n?.categoriaComunidad ?? 'Comunidad')
                               : post.audience,
                           style: TextStyle(
                             color: const Color(0xFF0055A5),
@@ -2227,6 +2258,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

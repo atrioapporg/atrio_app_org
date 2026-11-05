@@ -3787,4 +3787,345 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get cargandoAfiche => 'Generando afiche oficial...';
+
+  @override
+  String get articuloFisicoBadge => 'Artículo físico impreso / tangible';
+
+  @override
+  String get articuloFisicoCorto => 'Artículo Físico';
+
+  @override
+  String get avisoTiendaSoloBienesFisicos =>
+      'Todos los artículos de la tienda eclesial son bienes físicos tangibles sujetos a envío postal o retiro presencial en el templo.';
+
+  @override
+  String get carritoContieneArticulosFisicosError =>
+      'Tu carrito contiene artículos físicos. Finaliza esta orden antes de añadir contenido digital.';
+
+  @override
+  String get carritoContieneArticulosDigitalesError =>
+      'Tu carrito contiene contenido digital. Finaliza esta orden antes de añadir artículos físicos.';
+
+  @override
+  String get pasoLogisticoObligatorioTitulo =>
+      'Datos de entrega física (Obligatorio)';
+
+  @override
+  String get direccionEntregaLabel =>
+      'Dirección física de entrega (Calle, número, sector y ciudad)';
+
+  @override
+  String get direccionEntregaHint =>
+      'Ej. Av. Winston Churchill #45, Ensanche Piantini, Santo Domingo';
+
+  @override
+  String get direccionEntregaRequeridaError =>
+      'Ingresa una dirección física válida para el envío a domicilio antes de continuar.';
+
+  @override
+  String get confirmarRetiroPresencialLabel =>
+      'Confirmo que retiraré presencialmente estos artículos físicos en el templo de mi congregación.';
+
+  @override
+  String get confirmarRetiroPresencialRequeridoError =>
+      'Debes marcar la casilla de retiro presencial en el templo antes de confirmar el pedido.';
+
+  @override
+  String get verOrdenFacturacionB2B => 'Ver Orden / Facturación';
+
+  @override
+  String get resumenFacturacionB2BTitulo => 'Orden de Pauta B2B';
+
+  @override
+  String get avisoFacturacionExternaB2B =>
+      'Por políticas de la plataforma, la facturación y liquidación de pautas publicitarias institucionales (B2B) se gestiona exclusivamente a través del portal web administrativo de Odoo 19 o mediante la factura enviada al correo de tu congregación.';
+
+  @override
+  String get instruccionesFacturacionExternaSubtitulo =>
+      'Completa la orden desde tu navegador web institucional o con el departamento contable de tu iglesia usando la referencia oficial.';
+
+  @override
+  String get abrirPortalFacturacionWeb =>
+      'Abrir Portal de Facturación en Navegador';
+
+  @override
+  String get solicitarFacturaPorCorreo =>
+      'Enviar / Solicitar Factura por Correo';
+
+  @override
+  String facturaEnviadaCorreoConfirmacion(String ref) {
+    return 'Solicitud de facturación preparada para la referencia $ref.';
+  }
+
+  @override
+  String get datosReferenciaContableB2B =>
+      'Datos Institucionales de Referencia Contable';
+
+  @override
+  String get avisoRedireccionWebDonacion =>
+      'En cumplimiento con las normativas de seguridad, tu ofrenda o donación se completará íntegramente en el portal web seguro de tu congregación (vía navegador seguro del sistema) con 0% de retención.';
+
+  @override
+  String get continuarPortalWebOfrendas =>
+      'Continuar al Portal Web de Ofrendas';
+
+  @override
+  String get abriendoPortalSeguroOdoo => 'Abriendo portal web seguro...';
+
+  @override
+  String get completarAporteEnNavegadorDesc =>
+      'Completa tu aporte en la ventana segura del navegador. Al finalizar regresarás automáticamente a ATRIO.';
+
+  @override
+  String get abrirPortalWebSeguro => 'Abrir Portal Web Seguro';
+
+  @override
+  String get gratitudPastoralTitulo => '¡Gracias por tu Generosidad!';
+
+  @override
+  String get gratitudPastoralSubtitulo =>
+      'Tu ofrenda ha sido recibida y registrada exitosamente en el sistema ministerial de tu congregación.';
+
+  @override
+  String estadoVerificadoEnOdoo(String estado) {
+    return 'Estado verificado en Odoo 19: $estado';
+  }
+
+  @override
+  String get portalWebExternoOdoo =>
+      'Portal Web Oficial (SFSafariViewController / Chrome Tabs)';
+
+  @override
+  String get kycStatusDraftTitle =>
+      'Verificación Institucional Pendiente de Inicio (Borrador)';
+
+  @override
+  String get kycStatusDraftDesc =>
+      'La recaudación de ofrendas se encuentra oculta en la aplicación. Para habilitarla, carga en Odoo 19 la documentación institucional (RD: RNC ISFL Ley 122-05 | HN: Personería Jurídica y RTN) y la cuenta bancaria oficial de la iglesia.';
+
+  @override
+  String get kycStatusPendingTitle => 'Validación en curso (KYC Institucional)';
+
+  @override
+  String get kycStatusPendingDesc =>
+      'El equipo legal de ATRIO está verificando la documentación legal (ISFL Ley 122-05 / Personería Jurídica) y la cuenta bancaria institucional de tu congregación. El botón de ofrendas se activará al aprobarse.';
+
+  @override
+  String get kycStatusApprovedTitle => 'Congregación Verificada (KYC Aprobado)';
+
+  @override
+  String get kycStatusApprovedDesc =>
+      'Documentación legal e institucional validada. Recepción de ofrendas y pasarela web oficial activas.';
+
+  @override
+  String get kycStatusSuspendedTitle =>
+      'Recaudación Suspendida por Auditoría Legal';
+
+  @override
+  String get kycStatusSuspendedDesc =>
+      'Se han detectado inconsistencias o revisiones pendientes en la documentación legal de la congregación. La recepción de ofrendas ha sido desactivada temporalmente.';
+
+  @override
+  String get donacionesDeshabilitadasKycTitulo =>
+      'Ofrendas en Proceso de Habilitación';
+
+  @override
+  String get donacionesDeshabilitadasKycMensaje =>
+      'Tu congregación se encuentra completando el proceso de validación legal e institucional (KYC) en ATRIO. El módulo de ofrendas estará disponible tan pronto concluya la verificación.';
+
+  @override
+  String get ofrendarACongregacion => 'Ofrendar a la congregación';
+
+  @override
+  String get ofrendarSubtituloVerificado =>
+      'Aporte voluntario y diezmos (Entidad verificada)';
+
+  @override
+  String get ugcReportarContenido => 'Reportar contenido inapropiado';
+
+  @override
+  String get ugcBloquearUsuario => 'Bloquear autor / contenido';
+
+  @override
+  String get ugcMotivoReporteTitulo => 'Reportar contenido';
+
+  @override
+  String get ugcMotivoReporteSubtitulo =>
+      'Selecciona el motivo por el cual deseas reportar esta publicación al equipo de moderación de ATRIO:';
+
+  @override
+  String get ugcMotivoOfensivo => 'Lenguaje ofensivo o inapropiado';
+
+  @override
+  String get ugcMotivoSpam => 'Spam o información engañosa';
+
+  @override
+  String get ugcMotivoAcoso => 'Acoso o conducta abusiva';
+
+  @override
+  String get ugcReporteEnviadoExito =>
+      'Reporte enviado. Nuestro equipo de moderación revisará el contenido en menos de 24 horas.';
+
+  @override
+  String get ugcUsuarioBloqueadoExito =>
+      'Autor bloqueado. Sus publicaciones han sido ocultadas de tu vista inmediatamente.';
+
+  @override
+  String get ugcPoliticaToleranciaCeroTitulo =>
+      'Política de Contenido Generado por el Usuario (UGC) y Tolerancia Cero';
+
+  @override
+  String get ugcPoliticaToleranciaCeroParrafo =>
+      'ATRIO mantiene una política de tolerancia cero frente a contenido objetable, difamatorio, abusivo, discriminatorio o fraudulento en muros comunitarios, avisos y peticiones pastorales. Los usuarios pueden reportar publicaciones inapropiadas y bloquear de inmediato a cualquier autor abusivo desde el menú de opciones de cada contenido. El equipo de moderación actúa sobre los reportes en un plazo máximo de 24 horas eliminando el contenido infractor y suspendiendo la cuenta responsable.';
+
+  @override
+  String get ugcAvisoToleranciaCeroSolicitud =>
+      'Compromiso comunitario (EULA): ATRIO aplica tolerancia cero ante lenguaje ofensivo, spam o abuso. Las solicitudes infractoras serán eliminadas y la cuenta podrá ser suspendida.';
+
+  @override
+  String direccionItem(String direccion) {
+    return '• Dirección de envío: $direccion';
+  }
+
+  @override
+  String get perfilIglesiaAprobada => 'Iglesia aprobada';
+
+  @override
+  String get perfilPendienteAprobacion => 'Pendiente de aprobación';
+
+  @override
+  String get perfilCambioEnRevision => 'Cambio en revisión';
+
+  @override
+  String get perfilSinCongregacion => 'Sin congregación';
+
+  @override
+  String get perfilBadgeAprobada => 'Aprobada';
+
+  @override
+  String get perfilCongregacionActiva => 'Congregación activa';
+
+  @override
+  String get perfilCongregacionActivaDesc =>
+      'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.';
+
+  @override
+  String get perfilVerDetallesIglesia => 'Ver detalles de iglesia';
+
+  @override
+  String get perfilBadgeEnRevision => 'En revisión';
+
+  @override
+  String get perfilSolicitudMembresia => 'Solicitud de membresía';
+
+  @override
+  String perfilMembresiaPendienteDesc(String iglesia) {
+    return 'Perteneces a $iglesia, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
+  }
+
+  @override
+  String get perfilVerEstadoSolicitud => 'Ver estado de solicitud';
+
+  @override
+  String get perfilBadgeTrasladoEnCurso => 'Traslado en curso';
+
+  @override
+  String get perfilCambioCongregacion => 'Cambio de congregación';
+
+  @override
+  String get perfilCambioCongregacionDesc =>
+      'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.';
+
+  @override
+  String get perfilConsultarEstado => 'Consultar estado';
+
+  @override
+  String get perfilBadgeSinVincular => 'Sin vincular';
+
+  @override
+  String get perfilSinCongregacionDesc =>
+      'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.';
+
+  @override
+  String get perfilBuscarUnirseIglesia => 'Buscar y unirse a una iglesia';
+
+  @override
+  String get perfilEstadoMembresiaAprobadaActiva =>
+      'Estado: Membresía aprobada y activa';
+
+  @override
+  String get perfilDetalleMembresiaModal =>
+      'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.';
+
+  @override
+  String get perfilBadgeLider => 'LÍDER';
+
+  @override
+  String get perfilGestionCuidadoCongregacion =>
+      'Gestión y cuidado de la congregación';
+
+  @override
+  String get perfilSubtituloBandejaSolicitudes =>
+      'Atención y respuesta pastoral a feligreses';
+
+  @override
+  String get perfilSubtituloAvisos => 'Publicar comunicados y avisos clave';
+
+  @override
+  String get perfilSubtituloGrupos => 'Segmentación de ministerios y membresía';
+
+  @override
+  String get perfilSubtituloCentroModeracion =>
+      'Auditar contenidos marcados y bloqueados';
+
+  @override
+  String get perfilSubtituloPalabrasRestringidas =>
+      'Reglas automáticas flag y block';
+
+  @override
+  String get perfilBotonEditarDatosTooltip => 'Editar mis datos personales';
+
+  @override
+  String get perfilBotonIniciarSesionTooltip => 'Iniciar sesión en ATRIO';
+
+  @override
+  String get comunicadoNuevo => 'Nuevo comunicado';
+
+  @override
+  String get comunicadoNuevoHeader => 'NUEVO COMUNICADO';
+
+  @override
+  String get comunicadoRemitenteDefault => 'Comunidad ATRIO';
+
+  @override
+  String get comunicadoVerTodas => 'Ver todas';
+
+  @override
+  String get avisoPredeterminado => 'Aviso';
+
+  @override
+  String compartirUbicacionMensaje(String iglesia, String plusCode) {
+    return 'Ubicación de $iglesia: $plusCode';
+  }
+
+  @override
+  String asuntoCorreoPlusCode(String iglesia) {
+    return 'Plus Code de $iglesia';
+  }
+
+  @override
+  String cuerpoCorreoPlusCode(String mensaje) {
+    return '$mensaje\\n\\nPuedes buscar este código directamente en Google Maps.';
+  }
+
+  @override
+  String get iglesiaVerificadaTooltip => 'Congregación verificada';
+
+  @override
+  String resenasCalificacionSemantics(String rating, int count) {
+    return 'Calificación $rating de 5, basada en $count reseñas';
+  }
+
+  @override
+  String get explorarEnElMapa => 'Explorar en el mapa';
 }

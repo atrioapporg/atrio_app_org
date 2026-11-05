@@ -1,3 +1,13 @@
+/// Clasificación de productos en la Tienda Eclesial ATRIO para cumplimiento
+/// con Apple App Store (Guideline 3.1.1) y Google Play Store.
+enum ProductType {
+  /// Bien físico tangible (impreso, textil, cerámica, etc.). Usa pasarelas externas.
+  physical,
+
+  /// Bien digital (requiere In-App Purchase y no puede mezclarse con bienes físicos).
+  digital,
+}
+
 class ProductoModel {
   final String id;
   final String nombre;
@@ -15,6 +25,10 @@ class ProductoModel {
   final bool esDestacado;
   final double rating;
 
+  /// Naturaleza del artículo (`atrio_product_type` en Odoo 19).
+  /// Por defecto todos los artículos de la tienda eclesial son bienes físicos (`ProductType.physical`).
+  final ProductType type;
+
   ProductoModel({
     required this.id,
     required this.nombre,
@@ -28,15 +42,28 @@ class ProductoModel {
     this.esFavorito = false,
     this.esDestacado = false,
     this.rating = 4.8,
+    this.type = ProductType.physical,
   });
 
-  String get precioFormateado => '$moneda${precio.toStringAsFixed(0).replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (Match m) => '${m[1]},',
-      )}';
+  bool get esFisico => type == ProductType.physical;
+
+  String get precioFormateado =>
+      '$moneda${precio.toStringAsFixed(0).replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]},',
+          )}';
 
   /// URL base para resolver rutas relativas de imágenes servidas por Odoo.
   static const String _odooBaseUrl = 'https://atrioapp.odoo19rd.com';
+
+  /// Convierte el valor crudo de `atrio_product_type` o `product_type` al enum [ProductType].
+  static ProductType parseProductType(dynamic rawType) {
+    final normalized = rawType?.toString().trim().toLowerCase() ?? '';
+    if (normalized == 'digital' || normalized == 'service') {
+      return ProductType.digital;
+    }
+    return ProductType.physical;
+  }
 
   /// Deserializa respuestas JSON-RPC o REST provenientes del catálogo de Odoo 19.
   ///
@@ -49,7 +76,8 @@ class ProductoModel {
     final rawCurrency = json['currency'] ?? json['moneda'];
     String moneda = 'RD\$';
     if (rawCurrency is Map) {
-      moneda = (rawCurrency['symbol'] ?? rawCurrency['code'] ?? 'RD\$').toString();
+      moneda =
+          (rawCurrency['symbol'] ?? rawCurrency['code'] ?? 'RD\$').toString();
     } else if (rawCurrency is String && rawCurrency.isNotEmpty) {
       moneda = rawCurrency;
     }
@@ -57,7 +85,9 @@ class ProductoModel {
     // Categoría: public_categories (Odoo 19) o category/categoria
     String categoria = 'General';
     final publicCats = json['public_categories'];
-    if (publicCats is List && publicCats.isNotEmpty && publicCats.first is Map) {
+    if (publicCats is List &&
+        publicCats.isNotEmpty &&
+        publicCats.first is Map) {
       categoria = (publicCats.first['name'] ?? 'General').toString();
     } else if (json['category'] is String) {
       categoria = json['category'] as String;
@@ -68,22 +98,28 @@ class ProductoModel {
     }
 
     // Imagen: resolver rutas relativas de Odoo
-    String imageUrl = (json['image_url'] ?? json['imagen_url'] ?? '').toString();
+    String imageUrl =
+        (json['image_url'] ?? json['imagen_url'] ?? '').toString();
     if (imageUrl.startsWith('/')) {
       imageUrl = '$_odooBaseUrl$imageUrl';
     }
 
     // Stock: Odoo devuelve double (0.0). Se tolera cualquier num.
     final rawStock = json['qty_available'] ?? json['stock'] ?? 0;
-    final stock = rawStock is num ? rawStock.toInt() : int.tryParse('$rawStock') ?? 0;
+    final stock =
+        rawStock is num ? rawStock.toInt() : int.tryParse('$rawStock') ?? 0;
 
     final rawPrice = json['list_price'] ?? json['precio'] ?? 0;
     final rawRating = json['rating'] ?? 4.8;
+    final rawProductType =
+        json['atrio_product_type'] ?? json['product_type'] ?? 'physical';
 
     return ProductoModel(
       id: json['id']?.toString() ?? '',
       nombre: (json['name'] ?? json['nombre'] ?? '').toString(),
-      precio: rawPrice is num ? rawPrice.toDouble() : double.tryParse('$rawPrice') ?? 0.0,
+      precio: rawPrice is num
+          ? rawPrice.toDouble()
+          : double.tryParse('$rawPrice') ?? 0.0,
       moneda: moneda,
       categoria: categoria,
       imageUrl: imageUrl,
@@ -97,6 +133,7 @@ class ProductoModel {
       esFavorito: json['is_favorite'] ?? json['es_favorito'] ?? false,
       esDestacado: json['is_featured'] ?? json['es_destacado'] ?? false,
       rating: rawRating is num ? rawRating.toDouble() : 4.8,
+      type: parseProductType(rawProductType),
     );
   }
 
@@ -112,5 +149,7 @@ class ProductoModel {
         'is_favorite': esFavorito,
         'is_featured': esDestacado,
         'rating': rating,
+        'atrio_product_type':
+            type == ProductType.digital ? 'digital' : 'physical',
       };
 }

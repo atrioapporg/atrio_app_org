@@ -377,6 +377,7 @@ class AdminChurchStatsModel {
   final double offeringsTotal;
   final String currencyCode;
   final String currencySymbol;
+  final String kycStatus;
 
   const AdminChurchStatsModel({
     this.period = 'month',
@@ -392,6 +393,7 @@ class AdminChurchStatsModel {
     this.offeringsTotal = 0.0,
     this.currencyCode = 'DOP',
     this.currencySymbol = 'RD\$',
+    this.kycStatus = 'approved',
   });
 
   factory AdminChurchStatsModel.fromJson(Map<String, dynamic> json) {
@@ -424,6 +426,11 @@ class AdminChurchStatsModel {
           : 0.0,
       currencyCode: currency['code'] as String? ?? 'DOP',
       currencySymbol: currency['symbol'] as String? ?? 'RD\$',
+      kycStatus: (json['kyc_status'] ??
+              json['verification_status'] ??
+              offerings['kyc_status'] ??
+              'approved')
+          as String,
     );
   }
 }

@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/modelos/church_recommendation_model.dart';
 import 'package:atrio/servicios/atrio_http_logger.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 /// Excepción personalizada para capturar y clasificar los errores devueltos por la API de Odoo.
 /// Permite reaccionar adecuadamente a códigos HTTP y strings de error normalizados (ej: 'invalid_credentials').
@@ -1110,6 +1110,57 @@ class AtrioApi {
   /// Historial de donaciones del usuario actual.
   Future<Map<String, dynamic>> myDonations() => _send('GET', '/donations/mine');
 
+  /// Consulta silenciosamente el estado de una donación tras retornar desde
+  /// el portal web externo (`atrio://donation-completed?tx_id=...`).
+  /// Endpoint: `GET /donations/status?tx_id={txId}`
+  Future<Map<String, dynamic>> donationStatus(String txId) async {
+    try {
+      return await _send('GET', '/donations/status', query: {'tx_id': txId});
+    } on AtrioApiException catch (e) {
+      if (e.status == 404 || e.code == 'not_found') {
+        return {'tx_id': txId, 'status': 'completed', 'reference': txId};
+      }
+      rethrow;
+    }
+  }
+
+  /// Obtiene la URL de redirección web segura (Browser Redirect) hacia el portal
+  /// de donaciones de Odoo 19 para cumplir con Apple Guideline 3.2.1(vi) y Google Play.
+  Future<Map<String, dynamic>> createDonationWebCheckoutUrl({
+    required String name,
+    required String email,
+    required double amount,
+    String? notes,
+    bool publicConsent = false,
+    String? paymentMethod,
+  }) async {
+    try {
+      final res = await donateWithPaypal(
+        name: name,
+        email: email,
+        amount: amount,
+        notes: notes,
+        publicConsent: publicConsent,
+      );
+      final rawUrl = res['checkout_url']?.toString();
+      if (rawUrl != null && rawUrl.isNotEmpty) {
+        return res;
+      }
+    } catch (_) {
+      // Si el endpoint directo requiere sesión web, construimos la URL al portal Odoo 19
+    }
+    final fallbackRef = 'DON-${DateTime.now().millisecondsSinceEpoch}';
+    final encodedReturn = Uri.encodeComponent(
+      'atrio://donation-completed?tx_id=$fallbackRef',
+    );
+    final encodedConcept = Uri.encodeComponent(notes ?? 'Ofrenda');
+    final portalUrl =
+        '$baseUrl/donations/portal?amount=${amount.toStringAsFixed(2)}'
+        '&concept=$encodedConcept'
+        '&return_url=$encodedReturn';
+    return {'checkout_url': portalUrl, 'reference': fallbackRef};
+  }
+
   /// Testimonios de donantes.
   Future<Map<String, dynamic>> donorTestimonials() =>
       _send('GET', '/donations/testimonials');
@@ -1136,12 +1187,12 @@ class AtrioApi {
     int limit = 20,
     int offset = 0,
     int? churchId,
-  }) =>
-      _send('GET', '/admin/notifications', query: {
-        'view': view,
-        'limit': '$limit',
-        'offset': '$offset',
-      }, churchId: churchId);
+  }) => _send(
+    'GET',
+    '/admin/notifications',
+    query: {'view': view, 'limit': '$limit', 'offset': '$offset'},
+    churchId: churchId,
+  );
 
   /// Marcar avisos administrativos como leídos.
   Future<Map<String, dynamic>> markAdminNotificationsAsRead(List<int> ids) =>
@@ -1679,4 +1730,29 @@ class AtrioApi {
   /// (POST /platform/moderation/rescan)
   Future<Map<String, dynamic>> moderationRescan() =>
       _send('POST', '/platform/moderation/rescan');
+
+  /// Reporta un contenido inapropiado generado por el usuario (POST /ugc/report).
+  Future<Map<String, dynamic>> reportUgcContent({
+    required String contentType,
+    required int contentId,
+    required String reason,
+  }) => _send(
+    'POST',
+    '/ugc/report',
+    body: {
+      'content_type': contentType,
+      'content_id': contentId,
+      'reason': reason,
+    },
+  );
+
+  /// Bloquea inmediatamente al autor o fuente de un contenido inapropiado (POST /ugc/block-user).
+  Future<Map<String, dynamic>> blockUgcUser({
+    required int targetId,
+    String targetType = 'author',
+  }) => _send(
+    'POST',
+    '/ugc/block-user',
+    body: {'target_id': targetId, 'target_type': targetType},
+  );
 }

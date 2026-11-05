@@ -483,6 +483,13 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                             ),
                             SizedBox(height: usableHeight * 0.03),
 
+                            // 5.5 Aviso explícito de Tolerancia Cero UGC (Apple 1.2 / Play Store)
+                            _UgcZeroToleranceNoticeBanner(
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                            ),
+                            SizedBox(height: usableHeight * 0.022),
+
                             // 6. Botón Enviar Solicitud
                             SizedBox(
                               width: double.infinity,
@@ -710,6 +717,58 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
           fontSize: screenWidth * 0.030,
           fontWeight: FontWeight.w500,
         ),
+      ),
+    );
+  }
+}
+
+
+/// Banner de aviso explícito de tolerancia cero ante contenido ofensivo o abusivo (EULA / UGC Compliance).
+class _UgcZeroToleranceNoticeBanner extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+
+  const _UgcZeroToleranceNoticeBanner({
+    required this.screenWidth,
+    required this.usableHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const Color azulFondo = Color(0xFF072B4F);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsetsDirectional.all(screenWidth * 0.032),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(screenWidth * 0.025),
+        border: Border.all(
+          color: azulFondo.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.gpp_good_outlined,
+            color: azulFondo,
+            size: screenWidth * 0.046,
+          ),
+          SizedBox(width: screenWidth * 0.025),
+          Expanded(
+            child: Text(
+              l10n?.ugcAvisoToleranciaCeroSolicitud ??
+                  'Compromiso comunitario (EULA): ATRIO aplica tolerancia cero ante lenguaje ofensivo, spam o abuso.',
+              style: TextStyle(
+                color: const Color(0xFF334155),
+                fontSize: screenWidth * 0.029,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

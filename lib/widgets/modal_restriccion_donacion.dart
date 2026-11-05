@@ -171,6 +171,15 @@ class ModalRestriccionDonacion {
       colorIcono = amarilloOro;
       titulo = tituloPersonalizado ?? l10n?.iglesia ?? 'Congregación requerida';
       mensaje = mensajePersonalizado ?? l10n?.donacionRequiereIglesia ?? 'Debes pertenecer a una congregación asignada para realizar donaciones.';
+    } else if (!userProvider.isChurchKycApproved) {
+      icono = Icons.verified_user_outlined;
+      colorIcono = amarilloOro;
+      titulo = tituloPersonalizado ??
+          l10n?.donacionesDeshabilitadasKycTitulo ??
+          'Ofrendas en Proceso de Habilitación';
+      mensaje = mensajePersonalizado ??
+          l10n?.donacionesDeshabilitadasKycMensaje ??
+          'Tu congregación se encuentra completando el proceso de validación legal e institucional (KYC) en ATRIO.';
     }
 
     showDialog(

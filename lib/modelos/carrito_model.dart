@@ -1,13 +1,10 @@
+import 'producto_model.dart';
+
 /// Modelo del carrito de compras de la Tienda ATRIO (Odoo 19).
 ///
-/// Formato real de `GET/POST/PUT/DELETE /store/cart*`:
-/// ```json
-/// {"cart": {"id": 2, "currency": {"code": "DOP", "symbol": "RD$", "position": "before"},
-///   "item_count": 2, "amount_untaxed": 1180.0, "amount_tax": 0.0, "amount_total": 1180.0,
-///   "lines": [{"id": 2, "product_id": 38, "name": "Adoración", "quantity": 2,
-///              "price_unit": 590.0, "price_subtotal": 1180.0, "price_total": 1180.0,
-///              "image_url": null}]}}
-/// ```
+/// Incluye la barrera preventiva de aislamiento de tipos de producto
+/// ([ProductType.physical] vs [ProductType.digital]) exigida por Apple App Store
+/// y Google Play Store para impedir carritos híbridos.
 class CarritoModel {
   final int? id;
   final String simboloMoneda;
@@ -32,6 +29,18 @@ class CarritoModel {
   static const CarritoModel vacio = CarritoModel();
 
   bool get estaVacio => lineas.isEmpty;
+
+  /// Retorna el tipo de producto actual del carrito (`physical` o `digital`),
+  /// o `null` si el carrito está vacío.
+  ProductType? get currentCartType =>
+      lineas.isEmpty ? null : lineas.first.type;
+
+  /// Barrera preventiva en Frontend: valida que no se mezclen bienes físicos
+  /// (pasarela externa) con bienes digitales (In-App Purchase) en la misma orden.
+  bool canAddToCart(ProductoModel newProduct) {
+    if (estaVacio) return true;
+    return currentCartType == newProduct.type;
+  }
 
   /// Acepta tanto la respuesta completa `{"cart": {...}}` como el objeto interno.
   factory CarritoModel.fromResponse(Map<String, dynamic> data) {
@@ -89,6 +98,7 @@ class LineaCarritoModel {
   final double subtotal;
   final double total;
   final String imageUrl;
+  final ProductType type;
 
   const LineaCarritoModel({
     required this.id,
@@ -99,6 +109,7 @@ class LineaCarritoModel {
     required this.subtotal,
     required this.total,
     this.imageUrl = '',
+    this.type = ProductType.physical,
   });
 
   factory LineaCarritoModel.fromJson(Map<String, dynamic> json) {
@@ -106,6 +117,9 @@ class LineaCarritoModel {
     if (img.startsWith('/')) {
       img = 'https://atrioapp.odoo19rd.com$img';
     }
+    final rawType =
+        json['atrio_product_type'] ?? json['product_type'] ?? 'physical';
+
     return LineaCarritoModel(
       id: _toInt(json['id']),
       productoId: _toInt(json['product_id']),
@@ -115,9 +129,11 @@ class LineaCarritoModel {
       subtotal: _toDouble(json['price_subtotal']),
       total: _toDouble(json['price_total']),
       imageUrl: img,
+      type: ProductoModel.parseProductType(rawType),
     );
   }
 }
 
 int _toInt(dynamic v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
-double _toDouble(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+double _toDouble(dynamic v) =>
+    v is num ? v.toDouble() : double.tryParse('$v') ?? 0.0;

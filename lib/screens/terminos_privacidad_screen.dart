@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -446,7 +447,8 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             ),
             _buildParrafo(
               l10n.politicaPrivacidadIntro(
-                '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                DateFormat.yMd(Localizations.localeOf(context).toString())
+                    .format(DateTime.now()),
               ),
               screenWidth,
               colorTextoPrincipal,
@@ -518,6 +520,20 @@ class _TerminosPrivacidadScreenState extends State<TerminosPrivacidadScreen> {
             ),
             _buildParrafo(
               l10n.parrafoTerminosDeUso,
+              screenWidth,
+              colorTextoPrincipal,
+              fontScale,
+              selectedFont,
+            ),
+            _buildSubtitulo(
+              l10n.ugcPoliticaToleranciaCeroTitulo,
+              screenWidth,
+              colorAcento,
+              fontScale,
+              selectedFont,
+            ),
+            _buildParrafo(
+              l10n.ugcPoliticaToleranciaCeroParrafo,
               screenWidth,
               colorTextoPrincipal,
               fontScale,

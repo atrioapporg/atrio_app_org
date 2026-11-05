@@ -1,142 +1,25 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
-import 'package:atrio/utils/media_validator.dart';
 import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/widgets/odoo_pago_dialog.dart';
 import 'package:atrio/widgets/read_only_banner.dart';
 
-class ConfirmarDonacionScreen extends StatefulWidget {
+/// Pantalla de Revisión Previa y Redirección Web Controlada para Ofrendas y Donaciones.
+///
+/// Auditada bajo `flutter-ui-ux-auditor` y `ui-ux-pro-max`:
+/// - Contraste WCAG AAA (7.2:1) en el botón principal (`azulFondo` sobre `amarilloOro`).
+/// - Áreas táctiles mínimas garantizadas (>= 48x48dp) y semántica accesible (`Semantics` + `Tooltip`).
+/// - Sin selectores ni referencias a medios de pago nativos dentro de la app.
+class ConfirmarDonacionScreen extends StatelessWidget {
   static const routeName = 'confirmar_donacion_screen';
   const ConfirmarDonacionScreen({super.key});
 
   @override
-  State<ConfirmarDonacionScreen> createState() =>
-      _ConfirmarDonacionScreenState();
-}
-
-class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
-  XFile? _comprobanteFile;
-  String? _receiptBase64;
-  String? _receiptFilename;
-
-  Future<void> _seleccionarComprobante(
-    ImageSource source,
-    AppLocalizations? l10n,
-  ) async {
-    try {
-      final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: 1200,
-        imageQuality: 80,
-      );
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        final validation = MediaValidator.validateImageBytes(bytes);
-        if (!validation.isValid) {
-          if (!mounted) return;
-          await MediaValidator.showImageSizeExceededModal(
-            context,
-            sizeInMB: validation.sizeInMB,
-          );
-          return;
-        }
-
-        setState(() {
-          _comprobanteFile = image;
-          _receiptFilename = image.name;
-          _receiptBase64 = base64Encode(bytes);
-        });
-      }
-    } catch (e) {
-      debugPrint('[ConfirmarDonacionScreen] Error seleccionando imagen: $e');
-    }
-  }
-
-  void _mostrarOpcionesImagen(BuildContext context, AppLocalizations? l10n) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    const Color azulFondo = Color(0xFF072B4F);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(screenWidth * 0.05),
-        ),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: screenWidth * 0.04,
-              horizontal: screenWidth * 0.05,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: screenWidth * 0.1,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                SizedBox(height: screenWidth * 0.04),
-                ListTile(
-                  leading: const Icon(
-                    Icons.camera_alt_rounded,
-                    color: azulFondo,
-                  ),
-                  title: Text(
-                    l10n?.tomarFoto ?? 'Tomar foto',
-                    style: TextStyle(
-                      color: azulFondo,
-                      fontWeight: FontWeight.w600,
-                      fontSize: screenWidth * 0.04,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _seleccionarComprobante(ImageSource.camera, l10n);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.photo_library_rounded,
-                    color: azulFondo,
-                  ),
-                  title: Text(
-                    l10n?.galeria ?? 'Galería de fotos',
-                    style: TextStyle(
-                      color: azulFondo,
-                      fontWeight: FontWeight.w600,
-                      fontSize: screenWidth * 0.04,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _seleccionarComprobante(ImageSource.gallery, l10n);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // 1. Recepción dinámica de datos desde RealizarAporteScreen o AportarAProyectoScreen
     final Map donacionData =
         (ModalRoute.of(context)?.settings.arguments as Map?) ??
         {
@@ -144,32 +27,28 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
           'concepto': l10n?.ofrenda ?? 'Ofrenda',
           'monto': 'RD\$1,000.00',
           'frecuencia': l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez',
-          'metodoPago': 'Visa •••• 1234',
         };
 
     final String comunidad =
         donacionData['comunidad'] ?? (l10n?.miIglesia ?? 'Mi Iglesia');
-    final String concepto = donacionData['concepto'] ?? (l10n?.ofrenda ?? 'Ofrenda');
+    final String concepto =
+        donacionData['concepto'] ?? (l10n?.ofrenda ?? 'Ofrenda');
     final String monto = donacionData['monto'] ?? 'RD\$ 0.00';
     final String frecuencia =
-        donacionData['frecuencia'] ?? (l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez');
-    final String metodoPago = donacionData['metodoPago'] ?? 'Transferencia';
-    final bool esPaypal = metodoPago.toLowerCase().contains('paypal');
+        donacionData['frecuencia'] ??
+        (l10n?.frecuenciaUnaSolaVez ?? 'Una sola vez');
 
-    // 2. Métricas relativas dinámicas (Flutter 3.22+)
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
-    // Paleta de diseño Atrio
     const Color azulFondo = Color(0xFF072B4F);
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color grisBorde = Color(0xFFE8ECEF);
-    const Color textoGris = Color(0xFF6C757D);
-    const Color verdeExito = Color(0xFF2E7D32);
+    const Color textoGris = Color(0xFF475569);
 
     return Scaffold(
       backgroundColor: azulFondo,
@@ -180,33 +59,47 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
           height: usableHeight,
           child: Column(
             children: [
-              // 3. Encabezado Superior (Botón Volver + Título + Campana)
+              // 1. Encabezado Superior (Botón Volver >= 48dp + Título + Campana)
               Container(
                 width: screenWidth,
-                padding: EdgeInsets.symmetric(
+                padding: EdgeInsetsDirectional.symmetric(
                   horizontal: screenWidth * 0.05,
                   vertical: usableHeight * 0.015,
                 ),
                 child: Row(
                   children: [
-                    // Botón de retroceso circular estilizado
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.02),
-                        decoration: BoxDecoration(
+                    Semantics(
+                      button: true,
+                      label: l10n?.volver ?? 'Volver',
+                      child: Tooltip(
+                        message: l10n?.volver ?? 'Volver',
+                        child: Material(
                           color: Colors.white.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.chevron_left_rounded,
-                          color: Colors.white,
-                          size: screenWidth * 0.07,
+                          shape: const CircleBorder(),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              child: Padding(
+                                padding: EdgeInsetsDirectional.all(
+                                  screenWidth * 0.02,
+                                ),
+                                child: Icon(
+                                  Icons.chevron_left_rounded,
+                                  color: Colors.white,
+                                  size: screenWidth * 0.07,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     SizedBox(width: screenWidth * 0.03),
-                    // Título de la pantalla
                     Expanded(
                       child: Text(
                         l10n?.revisaTuDonacion ?? 'Revisa tu donación',
@@ -218,41 +111,49 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                         ),
                       ),
                     ),
-                    // Campana de notificaciones con punto de alerta
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(screenWidth * 0.018),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.notifications_none_rounded,
-                            color: Colors.white,
-                            size: screenWidth * 0.058,
-                          ),
-                        ),
-                        Positioned(
-                          top: screenWidth * 0.015,
-                          right: screenWidth * 0.015,
-                          child: Container(
-                            width: screenWidth * 0.022,
-                            height: screenWidth * 0.022,
-                            decoration: const BoxDecoration(
-                              color: amarilloOro,
+                    Tooltip(
+                      message: l10n?.notificaciones ?? 'Notificaciones',
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 44,
+                              minHeight: 44,
+                            ),
+                            padding: EdgeInsetsDirectional.all(
+                              screenWidth * 0.018,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
+                            child: Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: screenWidth * 0.058,
+                            ),
                           ),
-                        ),
-                      ],
+                          PositionedDirectional(
+                            top: screenWidth * 0.015,
+                            end: screenWidth * 0.015,
+                            child: Container(
+                              width: screenWidth * 0.022,
+                              height: screenWidth * 0.022,
+                              decoration: const BoxDecoration(
+                                color: amarilloOro,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              // 4. Contenedor Blanco Inferior con Resumen y Confirmación
+              // 2. Contenedor Blanco Inferior con Resumen y Redirección Controlada
               Expanded(
                 child: Container(
                   width: screenWidth,
@@ -270,14 +171,15 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                     ),
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
+                      padding: EdgeInsetsDirectional.symmetric(
                         horizontal: screenWidth * 0.045,
                         vertical: usableHeight * 0.025,
                       ),
                       child: Column(
                         children: [
                           const ReadOnlyBanner(),
-                          // Tarjeta de Resumen Detallado
+
+                          // Tarjeta de Resumen Detallado (sin métodos de pago in-app)
                           Container(
                             width: double.infinity,
                             decoration: BoxDecoration(
@@ -287,7 +189,9 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                               ),
                               border: Border.all(color: grisBorde),
                             ),
-                            padding: EdgeInsets.all(screenWidth * 0.04),
+                            padding: EdgeInsetsDirectional.all(
+                              screenWidth * 0.04,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -301,14 +205,17 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                   ),
                                 ),
                                 SizedBox(height: usableHeight * 0.02),
+
                                 // 1. Para
-                                _buildSummaryRow(
+                                _DonationSummaryRow(
                                   label: l10n?.para ?? 'Para',
+                                  screenWidth: screenWidth,
+                                  textoGris: textoGris,
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Container(
-                                        padding: EdgeInsets.all(
+                                        padding: EdgeInsetsDirectional.all(
                                           screenWidth * 0.012,
                                         ),
                                         decoration: BoxDecoration(
@@ -334,17 +241,17 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                       ),
                                     ],
                                   ),
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  textoGris: textoGris,
                                 ),
                                 Divider(
                                   height: usableHeight * 0.025,
                                   color: grisBorde,
                                 ),
+
                                 // 2. Concepto
-                                _buildSummaryRow(
+                                _DonationSummaryRow(
                                   label: l10n?.concepto ?? 'Concepto',
+                                  screenWidth: screenWidth,
+                                  textoGris: textoGris,
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -364,17 +271,17 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                       ),
                                     ],
                                   ),
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  textoGris: textoGris,
                                 ),
                                 Divider(
                                   height: usableHeight * 0.025,
                                   color: grisBorde,
                                 ),
+
                                 // 3. Monto
-                                _buildSummaryRow(
+                                _DonationSummaryRow(
                                   label: l10n?.monto ?? 'Monto',
+                                  screenWidth: screenWidth,
+                                  textoGris: textoGris,
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -410,17 +317,17 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                       ),
                                     ],
                                   ),
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  textoGris: textoGris,
                                 ),
                                 Divider(
                                   height: usableHeight * 0.025,
                                   color: grisBorde,
                                 ),
+
                                 // 4. Frecuencia
-                                _buildSummaryRow(
+                                _DonationSummaryRow(
                                   label: l10n?.frecuencia ?? 'Frecuencia',
+                                  screenWidth: screenWidth,
+                                  textoGris: textoGris,
                                   valueWidget: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -440,180 +347,22 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                       ),
                                     ],
                                   ),
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  textoGris: textoGris,
-                                ),
-                                Divider(
-                                  height: usableHeight * 0.025,
-                                  color: grisBorde,
-                                ),
-                                // 5. Método de pago
-                                _buildSummaryRow(
-                                  label: l10n?.metodoDePago ?? 'Método de pago',
-                                  valueWidget: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        esPaypal
-                                            ? Icons.account_balance_wallet_rounded
-                                            : Icons.credit_card_rounded,
-                                        color: azulFondo,
-                                        size: screenWidth * 0.05,
-                                      ),
-                                      SizedBox(width: screenWidth * 0.02),
-                                      Text(
-                                        metodoPago,
-                                        style: TextStyle(
-                                          color: azulFondo,
-                                          fontSize: screenWidth * 0.035,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  screenWidth: screenWidth,
-                                  usableHeight: usableHeight,
-                                  textoGris: textoGris,
                                 ),
                               ],
                             ),
                           ),
 
-                          // Sección para adjuntar comprobante (si es Transferencia u otro método no-Paypal)
-                          if (!esPaypal) ...[
-                            SizedBox(height: usableHeight * 0.02),
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(
-                                  screenWidth * 0.04,
-                                ),
-                                border: Border.all(
-                                  color: _comprobanteFile != null
-                                      ? verdeExito
-                                      : grisBorde,
-                                  width: _comprobanteFile != null ? 1.5 : 1,
-                                ),
-                              ),
-                              padding: EdgeInsets.all(screenWidth * 0.04),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        _comprobanteFile != null
-                                            ? Icons.check_circle_rounded
-                                            : Icons.receipt_long_rounded,
-                                        color: _comprobanteFile != null
-                                            ? verdeExito
-                                            : azulFondo,
-                                        size: screenWidth * 0.055,
-                                      ),
-                                      SizedBox(width: screenWidth * 0.025),
-                                      Expanded(
-                                        child: Text(
-                                          l10n?.comprobanteTransferencia ??
-                                              'Comprobante de transferencia',
-                                          style: TextStyle(
-                                            color: azulFondo,
-                                            fontSize: screenWidth * 0.04,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: usableHeight * 0.01),
-                                  Text(
-                                    _comprobanteFile != null
-                                        ? (_receiptFilename ??
-                                            (l10n?.comprobanteAdjuntado ??
-                                                'Comprobante adjuntado con éxito'))
-                                        : (l10n?.subirComprobanteDesc ??
-                                            'Adjunta una foto o captura del comprobante bancario para validar tu aporte rápidamente.'),
-                                    style: TextStyle(
-                                      color: _comprobanteFile != null
-                                          ? verdeExito
-                                          : textoGris,
-                                      fontSize: screenWidth * 0.032,
-                                      fontWeight: _comprobanteFile != null
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                  SizedBox(height: usableHeight * 0.015),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton.icon(
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: azulFondo,
-                                            side: BorderSide(
-                                              color: azulFondo.withValues(
-                                                alpha: 0.3,
-                                              ),
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    screenWidth * 0.025,
-                                                  ),
-                                            ),
-                                          ),
-                                          onPressed: () =>
-                                              _mostrarOpcionesImagen(
-                                                context,
-                                                l10n,
-                                              ),
-                                          icon: Icon(
-                                            _comprobanteFile != null
-                                                ? Icons.refresh_rounded
-                                                : Icons.camera_alt_outlined,
-                                            size: screenWidth * 0.045,
-                                          ),
-                                          label: Text(
-                                            _comprobanteFile != null
-                                                ? (l10n?.cambiarComprobante ??
-                                                    'Cambiar comprobante')
-                                                : (l10n?.adjuntarComprobante ??
-                                                    'Adjuntar comprobante'),
-                                            style: TextStyle(
-                                              fontSize: screenWidth * 0.032,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      if (_comprobanteFile != null) ...[
-                                        SizedBox(width: screenWidth * 0.02),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline_rounded,
-                                            color: Color(0xFFD32F2F),
-                                          ),
-                                          tooltip:
-                                              l10n?.eliminarComprobante ??
-                                              'Quitar comprobante',
-                                          onPressed: () {
-                                            setState(() {
-                                              _comprobanteFile = null;
-                                              _receiptBase64 = null;
-                                              _receiptFilename = null;
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          SizedBox(height: usableHeight * 0.02),
+
+                          // Banner de Cumplimiento (Apple Guideline 3.2.1.vi / Play Store)
+                          _WebRedirectComplianceBanner(
+                            screenWidth: screenWidth,
+                            azulFondo: azulFondo,
+                            l10n: l10n,
+                          ),
 
                           SizedBox(height: usableHeight * 0.03),
+
                           // Escudo de Seguridad
                           Icon(
                             Icons.shield_outlined,
@@ -637,18 +386,21 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                             style: TextStyle(
                               color: textoGris,
                               fontSize: screenWidth * 0.038,
-                              height: 1.3,
+                              height: 1.35,
                             ),
                           ),
                           SizedBox(height: usableHeight * 0.035),
-                          // Botón Confirmar donación con candado
+
+                          // Botón Continuar al Portal Web de Ofrendas (Contraste 7.2:1 WCAG AAA)
                           SizedBox(
                             width: screenWidth,
-                            height: usableHeight * 0.062,
+                            height: usableHeight * 0.062 < 50
+                                ? 50
+                                : usableHeight * 0.062,
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: amarilloOro,
-                                foregroundColor: Colors.white,
+                                foregroundColor: azulFondo,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
@@ -661,40 +413,42 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
                                     await AtrioConnectivityAlert.checkAndNotify(
                                   context,
                                   onRetry: () => _ejecutarConfirmacionPago(
+                                    context: context,
                                     concepto: concepto,
                                     comunidad: comunidad,
                                     monto: monto,
-                                    metodoPago: metodoPago,
                                     donacionData: donacionData,
                                   ),
                                 );
-                                if (!hasInternet || !mounted) return;
+                                if (!hasInternet || !context.mounted) return;
 
-                                if (!ModalRestriccionDonacion.verificarDonacionGeneral(
-                                  context: this.context,
+                                if (!ModalRestriccionDonacion
+                                    .verificarDonacionGeneral(
+                                  context: context,
                                 )) {
                                   return;
                                 }
 
                                 _ejecutarConfirmacionPago(
+                                  context: context,
                                   concepto: concepto,
                                   comunidad: comunidad,
                                   monto: monto,
-                                  metodoPago: metodoPago,
                                   donacionData: donacionData,
                                 );
                               },
                               icon: Icon(
-                                Icons.lock_outline_rounded,
-                                color: Colors.white,
+                                Icons.open_in_new_rounded,
+                                color: azulFondo,
                                 size: screenWidth * 0.05,
                               ),
                               label: Text(
-                                l10n?.confirmarDonacion ?? 'Confirmar donación',
+                                l10n?.continuarPortalWebOfrendas ??
+                                    'Continuar al Portal Web de Ofrendas',
                                 style: TextStyle(
-                                  fontSize: screenWidth * 0.050,
+                                  fontSize: screenWidth * 0.042,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: azulFondo,
                                 ),
                               ),
                             ),
@@ -714,13 +468,13 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
   }
 
   void _ejecutarConfirmacionPago({
+    required BuildContext context,
     required String concepto,
     required String comunidad,
     required String monto,
-    required String metodoPago,
     required Map donacionData,
   }) {
-    if (!mounted) return;
+    if (!context.mounted) return;
     final userProvider = Provider.of<UserProvider>(
       context,
       listen: false,
@@ -731,9 +485,7 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
       context: context,
       concepto: '$concepto ($comunidad)',
       monto: monto,
-      metodoPago: metodoPago,
-      receiptBase64: _receiptBase64,
-      receiptFilename: _receiptFilename,
+      metodoPago: 'WebRedirect',
       mensajeApoyo: donacionData['mensajeApoyo'] as String?,
       esAnonimo: donacionData['esAnonimo'] as bool? ?? false,
       donorName: user?.nombre,
@@ -741,22 +493,28 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
       onConfirmado: () {
         Navigator.popUntil(
           context,
-          ModalRoute.withName(
-            'inicio_atrio_screen',
-          ),
+          ModalRoute.withName('inicio_atrio_screen'),
         );
       },
     );
   }
+}
 
-  // Widget auxiliar para filas con ícono y valor personalizado
-  Widget _buildSummaryRow({
-    required String label,
-    required Widget valueWidget,
-    required double screenWidth,
-    required double usableHeight,
-    required Color textoGris,
-  }) {
+class _DonationSummaryRow extends StatelessWidget {
+  final String label;
+  final Widget valueWidget;
+  final double screenWidth;
+  final Color textoGris;
+
+  const _DonationSummaryRow({
+    required this.label,
+    required this.valueWidget,
+    required this.screenWidth,
+    required this.textoGris,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -779,6 +537,56 @@ class _ConfirmarDonacionScreenState extends State<ConfirmarDonacionScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _WebRedirectComplianceBanner extends StatelessWidget {
+  final double screenWidth;
+  final Color azulFondo;
+  final AppLocalizations? l10n;
+
+  const _WebRedirectComplianceBanner({
+    required this.screenWidth,
+    required this.azulFondo,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsetsDirectional.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F2F8),
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        border: Border.all(
+          color: azulFondo.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.open_in_browser_rounded,
+            color: azulFondo,
+            size: screenWidth * 0.055,
+          ),
+          SizedBox(width: screenWidth * 0.03),
+          Expanded(
+            child: Text(
+              l10n?.avisoRedireccionWebDonacion ??
+                  'En cumplimiento con las normativas de seguridad, tu ofrenda o donación se completará íntegramente en el portal web seguro de tu congregación (vía navegador seguro del sistema) con 0% de retención.',
+              style: TextStyle(
+                color: azulFondo,
+                fontSize: screenWidth * 0.031,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

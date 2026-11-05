@@ -21,9 +21,22 @@ class TiendaScreen extends StatefulWidget {
 
 class _TiendaScreenState extends State<TiendaScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _shippingAddressController =
+      TextEditingController();
   int _selectedCategoryIndex = 0;
   int _selectedDeliveryOption = 0;
+  bool _pickupConfirmed = false;
   bool _isLoadingProducts = false;
+
+  /// Valida la "Prueba de Fuego" logística exigida por Apple/Google para bienes físicos:
+  /// - Si es envío a domicilio (0), exige dirección física de entrega (>= 8 caracteres).
+  /// - Si es retiro presencial en templo (1), exige marcar la casilla de confirmación.
+  bool get _isLogisticsStepValid {
+    if (_selectedDeliveryOption == 0) {
+      return _shippingAddressController.text.trim().length >= 8;
+    }
+    return _pickupConfirmed;
+  }
 
   /// Carrito real sincronizado con Odoo (GET/POST/PUT/DELETE /store/cart*).
   CarritoModel _carrito = CarritoModel.vacio;
@@ -57,7 +70,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
   final List<ProductoModel> _productsList = [
     ProductoModel(
       id: '1',
-      nombre: 'Biblia de Estudio LBLA',
+      nombre: 'Biblia de Estudio LBLA (Tapa Dura Impresa)',
       precio: 2200.0,
       categoria: 'Biblias',
       imageUrl:
@@ -70,7 +83,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     ),
     ProductoModel(
       id: '2',
-      nombre: 'Jesús te llama',
+      nombre: 'Jesús te llama (Libro Impreso Físico)',
       precio: 650.0,
       categoria: 'Libros',
       imageUrl:
@@ -83,7 +96,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     ),
     ProductoModel(
       id: '3',
-      nombre: 'RVR 1960 Vida Plena',
+      nombre: 'RVR 1960 Vida Plena (Edición Impresa)',
       precio: 1850.0,
       categoria: 'Biblias',
       imageUrl:
@@ -96,7 +109,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     ),
     ProductoModel(
       id: '4',
-      nombre: 'Taza Cerámica Filipenses',
+      nombre: 'Taza Cerámica Filipenses (Artículo Físico 11 oz)',
       precio: 450.0,
       categoria: 'Regalos',
       imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=640&q=80',
@@ -108,7 +121,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
     ),
     ProductoModel(
       id: '5',
-      nombre: 'Cuaderno Diario de Oración',
+      nombre: 'Cuaderno Diario de Oración (Tapa Dura Impreso)',
       precio: 550.0,
       categoria: 'Regalos',
       imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=640&q=80',
@@ -276,6 +289,25 @@ class _TiendaScreenState extends State<TiendaScreen> {
       return;
     }
 
+    // Doble barrera preventiva de aislamiento de carrito (Bienes Físicos vs Digitales)
+    if (!_carrito.canAddToCart(producto)) {
+      final bool carritoEsFisico =
+          _carrito.currentCartType == ProductType.physical;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            carritoEsFisico
+                ? (l10n?.carritoContieneArticulosFisicosError ??
+                    'Tu carrito contiene artículos físicos. Finaliza esta orden antes de añadir contenido digital.')
+                : (l10n?.carritoContieneArticulosDigitalesError ??
+                    'Tu carrito contiene contenido digital. Finaliza esta orden antes de añadir artículos físicos.'),
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
       context,
       onRetry: () => _agregarAlCarrito(producto),
@@ -339,6 +371,22 @@ class _TiendaScreenState extends State<TiendaScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
 
+    // Prueba de Fuego Logística obligatoria (Apple Guideline 3.1.1 / Google Play)
+    if (!_isLogisticsStepValid) {
+      final String errorMsg = _selectedDeliveryOption == 0
+          ? (l10n?.direccionEntregaRequeridaError ??
+              'Ingresa una dirección física válida para el envío a domicilio antes de continuar.')
+          : (l10n?.confirmarRetiroPresencialRequeridoError ??
+              'Debes marcar la casilla de retiro presencial en el templo antes de confirmar el pedido.');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
     final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
       context,
       onRetry: () => _confirmarPedido(modalContext),
@@ -378,8 +426,11 @@ class _TiendaScreenState extends State<TiendaScreen> {
 
     setState(() => _procesandoCarrito = true);
     try {
+      final shippingAddr = _shippingAddressController.text.trim();
       final res = await api.checkout({
         'delivery_method': _selectedDeliveryOption == 0 ? 'delivery' : 'pickup',
+        if (_selectedDeliveryOption == 0) 'shipping_address': shippingAddr,
+        if (_selectedDeliveryOption == 1) 'pickup_confirmed': true,
       });
 
       if (modalContext.mounted) {
@@ -459,6 +510,14 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       l10n?.modalidadEntregaItem(modalidad) ??
                           '• Modalidad: $modalidad',
                     ),
+                    if (_selectedDeliveryOption == 0 &&
+                        shippingAddr.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n?.direccionItem(shippingAddr) ??
+                            '• Dirección de envío: $shippingAddr',
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -801,6 +860,35 @@ class _TiendaScreenState extends State<TiendaScreen> {
 
                     const Divider(),
 
+                    // Paso Logístico Obligatorio (Prueba de Fuego para Bienes Físicos)
+                    _CheckoutLogisticsSection(
+                      selectedDeliveryOption: _selectedDeliveryOption,
+                      shippingAddressController: _shippingAddressController,
+                      pickupConfirmed: _pickupConfirmed,
+                      screenWidth: screenWidth,
+                      usableHeight: usableHeight,
+                      azulFondo: azulFondo,
+                      amarilloOro: amarilloOro,
+                      l10n: l10n,
+                      onDeliveryOptionChanged: (int newOption) {
+                        setState(() {
+                          _selectedDeliveryOption = newOption;
+                        });
+                        setModalState(() {});
+                      },
+                      onAddressChanged: (_) {
+                        setState(() {});
+                        setModalState(() {});
+                      },
+                      onPickupConfirmedChanged: (bool val) {
+                        setState(() {
+                          _pickupConfirmed = val;
+                        });
+                        setModalState(() {});
+                      },
+                    ),
+                    SizedBox(height: usableHeight * 0.012),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -829,7 +917,9 @@ class _TiendaScreenState extends State<TiendaScreen> {
                       height: usableHeight * 0.052,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: amarilloOro,
+                          backgroundColor: _isLogisticsStepValid
+                              ? amarilloOro
+                              : Colors.grey.shade400,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -867,6 +957,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _shippingAddressController.dispose();
     super.dispose();
   }
 
@@ -1245,6 +1336,15 @@ class _TiendaScreenState extends State<TiendaScreen> {
                             ),
                             SizedBox(height: usableHeight * 0.015),
 
+                            // Banner de cumplimiento: Tienda exclusiva de Bienes Físicos Tangibles
+                            _PhysicalStoreComplianceBanner(
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              azulFondo: azulFondo,
+                              l10n: l10n,
+                            ),
+                            SizedBox(height: usableHeight * 0.015),
+
                             // Grid / Lista de Productos con imágenes reales
                             _filteredProducts.isEmpty
                                 ? Center(
@@ -1283,7 +1383,7 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                           crossAxisCount: 2,
                                           mainAxisSpacing: usableHeight * 0.018,
                                           crossAxisSpacing: screenWidth * 0.03,
-                                          childAspectRatio: 0.72,
+                                          childAspectRatio: 0.66,
                                         ),
                                     itemBuilder: (context, index) {
                                       final item = _filteredProducts[index];
@@ -1569,6 +1669,13 @@ class _TiendaScreenState extends State<TiendaScreen> {
                                 fontSize: screenWidth * 0.026,
                                 fontWeight: FontWeight.w600,
                               ),
+                            ),
+                            SizedBox(height: usableHeight * 0.006),
+                            _PhysicalItemBadge(
+                              label: l10n?.articuloFisicoBadge ??
+                                  'Artículo físico impreso / tangible',
+                              screenWidth: screenWidth,
+                              azulFondo: azulFondo,
                             ),
                           ],
                         ),
@@ -2028,6 +2135,13 @@ class _ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: usableHeight * 0.004),
+                  _PhysicalItemBadge(
+                    label: l10n?.articuloFisicoCorto ?? 'Artículo Físico',
+                    screenWidth: screenWidth,
+                    azulFondo: azulFondo,
+                    compact: true,
+                  ),
+                  SizedBox(height: usableHeight * 0.004),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -2131,6 +2245,285 @@ class _DeliveryOptionButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Banner informativo de blindaje para App Store y Google Play que evidencia
+/// que el catálogo comercializa exclusivamente bienes físicos tangibles.
+class _PhysicalStoreComplianceBanner extends StatelessWidget {
+  const _PhysicalStoreComplianceBanner({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.l10n,
+  });
+
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final AppLocalizations? l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: screenWidth * 0.035,
+        vertical: usableHeight * 0.01,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F2F8),
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        border: Border.all(
+          color: azulFondo.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.local_shipping_outlined,
+            color: azulFondo,
+            size: screenWidth * 0.048,
+          ),
+          SizedBox(width: screenWidth * 0.025),
+          Expanded(
+            child: Text(
+              l10n?.avisoTiendaSoloBienesFisicos ??
+                  'Todos los artículos de la tienda eclesial son bienes físicos tangibles sujetos a envío postal o retiro presencial en el templo.',
+              style: TextStyle(
+                color: azulFondo,
+                fontSize: screenWidth * 0.027,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Etiqueta visual reutilizable que identifica cada artículo como un bien físico tangible.
+class _PhysicalItemBadge extends StatelessWidget {
+  const _PhysicalItemBadge({
+    required this.label,
+    required this.screenWidth,
+    required this.azulFondo,
+    this.compact = false,
+  });
+
+  final String label;
+  final double screenWidth;
+  final Color azulFondo;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: compact ? screenWidth * 0.018 : screenWidth * 0.024,
+        vertical: compact ? 2.0 : 4.0,
+      ),
+      decoration: BoxDecoration(
+        color: azulFondo.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(screenWidth * 0.015),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            size: compact ? screenWidth * 0.028 : screenWidth * 0.034,
+            color: azulFondo,
+          ),
+          SizedBox(width: screenWidth * 0.01),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: azulFondo,
+                fontSize: compact ? screenWidth * 0.023 : screenWidth * 0.026,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Paso Logístico Obligatorio ("Prueba de Fuego") antes de habilitar el checkout.
+/// Exige seleccionar dirección física de entrega o confirmar retiro presencial en templo.
+class _CheckoutLogisticsSection extends StatelessWidget {
+  const _CheckoutLogisticsSection({
+    required this.selectedDeliveryOption,
+    required this.shippingAddressController,
+    required this.pickupConfirmed,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.azulFondo,
+    required this.amarilloOro,
+    required this.l10n,
+    required this.onDeliveryOptionChanged,
+    required this.onAddressChanged,
+    required this.onPickupConfirmedChanged,
+  });
+
+  final int selectedDeliveryOption;
+  final TextEditingController shippingAddressController;
+  final bool pickupConfirmed;
+  final double screenWidth;
+  final double usableHeight;
+  final Color azulFondo;
+  final Color amarilloOro;
+  final AppLocalizations? l10n;
+  final ValueChanged<int> onDeliveryOptionChanged;
+  final ValueChanged<String> onAddressChanged;
+  final ValueChanged<bool> onPickupConfirmedChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsetsDirectional.all(screenWidth * 0.032),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        border: Border.all(color: const Color(0xFFE5E5E5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n?.pasoLogisticoObligatorioTitulo ??
+                'Datos de entrega física (Obligatorio)',
+            style: TextStyle(
+              color: azulFondo,
+              fontSize: screenWidth * 0.033,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: usableHeight * 0.01),
+          Row(
+            children: [
+              Expanded(
+                child: _DeliveryOptionButton(
+                  title: l10n?.envioADomicilio ?? 'Envío a domicilio',
+                  icon: Icons.local_shipping_outlined,
+                  isSelected: selectedDeliveryOption == 0,
+                  screenWidth: screenWidth,
+                  usableHeight: usableHeight * 0.85,
+                  azulFondo: azulFondo,
+                  amarilloOro: amarilloOro,
+                  grisBorde: const Color(0xFFE5E5E5),
+                  onTap: () => onDeliveryOptionChanged(0),
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.025),
+              Expanded(
+                child: _DeliveryOptionButton(
+                  title: l10n?.retiroEnIglesia ?? 'Retiro en iglesia',
+                  icon: Icons.church_outlined,
+                  isSelected: selectedDeliveryOption == 1,
+                  screenWidth: screenWidth,
+                  usableHeight: usableHeight * 0.85,
+                  azulFondo: azulFondo,
+                  amarilloOro: amarilloOro,
+                  grisBorde: const Color(0xFFE5E5E5),
+                  onTap: () => onDeliveryOptionChanged(1),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: usableHeight * 0.012),
+          if (selectedDeliveryOption == 0)
+            TextField(
+              controller: shippingAddressController,
+              onChanged: onAddressChanged,
+              maxLines: 2,
+              minLines: 1,
+              style: TextStyle(
+                color: azulFondo,
+                fontSize: screenWidth * 0.032,
+              ),
+              decoration: InputDecoration(
+                labelText: l10n?.direccionEntregaLabel ??
+                    'Dirección física de entrega (Calle, número, sector y ciudad)',
+                hintText: l10n?.direccionEntregaHint ??
+                    'Ej. Av. Winston Churchill #45, Ensanche Piantini, Santo Domingo',
+                labelStyle: TextStyle(
+                  color: azulFondo.withValues(alpha: 0.75),
+                  fontSize: screenWidth * 0.029,
+                ),
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: screenWidth * 0.028,
+                ),
+                prefixIcon: Icon(
+                  Icons.location_on_outlined,
+                  color: amarilloOro,
+                  size: screenWidth * 0.05,
+                ),
+                isDense: true,
+                contentPadding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.03,
+                  vertical: usableHeight * 0.012,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  borderSide: const BorderSide(color: Color(0xFFD0D7DE)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                  borderSide: BorderSide(color: amarilloOro, width: 1.5),
+                ),
+              ),
+            )
+          else
+            InkWell(
+              onTap: () => onPickupConfirmedChanged(!pickupConfirmed),
+              borderRadius: BorderRadius.circular(screenWidth * 0.02),
+              child: Padding(
+                padding: EdgeInsetsDirectional.symmetric(
+                  vertical: usableHeight * 0.004,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: pickupConfirmed,
+                        activeColor: amarilloOro,
+                        onChanged: (val) =>
+                            onPickupConfirmedChanged(val ?? false),
+                      ),
+                    ),
+                    SizedBox(width: screenWidth * 0.02),
+                    Expanded(
+                      child: Text(
+                        l10n?.confirmarRetiroPresencialLabel ??
+                            'Confirmo que retiraré presencialmente estos artículos físicos en el templo de mi congregación.',
+                        style: TextStyle(
+                          color: azulFondo,
+                          fontSize: screenWidth * 0.03,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

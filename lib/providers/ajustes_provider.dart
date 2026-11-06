@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/atrio_database_helper.dart';
 import '../modelos/ajustes_model.dart';
+import '../servicios/daily_verse_scheduler.dart';
 
 class AjustesProvider extends ChangeNotifier {
   AjustesModel _ajustes = AjustesModel.predeterminado();
@@ -48,7 +49,17 @@ class AjustesProvider extends ChangeNotifier {
       _ajustes.tiempoCooldownNotificacionesMinutos;
 
   AjustesProvider() {
-    cargarAjustes();
+    _cargaInicial = cargarAjustes();
+  }
+
+  late final Future<void> _cargaInicial;
+
+  /// Se completa cuando los ajustes iniciales se han leído de atrio.db.
+  Future<void> get cargaInicial => _cargaInicial;
+
+  /// Reprograma el lote de Oraciones Matutinas con los ajustes vigentes.
+  void _sincronizarOracionMatutina() {
+    DailyVerseScheduler.sync(_ajustes);
   }
 
   /// Carga la configuración inicial desde la base de datos atrio.db
@@ -87,6 +98,8 @@ class AjustesProvider extends ChangeNotifier {
         .actualizarAjusteCampo('idioma_codigo', codigoNormalizado);
     await AtrioDatabaseHelper.instance
         .actualizarAjusteCampo('pais_region', nuevaRegion);
+    // Los textos de la notificación se fijan al programar: reprogramar en el nuevo idioma.
+    _sincronizarOracionMatutina();
   }
 
   /// Cambia el modo de tema ('claro', 'oscuro', 'sistema')
@@ -105,6 +118,7 @@ class AjustesProvider extends ChangeNotifier {
         _ajustes = _ajustes.copyWith(notifVersiculoDia: activo);
         await AtrioDatabaseHelper.instance
             .actualizarAjusteCampo('notif_versiculo_dia', activo);
+        _sincronizarOracionMatutina();
         break;
       case 'palabra':
         _ajustes = _ajustes.copyWith(notifPalabraDia: activo);
@@ -132,6 +146,7 @@ class AjustesProvider extends ChangeNotifier {
 
     await AtrioDatabaseHelper.instance
         .actualizarAjusteCampo('hora_notif_devocional', hora);
+    _sincronizarOracionMatutina();
   }
 
   /// Cambia la versión de la Biblia por defecto (RVR1960, NVI, DHH)

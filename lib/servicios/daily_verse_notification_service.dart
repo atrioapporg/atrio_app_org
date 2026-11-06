@@ -9,30 +9,42 @@ import 'package:timezone/timezone.dart' as tz;
 
 /// Modelo de datos para notificaciones de la Palabra/Oración del día.
 class DailyVerseNotificationItem {
-  final int dayOffset; // 0 = hoy, 1 = mañana, etc.
   final String title;
   final String reference;
   final String body;
-  final String bookId;
+
+  /// ID numérico del libro (canon protestante 1-66, Génesis = 1, Filipenses = 50).
+  final int bookId;
+
+  /// Nombre localizado del libro (ej. "Filipenses" / "Philippians").
+  final String bookName;
+  final int totalChapters;
   final int chapter;
   final int verse;
+  final int? verseEnd;
 
   const DailyVerseNotificationItem({
-    required this.dayOffset,
     required this.title,
     required this.reference,
     required this.body,
     required this.bookId,
+    required this.bookName,
+    required this.totalChapters,
     required this.chapter,
     required this.verse,
+    this.verseEnd,
   });
 
   String toPayload() => jsonEncode({
         'type': 'daily_verse',
         'bookId': bookId,
+        'bookName': bookName,
+        'totalChapters': totalChapters,
         'chapter': chapter,
         'verse': verse,
+        'verseEnd': verseEnd,
         'reference': reference,
+        'body': body,
       });
 }
 
@@ -44,8 +56,14 @@ void dailyVerseNotificationTapBackground(NotificationResponse response) {
   );
 }
 
-/// Servicio encargado de la inicialización, programación recurrente y despliegue
+/// Servicio encargado de la inicialización, programación y despliegue
 /// de la Palabra y Oración del Día en la bandeja del sistema (System Tray) y Lock Screen.
+///
+/// Estrategia: en lugar de una notificación repetitiva (`matchDateTimeComponents`),
+/// que mostraría siempre el mismo texto, se programa un **lote de notificaciones
+/// únicas** (una por día, cada una con su propio contenido e ID). El lote se
+/// reprograma completo cada vez que se abre/reanuda la app o cambian los ajustes,
+/// de modo que siempre quedan [maxBatchDays] días cubiertos por delante.
 class DailyVerseNotificationService {
   DailyVerseNotificationService._internal();
   static final DailyVerseNotificationService instance =
@@ -57,7 +75,14 @@ class DailyVerseNotificationService {
   static const String channelId = 'atrio_daily_word_channel';
   static const int baseNotificationId = 7000;
 
+  /// Días cubiertos por lote. iOS limita a 64 notificaciones pendientes por app,
+  /// por lo que se mantiene muy por debajo para no competir con otros avisos.
+  static const int maxBatchDays = 14;
+
+  static const int _testNotificationId = 9999;
+
   bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
   void Function(Map<String, dynamic> payloadData)? _onSelectPayload;
 
   /// 1. Inicialización del plugin, huso horario y canales de alta prioridad
@@ -126,8 +151,13 @@ class DailyVerseNotificationService {
     _isInitialized = true;
   }
 
-  /// 2. Solicitud de permisos en tiempo de ejecución (POST_NOTIFICATIONS, Exact Alarm, iOS)
-  Future<bool> requestPermissions() async {
+  /// 2. Solicitud de permisos en tiempo de ejecución (POST_NOTIFICATIONS, iOS).
+  ///
+  /// [requestExactAlarm]: en Android 12+ abre la pantalla de Ajustes del sistema
+  /// para conceder "Alarmas y recordatorios". Por defecto es `false` para no
+  /// sacar al usuario de la app en cada arranque; sin ese permiso las
+  /// notificaciones se programan en modo inexacto (pueden llegar unos minutos tarde).
+  Future<bool> requestPermissions({bool requestExactAlarm = false}) async {
     if (kIsWeb) return false;
 
     if (Platform.isAndroid) {
@@ -138,11 +168,12 @@ class DailyVerseNotificationService {
       final bool? notifGranted =
           await androidImpl.requestNotificationsPermission();
 
-      // Android 12+ (API 31+): Verificar si requiere permiso de alarmas exactas
-      final bool? canScheduleExact =
-          await androidImpl.canScheduleExactNotifications();
-      if (canScheduleExact == false) {
-        await androidImpl.requestExactAlarmsPermission();
+      if (requestExactAlarm) {
+        final bool? canScheduleExact =
+            await androidImpl.canScheduleExactNotifications();
+        if (canScheduleExact == false) {
+          await androidImpl.requestExactAlarmsPermission();
+        }
       }
 
       return notifGranted ?? false;
@@ -162,15 +193,132 @@ class DailyVerseNotificationService {
     return false;
   }
 
-  /// 3. Programación matutina recurrente con BigTextStyleInformation y botón de acción
-  Future<void> scheduleDailyMorningVerse({
+  /// 3. Programa un lote de [days] notificaciones matutinas únicas (no repetitivas),
+  /// una por día a la hora [hour]:[minute], comenzando en la próxima ocurrencia.
+  ///
+  /// [buildItem] recibe la fecha real de disparo para que el contenido dependa
+  /// del calendario (y no del momento en que se abrió la app): reprogramar varias
+  /// veces el mismo día produce exactamente el mismo resultado.
+  ///
+  /// Antes de programar se cancelan todas las notificaciones del lote anterior,
+  /// incluida la antigua notificación repetitiva (ID [baseNotificationId]).
+  Future<void> scheduleMorningBatch({
+    required DailyVerseNotificationItem Function(tz.TZDateTime date) buildItem,
+    required String channelName,
+    required String channelDescription,
+    required String actionAmenLabel,
+    int days = maxBatchDays,
+    int hour = 7,
+    int minute = 0,
+  }) async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ [DailyVerse] scheduleMorningBatch antes de initialize()');
+      return;
+    }
+
+    await cancelMorningVerses();
+
+    final int total = days.clamp(0, maxBatchDays);
+    final AndroidScheduleMode scheduleMode = await _resolveScheduleMode();
+    final tz.TZDateTime first = _nextInstanceOfTime(hour: hour, minute: minute);
+
+    for (int i = 0; i < total; i++) {
+      // Se construye por componentes (día + i) en lugar de sumar Duration(days: i)
+      // para que la hora de pared se mantenga estable ante cambios de horario (DST).
+      final scheduledDate = tz.TZDateTime(
+        tz.local,
+        first.year,
+        first.month,
+        first.day + i,
+        hour,
+        minute,
+      );
+      final item = buildItem(scheduledDate);
+
+      await _plugin.zonedSchedule(
+        baseNotificationId + i,
+        item.title,
+        item.body,
+        scheduledDate,
+        _buildDetails(
+          item: item,
+          channelName: channelName,
+          channelDescription: channelDescription,
+          actionAmenLabel: actionAmenLabel,
+        ),
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: item.toPayload(),
+      );
+    }
+
+    debugPrint(
+      '🔔 [DailyVerse] Lote programado: $total días desde $first ($scheduleMode)',
+    );
+  }
+
+  /// Cancela solo las notificaciones matutinas de ATRIO (no afecta otros avisos locales).
+  Future<void> cancelMorningVerses() async {
+    if (!_isInitialized) return;
+    for (int i = 0; i < maxBatchDays; i++) {
+      await _plugin.cancel(baseNotificationId + i);
+    }
+  }
+
+  /// Cancela todas las notificaciones programadas
+  Future<void> cancelAll() async {
+    await _plugin.cancelAll();
+  }
+
+  /// Dispara una notificación de prueba instantánea (o con retraso de [delaySeconds] segundos)
+  /// para validar el diseño visual exacto, botón "Amén ›" y navegación sin esperar a las 7:00 AM.
+  Future<void> showTestNotificationImmediately({
     required DailyVerseNotificationItem item,
     required String channelName,
     required String channelDescription,
     required String actionAmenLabel,
-    int hour = 7,
-    int minute = 0,
+    int delaySeconds = 3,
   }) async {
+    final notificationDetails = _buildDetails(
+      item: item,
+      channelName: channelName,
+      channelDescription: channelDescription,
+      actionAmenLabel: actionAmenLabel,
+    );
+
+    if (delaySeconds <= 0) {
+      await _plugin.show(
+        _testNotificationId,
+        item.title,
+        item.body,
+        notificationDetails,
+        payload: item.toPayload(),
+      );
+    } else {
+      final scheduledDate =
+          tz.TZDateTime.now(tz.local).add(Duration(seconds: delaySeconds));
+      await _plugin.zonedSchedule(
+        _testNotificationId,
+        item.title,
+        item.body,
+        scheduledDate,
+        notificationDetails,
+        androidScheduleMode: await _resolveScheduleMode(),
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: item.toPayload(),
+      );
+    }
+  }
+
+  /// Detalles visuales comunes (BigTextStyle, botón "Amén" e identidad ATRIO).
+  NotificationDetails _buildDetails({
+    required DailyVerseNotificationItem item,
+    required String channelName,
+    required String channelDescription,
+    required String actionAmenLabel,
+  }) {
     final bigTextStyle = BigTextStyleInformation(
       '${item.body}\n\n📖 ${item.reference}',
       htmlFormatBigText: false,
@@ -210,132 +358,25 @@ class DailyVerseNotificationService {
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    return NotificationDetails(android: androidDetails, iOS: iosDetails);
+  }
 
-    AndroidScheduleMode scheduleMode =
-        AndroidScheduleMode.exactAllowWhileIdle;
+  /// Usa alarmas exactas si el sistema lo permite; si no (Android 14+ sin
+  /// permiso "Alarmas y recordatorios"), cae a modo inexacto en lugar de fallar.
+  Future<AndroidScheduleMode> _resolveScheduleMode() async {
     if (!kIsWeb && Platform.isAndroid) {
       final androidImpl = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
-      final bool? canExact =
-          await androidImpl?.canScheduleExactNotifications();
+      final bool? canExact = await androidImpl?.canScheduleExactNotifications();
       if (canExact == false) {
-        scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
+        return AndroidScheduleMode.inexactAllowWhileIdle;
       }
     }
-
-    final scheduledDate = _nextInstanceOfTime(
-      hour: hour,
-      minute: minute,
-      dayOffset: item.dayOffset,
-    );
-
-    await _plugin.zonedSchedule(
-      baseNotificationId + item.dayOffset,
-      item.title,
-      item.body,
-      scheduledDate,
-      notificationDetails,
-      androidScheduleMode: scheduleMode,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents:
-          item.dayOffset == 0 ? DateTimeComponents.time : null,
-      payload: item.toPayload(),
-    );
+    return AndroidScheduleMode.exactAllowWhileIdle;
   }
 
-  /// Cancela todas las notificaciones programadas
-  Future<void> cancelAll() async {
-    await _plugin.cancelAll();
-  }
-
-  /// Dispara una notificación de prueba instantánea (o con retraso de [delaySeconds] segundos)
-  /// para validar el diseño visual exacto, botón "Amén ›" y navegación sin esperar a las 7:00 AM.
-  Future<void> showTestNotificationImmediately({
-    required DailyVerseNotificationItem item,
-    required String channelName,
-    required String channelDescription,
-    required String actionAmenLabel,
-    int delaySeconds = 3,
-  }) async {
-    final bigTextStyle = BigTextStyleInformation(
-      '${item.body}\n\n📖 ${item.reference}',
-      htmlFormatBigText: false,
-      contentTitle: '☀️ ${item.title}',
-      htmlFormatContentTitle: false,
-      summaryText: item.reference,
-      htmlFormatSummaryText: false,
-    );
-
-    final androidDetails = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-      importance: Importance.max,
-      priority: Priority.high,
-      styleInformation: bigTextStyle,
-      visibility: NotificationVisibility.public,
-      category: AndroidNotificationCategory.reminder,
-      icon: 'ic_stat_atrio',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      color: const Color(0xFF072B4F),
-      colorized: true,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          'amen_action',
-          actionAmenLabel,
-          showsUserInterface: true,
-          cancelNotification: true,
-        ),
-      ],
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-    );
-
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    if (delaySeconds <= 0) {
-      await _plugin.show(
-        9999,
-        item.title,
-        item.body,
-        notificationDetails,
-        payload: item.toPayload(),
-      );
-    } else {
-      final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(seconds: delaySeconds));
-      await _plugin.zonedSchedule(
-        9999,
-        item.title,
-        item.body,
-        scheduledDate,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: item.toPayload(),
-      );
-    }
-  }
-
-  /// Calcula la próxima instancia de la hora configurada
-  tz.TZDateTime _nextInstanceOfTime({
-    required int hour,
-    required int minute,
-    int dayOffset = 0,
-  }) {
+  /// Calcula la próxima instancia de la hora configurada (hoy o mañana).
+  tz.TZDateTime _nextInstanceOfTime({required int hour, required int minute}) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.local,
@@ -346,10 +387,17 @@ class DailyVerseNotificationService {
       minute,
     );
 
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    if (!scheduledDate.isAfter(now)) {
+      scheduledDate = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day + 1,
+        hour,
+        minute,
+      );
     }
-    return scheduledDate.add(Duration(days: dayOffset));
+    return scheduledDate;
   }
 
   /// Resuelve el huso horario local del dispositivo en Dart puro a partir de su UTC offset,
@@ -389,4 +437,3 @@ class DailyVerseNotificationService {
     }
   }
 }
-

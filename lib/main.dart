@@ -81,6 +81,7 @@ import 'package:atrio/screens/tradicion_cristiana_screen.dart';
 import 'package:atrio/screens/videos_transmisiones_screen.dart';
 import 'package:atrio/servicios/connectivity_service.dart';
 import 'package:atrio/servicios/daily_verse_notification_service.dart';
+import 'package:atrio/servicios/daily_verse_scheduler.dart';
 import 'package:atrio/servicios/deep_link_service.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
@@ -295,6 +296,11 @@ class AppState extends StatelessWidget {
   }
 }
 
+/// Activa un disparo de prueba de la Oración Matutina 4 s después del arranque.
+/// Uso: `flutter run --dart-define=ATRIO_TEST_DAILY_NOTIF=true`
+const bool _kTestDailyNotification =
+    bool.fromEnvironment('ATRIO_TEST_DAILY_NOTIF');
+
 class MyApp extends StatefulWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -343,20 +349,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               final navState = MyApp.navigatorKey.currentState;
               final currentCtx = MyApp.navigatorKey.currentContext;
               if (navState != null) {
+                final String reference = data['reference']?.toString() ?? '';
                 void abrirCapitulo() {
                   navState.pushNamed(
                     LecturaCapituloScreen.routeName,
                     arguments: {
-                      'id': data['bookId'] is int
-                          ? data['bookId']
-                          : 50, // Filipenses por defecto
-                      'nombre':
-                          data['reference']?.toString().split(' ').first ??
-                          'Filipenses',
-                      'capitulo': data['chapter'] ?? 4,
-                      'totalCapitulos': 4,
-                      'subtitulo': data['reference'] ?? '',
-                      'verso': data['verse'] ?? 6,
+                      'id': data['bookId'] is int ? data['bookId'] : 50,
+                      'nombre': data['bookName']?.toString() ?? reference,
+                      'capitulo': data['chapter'] is int ? data['chapter'] : 1,
+                      'totalCapitulos': data['totalChapters'] is int
+                          ? data['totalChapters']
+                          : 1,
+                      'subtitulo': reference,
+                      'verso': data['verse'] is int ? data['verse'] : null,
+                      'versoFin':
+                          data['verseEnd'] is int ? data['verseEnd'] : null,
                     },
                   );
                 }
@@ -367,8 +374,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   DailyPrayerModalSheet.mostrar(
                     context: currentCtx,
                     title: activeL10n.dailyPrayerMorningTitle,
-                    reference: data['reference']?.toString() ?? 'Filipenses 4:6-7',
-                    body: activeL10n.dailyPrayerDefaultBody,
+                    reference: reference,
+                    body: data['body']?.toString() ??
+                        activeL10n.dailyPrayerDefaultBody,
                     onGoToChapter: abrirCapitulo,
                   );
                 } else {
@@ -379,37 +387,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           },
         );
 
-        // Solicitar permisos y programar la oración matutina diaria (7:00 AM)
-        final granted = await DailyVerseNotificationService.instance
-            .requestPermissions();
-        if (granted && mounted) {
-          final morningItem = DailyVerseNotificationItem(
-            dayOffset: 0,
-            title: l10n.dailyPrayerMorningTitle,
-            reference: 'Filipenses 4:6-7',
-            body: l10n.dailyPrayerDefaultBody,
-            bookId: 'PHP',
-            chapter: 4,
-            verse: 6,
-          );
-          await DailyVerseNotificationService.instance
-              .scheduleDailyMorningVerse(
-                item: morningItem,
-                channelName: l10n.dailyWordChannelName,
-                channelDescription: l10n.dailyWordChannelDescription,
-                actionAmenLabel: l10n.dailyPrayerAmenAction,
-                hour: 7,
-                minute: 0,
-              );
-          // Disparo de prueba inmediato (4 segundos) para validar en el dispositivo
-          await DailyVerseNotificationService.instance
-              .showTestNotificationImmediately(
-                item: morningItem,
-                channelName: l10n.dailyWordChannelName,
-                channelDescription: l10n.dailyWordChannelDescription,
-                actionAmenLabel: l10n.dailyPrayerAmenAction,
-                delaySeconds: 4,
-              );
+        // Solicitar permiso de notificaciones (el SO solo muestra el diálogo
+        // la primera vez) y reprogramar el lote de Oraciones Matutinas según
+        // los ajustes del usuario (activado, hora e idioma).
+        await DailyVerseNotificationService.instance.requestPermissions();
+        if (!mounted) return;
+        final ajustesProvider = context.read<AjustesProvider>();
+        await ajustesProvider.cargaInicial;
+        await DailyVerseScheduler.sync(ajustesProvider.ajustes);
+
+        // Disparo de prueba: flutter run --dart-define=ATRIO_TEST_DAILY_NOTIF=true
+        if (_kTestDailyNotification) {
+          await DailyVerseScheduler.showTest(ajustesProvider.ajustes);
         }
       }
     });
@@ -428,6 +417,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '[LIFECYCLE] App resumed: sincronizando sesión con Odoo 19...',
       );
       try {
+        // Mantener siempre cubiertos los próximos días con la Oración Matutina.
+        DailyVerseScheduler.sync(context.read<AjustesProvider>().ajustes);
         final userProvider = context.read<UserProvider>();
         if (userProvider.isAuthenticated) {
           userProvider

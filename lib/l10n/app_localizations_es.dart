@@ -4147,6 +4147,51 @@ class AppLocalizationsEs extends AppLocalizations {
       'Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.';
 
   @override
+  String get dailyPrayerRef1 => 'Filipenses 4:6-7';
+
+  @override
+  String get dailyPrayerRef2 => 'Isaías 40:31';
+
+  @override
+  String get dailyPrayerBody2 =>
+      'Señor, hoy espero en Ti. Renueva mis fuerzas para correr sin cansarme y caminar sin fatigarme.';
+
+  @override
+  String get dailyPrayerRef3 => 'Salmos 23:1';
+
+  @override
+  String get dailyPrayerBody3 =>
+      'Padre, Tú eres mi pastor y nada me faltará. Guía mis pasos este día y dame descanso en Tu presencia.';
+
+  @override
+  String get dailyPrayerRef4 => 'Josué 1:9';
+
+  @override
+  String get dailyPrayerBody4 =>
+      'Dios mío, ayúdame a ser fuerte y valiente hoy. No temeré, porque Tú estás conmigo dondequiera que vaya.';
+
+  @override
+  String get dailyPrayerRef5 => 'Lamentaciones 3:22-23';
+
+  @override
+  String get dailyPrayerBody5 =>
+      'Gracias, Señor, porque Tus misericordias son nuevas cada mañana. Grande es Tu fidelidad sobre mi vida.';
+
+  @override
+  String get dailyPrayerRef6 => 'Proverbios 3:5-6';
+
+  @override
+  String get dailyPrayerBody6 =>
+      'Señor, confío en Ti de todo corazón y no en mi propia prudencia. Endereza hoy mis veredas.';
+
+  @override
+  String get dailyPrayerRef7 => 'Mateo 11:28';
+
+  @override
+  String get dailyPrayerBody7 =>
+      'Jesús, vengo a Ti con mis cargas. Dame Tu descanso y llena mi corazón de paz en este nuevo día.';
+
+  @override
   String get donacionDisponibleProximamenteTitulo => 'Disponible próximamente';
 
   @override

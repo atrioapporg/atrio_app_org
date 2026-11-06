@@ -7326,6 +7326,84 @@ abstract class AppLocalizations {
   /// **'Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.'**
   String get dailyPrayerDefaultBody;
 
+  /// No description provided for @dailyPrayerRef1.
+  ///
+  /// In es, this message translates to:
+  /// **'Filipenses 4:6-7'**
+  String get dailyPrayerRef1;
+
+  /// No description provided for @dailyPrayerRef2.
+  ///
+  /// In es, this message translates to:
+  /// **'Isaías 40:31'**
+  String get dailyPrayerRef2;
+
+  /// No description provided for @dailyPrayerBody2.
+  ///
+  /// In es, this message translates to:
+  /// **'Señor, hoy espero en Ti. Renueva mis fuerzas para correr sin cansarme y caminar sin fatigarme.'**
+  String get dailyPrayerBody2;
+
+  /// No description provided for @dailyPrayerRef3.
+  ///
+  /// In es, this message translates to:
+  /// **'Salmos 23:1'**
+  String get dailyPrayerRef3;
+
+  /// No description provided for @dailyPrayerBody3.
+  ///
+  /// In es, this message translates to:
+  /// **'Padre, Tú eres mi pastor y nada me faltará. Guía mis pasos este día y dame descanso en Tu presencia.'**
+  String get dailyPrayerBody3;
+
+  /// No description provided for @dailyPrayerRef4.
+  ///
+  /// In es, this message translates to:
+  /// **'Josué 1:9'**
+  String get dailyPrayerRef4;
+
+  /// No description provided for @dailyPrayerBody4.
+  ///
+  /// In es, this message translates to:
+  /// **'Dios mío, ayúdame a ser fuerte y valiente hoy. No temeré, porque Tú estás conmigo dondequiera que vaya.'**
+  String get dailyPrayerBody4;
+
+  /// No description provided for @dailyPrayerRef5.
+  ///
+  /// In es, this message translates to:
+  /// **'Lamentaciones 3:22-23'**
+  String get dailyPrayerRef5;
+
+  /// No description provided for @dailyPrayerBody5.
+  ///
+  /// In es, this message translates to:
+  /// **'Gracias, Señor, porque Tus misericordias son nuevas cada mañana. Grande es Tu fidelidad sobre mi vida.'**
+  String get dailyPrayerBody5;
+
+  /// No description provided for @dailyPrayerRef6.
+  ///
+  /// In es, this message translates to:
+  /// **'Proverbios 3:5-6'**
+  String get dailyPrayerRef6;
+
+  /// No description provided for @dailyPrayerBody6.
+  ///
+  /// In es, this message translates to:
+  /// **'Señor, confío en Ti de todo corazón y no en mi propia prudencia. Endereza hoy mis veredas.'**
+  String get dailyPrayerBody6;
+
+  /// No description provided for @dailyPrayerRef7.
+  ///
+  /// In es, this message translates to:
+  /// **'Mateo 11:28'**
+  String get dailyPrayerRef7;
+
+  /// No description provided for @dailyPrayerBody7.
+  ///
+  /// In es, this message translates to:
+  /// **'Jesús, vengo a Ti con mis cargas. Dame Tu descanso y llena mi corazón de paz en este nuevo día.'**
+  String get dailyPrayerBody7;
+
   /// No description provided for @donacionDisponibleProximamenteTitulo.
   ///
   /// In es, this message translates to:

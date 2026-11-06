@@ -84,6 +84,7 @@ import 'package:atrio/servicios/daily_verse_notification_service.dart';
 import 'package:atrio/servicios/deep_link_service.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:atrio/widgets/daily_prayer_modal_sheet.dart';
 import 'package:atrio/theme/atrio_feedback_theme.dart';
 import 'package:atrio/widgets/atrio_better_feedback.dart';
 import 'package:atrio/widgets/atrio_feedback_form.dart';
@@ -324,8 +325,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
         // Inicialización y manejo de toque (redirección in-app) para la Palabra del Día
         final navContext = MyApp.navigatorKey.currentContext;
-        final activeLocale =
-            context.read<AjustesProvider>().locale ?? const Locale('es');
+        final activeLocale = context.read<AjustesProvider>().locale;
         final l10n =
             (navContext != null ? AppLocalizations.of(navContext) : null) ??
             lookupAppLocalizations(
@@ -341,22 +341,39 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           onSelectPayload: (Map<String, dynamic> data) {
             if (data['type'] == 'daily_verse') {
               final navState = MyApp.navigatorKey.currentState;
+              final currentCtx = MyApp.navigatorKey.currentContext;
               if (navState != null) {
-                navState.pushNamed(
-                  LecturaCapituloScreen.routeName,
-                  arguments: {
-                    'id': data['bookId'] is int
-                        ? data['bookId']
-                        : 50, // Filipenses por defecto
-                    'nombre':
-                        data['reference']?.toString().split(' ').first ??
-                        'Filipenses',
-                    'capitulo': data['chapter'] ?? 4,
-                    'totalCapitulos': 4,
-                    'subtitulo': data['reference'] ?? '',
-                    'verso': data['verse'] ?? 6,
-                  },
-                );
+                void abrirCapitulo() {
+                  navState.pushNamed(
+                    LecturaCapituloScreen.routeName,
+                    arguments: {
+                      'id': data['bookId'] is int
+                          ? data['bookId']
+                          : 50, // Filipenses por defecto
+                      'nombre':
+                          data['reference']?.toString().split(' ').first ??
+                          'Filipenses',
+                      'capitulo': data['chapter'] ?? 4,
+                      'totalCapitulos': 4,
+                      'subtitulo': data['reference'] ?? '',
+                      'verso': data['verse'] ?? 6,
+                    },
+                  );
+                }
+
+                // Despliega el modal in-app elegante y moderno (estilo imagen adjunta)
+                if (currentCtx != null && currentCtx.mounted) {
+                  final activeL10n = AppLocalizations.of(currentCtx) ?? l10n;
+                  DailyPrayerModalSheet.mostrar(
+                    context: currentCtx,
+                    title: activeL10n.dailyPrayerMorningTitle,
+                    reference: data['reference']?.toString() ?? 'Filipenses 4:6-7',
+                    body: activeL10n.dailyPrayerDefaultBody,
+                    onGoToChapter: abrirCapitulo,
+                  );
+                } else {
+                  abrirCapitulo();
+                }
               }
             }
           },

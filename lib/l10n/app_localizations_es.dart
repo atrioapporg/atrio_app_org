@@ -4145,4 +4145,30 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dailyPrayerDefaultBody =>
       'Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.';
+
+  @override
+  String get donacionDisponibleProximamenteTitulo => 'Disponible próximamente';
+
+  @override
+  String get donacionDisponibleProximamenteMensaje =>
+      'Esta opción estará disponible próximamente. Actualmente nos encontramos en etapa de prueba mientras se completa la verificación legal y técnica de las congregaciones.';
+
+  @override
+  String get avisoPasarelaExternaTienda =>
+      'De conformidad con las directrices de la plataforma para bienes físicos, el pago de tu orden se procesará en la pasarela web segura oficial de Odoo (PayPal / Tarjeta con 0% de comisión).';
+
+  @override
+  String get irAPasarelaPagoSegura => 'Ir a Pagar al Portal Seguro';
+
+  @override
+  String get abriendoPasarelaTienda => 'Abriendo pasarela de pago segura...';
+
+  @override
+  String get amen => 'Amén';
+
+  @override
+  String get irAlCapitulo => 'Ir al capítulo';
+
+  @override
+  String get oracionMatutinaSubtitulo => 'Oración y devocional diario';
 }

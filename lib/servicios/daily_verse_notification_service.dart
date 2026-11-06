@@ -172,9 +172,9 @@ class DailyVerseNotificationService {
     int minute = 0,
   }) async {
     final bigTextStyle = BigTextStyleInformation(
-      '${item.body}\n\n— ${item.reference}',
+      '${item.body}\n\n📖 ${item.reference}',
       htmlFormatBigText: false,
-      contentTitle: item.title,
+      contentTitle: '☀️ ${item.title}',
       htmlFormatContentTitle: false,
       summaryText: item.reference,
       htmlFormatSummaryText: false,
@@ -189,7 +189,10 @@ class DailyVerseNotificationService {
       styleInformation: bigTextStyle,
       visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.reminder,
-      color: const Color(0xFF072B4F), // Azul oficial ATRIO
+      icon: 'ic_stat_atrio',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      color: const Color(0xFF072B4F), // Azul institucional ATRIO
+      colorized: true,
       actions: <AndroidNotificationAction>[
         AndroidNotificationAction(
           'amen_action',
@@ -260,9 +263,9 @@ class DailyVerseNotificationService {
     int delaySeconds = 3,
   }) async {
     final bigTextStyle = BigTextStyleInformation(
-      '${item.body}\n\n— ${item.reference}',
+      '${item.body}\n\n📖 ${item.reference}',
       htmlFormatBigText: false,
-      contentTitle: item.title,
+      contentTitle: '☀️ ${item.title}',
       htmlFormatContentTitle: false,
       summaryText: item.reference,
       htmlFormatSummaryText: false,
@@ -277,7 +280,10 @@ class DailyVerseNotificationService {
       styleInformation: bigTextStyle,
       visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.reminder,
+      icon: 'ic_stat_atrio',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       color: const Color(0xFF072B4F),
+      colorized: true,
       actions: <AndroidNotificationAction>[
         AndroidNotificationAction(
           'amen_action',

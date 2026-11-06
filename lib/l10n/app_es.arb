@@ -2076,5 +2076,13 @@
   "dailyWordChannelDescription": "Notificaciones diarias matutinas con versículos y oraciones",
   "dailyPrayerMorningTitle": "Oración Matutina",
   "dailyPrayerAmenAction": "Amén ›",
-  "dailyPrayerDefaultBody": "Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti."
+  "dailyPrayerDefaultBody": "Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.",
+  "donacionDisponibleProximamenteTitulo": "Disponible próximamente",
+  "donacionDisponibleProximamenteMensaje": "Esta opción estará disponible próximamente. Actualmente nos encontramos en etapa de prueba mientras se completa la verificación legal y técnica de las congregaciones.",
+  "avisoPasarelaExternaTienda": "De conformidad con las directrices de la plataforma para bienes físicos, el pago de tu orden se procesará en la pasarela web segura oficial de Odoo (PayPal / Tarjeta con 0% de comisión).",
+  "irAPasarelaPagoSegura": "Ir a Pagar al Portal Seguro",
+  "abriendoPasarelaTienda": "Abriendo pasarela de pago segura...",
+  "amen": "Amén",
+  "irAlCapitulo": "Ir al capítulo",
+  "oracionMatutinaSubtitulo": "Oración y devocional diario"
 }

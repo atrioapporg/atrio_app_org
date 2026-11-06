@@ -37,7 +37,7 @@ class DonacionesScreen extends StatelessWidget {
     final userProvider = context.watch<UserProvider>();
     final iglesiaProvider = context.watch<IglesiaProvider>();
     final bool isKycApproved = userProvider.isChurchKycApproved &&
-        (iglesiaProvider.iglesiaActual?.puedeRecibirOfrendas ?? true);
+        (iglesiaProvider.iglesiaActual?.puedeRecibirOfrendas ?? false);
     final rawIglesia = userProvider.currentUser?.iglesiaActual.trim();
     final String nombreIglesia = (rawIglesia != null &&
             rawIglesia.isNotEmpty &&
@@ -166,8 +166,12 @@ class DonacionesScreen extends StatelessWidget {
                             azulFondo: azulFondo,
                             azulBadge: azulBadge,
                             grisBorde: grisBorde,
-                            verifiedLabel:
-                                l10n?.comunidadVerificada ?? 'Comunidad verificada',
+                            isKycApproved: isKycApproved,
+                            verifiedLabel: isKycApproved
+                                ? (l10n?.comunidadVerificada ??
+                                    'Comunidad verificada')
+                                : (l10n?.kycStatusPendingTitle ??
+                                    'Validación en curso (KYC Institucional)'),
                           ),
                           SizedBox(height: usableHeight * 0.02),
 
@@ -331,6 +335,7 @@ class _VerifiedChurchCard extends StatelessWidget {
   final Color azulBadge;
   final Color grisBorde;
   final String verifiedLabel;
+  final bool isKycApproved;
 
   const _VerifiedChurchCard({
     required this.churchName,
@@ -340,6 +345,7 @@ class _VerifiedChurchCard extends StatelessWidget {
     required this.azulBadge,
     required this.grisBorde,
     required this.verifiedLabel,
+    this.isKycApproved = false,
   });
 
   @override
@@ -384,12 +390,14 @@ class _VerifiedChurchCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    SizedBox(width: screenWidth * 0.015),
-                    Icon(
-                      Icons.verified,
-                      color: azulBadge,
-                      size: screenWidth * 0.045,
-                    ),
+                    if (isKycApproved) ...[
+                      SizedBox(width: screenWidth * 0.015),
+                      Icon(
+                        Icons.verified,
+                        color: azulBadge,
+                        size: screenWidth * 0.045,
+                      ),
+                    ],
                   ],
                 ),
                 SizedBox(height: usableHeight * 0.002),

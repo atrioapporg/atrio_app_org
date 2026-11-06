@@ -7,34 +7,33 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Importación de las pantallas para obtener sus static const routeName
-import '../data/app_config.dart';
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/admin_models.dart';
+import '../modelos/auth_permissions.dart';
 import '../providers/admin_provider.dart';
 import '../providers/ajustes_provider.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/recomendacion_iglesia_provider.dart';
 import '../providers/user_provider.dart';
+import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
-import '../widgets/atrio_connectivity_alert.dart';
+import 'admin_ads_screen.dart';
+import 'admin_requests_screen.dart';
 import 'ayuda_soporte_screen.dart';
+import 'church_admin_dashboard_screen.dart';
+import 'configuracion_screen.dart';
 import 'esperando_aprobacion_screen.dart';
+import 'inicio_sesion_screen.dart';
 import 'mis_donaciones_screen.dart';
 import 'mis_pedidos_screen.dart';
-import 'inicio_sesion_screen.dart';
+import 'moderation_screen.dart';
+import 'moderation_words_screen.dart';
 import 'notificaciones_screen.dart';
 import 'seguimiento_solicitud_screen.dart';
 import 'terminos_privacidad_screen.dart';
 import 'tradicion_cristiana_screen.dart';
-import 'configuracion_screen.dart';
-import 'admin_ads_screen.dart';
-import 'church_admin_dashboard_screen.dart';
-import 'admin_requests_screen.dart';
-import 'moderation_screen.dart';
-import 'moderation_words_screen.dart';
-import '../modelos/auth_permissions.dart';
 
 class PerfilScreen extends StatefulWidget {
   static const routeName = 'perfil_screen';
@@ -330,7 +329,8 @@ class _PerfilScreenState extends State<PerfilScreen>
     // cuenta con congregación legítima seleccionada/asignada (SQLite o Provider),
     // no tiene solicitudes pendientes de membresía/cambio, y está verificado como miembro
     // o registrado con su iglesia previa, se confirma su membresía aprobada.
-    final bool isOfflineApproved = estaAutenticado &&
+    final bool isOfflineApproved =
+        estaAutenticado &&
         hasChurchSelected &&
         !isChangePending &&
         (currentUser?.isMember == true ||
@@ -339,7 +339,8 @@ class _PerfilScreenState extends State<PerfilScreen>
             ((currentUser?.membershipStatus.isEmpty ?? true) &&
                 currentUser?.role == UserRole.member &&
                 _usuarioData != null &&
-                (_usuarioData!['iglesia_nombre'] as String?)?.isNotEmpty == true));
+                (_usuarioData!['iglesia_nombre'] as String?)?.isNotEmpty ==
+                    true));
 
     final bool isChurchApproved =
         estaAutenticado &&
@@ -569,14 +570,6 @@ class _PerfilScreenState extends State<PerfilScreen>
                           label: l10n?.ajustesDeLaApp ?? 'Ajustes de la app',
                           route: ConfiguracionScreen.routeName,
                         ),
-                        if (AppConfig.appEnvironment != 'production')
-                          _MenuItemData(
-                            icon: Icons.sync_lock_rounded,
-                            label: 'Diagnóstico Token Odoo',
-                            customColor: Colors.deepPurple,
-                            route: null,
-                            onCustomTap: () => _probarRenovacionToken(context),
-                          ),
                         _MenuItemData(
                           icon: Icons.delete_forever_outlined,
                           label:
@@ -1246,9 +1239,9 @@ class _PerfilScreenState extends State<PerfilScreen>
               IconButton(
                 tooltip: estaAutenticado
                     ? (l10n?.perfilBotonEditarDatosTooltip ??
-                        'Editar mis datos personales')
+                          'Editar mis datos personales')
                     : (l10n?.perfilBotonIniciarSesionTooltip ??
-                        'Iniciar sesión en ATRIO'),
+                          'Iniciar sesión en ATRIO'),
                 onPressed: () {
                   if (estaAutenticado) {
                     _mostrarDialogoEditarDatos(
@@ -1375,8 +1368,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       badgeBg = const Color(0xFFDCFCE7);
       badgeTextCol = const Color(0xFF15803D);
       headerTitle = l10n?.perfilCongregacionActiva ?? 'Congregación activa';
-      description = l10n?.perfilCongregacionActivaDesc ??
-          'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.';
+      description = l10n?.perfilCongregacionActivaDesc ?? 'Perteneces activamente a esta congregación. Tu membresía está verificada y tienes acceso pleno a peticiones pastorales, solicitudes y actividades.';
       buttonText = l10n?.perfilVerDetallesIglesia ?? 'Ver detalles de iglesia';
       buttonIcon = Icons.info_outline_rounded;
       onButtonTap = () {
@@ -1391,7 +1383,8 @@ class _PerfilScreenState extends State<PerfilScreen>
       badgeBg = const Color(0xFFFEF3C7);
       badgeTextCol = const Color(0xFFB45309);
       headerTitle = l10n?.perfilSolicitudMembresia ?? 'Solicitud de membresía';
-      description = l10n?.perfilMembresiaPendienteDesc(iglesia) ??
+      description =
+          l10n?.perfilMembresiaPendienteDesc(iglesia) ??
           'Perteneces a $iglesia, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
       buttonText = l10n?.perfilVerEstadoSolicitud ?? 'Ver estado de solicitud';
       buttonIcon = Icons.hourglass_top_rounded;
@@ -1407,8 +1400,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       badgeBg = const Color(0xFFE0E7FF);
       badgeTextCol = const Color(0xFF4338CA);
       headerTitle = l10n?.perfilCambioCongregacion ?? 'Cambio de congregación';
-      description = l10n?.perfilCambioCongregacionDesc ??
-          'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.';
+      description = l10n?.perfilCambioCongregacionDesc ?? 'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.';
       buttonText = l10n?.perfilConsultarEstado ?? 'Consultar estado';
       buttonIcon = Icons.visibility_outlined;
       onButtonTap = () {
@@ -1423,8 +1415,7 @@ class _PerfilScreenState extends State<PerfilScreen>
       badgeBg = const Color(0xFFF1F5F9);
       badgeTextCol = const Color(0xFF475569);
       headerTitle = l10n?.perfilSinCongregacion ?? 'Sin congregación';
-      description = l10n?.perfilSinCongregacionDesc ??
-          'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.';
+      description = l10n?.perfilSinCongregacionDesc ?? 'Aún no perteneces a una comunidad eclesial en ATRIO. Elige tu congregación para participar de las actividades y servicios pastorales.';
       buttonText =
           l10n?.perfilBuscarUnirseIglesia ?? 'Buscar y unirse a una iglesia';
       buttonIcon = Icons.search_rounded;
@@ -1619,8 +1610,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  l10n?.perfilDetalleMembresiaModal ??
-                      'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.',
+                  l10n?.perfilDetalleMembresiaModal ?? 'Formas parte activa de esta congregación. Desde ATRIO puedes interactuar con tu pastor, realizar solicitudes y participar en eventos.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade700,
@@ -1870,19 +1860,25 @@ class _PerfilScreenState extends State<PerfilScreen>
       (
         icon: Icons.inbox_rounded,
         title: l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
-        subtitle: l10n?.perfilSubtituloBandejaSolicitudes ?? 'Atención y respuesta pastoral a feligreses',
+        subtitle:
+            l10n?.perfilSubtituloBandejaSolicitudes ??
+            'Atención y respuesta pastoral a feligreses',
         onTap: () => _mostrarModeracionPeticiones(context),
       ),
       (
         icon: Icons.campaign_rounded,
         title: l10n?.gestionAvisos ?? 'Avisos congregacionales',
-        subtitle: l10n?.perfilSubtituloAvisos ?? 'Publicar comunicados y avisos clave',
+        subtitle:
+            l10n?.perfilSubtituloAvisos ??
+            'Publicar comunicados y avisos clave',
         onTap: () => _mostrarGestionAvisos(context),
       ),
       (
         icon: Icons.groups_rounded,
         title: l10n?.gestionGrupos ?? 'Audiencias y grupos',
-        subtitle: l10n?.perfilSubtituloGrupos ?? 'Segmentación de ministerios y membresía',
+        subtitle:
+            l10n?.perfilSubtituloGrupos ??
+            'Segmentación de ministerios y membresía',
         onTap: () => _mostrarGruposAudiencia(context),
       ),
       if (context.hasPermission(AppPermissions.manageAds))
@@ -2000,7 +1996,8 @@ class _PerfilScreenState extends State<PerfilScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              l10n?.perfilGestionCuidadoCongregacion ?? 'Gestión y cuidado de la congregación',
+                              l10n?.perfilGestionCuidadoCongregacion ??
+                                  'Gestión y cuidado de la congregación',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.88),
                                 fontSize: screenWidth * 0.03,
@@ -2135,13 +2132,17 @@ class _PerfilScreenState extends State<PerfilScreen>
       (
         icon: Icons.shield_rounded,
         title: l10n?.centroModeracion ?? 'Centro de Moderación',
-        subtitle: l10n?.perfilSubtituloCentroModeracion ?? 'Auditar contenidos marcados y bloqueados',
+        subtitle:
+            l10n?.perfilSubtituloCentroModeracion ??
+            'Auditar contenidos marcados y bloqueados',
         onTap: () => Navigator.pushNamed(context, ModerationScreen.routeName),
       ),
       (
         icon: Icons.rule_rounded,
         title: l10n?.palabrasRestringidas ?? 'Palabras Restringidas',
-        subtitle: l10n?.perfilSubtituloPalabrasRestringidas ?? 'Reglas automáticas flag y block',
+        subtitle:
+            l10n?.perfilSubtituloPalabrasRestringidas ??
+            'Reglas automáticas flag y block',
         onTap: () =>
             Navigator.pushNamed(context, ModerationWordsScreen.routeName),
       ),
@@ -2573,143 +2574,6 @@ class _PerfilScreenState extends State<PerfilScreen>
         ],
       ),
     );
-  }
-
-  /// Herramienta interactiva para verificar en vivo la recuperación ante error 401 y refresh de Odoo
-  Future<void> _probarRenovacionToken(BuildContext context) async {
-    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
-      context,
-      onRetry: () => _probarRenovacionToken(context),
-    );
-    if (!hasInternet || !context.mounted) return;
-
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final bool estaAutenticado =
-        userProvider.isAuthenticated || userProvider.currentUser != null;
-    if (!estaAutenticado) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Debes tener una sesión activa para probar la renovación de tokens.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // Modal de carga mientras se ejecuta el test
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  'Probando ciclo 401 -> Refresh -> 200...',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Corrompiendo token y verificando rescate con Odoo ERP.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      final res = await userProvider.testRefreshTokenFlow();
-      if (!context.mounted) return;
-      Navigator.pop(context); // Cerrar loader
-
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF2E7D32),
-                size: 28,
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '¡Renovación Exitosa!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            '${res['message']}\n\n'
-            'Detalles técnicos:\n'
-            '• Se corrompió el Bearer Token en memoria.\n'
-            '• Odoo respondió con HTTP 401 Unauthorized.\n'
-            '• El interceptor envió el refresh_token a /auth/refresh.\n'
-            '• Odoo emitió un nuevo token y la petición se completó sin desconectar al usuario.',
-            style: const TextStyle(fontSize: 13, height: 1.4),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF072B4F),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Entendido'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.pop(context); // Cerrar loader
-
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                color: Colors.red.shade700,
-                size: 28,
-              ),
-              const SizedBox(width: 10),
-              const Text('Fallo en Renovación'),
-            ],
-          ),
-          content: Text(
-            'No se pudo renovar la sesión: $e',
-            style: const TextStyle(fontSize: 13),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cerrar'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 
   /// Diálogo y flujo para eliminar cuenta de forma permanente

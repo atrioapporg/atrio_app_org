@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../atrio_api.dart';
 import '../l10n/app_localizations.dart';
@@ -364,6 +365,22 @@ class _TiendaScreenState extends State<TiendaScreen> {
     await _operarCarrito((api) => api.clearCart());
   }
 
+  /// Abre la pasarela web segura de Odoo (PayPal/Stripe) en SFSafariViewController / Chrome Tabs.
+  Future<void> _abrirPasarelaOdoo(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.inAppBrowserView,
+      );
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   /// Confirma el pedido en Odoo (POST /store/checkout)
   Future<void> _confirmarPedido(BuildContext modalContext) async {
     if (_carrito.estaVacio) return;
@@ -454,6 +471,21 @@ class _TiendaScreenState extends State<TiendaScreen> {
           ? (l10n?.envioADomicilio ?? 'Envío a domicilio')
           : (l10n?.retiroEnIglesia ?? 'Retiro en iglesia');
 
+      final String? paymentUrl =
+          (res['payment_url'] ??
+                  res['checkout_url'] ??
+                  order?['payment_url'] ??
+                  order?['portal_url'])
+              ?.toString();
+
+      // Si Odoo devuelve pasarela web (PayPal/Stripe/Portal de pago de orden),
+      // abrir inmediatamente el navegador seguro conforme al Manual de Compliance.
+      if (paymentUrl != null && paymentUrl.isNotEmpty) {
+        await _abrirPasarelaOdoo(paymentUrl);
+      }
+
+      if (!mounted) return;
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -523,13 +555,30 @@ class _TiendaScreenState extends State<TiendaScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                l10n?.instruccionesPagoTienda ??
-                    'Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.',
+                (paymentUrl != null && paymentUrl.isNotEmpty)
+                    ? (l10n?.avisoPasarelaExternaTienda ??
+                        'De conformidad con las directrices de la plataforma para bienes físicos, el pago de tu orden se procesará en la pasarela web segura oficial de Odoo (PayPal / Tarjeta con 0% de comisión).')
+                    : (l10n?.instruccionesPagoTienda ??
+                        'Puedes realizar el pago mediante transferencia bancaria o en efectivo en las oficinas de la iglesia.'),
                 style: const TextStyle(fontSize: 12, color: Colors.black87),
               ),
             ],
           ),
           actions: [
+            if (paymentUrl != null && paymentUrl.isNotEmpty) ...[
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE5A023),
+                  foregroundColor: const Color(0xFF072B4F),
+                ),
+                onPressed: () => _abrirPasarelaOdoo(paymentUrl),
+                icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: Text(
+                  l10n?.irAPasarelaPagoSegura ?? 'Ir a Pagar al Portal Seguro',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -886,6 +935,43 @@ class _TiendaScreenState extends State<TiendaScreen> {
                         });
                         setModalState(() {});
                       },
+                    ),
+                    SizedBox(height: usableHeight * 0.012),
+
+                    // Banner de cumplimiento: Pasarela Web Externa Segura (Apple/Google Compliance)
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsetsDirectional.all(screenWidth * 0.03),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F2F8),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                        border: Border.all(
+                          color: azulFondo.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.lock_outline_rounded,
+                            color: azulFondo,
+                            size: screenWidth * 0.045,
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Expanded(
+                            child: Text(
+                              l10n?.avisoPasarelaExternaTienda ??
+                                  'De conformidad con las directrices de la plataforma para bienes físicos, el pago de tu orden se procesará en la pasarela web segura oficial de Odoo (PayPal / Tarjeta con 0% de comisión).',
+                              style: TextStyle(
+                                color: azulFondo,
+                                fontSize: screenWidth * 0.029,
+                                fontWeight: FontWeight.w600,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     SizedBox(height: usableHeight * 0.012),
 

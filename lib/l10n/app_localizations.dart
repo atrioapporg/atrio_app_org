@@ -7325,6 +7325,54 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Oh Señor, en estos tiempos difíciles para el mundo, te pido que me des la fuerza para no desfallecer ante la adversidad y mantener mi fe en Ti.'**
   String get dailyPrayerDefaultBody;
+
+  /// No description provided for @donacionDisponibleProximamenteTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponible próximamente'**
+  String get donacionDisponibleProximamenteTitulo;
+
+  /// No description provided for @donacionDisponibleProximamenteMensaje.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta opción estará disponible próximamente. Actualmente nos encontramos en etapa de prueba mientras se completa la verificación legal y técnica de las congregaciones.'**
+  String get donacionDisponibleProximamenteMensaje;
+
+  /// No description provided for @avisoPasarelaExternaTienda.
+  ///
+  /// In es, this message translates to:
+  /// **'De conformidad con las directrices de la plataforma para bienes físicos, el pago de tu orden se procesará en la pasarela web segura oficial de Odoo (PayPal / Tarjeta con 0% de comisión).'**
+  String get avisoPasarelaExternaTienda;
+
+  /// No description provided for @irAPasarelaPagoSegura.
+  ///
+  /// In es, this message translates to:
+  /// **'Ir a Pagar al Portal Seguro'**
+  String get irAPasarelaPagoSegura;
+
+  /// No description provided for @abriendoPasarelaTienda.
+  ///
+  /// In es, this message translates to:
+  /// **'Abriendo pasarela de pago segura...'**
+  String get abriendoPasarelaTienda;
+
+  /// No description provided for @amen.
+  ///
+  /// In es, this message translates to:
+  /// **'Amén'**
+  String get amen;
+
+  /// No description provided for @irAlCapitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Ir al capítulo'**
+  String get irAlCapitulo;
+
+  /// No description provided for @oracionMatutinaSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Oración y devocional diario'**
+  String get oracionMatutinaSubtitulo;
 }
 
 class _AppLocalizationsDelegate

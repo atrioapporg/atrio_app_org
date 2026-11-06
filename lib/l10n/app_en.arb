@@ -1995,5 +1995,13 @@
   "dailyWordChannelDescription": "Daily morning notifications with scriptures and prayers",
   "dailyPrayerMorningTitle": "Morning Prayer",
   "dailyPrayerAmenAction": "Amen ›",
-  "dailyPrayerDefaultBody": "O Lord, in these difficult times for the world, I pray that You give me strength to not falter in adversity and keep my faith in You."
+  "dailyPrayerDefaultBody": "O Lord, in these difficult times for the world, I pray that You give me strength to not falter in adversity and keep my faith in You.",
+  "donacionDisponibleProximamenteTitulo": "Available soon",
+  "donacionDisponibleProximamenteMensaje": "This option will be available soon. We are currently in a testing stage while legal and technical verification of congregations is completed.",
+  "avisoPasarelaExternaTienda": "In compliance with platform guidelines for physical goods, order payment is completed on the official secure Odoo web portal (PayPal / Card with 0% commission).",
+  "irAPasarelaPagoSegura": "Proceed to Secure Payment Portal",
+  "abriendoPasarelaTienda": "Opening secure payment portal...",
+  "amen": "Amen",
+  "irAlCapitulo": "Go to chapter",
+  "oracionMatutinaSubtitulo": "Daily prayer and devotional"
 }

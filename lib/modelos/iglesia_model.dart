@@ -16,11 +16,11 @@ enum ChurchKycStatus {
 
   static ChurchKycStatus fromString(
     String? raw, {
-    bool fallbackVerified = true,
+    bool fallbackVerified = false,
   }) {
     if (raw == null || raw.trim().isEmpty) {
       return fallbackVerified
-          ? ChurchKycStatus.approved
+          ? ChurchKycStatus.pendingKyc
           : ChurchKycStatus.draft;
     }
     switch (raw.trim().toLowerCase()) {
@@ -45,7 +45,7 @@ enum ChurchKycStatus {
         return ChurchKycStatus.suspended;
       default:
         return fallbackVerified
-            ? ChurchKycStatus.approved
+            ? ChurchKycStatus.pendingKyc
             : ChurchKycStatus.draft;
     }
   }
@@ -89,7 +89,7 @@ class IglesiaModel {
     required this.totalResenas,
     required this.distancia,
     required this.esVerificada,
-    this.kycStatus = ChurchKycStatus.approved,
+    this.kycStatus = ChurchKycStatus.pendingKyc,
     required this.direccion,
     required this.plusCode,
     required this.telefono,

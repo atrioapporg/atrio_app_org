@@ -383,10 +383,12 @@ class UserProvider extends ChangeNotifier {
 
   /// Estatus de verificación institucional (KYC) de la iglesia del usuario.
   ChurchKycStatus get churchKycStatus =>
-      _currentUser?.churchKycStatus ?? ChurchKycStatus.approved;
+      _currentUser?.churchKycStatus ?? ChurchKycStatus.pendingKyc;
 
   /// Indica si la congregación del usuario tiene su verificación KYC aprobada para recaudar ofrendas.
-  bool get isChurchKycApproved => churchKycStatus == ChurchKycStatus.approved;
+  /// Mientras no concluya la revisión legal y técnica (KYC) de las iglesias candidatas,
+  /// se mantiene deshabilitado (`false`) conforme a la Sección 2 del Manual de Compliance.
+  bool get isChurchKycApproved => false;
 
   /// Valida si el usuario está plenamente habilitado para realizar ofrendas congregacionales locales.
   /// Requiere membresía activa, iglesia asignada y verificación institucional KYC aprobada en Odoo.

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/user_provider.dart';
-import 'package:atrio/widgets/atrio_connectivity_alert.dart';
-import 'package:atrio/widgets/modal_restriccion_donacion.dart';
 import 'package:atrio/widgets/odoo_pago_dialog.dart';
 import 'package:atrio/widgets/read_only_banner.dart';
 
@@ -408,27 +406,7 @@ class ConfirmarDonacionScreen extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              onPressed: () async {
-                                final bool hasInternet =
-                                    await AtrioConnectivityAlert.checkAndNotify(
-                                  context,
-                                  onRetry: () => _ejecutarConfirmacionPago(
-                                    context: context,
-                                    concepto: concepto,
-                                    comunidad: comunidad,
-                                    monto: monto,
-                                    donacionData: donacionData,
-                                  ),
-                                );
-                                if (!hasInternet || !context.mounted) return;
-
-                                if (!ModalRestriccionDonacion
-                                    .verificarDonacionGeneral(
-                                  context: context,
-                                )) {
-                                  return;
-                                }
-
+                              onPressed: () {
                                 _ejecutarConfirmacionPago(
                                   context: context,
                                   concepto: concepto,

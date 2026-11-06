@@ -59,7 +59,7 @@ class UserModel {
     this.requestedChurchId,
     this.requestedChurchData,
     this.hasActiveSubscription = false,
-    this.churchKycStatus = ChurchKycStatus.approved,
+    this.churchKycStatus = ChurchKycStatus.pendingKyc,
     this.churchRecommendation,
     this.estadisticas = const UserStats(),
   });

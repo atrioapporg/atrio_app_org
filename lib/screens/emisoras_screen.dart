@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../servicios/connectivity_service.dart';
+import '../servicios/radio_player_service.dart';
 import '../widgets/atrio_connectivity_alert.dart';
 
 class CambiarTabAtrioNotification extends Notification {
@@ -109,7 +110,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   static Future<void>? _cargaEnProgreso;
 
   final TextEditingController _searchController = TextEditingController();
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  AudioPlayer get _audioPlayer => RadioPlayerService.instance.player;
   final Set<String> _favoritosIds = <String>{};
 
   StreamSubscription<PlayerState>? _playerStateSub;
@@ -166,7 +167,9 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     _playerStateSub?.cancel();
     _playbackEventSub?.cancel();
     _searchController.dispose();
-    _audioPlayer.dispose();
+    if (_emisoraActual != null || _audioPlayer.playing) {
+      _audioPlayer.stop();
+    }
     super.dispose();
   }
 
@@ -277,7 +280,24 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
 
       final source = AudioSource.uri(Uri.parse(streamUrl), tag: mediaItem);
 
-      await _audioPlayer.setAudioSource(source);
+      try {
+        await _audioPlayer.setAudioSource(source);
+      } catch (sourceErr) {
+        final String errText = sourceErr.toString();
+        if (errText.contains('_audioHandler') ||
+            errText.contains('single player instance')) {
+          debugPrint(
+            '[RADIO_LOG] Recuperando reproductor tras error de handler: $sourceErr',
+          );
+          await _playerStateSub?.cancel();
+          await _playbackEventSub?.cancel();
+          await RadioPlayerService.instance.recoverFromHandlerError();
+          _iniciarListenerDeAudio();
+          await _audioPlayer.setAudioSource(source);
+        } else {
+          rethrow;
+        }
+      }
       unawaited(_audioPlayer.play());
     } catch (e) {
       debugPrint('[RADIO_ERROR] Error al reproducir stream: $e');

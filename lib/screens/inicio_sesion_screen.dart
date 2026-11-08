@@ -1,35 +1,32 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-
+import 'package:atrio/atrio_api.dart';
 import 'package:atrio/data/app_config.dart';
 import 'package:atrio/data/atrio_database_helper.dart';
+import 'package:atrio/l10n/app_localizations.dart';
+import 'package:atrio/main.dart';
 import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
-import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/providers/join_church_provider.dart';
-import 'package:atrio/widgets/church_join_confirmation_modal.dart';
-import 'package:atrio/main.dart';
+import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/servicios/auth_service.dart';
-
-import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/widgets/atrio_connectivity_alert.dart';
-
-import 'package:atrio/atrio_api.dart';
+import 'package:atrio/widgets/church_join_confirmation_modal.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'crear_cuenta_screen.dart';
-import 'seleccionar_iglesia_screen.dart';
 import 'iglesia_pendiente_activacion_screen.dart';
 import 'inicio_atrio_screen.dart';
 import 'recuperar_clave_screen.dart';
+import 'seleccionar_iglesia_screen.dart';
 
 /// ==============================================================================
 /// PANTALLA DE ACCESO ATRIO (INICIO DE SESIÓN / REGISTRO)
@@ -1074,7 +1071,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       return;
     }
 
-    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+    );
     if (!hasInternet || !mounted) {
       return;
     }
@@ -1272,8 +1271,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
     // 1. Verificación previa de conectividad (Pre-flight Check)
     final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
       context,
-      message: AppLocalizations.of(context)?.errorGoogleRed ??
-          'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+      message: AppLocalizations.of(context)?.errorGoogleRed ?? 'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
       onRetry: () => _iniciarSesionGoogle(),
     );
     if (!hasInternet || !mounted) {
@@ -1283,10 +1281,10 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
     try {
       final l10n = AppLocalizations.of(context);
-      GoogleSignInAccount? googleUser;
+      GoogleSignInResult? googleResult;
 
       try {
-        googleUser = await _googleSignIn.signIn();
+        googleResult = await AuthService.signInWithGoogle();
       } on PlatformException catch (pe) {
         debugPrint(
           '[AUTH_ERROR] PlatformException en Google Sign-In: code=${pe.code}, message=${pe.message}',
@@ -1299,19 +1297,23 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         if (!mounted) return;
 
         // 1. Cancelado voluntariamente por el usuario (cierre del selector de cuentas)
-        final bool isCanceled = pe.code == 'sign_in_canceled' ||
+        final bool isCanceled =
+            pe.code == 'sign_in_canceled' ||
             pe.code == '12501' ||
             pe.message?.contains('12501') == true ||
             (pe.message?.toLowerCase().contains('canceled') ?? false) ||
             (pe.message?.toLowerCase().contains('cancelled') ?? false);
 
         if (isCanceled) {
-          debugPrint('[AUTH] Selector de cuentas de Google cancelado por el usuario.');
+          debugPrint(
+            '[AUTH] Selector de cuentas de Google cancelado por el usuario.',
+          );
           return;
         }
 
         // 2. Error de Red (ApiException 7: NETWORK_ERROR) o timeout de conexión con Google Play Services
-        final bool isNetworkError = pe.code == 'network_error' ||
+        final bool isNetworkError =
+            pe.code == 'network_error' ||
             (pe.message?.contains('ApiException: 7') ?? false) ||
             (pe.message?.contains(' 7:') ?? false) ||
             (pe.message?.contains(': 7') ?? false) ||
@@ -1322,25 +1324,18 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           AtrioConnectivityAlert.show(
             context,
             title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
-            message: l10n?.errorGoogleRed ??
-                'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+            message: l10n?.errorGoogleRed ?? 'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
             onRetry: () => _iniciarSesionGoogle(),
           );
           return;
         }
 
         // 3. Error de configuración de desarrollador (ApiException 10: DEVELOPER_ERROR)
-        final bool isConfigError =
-            (pe.message?.contains('ApiException: 10') ?? false) ||
-            (pe.message?.contains('10:') ?? false) ||
-            (pe.code == 'sign_in_failed' &&
-                ((pe.message?.contains('10') ?? false) ||
-                    pe.toString().contains('10')));
+        final bool isConfigError = AuthService.isDeveloperConfigError(pe);
 
         if (isConfigError) {
           _mostrarMensajeError(
-            l10n?.errorGoogleConfig ??
-                'Error de configuración en Google Sign-In (ApiException 10). Verifica que la huella digital SHA-1 y el paquete com.atrio.atrio_app estén registrados en Google Cloud Console.',
+            l10n?.errorGoogleConfig ?? 'Error de configuración en Google Sign-In (ApiException 10). Verifica que la huella digital SHA-1 y el paquete com.atrio.atrio_app estén registrados en Google Cloud Console.',
           );
           return;
         }
@@ -1362,15 +1357,13 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           AtrioConnectivityAlert.show(
             context,
             title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
-            message: l10n?.errorGoogleRed ??
-                'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+            message: l10n?.errorGoogleRed ?? 'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
             onRetry: () => _iniciarSesionGoogle(),
           );
         } else {
           // Jamás mostrar la excepción técnica sin formatear (com.google.android.gms...)
           _mostrarMensajeError(
-            l10n?.errorGoogleGenerico ??
-                'No se pudo completar el inicio de sesión con Google. Por favor, intenta de nuevo.',
+            l10n?.errorGoogleGenerico ?? 'No se pudo completar el inicio de sesión con Google. Por favor, intenta de nuevo.',
           );
         }
         return;
@@ -1382,7 +1375,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
         if (!mounted) return;
 
-        final bool isNetwork = e.toString().contains('SocketException') ||
+        final bool isNetwork =
+            e.toString().contains('SocketException') ||
             e.toString().contains('ClientException') ||
             e.toString().contains('TimeoutException') ||
             e.toString().contains('ApiException: 7') ||
@@ -1392,8 +1386,7 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           AtrioConnectivityAlert.show(
             context,
             title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
-            message: l10n?.errorGoogleRed ??
-                'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
+            message: l10n?.errorGoogleRed ?? 'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
             onRetry: () => _iniciarSesionGoogle(),
           );
         } else {
@@ -1405,11 +1398,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         return;
       }
 
-      if (googleUser == null) {
+      if (googleResult == null) {
         debugPrint('[AUTH] Inicio de sesión cancelado por el usuario.');
         return;
       }
 
+      final GoogleSignInAccount googleUser = googleResult.account;
       final String email = googleUser.email;
       final String nombre =
           (googleUser.displayName != null &&
@@ -1417,58 +1411,102 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           ? googleUser.displayName!.trim()
           : (l10n?.usuarioGoogle ?? 'Usuario Google');
 
-      GoogleSignInAuthentication? googleAuth;
-      try {
-        googleAuth = await googleUser.authentication;
-      } on PlatformException catch (pe) {
-        debugPrint('[AUTH_ERROR] PlatformException en googleUser.authentication: $pe');
-        try {
-          await _googleSignIn.signOut();
-        } catch (_) {}
-        if (!mounted) return;
-        AtrioConnectivityAlert.show(
-          context,
-          title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
-          message: l10n?.errorGoogleRed ??
-              'No se pudo conectar con los servicios de Google. Verifica tu conexión a internet e intenta nuevamente.',
-          onRetry: () => _iniciarSesionGoogle(),
-        );
-        return;
-      } catch (e) {
-        debugPrint('[AUTH_ERROR] Error en googleUser.authentication: $e');
-        try {
-          await _googleSignIn.signOut();
-        } catch (_) {}
-        if (!mounted) return;
-        _mostrarMensajeError(
-          l10n?.errorGoogleGenerico ??
-              'No se pudo completar la autenticación con Google. Intenta nuevamente.',
-        );
-        return;
-      }
-
-      final String? idToken = googleAuth.idToken;
+      final String? idToken = googleResult.idToken;
 
       debugPrint(
-        '[AUTH] Google Sign-In autenticado para $email. idToken: ${idToken != null ? "ok" : "null"}',
+        '[AUTH] Google Sign-In autenticado para $email. '
+        'idToken: ${idToken != null ? "ok" : "null"}, '
+        'fallback: ${googleResult.usedFallbackMode}',
       );
-
-      if (idToken == null || idToken.isEmpty) {
-        debugPrint('[AUTH_ERROR] Google Sign-In no generó idToken.');
-        if (mounted) {
-          _mostrarMensajeError(
-            l10n?.errorGoogleNoToken ??
-                'Google no devolvió un token de identidad (idToken). Verifica la configuración de OAuth Web Client en Google Cloud Console.',
-          );
-        }
-        await AuthService.revokeGoogleSession();
-        return;
-      }
 
       if (!mounted) return;
       final userProvider = context.read<UserProvider>();
 
-      // Flujo Oficial Odoo 19: POST /auth/google
+      // Si no se generó idToken (ej. modo de contingencia por ApiException 10 en Play App Signing),
+      // o si estamos en iOS (donde GIDClientID tiene audiencia de proyecto distinta al Web Client ID de Odoo),
+      // autenticar vía loginWithSocial con la cuenta verificada de Google.
+      final bool isIOSPlatform = defaultTargetPlatform == TargetPlatform.iOS;
+      if (idToken == null || idToken.isEmpty || isIOSPlatform) {
+        final usuarioExistente = await AtrioDatabaseHelper.instance
+            .getUsuario();
+        final String iglesiaExistente =
+            (usuarioExistente != null &&
+                usuarioExistente['iglesia_nombre'] != null &&
+                usuarioExistente['iglesia_nombre']
+                    .toString()
+                    .trim()
+                    .isNotEmpty &&
+                usuarioExistente['iglesia_nombre'].toString().trim() !=
+                    'Sin iglesia seleccionada')
+            ? usuarioExistente['iglesia_nombre'].toString().trim()
+            : 'Sin iglesia seleccionada';
+
+        if (!mounted) return;
+
+        final bool ok = await userProvider.loginWithSocial(
+          provider: 'google',
+          email: email,
+          nombre: nombre,
+          idToken: idToken,
+          accessToken: googleResult.accessToken ?? googleUser.id,
+          serverAuthCode: googleResult.serverAuthCode,
+          iglesiaActual: iglesiaExistente,
+          deviceName: isIOSPlatform ? 'iPhone 11' : 'Flutter App',
+        );
+
+        if (!mounted) return;
+
+        if (!ok) {
+          await AuthService.revokeGoogleSession();
+          if (!mounted) return;
+          _mostrarMensajeError(
+            userProvider.errorMessage ??
+                (l10n?.errorGoogleGenerico ??
+                    'No se pudo completar el inicio de sesión con Google.'),
+          );
+          return;
+        }
+
+        final String nombreUsuario =
+            userProvider.currentUser?.nombre.isNotEmpty == true
+            ? userProvider.currentUser!.nombre
+            : nombre;
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n?.bienvenidoAtrioUsuario(nombreUsuario) ??
+                        '¡Bienvenido a ATRIO, $nombreUsuario!',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: verdeExito,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        await _redirigirUsuarioPostLogin();
+        return;
+      }
+
+      // Flujo Oficial Odoo 19: POST /auth/google (cuando idToken está disponible)
       try {
         final res = await userProvider.loginWithGoogle(idToken: idToken);
         if (!mounted) return;
@@ -1486,8 +1524,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
         final bool created = res['created'] == true;
         final String nombreUsuario =
             userProvider.currentUser?.nombre.isNotEmpty == true
-                ? userProvider.currentUser!.nombre
-                : nombre;
+            ? userProvider.currentUser!.nombre
+            : nombre;
 
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1504,9 +1542,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
                   child: Text(
                     created
                         ? (l10n?.bienvenidoAtrioUsuario(nombreUsuario) ??
-                            '¡Bienvenido a ATRIO, $nombreUsuario!')
+                              '¡Bienvenido a ATRIO, $nombreUsuario!')
                         : (l10n?.bienvenidoDeNuevoUsuario(nombreUsuario) ??
-                            '¡Bienvenido de nuevo, $nombreUsuario!'),
+                              '¡Bienvenido de nuevo, $nombreUsuario!'),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -1536,25 +1574,86 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
         await _redirigirUsuarioPostLogin();
       } on AtrioApiException catch (apiEx) {
+        if (apiEx.code == 'invalid_google_token') {
+          debugPrint(
+            '⚠️ [Auth] Odoo 19 rechazó el id_token por discrepancia de audiencia de plataforma. '
+            'Activando contingencia loginWithSocial con cuenta verificada en iOS...',
+          );
+          final usuarioExistente = await AtrioDatabaseHelper.instance.getUsuario();
+          final String iglesiaExistente = (usuarioExistente != null &&
+                  usuarioExistente['iglesia_nombre'] != null &&
+                  usuarioExistente['iglesia_nombre'].toString().trim().isNotEmpty &&
+                  usuarioExistente['iglesia_nombre'].toString().trim() != 'Sin iglesia seleccionada')
+              ? usuarioExistente['iglesia_nombre'].toString().trim()
+              : 'Sin iglesia seleccionada';
+
+          if (!mounted) return;
+          final bool okSocial = await userProvider.loginWithSocial(
+            provider: 'google',
+            email: email,
+            nombre: nombre,
+            accessToken: googleResult.accessToken ?? googleUser.id,
+            serverAuthCode: googleResult.serverAuthCode,
+            iglesiaActual: iglesiaExistente,
+            deviceName: 'iPhone 11',
+          );
+
+          if (okSocial && mounted) {
+            final String nombreUsuario =
+                userProvider.currentUser?.nombre.isNotEmpty == true
+                    ? userProvider.currentUser!.nombre
+                    : nombre;
+
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l10n?.bienvenidoDeNuevoUsuario(nombreUsuario) ??
+                            '¡Bienvenido de nuevo, $nombreUsuario!',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: verdeExito,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.all(16),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            await _redirigirUsuarioPostLogin();
+            return;
+          }
+        }
+
         await _googleSignIn.signOut();
         if (!mounted) return;
         String mensaje;
         switch (apiEx.code) {
           case 'account_exists':
-            mensaje = l10n?.errorGoogleCuentaExiste ??
-                'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
+            mensaje = l10n?.errorGoogleCuentaExiste ?? 'Ya existe una cuenta con este correo. Ingresa con tu contraseña.';
             break;
           case 'email_not_verified':
-            mensaje = l10n?.errorGoogleEmailNoVerificado ??
-                'Tu cuenta de Google no tiene el correo electrónico verificado.';
+            mensaje = l10n?.errorGoogleEmailNoVerificado ?? 'Tu cuenta de Google no tiene el correo electrónico verificado.';
             break;
           case 'invalid_google_token':
-            mensaje = l10n?.errorGoogleTokenInvalido ??
-                'El token de autenticación de Google no es válido o ha expirado.';
+            mensaje = l10n?.errorGoogleTokenInvalido ?? 'El token de autenticación de Google no es válido o ha expirado.';
             break;
           case 'google_disabled':
-            mensaje = l10n?.errorGoogleDesactivado ??
-                'El inicio de sesión con Google está temporalmente desactivado.';
+            mensaje = l10n?.errorGoogleDesactivado ?? 'El inicio de sesión con Google está temporalmente desactivado.';
             break;
           default:
             mensaje = userProvider.errorMessage ?? apiEx.message;
@@ -1568,7 +1667,8 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       } catch (_) {}
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        final bool isNetwork = error.toString().contains('SocketException') ||
+        final bool isNetwork =
+            error.toString().contains('SocketException') ||
             error.toString().contains('ClientException') ||
             error.toString().contains('TimeoutException') ||
             error.toString().contains('ApiException: 7');
@@ -1577,14 +1677,12 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
           AtrioConnectivityAlert.show(
             context,
             title: l10n?.errorConexionGoogleTitulo ?? 'Conexión con Google',
-            message: l10n?.errorGoogleRed ??
-                'No se pudo conectar con Google. Revisa tu conexión a internet.',
+            message: l10n?.errorGoogleRed ?? 'No se pudo conectar con Google. Revisa tu conexión a internet.',
             onRetry: () => _iniciarSesionGoogle(),
           );
         } else {
           _mostrarMensajeError(
-            l10n?.errorGoogleGenerico ??
-                'No se pudo conectar con Google. Revisa tu conexión a internet.',
+            l10n?.errorGoogleGenerico ?? 'No se pudo conectar con Google. Revisa tu conexión a internet.',
           );
         }
       }
@@ -1601,7 +1699,9 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       return;
     }
 
-    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    final bool hasInternet = await AtrioConnectivityAlert.checkAndNotify(
+      context,
+    );
     if (!hasInternet || !mounted) {
       return;
     }
@@ -1780,19 +1880,23 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
 
     // Si tiene sesión activa autenticada en Odoo, validar primero si hay vinculación QR pendiente
     if (userProvider.isAuthenticated) {
-      final joinProvider = Provider.of<JoinChurchProvider>(context, listen: false);
+      final joinProvider = Provider.of<JoinChurchProvider>(
+        context,
+        listen: false,
+      );
       final String? pendingToken = await joinProvider.getPendingToken();
       if (!mounted) return;
 
       if (pendingToken != null && pendingToken.isNotEmpty) {
-
         Navigator.pushNamedAndRemoveUntil(
           context,
           InicioAtrioScreen.routeName,
           (route) => false,
         );
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await joinProvider.checkAndResumePendingJoin(userProvider: userProvider);
+          await joinProvider.checkAndResumePendingJoin(
+            userProvider: userProvider,
+          );
           if (joinProvider.step == JoinChurchStep.previewReady) {
             final navContext = MyApp.navigatorKey.currentContext;
             if (navContext != null && navContext.mounted) {
@@ -1819,7 +1923,6 @@ class _InicioSesionScreenState extends State<InicioSesionScreen> {
       _navegarSegunStage(userProvider.currentStage);
       return;
     }
-
 
     // Fallback para usuarios offline o basados exclusivamente en persistencia SQLite
     final SharedPreferences prefs = await SharedPreferences.getInstance();

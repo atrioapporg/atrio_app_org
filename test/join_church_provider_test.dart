@@ -5,7 +5,6 @@ import 'package:http/testing.dart';
 import 'dart:convert';
 
 import 'package:atrio/atrio_api.dart';
-import 'package:atrio/modelos/join_church_models.dart';
 import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/providers/join_church_provider.dart';
 import 'package:atrio/providers/user_provider.dart';

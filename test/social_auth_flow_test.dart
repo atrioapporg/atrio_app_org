@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,7 @@ import 'package:atrio/providers/ajustes_provider.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/screens/perfil_screen.dart';
+import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 
 /// Implementación en memoria de TokenStorageService para pruebas herméticas
@@ -319,6 +321,25 @@ void main() {
       expect(l10nEn.errorGoogleRed.contains('Google services'), isTrue);
       expect(l10nEn.bienvenidoAtrioUsuario('John'), 'Welcome to ATRIO, John!');
       expect(l10nEn.bienvenidoDeNuevoUsuario('John'), 'Welcome back, John!');
+    });
+
+    test('AuthService.isDeveloperConfigError detecta con precisión ApiException 10 (Play App Signing)', () {
+      final apiEx10 = PlatformException(
+        code: 'sign_in_failed',
+        message: 'com.google.android.gms.common.api.ApiException: 10: ',
+      );
+      final networkEx = PlatformException(
+        code: 'network_error',
+        message: 'com.google.android.gms.common.api.ApiException: 7: ',
+      );
+      final canceledEx = PlatformException(
+        code: 'sign_in_canceled',
+        message: 'com.google.android.gms.common.api.ApiException: 12501: ',
+      );
+
+      expect(AuthService.isDeveloperConfigError(apiEx10), isTrue);
+      expect(AuthService.isDeveloperConfigError(networkEx), isFalse);
+      expect(AuthService.isDeveloperConfigError(canceledEx), isFalse);
     });
   });
 }

@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:atrio/atrio_api.dart';
-import 'package:atrio/modelos/join_church_models.dart';
 import 'package:atrio/servicios/join_church_service.dart';
 import 'package:atrio/utils/qr_token_parser.dart';
 

@@ -84,6 +84,7 @@ import 'package:atrio/servicios/daily_verse_notification_service.dart';
 import 'package:atrio/servicios/daily_verse_scheduler.dart';
 import 'package:atrio/servicios/deep_link_service.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
+import 'package:atrio/servicios/radio_player_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
 import 'package:atrio/widgets/daily_prayer_modal_sheet.dart';
 import 'package:atrio/theme/atrio_feedback_theme.dart';
@@ -95,7 +96,6 @@ import 'package:flutter/services.dart';
 // Paquetes - Google Maps
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -104,15 +104,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 1.1 Inicializar servicio de audio en segundo plano (iOS Lock Screen / Control Center y Android Notification)
-  try {
-    await JustAudioBackground.init(
-      androidNotificationChannelId: 'com.atrio.app.channel.audio',
-      androidNotificationChannelName: 'ATRIO Radio y Audio',
-      androidNotificationOngoing: true,
-    );
-  } catch (e) {
-    debugPrint('Aviso inicializando JustAudioBackground: $e');
-  }
+  await RadioPlayerService.initBackgroundAudio();
 
   // 2. Bloqueo estricto a orientación vertical
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

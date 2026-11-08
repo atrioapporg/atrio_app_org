@@ -6,10 +6,11 @@ class RadioPlayerService {
   RadioPlayerService._();
   static final RadioPlayerService instance = RadioPlayerService._();
 
-  final AudioPlayer _player = AudioPlayer();
-  AudioPlayer get player => _player;
+  AudioPlayer? _player;
+  AudioPlayer get player => _player ??= AudioPlayer();
 
   Future<void> reproducirEmisora(EmisoraModel emisora) async {
+    final activePlayer = player;
     try {
       final mediaItem = MediaItem(
         id: emisora.id,
@@ -23,21 +24,27 @@ class RadioPlayerService {
         tag: mediaItem,
       );
 
-      await _player.setAudioSource(audioSource);
-      _player.play();
+      await activePlayer.setAudioSource(audioSource);
+      await activePlayer.play();
     } catch (e) {
       if (emisora.streamUrlFallback.isNotEmpty) {
         final fallbackSource = AudioSource.uri(
           Uri.parse(emisora.streamUrlFallback),
+          tag: MediaItem(
+            id: '${emisora.id}_fallback',
+            album: emisora.dial,
+            title: emisora.nombre,
+            artUri: Uri.tryParse(emisora.logoUrl),
+          ),
         );
-        await _player.setAudioSource(fallbackSource);
-        _player.play();
+        await activePlayer.setAudioSource(fallbackSource);
+        await activePlayer.play();
       } else {
         rethrow;
       }
     }
   }
 
-  void pausar() => _player.pause();
-  void detener() => _player.stop();
+  void pausar() => _player?.pause();
+  void detener() => _player?.stop();
 }

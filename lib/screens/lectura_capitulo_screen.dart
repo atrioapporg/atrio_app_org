@@ -1,4 +1,5 @@
 // ignore_for_file: unused_field
+import 'dart:async';
 import 'dart:io';
 
 import 'package:atrio/data/atrio_database_helper.dart';
@@ -11,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import '../widgets/atrio_youtube_webview_player.dart';
 
 class LecturaCapituloScreen extends StatefulWidget {
   static const routeName = 'lectura_capitulo_screen';
@@ -91,8 +93,8 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
-    _youtubeController?.pause();
-    _youtubeController?.dispose();
+    AtrioYoutubeWebViewPlayer.pause(_youtubeController);
+    _youtubeController?.close();
     super.dispose();
   }
 
@@ -101,8 +103,9 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
-      if (_youtubeController != null && _youtubeController!.value.isPlaying) {
-        _youtubeController?.pause();
+      if (_youtubeController != null &&
+          _youtubeController!.value.playerState == PlayerState.playing) {
+        AtrioYoutubeWebViewPlayer.pause(_youtubeController);
       }
     }
   }
@@ -257,7 +260,7 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
 
   void _cambiarCapitulo(int nuevoCapitulo) {
     if (nuevoCapitulo >= 1 && nuevoCapitulo <= _totalCapitulos) {
-      _youtubeController?.pause();
+      _youtubeController?.pauseVideo();
       setState(() {
         _capituloActual = nuevoCapitulo;
         _subtitulo = 'Capítulo $_capituloActual';
@@ -623,21 +626,27 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
     final int startSeconds = dataCapitulo['start_seconds'] as int;
     final int endSeconds = dataCapitulo['end_seconds'] as int;
 
-    _youtubeController?.dispose();
-    _youtubeController = YoutubePlayerController(
-      initialVideoId: videoId,
-      flags: YoutubePlayerFlags(
-        autoPlay: true,
+    ensureWebViewPlatformReadyForTesting();
+    _youtubeController?.close();
+    _youtubeController = YoutubePlayerController.fromVideoId(
+      videoId: videoId,
+      autoPlay: true,
+      startSeconds: startSeconds.toDouble(),
+      endSeconds: endSeconds > startSeconds ? endSeconds.toDouble() : null,
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: false,
         mute: false,
         enableCaption: false,
-        hideControls: false,
-        startAt: startSeconds,
-        useHybridComposition: true,
+        playsInline: true,
+        privacyEnhancedMode: true,
+        origin: 'https://www.youtube-nocookie.com',
       ),
     );
 
     bool capituloTerminado = false;
-    VoidCallback? listenerCapitulo;
+    StreamSubscription<YoutubeVideoState>? videoStateSubscription;
+    StreamSubscription<YoutubePlayerValue>? playerSubscription;
 
     if (!mounted) return;
 
@@ -651,15 +660,16 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
         ),
       ),
       builder: (ctx) {
-        listenerCapitulo = () {
-          if (_youtubeController == null || capituloTerminado) return;
-          final int posicionActual =
-              _youtubeController!.value.position.inSeconds;
+        videoStateSubscription =
+            _youtubeController!.videoStateStream.listen((state) {
+          if (capituloTerminado) return;
+          final int posicionActual = state.position.inSeconds;
 
           if (posicionActual >= endSeconds && endSeconds > startSeconds) {
             capituloTerminado = true;
-            _youtubeController?.pause();
-            if (Navigator.canPop(ctx)) {
+            _youtubeController?.pauseVideo();
+            if (!mounted) return;
+            if (ctx.mounted && Navigator.canPop(ctx)) {
               Navigator.pop(ctx);
             }
             ScaffoldMessenger.of(context).showSnackBar(
@@ -673,9 +683,16 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
               ),
             );
           }
-        };
+        });
 
-        _youtubeController!.addListener(listenerCapitulo!);
+        playerSubscription = _youtubeController!.listen((val) {
+          if (val.playerState == PlayerState.ended && !capituloTerminado) {
+            capituloTerminado = true;
+            if (Navigator.canPop(ctx)) {
+              Navigator.pop(ctx);
+            }
+          }
+        });
 
         return SafeArea(
           child: Column(
@@ -713,24 +730,21 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
                         color: Colors.white,
                       ),
                       onPressed: () {
-                        _youtubeController?.pause();
+                        _youtubeController?.pauseVideo();
                         Navigator.pop(ctx);
                       },
                     ),
                   ],
                 ),
               ),
-              YoutubePlayer(
+              AtrioYoutubeWebViewPlayer(
                 controller: _youtubeController!,
-                showVideoProgressIndicator: true,
+                videoId: videoId,
+                autoPlay: true,
+                startSeconds: startSeconds.toDouble(),
+                endSeconds:
+                    endSeconds > startSeconds ? endSeconds.toDouble() : null,
                 aspectRatio: 16 / 6,
-                progressIndicatorColor: amarilloOro,
-                progressColors: ProgressBarColors(
-                  playedColor: amarilloOro,
-                  handleColor: amarilloOro,
-                  backgroundColor: Colors.white24,
-                  bufferedColor: Colors.white10,
-                ),
               ),
               SizedBox(height: usableHeight * 0.025),
             ],
@@ -738,11 +752,10 @@ class _LecturaCapituloScreenState extends State<LecturaCapituloScreen>
         );
       },
     ).whenComplete(() {
-      if (listenerCapitulo != null && _youtubeController != null) {
-        _youtubeController?.removeListener(listenerCapitulo!);
-      }
-      _youtubeController?.pause();
-      _youtubeController?.dispose();
+      videoStateSubscription?.cancel();
+      playerSubscription?.cancel();
+      _youtubeController?.pauseVideo();
+      _youtubeController?.close();
       _youtubeController = null;
     });
   }

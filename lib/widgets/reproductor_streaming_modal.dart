@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,10 +6,12 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../l10n/app_localizations.dart';
 import '../modelos/video_model.dart';
+import '../servicios/radio_player_service.dart';
 import '../utils/youtube_helper.dart';
+import 'atrio_youtube_webview_player.dart';
 
 /// Modal interactivo embebido para reproducción de streaming y videos en la app ATRIO.
-/// Utiliza [youtube_player_flutter] con ciclo de vida completo y fallback seguro.
+/// Optimizado para iOS (WKWebView + Impeller a 60/120 FPS) y Android con ciclo de vida completo.
 class ReproductorStreamingModal extends StatefulWidget {
   final VideoModel video;
   final bool autoPlay;
@@ -48,16 +50,23 @@ class ReproductorStreamingModal extends StatefulWidget {
 
 class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
   YoutubePlayerController? _controller;
+  StreamSubscription<YoutubePlayerValue>? _playerSubscription;
   String? _youtubeVideoId;
   bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
+    // Pausar radio en segundo plano si estaba activa para evitar colisión de audio en iOS
+    try {
+      RadioPlayerService.instance.pausar();
+    } catch (_) {}
     _inicializarReproductor();
   }
 
   void _inicializarReproductor() {
+    ensureWebViewPlatformReadyForTesting();
+
     // 1. Extraer ID usando YoutubeHelper
     String? id = YoutubeHelper.extractId(widget.video.videoUrl);
 
@@ -69,26 +78,34 @@ class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
     _youtubeVideoId = id;
 
     if (_youtubeVideoId != null) {
-      _controller = YoutubePlayerController(
-        initialVideoId: _youtubeVideoId!,
-        flags: YoutubePlayerFlags(
-          autoPlay: widget.autoPlay,
-          isLive: widget.video.esEnVivo,
+      _controller = YoutubePlayerController.fromVideoId(
+        videoId: _youtubeVideoId!,
+        autoPlay: widget.autoPlay,
+        params: const YoutubePlayerParams(
+          showControls: true,
+          showFullscreenButton: true,
           mute: false,
           enableCaption: true,
-          useHybridComposition: true,
           loop: false,
-          forceHD: false,
+          playsInline: true,
+          privacyEnhancedMode: true,
+          origin: 'https://www.youtube-nocookie.com',
         ),
-      )..addListener(_onPlayerStateChange);
+      );
 
-      _isPlaying = widget.autoPlay;
+      _playerSubscription = _controller!.listen(_onPlayerStateChange);
+      _isPlaying = false;
     }
   }
 
-  void _onPlayerStateChange() {
+  void _onPlayerStateChange(YoutubePlayerValue value) {
     if (!mounted || _controller == null) return;
-    final isCurrentlyPlaying = _controller!.value.isPlaying;
+    if (value.error != YoutubeError.none) {
+      debugPrint(
+        '⚠️ [YoutubePlayer] Error en reproductor (${value.error}) para video $_youtubeVideoId',
+      );
+    }
+    final isCurrentlyPlaying = value.playerState == PlayerState.playing;
     if (isCurrentlyPlaying != _isPlaying) {
       setState(() {
         _isPlaying = isCurrentlyPlaying;
@@ -98,11 +115,9 @@ class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
 
   @override
   void dispose() {
-    if (_controller != null) {
-      _controller!.removeListener(_onPlayerStateChange);
-      _controller!.pause();
-      _controller!.dispose();
-    }
+    _playerSubscription?.cancel();
+    AtrioYoutubeWebViewPlayer.pause(_controller);
+    _controller?.close();
     // Restaurar orientaciones en caso de que estuviese en fullscreen
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
@@ -111,9 +126,11 @@ class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
   void _togglePlayPause() {
     if (_controller == null) return;
     if (_isPlaying) {
-      _controller!.pause();
+      AtrioYoutubeWebViewPlayer.pause(_controller);
+      setState(() => _isPlaying = false);
     } else {
-      _controller!.play();
+      AtrioYoutubeWebViewPlayer.play(_controller);
+      setState(() => _isPlaying = true);
     }
   }
 
@@ -144,6 +161,12 @@ class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
     const Color amarilloOro = Color(0xFFE5A023);
     const Color blancoFondo = Color(0xFFFAF7F0);
     const Color rojoLive = Color(0xFFE53935);
+
+    final String? channelHandle =
+        YoutubeHelper.extractChannelHandle(widget.video.videoUrl) ??
+        (widget.video.canalOIglesia.contains('@AtrioIglesia')
+            ? '@AtrioIglesia'
+            : null);
 
     return Material(
       color: Colors.transparent,
@@ -212,6 +235,60 @@ class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
                       rojoLive: rojoLive,
                       l10n: l10n,
                     ),
+
+                    if (_youtubeVideoId != null && channelHandle != null) ...[
+                      SizedBox(height: usableHeight * 0.008),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.03,
+                          vertical: usableHeight * 0.006,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC4302B).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                          border: Border.all(
+                            color: const Color(0xFFC4302B).withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              widget.video.esEnVivo
+                                  ? Icons.sensors_rounded
+                                  : Icons.subscriptions_rounded,
+                              color: const Color(0xFFC4302B),
+                              size: screenWidth * 0.042,
+                            ),
+                            SizedBox(width: screenWidth * 0.02),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.video.esEnVivo
+                                        ? 'Transmisión Oficial en Directo'
+                                        : 'Canal Oficial de YouTube',
+                                    style: TextStyle(
+                                      color: azulFondo,
+                                      fontSize: screenWidth * 0.029,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Canal $channelHandle · YouTube',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade700,
+                                      fontSize: screenWidth * 0.026,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     SizedBox(height: usableHeight * 0.010),
 
                     // Título del Video
@@ -457,65 +534,13 @@ class _ReproductorStreamingModalState extends State<ReproductorStreamingModal> {
       return widget.playerBuilder!(context, _controller!);
     }
 
-    // Entorno de pruebas de Flutter (donde no existe InAppWebViewPlatform nativo)
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
-      return Container(
-        key: const Key('reproductor_youtube_embebido'),
-        color: Colors.black87,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.play_circle_filled_rounded,
-                color: Color(0xFFE5A023),
-                size: 48,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'YouTube Embebido: $_youtubeVideoId',
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-              if (widget.video.esEnVivo)
-                const Text(
-                  'Transmisión en Vivo',
-                  style: TextStyle(color: Color(0xFFE53935), fontSize: 11),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Reproductor real en producción para Android/iOS
-    return YoutubePlayer(
+    // Reproductor optimizado en producción y test para iOS (WKWebView/Impeller) y Android
+    return AtrioYoutubeWebViewPlayer(
       key: const Key('reproductor_youtube_embebido'),
       controller: _controller!,
-      showVideoProgressIndicator: true,
-      progressIndicatorColor: const Color(0xFFE5A023),
-      progressColors: const ProgressBarColors(
-        playedColor: Color(0xFFE5A023),
-        handleColor: Color(0xFFE5A023),
-        bufferedColor: Colors.white30,
-        backgroundColor: Colors.white12,
-      ),
-      topActions: [
-        const SizedBox(width: 8.0),
-        Expanded(
-          child: Text(
-            _controller!.metadata.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14.0,
-              overflow: TextOverflow.ellipsis,
-            ),
-            maxLines: 1,
-          ),
-        ),
-      ],
-      onReady: () {
-        debugPrint('[ReproductorStreaming] Reproductor listo');
-      },
+      videoId: _youtubeVideoId!,
+      autoPlay: widget.autoPlay,
+      aspectRatio: 16 / 9,
     );
   }
 

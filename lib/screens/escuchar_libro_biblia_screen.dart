@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../data/database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/atrio_connectivity_alert.dart';
+import '../widgets/atrio_youtube_webview_player.dart';
 
 class EscucharLibroBibliaScreen extends StatefulWidget {
   static const routeName = 'escuchar_libro_biblia_screen';
@@ -505,8 +508,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
-    _youtubeController?.pause();
-    _youtubeController?.dispose();
+    AtrioYoutubeWebViewPlayer.pause(_youtubeController);
+    _youtubeController?.close();
     super.dispose();
   }
 
@@ -515,8 +518,9 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
-      if (_youtubeController != null && _youtubeController!.value.isPlaying) {
-        _youtubeController?.pause();
+      if (_youtubeController != null &&
+          _youtubeController!.value.playerState == PlayerState.playing) {
+        AtrioYoutubeWebViewPlayer.pause(_youtubeController);
       }
     }
   }
@@ -752,21 +756,27 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
     final int startSeconds = dataCapitulo['start_seconds'] as int;
     final int endSeconds = dataCapitulo['end_seconds'] as int;
 
-    _youtubeController?.dispose();
-    _youtubeController = YoutubePlayerController(
-      initialVideoId: videoId,
-      flags: YoutubePlayerFlags(
-        autoPlay: true,
+    ensureWebViewPlatformReadyForTesting();
+    _youtubeController?.close();
+    _youtubeController = YoutubePlayerController.fromVideoId(
+      videoId: videoId,
+      autoPlay: true,
+      startSeconds: startSeconds.toDouble(),
+      endSeconds: endSeconds > startSeconds ? endSeconds.toDouble() : null,
+      params: const YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: false,
         mute: false,
         enableCaption: false,
-        hideControls: false,
-        startAt: startSeconds,
-        useHybridComposition: true,
+        playsInline: true,
+        privacyEnhancedMode: true,
+        origin: 'https://www.youtube-nocookie.com',
       ),
     );
 
     bool capituloTerminado = false;
-    VoidCallback? listenerCapitulo;
+    StreamSubscription<YoutubeVideoState>? videoStateSubscription;
+    StreamSubscription<YoutubePlayerValue>? playerSubscription;
 
     if (!mounted) return;
 
@@ -780,17 +790,19 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
         ),
       ),
       builder: (ctx) {
-        listenerCapitulo = () {
-          if (_youtubeController == null || capituloTerminado) return;
+        videoStateSubscription = _youtubeController!.videoStateStream.listen((
+          state,
+        ) {
+          if (capituloTerminado) return;
 
-          final int posicionActual =
-              _youtubeController!.value.position.inSeconds;
+          final int posicionActual = state.position.inSeconds;
 
           // Verifica finalización exacta desde SQLite
           if (posicionActual >= endSeconds && endSeconds > startSeconds) {
             capituloTerminado = true;
-            _youtubeController?.pause();
-            if (Navigator.canPop(ctx)) {
+            _youtubeController?.pauseVideo();
+            if (!mounted) return;
+            if (ctx.mounted && Navigator.canPop(ctx)) {
               Navigator.pop(ctx);
             }
             ScaffoldMessenger.of(context).showSnackBar(
@@ -805,9 +817,16 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
               ),
             );
           }
-        };
+        });
 
-        _youtubeController!.addListener(listenerCapitulo!);
+        playerSubscription = _youtubeController!.listen((val) {
+          if (val.playerState == PlayerState.ended && !capituloTerminado) {
+            capituloTerminado = true;
+            if (Navigator.canPop(ctx)) {
+              Navigator.pop(ctx);
+            }
+          }
+        });
 
         return SafeArea(
           child: Column(
@@ -848,22 +867,23 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                         Icons.close_rounded,
                         color: Colors.white,
                       ),
-                      onPressed: () => Navigator.pop(ctx),
+                      onPressed: () {
+                        _youtubeController?.pauseVideo();
+                        Navigator.pop(ctx);
+                      },
                     ),
                   ],
                 ),
               ),
-              YoutubePlayer(
+              AtrioYoutubeWebViewPlayer(
                 controller: _youtubeController!,
-                showVideoProgressIndicator: true,
+                videoId: videoId,
+                autoPlay: true,
+                startSeconds: startSeconds.toDouble(),
+                endSeconds: endSeconds > startSeconds
+                    ? endSeconds.toDouble()
+                    : null,
                 aspectRatio: 16 / 6,
-                progressIndicatorColor: amarilloOro,
-                progressColors: const ProgressBarColors(
-                  playedColor: Color(0xFFE5A023),
-                  handleColor: Color(0xFFE5A023),
-                  backgroundColor: Colors.white24,
-                  bufferedColor: Colors.white10,
-                ),
               ),
               SizedBox(height: usableHeight * 0.012),
             ],
@@ -871,11 +891,10 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
         );
       },
     ).whenComplete(() {
-      if (listenerCapitulo != null && _youtubeController != null) {
-        _youtubeController?.removeListener(listenerCapitulo!);
-      }
-      _youtubeController?.pause();
-      _youtubeController?.dispose();
+      videoStateSubscription?.cancel();
+      playerSubscription?.cancel();
+      _youtubeController?.pauseVideo();
+      _youtubeController?.close();
       _youtubeController = null;
     });
   }
@@ -1156,7 +1175,8 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                             });
                           },
                           decoration: InputDecoration(
-                            hintText: l10n?.filtrarPorNombreDeLibro ??
+                            hintText:
+                                l10n?.filtrarPorNombreDeLibro ??
                                 'Filtrar por nombre de libro...',
                             hintStyle: TextStyle(
                               color: Colors.grey.shade500,
@@ -1305,8 +1325,7 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
                                         (libro['nombreOriginal'] ??
                                                 libro['nombre'])
                                             as String;
-                                    final capitulos =
-                                        libro['capitulos'] as int;
+                                    final capitulos = libro['capitulos'] as int;
                                     return _BookTile(
                                       nombre: nombre,
                                       nombreOriginal: nombreOriginal,
@@ -1344,7 +1363,6 @@ class _EscucharLibroBibliaScreenState extends State<EscucharLibroBibliaScreen>
       ),
     );
   }
-
 }
 
 class _BookTile extends StatelessWidget {

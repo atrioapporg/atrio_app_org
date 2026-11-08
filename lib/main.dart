@@ -95,12 +95,24 @@ import 'package:flutter/services.dart';
 // Paquetes - Google Maps
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   // 1. Vincular motor de Flutter
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 1.1 Inicializar servicio de audio en segundo plano (iOS Lock Screen / Control Center y Android Notification)
+  try {
+    await JustAudioBackground.init(
+      androidNotificationChannelId: 'com.atrio.app.channel.audio',
+      androidNotificationChannelName: 'ATRIO Radio y Audio',
+      androidNotificationOngoing: true,
+    );
+  } catch (e) {
+    debugPrint('Aviso inicializando JustAudioBackground: $e');
+  }
 
   // 2. Bloqueo estricto a orientación vertical
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

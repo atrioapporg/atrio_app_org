@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'package:atrio/atrio_api.dart';
@@ -35,6 +36,10 @@ void main() {
     );
   }
 
+  setUpAll(() {
+    WebViewPlatform.instance = FakeWebViewPlatform();
+  });
+
   group('Etapa 5 - Reproductor de Streaming Embebido Tests', () {
     testWidgets('Inicializa controlador y renderiza reproductor embebido de YouTube',
         (tester) async {
@@ -68,7 +73,7 @@ void main() {
                 capturedController = controller;
                 return Container(
                   key: const Key('reproductor_embebido_test'),
-                  child: Text('Player ID: ${controller.initialVideoId}'),
+                  child: Text('Player ID: ${controller.key}'),
                 );
               },
             ),
@@ -79,9 +84,8 @@ void main() {
 
       // Verificación de controlador
       expect(capturedController, isNotNull);
-      expect(capturedController!.initialVideoId, equals('uE53d7_-Unc'));
-      expect(capturedController!.flags.autoPlay, isTrue);
-      expect(capturedController!.flags.isLive, isFalse);
+      expect(capturedController!.key, equals('uE53d7_-Unc'));
+      expect(capturedController!.params.showControls, isTrue);
 
       // Verificación de elementos textuales y metadatos
       expect(find.text('Venciendo el Desánimo en Tiempos de Crisis'), findsOneWidget);
@@ -133,8 +137,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(capturedController, isNotNull);
-      expect(capturedController!.initialVideoId, equals('dQw4w9WgXcQ'));
-      expect(capturedController!.flags.isLive, isTrue);
+      expect(capturedController!.key, equals('dQw4w9WgXcQ'));
+      expect(capturedController!.params.showControls, isTrue);
 
       // Badge EN VIVO
       expect(find.text('EN VIVO'), findsOneWidget);
@@ -207,7 +211,7 @@ void main() {
       expect(find.text('Videos y transmisiones'), findsOneWidget);
 
       // Tocar en la primera tarjeta de video
-      final videoTitleFinder = find.text('La fe que mueve montañas');
+      final videoTitleFinder = find.text('El ORIGEN de MOISÉS');
       expect(videoTitleFinder, findsOneWidget);
 
       await tester.ensureVisible(videoTitleFinder);
@@ -220,4 +224,68 @@ void main() {
       expect(find.byKey(const Key('reproductor_youtube_embebido')), findsOneWidget);
     });
   });
+}
+
+class FakeWebViewPlatform extends WebViewPlatform {
+  @override
+  PlatformNavigationDelegate createPlatformNavigationDelegate(
+    PlatformNavigationDelegateCreationParams params,
+  ) =>
+      FakeNavigationDelegate(params);
+
+  @override
+  PlatformWebViewController createPlatformWebViewController(
+    PlatformWebViewControllerCreationParams params,
+  ) =>
+      FakeWebViewController(params);
+
+  @override
+  PlatformWebViewWidget createPlatformWebViewWidget(
+    PlatformWebViewWidgetCreationParams params,
+  ) =>
+      FakeWebViewWidget(params);
+}
+
+class FakeWebViewController extends PlatformWebViewController {
+  FakeWebViewController(super.params) : super.implementation();
+
+  @override
+  Future<void> setJavaScriptMode(JavaScriptMode javaScriptMode) async {}
+
+  @override
+  Future<void> setPlatformNavigationDelegate(
+    PlatformNavigationDelegate handler,
+  ) async {}
+
+  @override
+  Future<void> setUserAgent(String? userAgent) async {}
+
+  @override
+  Future<void> enableZoom(bool enabled) async {}
+
+  @override
+  Future<void> addJavaScriptChannel(JavaScriptChannelParams javaScriptChannelParams) async {}
+
+  @override
+  Future<void> loadHtmlString(String html, {String? baseUrl}) async {}
+
+  @override
+  Future<void> removeJavaScriptChannel(String javaScriptChannelName) async {}
+}
+
+class FakeNavigationDelegate extends PlatformNavigationDelegate {
+  FakeNavigationDelegate(super.params) : super.implementation();
+
+  @override
+  Future<void> setOnNavigationRequest(NavigationRequestCallback onNavigationRequest) async {}
+
+  @override
+  Future<void> setOnWebResourceError(WebResourceErrorCallback onWebResourceError) async {}
+}
+
+class FakeWebViewWidget extends PlatformWebViewWidget {
+  FakeWebViewWidget(super.params) : super.implementation();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

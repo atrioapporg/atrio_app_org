@@ -473,16 +473,21 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                                       SizedBox(height: usableHeight * 0.015),
                                   itemBuilder: (context, index) {
                                     final item = _filteredVideos[index];
-                                    return _buildVideoCard(
-                                      video: item,
-                                      screenWidth: screenWidth,
-                                      usableHeight: usableHeight,
-                                      azulFondo: azulFondo,
-                                      amarilloOro: amarilloOro,
-                                      grisBorde: grisBorde,
-                                      l10n: l10n,
-                                      onTap: () =>
-                                          _showVideoDetailsModal(context, item),
+                                    return RepaintBoundary(
+                                      key: ValueKey('video_card_${item.id}'),
+                                      child: _buildVideoCard(
+                                        video: item,
+                                        screenWidth: screenWidth,
+                                        usableHeight: usableHeight,
+                                        azulFondo: azulFondo,
+                                        amarilloOro: amarilloOro,
+                                        grisBorde: grisBorde,
+                                        l10n: l10n,
+                                        onTap: () => _showVideoDetailsModal(
+                                          context,
+                                          item,
+                                        ),
+                                      ),
                                     );
                                   },
                                 ),
@@ -534,12 +539,15 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
               Image.network(
                 video.thumbnailUrl,
                 fit: BoxFit.cover,
+                cacheWidth: (screenWidth * MediaQuery.devicePixelRatioOf(context)).round(),
                 loadingBuilder: (context, child, progress) {
                   if (progress == null) return child;
-                  return _ShimmerPlaceholder(
-                    width: screenWidth,
-                    height: usableHeight * 0.22,
-                    borderRadius: screenWidth * 0.045,
+                  return RepaintBoundary(
+                    child: _ShimmerPlaceholder(
+                      width: screenWidth,
+                      height: usableHeight * 0.22,
+                      borderRadius: screenWidth * 0.045,
+                    ),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) =>
@@ -727,12 +735,15 @@ class _VideosTransmisionesScreenState extends State<VideosTransmisionesScreen> {
                     Image.network(
                       video.thumbnailUrl,
                       fit: BoxFit.cover,
+                      cacheWidth: (screenWidth * 0.32 * MediaQuery.devicePixelRatioOf(context)).round(),
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
-                        return _ShimmerPlaceholder(
-                          width: screenWidth * 0.32,
-                          height: usableHeight * 0.11,
-                          borderRadius: screenWidth * 0.025,
+                        return RepaintBoundary(
+                          child: _ShimmerPlaceholder(
+                            width: screenWidth * 0.32,
+                            height: usableHeight * 0.11,
+                            borderRadius: screenWidth * 0.025,
+                          ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) => Container(

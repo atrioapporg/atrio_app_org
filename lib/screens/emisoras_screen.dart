@@ -92,6 +92,8 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
 
   // URLs verificadas y corregidas para emisoras que tenían enlaces rotos
   static const Map<String, String> _correccionesUrlsEmisoras = <String, String>{
+    '101': 'http://cdn.instream.audio:9726/stream', // Radio Renuevo 88.7
+    '107': 'https://cast10.plugstreaming.com/stream/pvsdq', // Pura Vida 96.7
     '259': 'https://livestreamcdn.net:2000/stream/RadioVisionCristianaRadio/',
     '262': 'https://stream2.305stream.com:8040/;',
     '263': 'https://stream.radiojar.com/ynxaw7n8x74tv',
@@ -189,8 +191,8 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           debugPrint('[RADIO_ERROR] Error en streaming: $e');
           if (!mounted) return;
           final l10n = AppLocalizations.of(context);
-          final bool hasInternet =
-              await ConnectivityService.instance.hasRealInternet();
+          final bool hasInternet = await ConnectivityService.instance
+              .hasRealInternet();
           if (!mounted) return;
           if (!hasInternet) {
             AtrioConnectivityAlert.show(
@@ -198,9 +200,9 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
               message: l10n?.sinInternetSintonizar,
               onRetry: _emisoraActual != null
                   ? () => _reproducirEmisora(
-                        _emisoraActual!,
-                        MediaQuery.of(context).size.width,
-                      )
+                      _emisoraActual!,
+                      MediaQuery.of(context).size.width,
+                    )
                   : null,
             );
           } else {
@@ -266,22 +268,16 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       final String idStr = (emisora['id'] ?? '').toString().trim();
       final String logoUrl = (emisora['logo'] ?? '').toString().trim();
 
-      try {
-        final source = AudioSource.uri(
-          Uri.parse(streamUrl),
-          tag: MediaItem(
-            id: idStr.isNotEmpty ? idStr : streamUrl,
-            album: (emisora['denomination'] ?? 'Radio Cristiana').toString(),
-            title: (emisora['name'] ?? 'Emisora').toString(),
-            artUri: logoUrl.isNotEmpty ? Uri.parse(logoUrl) : null,
-          ),
-        );
-        await _audioPlayer.setAudioSource(source);
-      } catch (sourceErr) {
-        debugPrint('[RADIO_LOG] Fallback a setUrl directo: $sourceErr');
-        await _audioPlayer.setUrl(streamUrl);
-      }
+      final mediaItem = MediaItem(
+        id: idStr.isNotEmpty ? idStr : streamUrl,
+        album: (emisora['denomination'] ?? 'Radio Cristiana').toString(),
+        title: (emisora['name'] ?? 'Emisora').toString(),
+        artUri: logoUrl.isNotEmpty ? Uri.tryParse(logoUrl) : null,
+      );
 
+      final source = AudioSource.uri(Uri.parse(streamUrl), tag: mediaItem);
+
+      await _audioPlayer.setAudioSource(source);
       unawaited(_audioPlayer.play());
     } catch (e) {
       debugPrint('[RADIO_ERROR] Error al reproducir stream: $e');
@@ -302,10 +298,10 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           final l10n = AppLocalizations.of(context);
           final bool tieneInternet =
               await AtrioConnectivityAlert.checkAndNotify(
-            context,
-            message: l10n?.sinInternetSintonizar,
-            onRetry: () => _togglePlayPause(),
-          );
+                context,
+                message: l10n?.sinInternetSintonizar,
+                onRetry: () => _togglePlayPause(),
+              );
           if (!tieneInternet || !mounted) return;
         }
         unawaited(_audioPlayer.play());

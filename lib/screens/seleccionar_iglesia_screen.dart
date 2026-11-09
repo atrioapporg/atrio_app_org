@@ -478,11 +478,16 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
           ? _tradicionTituloSeleccionada!.trim()
           : iglesia.denominacion.trim();
 
-      if (nombreIglesia.isNotEmpty) {
-        await AtrioDatabaseHelper.instance.guardarIglesiaNombre(nombreIglesia);
-      }
-      if (feReligiosa.isNotEmpty) {
-        await AtrioDatabaseHelper.instance.guardarFeReligiosa(feReligiosa);
+      final bool esCambio = userProvider.isAuthenticated &&
+          (userProvider.hasChurchAssigned || userProvider.isMember);
+
+      if (!esCambio) {
+        if (nombreIglesia.isNotEmpty) {
+          await AtrioDatabaseHelper.instance.guardarIglesiaNombre(nombreIglesia);
+        }
+        if (feReligiosa.isNotEmpty) {
+          await AtrioDatabaseHelper.instance.guardarFeReligiosa(feReligiosa);
+        }
       }
 
       final int? parsedChurchId = int.tryParse(iglesia.id);
@@ -498,8 +503,10 @@ class _SeleccionarIglesiaScreenState extends State<SeleccionarIglesiaScreen> {
           denominacion: feReligiosa,
         );
 
-        final String jsonString = jsonEncode(datosParaGuardar);
-        await iglesiaProvider.guardarIglesiaLocal(jsonString);
+        if (!esCambio) {
+          final String jsonString = jsonEncode(datosParaGuardar);
+          await iglesiaProvider.guardarIglesiaLocal(jsonString);
+        }
 
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(

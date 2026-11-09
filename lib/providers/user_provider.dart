@@ -301,22 +301,30 @@ class UserProvider extends ChangeNotifier {
   /// Estatus canónico de la congregación/membresía del usuario en Odoo ('none', 'membership_pending', 'change_pending', 'approved', etc.)
   String get churchStatus => _currentUser?.churchStatus ?? membershipStatus;
 
-  /// Indica si la solicitud de membresía a la congregación está en proceso de revisión/aprobación.
+  /// Indica si la solicitud de membresía inicial a una congregación está en proceso de revisión/aprobación.
+  /// No aplica si el usuario se encuentra en proceso de cambio/traslado (isChangePending).
   bool get isMembershipPending =>
-      isWaitingApproval ||
-      _currentUser?.isMembershipPending == true ||
-      membershipStatus == 'membership_pending' ||
-      membershipStatus == 'pending' ||
-      churchStatus == 'membership_pending' ||
-      churchStatus == 'pending';
+      !isChangePending &&
+      (isWaitingApproval ||
+          _currentUser?.isMembershipPending == true ||
+          membershipStatus == 'membership_pending' ||
+          membershipStatus == 'pending' ||
+          churchStatus == 'membership_pending' ||
+          churchStatus == 'pending');
 
   /// Indica si el usuario tiene una solicitud de cambio/traslado de iglesia en proceso.
   bool get isChangePending =>
       _currentUser?.isChangePending == true ||
-      membershipStatus == 'change_pending';
+      membershipStatus == 'change_pending' ||
+      (hasChurchAssigned &&
+          isMember &&
+          requestedChurchId != null &&
+          requestedChurchId! > 0 &&
+          requestedChurchId != _currentUser?.iglesiaId);
 
   /// Valida reactivamente si la congregación del usuario se encuentra debidamente asignada y aprobada por el backend.
-  /// Retorna false si el usuario es invitado, no tiene congregación o su membresía sigue pendiente de aprobación.
+  /// Retorna false si el usuario es invitado, no tiene congregación o su membresía inicial sigue pendiente de aprobación.
+  /// Un traslado en curso (isChangePending) mantiene la membresía activa actual.
   bool get isChurchApproved =>
       isAuthenticated &&
       hasChurchAssigned &&
@@ -500,6 +508,22 @@ class UserProvider extends ChangeNotifier {
                     : 'approved'),
           );
         }
+      } else if (_currentUser != null && _currentUser!.hasChurchAssigned) {
+        // Preservar la solicitud de cambio de congregación si Odoo todavía no la devolvió
+        if ((_currentUser!.requestedChurchId == null ||
+                _currentUser!.requestedChurchId == 0) &&
+            prevRequestedId != null &&
+            prevRequestedId > 0 &&
+            prevRequestedId != _currentUser!.iglesiaId) {
+          _currentUser = _currentUser!.copyWith(
+            requestedChurchId: prevRequestedId,
+            requestedChurchData: prevRequestedChurch,
+            membershipStatus: _currentUser!.membershipStatus == 'none' ||
+                    _currentUser!.membershipStatus == 'approved'
+                ? 'change_pending'
+                : _currentUser!.membershipStatus,
+          );
+        }
       }
 
       if (_currentUser != null &&
@@ -510,7 +534,9 @@ class UserProvider extends ChangeNotifier {
         _rawMeData!['requested_church'] = _currentUser!.requestedChurchData;
         _rawMeData!['requested_church_id'] = _currentUser!.requestedChurchId;
         _rawMeData!['membership_status'] = _currentUser!.membershipStatus;
-        _rawMeData!['iglesia_actual'] = _currentUser!.iglesiaActual;
+        if (!_currentUser!.hasChurchAssigned) {
+          _rawMeData!['iglesia_actual'] = _currentUser!.iglesiaActual;
+        }
       }
 
       _api.defaultChurchId = _currentUser?.iglesiaId;
@@ -558,14 +584,26 @@ class UserProvider extends ChangeNotifier {
   }) async {
     int? effectiveChurchId = churchId;
 
+    // Detectar si el usuario ya es miembro activo de una congregación (proceso de cambio / traslado)
+    final bool isAlreadyMember = hasChurchAssigned &&
+        (isMember ||
+            isChurchApproved ||
+            _currentUser?.membershipStatus == 'approved');
+
+    final String nextStatus =
+        isAlreadyMember ? 'change_pending' : 'membership_pending';
+
     // 1. Persistir localmente en SQLite y SharedPreferences para disponibilidad inmediata
+    // Solo sobreescribir la iglesia activa local si el usuario NO es ya un miembro activo
     try {
-      await AtrioDatabaseHelper.instance.guardarIglesiaNombre(churchName);
+      if (!isAlreadyMember) {
+        await AtrioDatabaseHelper.instance.guardarIglesiaNombre(churchName);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('iglesia_guardada', churchName);
+      }
       if (denominacion != null && denominacion.trim().isNotEmpty) {
         await AtrioDatabaseHelper.instance.guardarFeReligiosa(denominacion.trim());
       }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('iglesia_guardada', churchName);
     } catch (e) {
       debugPrint('[UserProvider] Error guardando iglesia/denominación local: $e');
     }
@@ -583,29 +621,33 @@ class UserProvider extends ChangeNotifier {
     // 2. Actualizar estado reactivo en memoria de inmediato (Optimistic UI)
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
-        membershipStatus: 'membership_pending',
+        membershipStatus: nextStatus,
         requestedChurchId: (effectiveChurchId != null && effectiveChurchId > 0)
             ? effectiveChurchId
             : 0,
         requestedChurchData: churchData,
-        iglesiaActual: churchName,
+        iglesiaActual: isAlreadyMember
+            ? _currentUser!.iglesiaActual
+            : churchName,
       );
     }
 
     if (_rawMeData != null) {
-      _rawMeData!['membership_status'] = 'membership_pending';
+      _rawMeData!['membership_status'] = nextStatus;
       if (effectiveChurchId != null && effectiveChurchId > 0) {
         _rawMeData!['requested_church_id'] = effectiveChurchId;
       }
       _rawMeData!['requested_church'] = churchData;
-      _rawMeData!['iglesia_actual'] = churchName;
+      if (!isAlreadyMember) {
+        _rawMeData!['iglesia_actual'] = churchName;
+      }
     } else {
       _rawMeData = {
-        'membership_status': 'membership_pending',
+        'membership_status': nextStatus,
         if (effectiveChurchId != null && effectiveChurchId > 0)
           'requested_church_id': effectiveChurchId,
         'requested_church': churchData,
-        'iglesia_actual': churchName,
+        if (!isAlreadyMember) 'iglesia_actual': churchName,
       };
     }
 

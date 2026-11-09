@@ -5,6 +5,7 @@ import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../widgets/atrio_connectivity_alert.dart';
+import '../widgets/change_pending_banner.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
 import 'esperando_aprobacion_screen.dart';
 import 'inicio_sesion_screen.dart';
@@ -180,9 +181,10 @@ class _SeguimientoSolicitudScreenState
       debugPrint('[SOLICITUDES] Error leyendo SQLite local: $eDb');
     }
 
-    // Si la congregación del usuario aún se encuentra en revisión o aprobación,
+    // Si la congregación del usuario aún se encuentra en revisión o aprobación inicial,
     // bloquear preventivamente la consulta a Odoo para evitar fallos de conexión o errores 403.
-    if (!userProvider.isChurchApproved ||
+    if (!userProvider.hasChurchAssigned ||
+        !userProvider.isChurchApproved ||
         userProvider.isMembershipPending ||
         userProvider.churchStatus == 'membership_pending') {
       if (mounted) {
@@ -337,6 +339,9 @@ class _SeguimientoSolicitudScreenState
                       ),
                       child: Column(
                         children: [
+                          const ChangePendingBanner(
+                            margin: EdgeInsets.only(bottom: 10),
+                          ),
                           if (_isLoading)
                             Padding(
                               padding: EdgeInsets.only(
@@ -448,12 +453,11 @@ class _SeguimientoSolicitudScreenState
                                                   ),
                                                 ),
                                               ),
-                                            ] else if (!userProvider
-                                                    .isChurchApproved ||
-                                                userProvider
-                                                    .isMembershipPending ||
-                                                userProvider.churchStatus ==
-                                                    'membership_pending') ...[
+                                            ] else if ((!userProvider.isChurchApproved ||
+                                                    userProvider.isMembershipPending ||
+                                                    userProvider.churchStatus ==
+                                                        'membership_pending') &&
+                                                !userProvider.hasChurchAssigned) ...[
                                               Container(
                                                 width: screenWidth * 0.18,
                                                 height: screenWidth * 0.18,

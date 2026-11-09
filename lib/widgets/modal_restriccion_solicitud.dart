@@ -69,12 +69,19 @@ class ModalRestriccionSolicitud {
       return false;
     }
 
-    // 3. Estatus de iglesia pendiente de aprobación en backend
+    // 3. Miembro activo con congregación aprobada:
+    // Tiene acceso pleno. Un traslado de iglesia en curso (change_pending)
+    // NO debe bloquear sus solicitudes ni peticiones pastorales en su iglesia activa.
+    if (userProvider.hasChurchAssigned && userProvider.isChurchApproved) {
+      return true;
+    }
+
+    // 4. Estatus de iglesia pendiente de aprobación inicial en backend (sin iglesia aprobada previa)
     final bool tieneIglesiaPendiente = userProvider.isMembershipPending ||
         userProvider.churchStatus == 'membership_pending' ||
         userProvider.churchStatus == 'pending' ||
         userProvider.isWaitingApproval ||
-        userProvider.requestedChurchId != null ||
+        (userProvider.requestedChurchId != null && !userProvider.hasChurchAssigned) ||
         (userProvider.currentUser?.isMembershipPending == true);
 
     if (tieneIglesiaPendiente) {
@@ -85,17 +92,13 @@ class ModalRestriccionSolicitud {
       return false;
     }
 
-    // 4. Sin iglesia asignada o no aprobada
-    if (!userProvider.hasChurchAssigned || !userProvider.isChurchApproved) {
-      mostrarAlertaIglesiaRequerida(
-        context: effectiveContext,
-        duracion: const Duration(seconds: 7),
-      );
-      onDenegado?.call();
-      return false;
-    }
-
-    return true;
+    // 5. Sin iglesia asignada o no aprobada
+    mostrarAlertaIglesiaRequerida(
+      context: effectiveContext,
+      duracion: const Duration(seconds: 7),
+    );
+    onDenegado?.call();
+    return false;
   }
 
   /// Despliega un diálogo modal restrictivo cuando el usuario tiene una congregación

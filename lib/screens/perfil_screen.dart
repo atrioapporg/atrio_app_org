@@ -18,6 +18,7 @@ import '../providers/recomendacion_iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/permission_guard.dart';
+import '../widgets/change_pending_banner.dart';
 import '../widgets/read_only_banner.dart';
 import 'admin_ads_screen.dart';
 import 'admin_requests_screen.dart';
@@ -289,27 +290,34 @@ class _PerfilScreenState extends State<PerfilScreen>
     final String? nombreSqlite = (_usuarioData?['iglesia_nombre'] as String?)
         ?.trim();
 
-    final String iglesia =
-        (nombreRequested != null && nombreRequested.isNotEmpty)
-        ? nombreRequested
-        : ((nombreProvider != null && nombreProvider.isNotEmpty)
-              ? nombreProvider
-              : ((nombreUserOdoo != null &&
-                        nombreUserOdoo.isNotEmpty &&
-                        nombreUserOdoo != 'Sin iglesia seleccionada' &&
-                        nombreUserOdoo != sinIglesiaTexto &&
-                        nombreUserOdoo != 'Iglesia Atrio')
-                    ? nombreUserOdoo
-                    : ((nombreRequested != null && nombreRequested.isNotEmpty)
-                          ? nombreRequested
-                          : ((nombreSqlite != null &&
-                                    nombreSqlite.isNotEmpty &&
-                                    nombreSqlite !=
-                                        'Sin iglesia seleccionada' &&
-                                    nombreSqlite != sinIglesiaTexto &&
-                                    nombreSqlite != 'Iglesia Atrio')
-                                ? nombreSqlite
-                                : sinIglesiaTexto))));
+    final bool tieneIglesiaActiva = (nombreUserOdoo != null &&
+            nombreUserOdoo.isNotEmpty &&
+            nombreUserOdoo != 'Sin iglesia seleccionada' &&
+            nombreUserOdoo != sinIglesiaTexto &&
+            nombreUserOdoo != 'Iglesia Atrio') ||
+        (nombreProvider != null &&
+            nombreProvider.isNotEmpty &&
+            nombreProvider != 'Sin iglesia seleccionada' &&
+            nombreProvider != sinIglesiaTexto &&
+            nombreProvider != 'Iglesia Atrio');
+
+    final String iglesia = tieneIglesiaActiva
+        ? ((nombreUserOdoo != null &&
+                nombreUserOdoo.isNotEmpty &&
+                nombreUserOdoo != 'Sin iglesia seleccionada' &&
+                nombreUserOdoo != sinIglesiaTexto &&
+                nombreUserOdoo != 'Iglesia Atrio')
+            ? nombreUserOdoo
+            : (nombreProvider ?? sinIglesiaTexto))
+        : ((nombreRequested != null && nombreRequested.isNotEmpty)
+            ? nombreRequested
+            : ((nombreSqlite != null &&
+                    nombreSqlite.isNotEmpty &&
+                    nombreSqlite != 'Sin iglesia seleccionada' &&
+                    nombreSqlite != sinIglesiaTexto &&
+                    nombreSqlite != 'Iglesia Atrio')
+                ? nombreSqlite
+                : sinIglesiaTexto));
 
     final bool hasChurchSelected =
         estaAutenticado &&
@@ -442,6 +450,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                   ),
                 ),
               const ReadOnlyBanner(),
+              const ChangePendingBanner(),
               _buildTarjetaEstadoIglesia(
                 context: context,
                 screenWidth: screenWidth,
@@ -1066,7 +1075,7 @@ class _PerfilScreenState extends State<PerfilScreen>
     required double usableHeight,
     required String nombre,
     required String iglesia,
-    required String iniciales,
+    String? iniciales,
     required AjustesProvider ajustesProvider,
     bool isMembershipPending = false,
     bool isChurchApproved = false,
@@ -1080,17 +1089,17 @@ class _PerfilScreenState extends State<PerfilScreen>
 
     return Container(
       width: screenWidth,
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         screenWidth * 0.05,
         usableHeight * 0.015,
         screenWidth * 0.05,
-        usableHeight * 0.025,
+        usableHeight * 0.02,
       ),
       decoration: BoxDecoration(
         color: azulFondo,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(screenWidth * 0.07),
-          bottomRight: Radius.circular(screenWidth * 0.07),
+          bottomLeft: Radius.circular(screenWidth * 0.06),
+          bottomRight: Radius.circular(screenWidth * 0.06),
         ),
       ),
       child: Column(
@@ -1118,74 +1127,37 @@ class _PerfilScreenState extends State<PerfilScreen>
               ),
             ],
           ),
-          SizedBox(height: usableHeight * 0.018),
+          SizedBox(height: usableHeight * 0.016),
 
-          // Fila del Usuario (Avatar + Nombre e Iglesia + Botón Editar)
+          // Fila del Usuario (Nombre + Badges de Rol/Estado + Botón Editar/Login)
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: screenWidth * 0.09,
-                backgroundColor: amarilloOro,
-                child: Text(
-                  iniciales,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.08,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.04),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       nombre,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: screenWidth * 0.05,
+                        fontSize: screenWidth * 0.048,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
                       ),
                       overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     SizedBox(height: usableHeight * 0.005),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.church_rounded,
-                          color: amarilloOro,
-                          size: screenWidth * 0.04,
-                        ),
-                        SizedBox(width: screenWidth * 0.015),
-                        Expanded(
-                          child: Text(
-                            iglesia,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: screenWidth * 0.033,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: usableHeight * 0.005),
-                    _buildHeaderChurchStatusBadge(
-                      context: context,
-                      isChurchApproved: isChurchApproved,
-                      isMembershipPending: isMembershipPending,
-                      isChangePending: isChangePending,
-                      hasChurchAssigned: hasChurchAssigned,
-                    ),
-                    SizedBox(height: usableHeight * 0.007),
                     // Badges de Rol y Estado de Lectura (RBAC Odoo 19)
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: const EdgeInsetsDirectional.symmetric(
                             horizontal: 8,
                             vertical: 2,
                           ),
@@ -1210,7 +1182,7 @@ class _PerfilScreenState extends State<PerfilScreen>
                         ),
                         if (estaAutenticado && userProvider.isReadOnly)
                           Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding: const EdgeInsetsDirectional.symmetric(
                               horizontal: 8,
                               vertical: 2,
                             ),
@@ -1236,31 +1208,91 @@ class _PerfilScreenState extends State<PerfilScreen>
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: estaAutenticado
-                    ? (l10n?.perfilBotonEditarDatosTooltip ??
-                          'Editar mis datos personales')
-                    : (l10n?.perfilBotonIniciarSesionTooltip ??
-                          'Iniciar sesión en ATRIO'),
-                onPressed: () {
-                  if (estaAutenticado) {
-                    _mostrarDialogoEditarDatos(
-                      context,
-                      screenWidth,
-                      usableHeight,
-                      iglesiaActual: iglesia,
-                    );
-                  } else {
-                    Navigator.pushNamed(context, InicioSesionScreen.routeName);
-                  }
-                },
-                icon: Icon(
-                  estaAutenticado ? Icons.edit_outlined : Icons.login_rounded,
-                  color: Colors.white,
-                  size: screenWidth * 0.055,
+              Material(
+                color: Colors.white.withValues(alpha: 0.12),
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: IconButton(
+                  tooltip: estaAutenticado
+                      ? (l10n?.perfilBotonEditarDatosTooltip ??
+                            'Editar mis datos personales')
+                      : (l10n?.perfilBotonIniciarSesionTooltip ??
+                            'Iniciar sesión en ATRIO'),
+                  onPressed: () {
+                    if (estaAutenticado) {
+                      _mostrarDialogoEditarDatos(
+                        context,
+                        screenWidth,
+                        usableHeight,
+                        iglesiaActual: iglesia,
+                      );
+                    } else {
+                      Navigator.pushNamed(context, InicioSesionScreen.routeName);
+                    }
+                  },
+                  icon: Icon(
+                    estaAutenticado ? Icons.edit_outlined : Icons.login_rounded,
+                    color: Colors.white,
+                    size: screenWidth * 0.05,
+                  ),
                 ),
               ),
             ],
+          ),
+          SizedBox(height: usableHeight * 0.014),
+
+          // Cápsula horizontal de información y estatus de la Iglesia
+          Container(
+            padding: EdgeInsetsDirectional.symmetric(
+              horizontal: screenWidth * 0.035,
+              vertical: usableHeight * 0.01,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(screenWidth * 0.028),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.14),
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: amarilloOro.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.018),
+                  ),
+                  child: Icon(
+                    Icons.church_rounded,
+                    color: amarilloOro,
+                    size: screenWidth * 0.042,
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.025),
+                Expanded(
+                  child: Text(
+                    iglesia,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: screenWidth * 0.033,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                _buildHeaderChurchStatusBadge(
+                  context: context,
+                  isChurchApproved: isChurchApproved,
+                  isMembershipPending: isMembershipPending,
+                  isChangePending: isChangePending,
+                  hasChurchAssigned: hasChurchAssigned,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1309,7 +1341,7 @@ class _PerfilScreenState extends State<PerfilScreen>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 8, vertical: 2.5),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(8),
@@ -1383,9 +1415,15 @@ class _PerfilScreenState extends State<PerfilScreen>
       badgeBg = const Color(0xFFFEF3C7);
       badgeTextCol = const Color(0xFFB45309);
       headerTitle = l10n?.perfilSolicitudMembresia ?? 'Solicitud de membresía';
+      final String prefix = (iglesia.toLowerCase().startsWith('la ') ||
+              iglesia.toLowerCase().startsWith('el ') ||
+              iglesia.toLowerCase().startsWith('templo '))
+          ? ''
+          : 'la ';
+      final String iglesiaFormateada = '$prefix$iglesia';
       description =
-          l10n?.perfilMembresiaPendienteDesc(iglesia) ??
-          'Perteneces a $iglesia, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
+          l10n?.perfilMembresiaPendienteDesc(iglesiaFormateada) ??
+          'Perteneces a $iglesiaFormateada, pero tu aprobación se encuentra actualmente pendiente por parte de la administración.';
       buttonText = l10n?.perfilVerEstadoSolicitud ?? 'Ver estado de solicitud';
       buttonIcon = Icons.hourglass_top_rounded;
       onButtonTap = () {
@@ -1618,6 +1656,35 @@ class _PerfilScreenState extends State<PerfilScreen>
                     height: 1.4,
                   ),
                 ),
+                if (Provider.of<UserProvider>(context, listen: false).isChangePending) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0E7FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF6366F1), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.swap_horiz_rounded, color: Color(0xFF4338CA), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n?.perfilCambioCongregacionDesc ??
+                                'Tu solicitud para trasladarte a una nueva congregación está en proceso de revisión por la administración.',
+                            style: const TextStyle(
+                              color: Color(0xFF4338CA),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,

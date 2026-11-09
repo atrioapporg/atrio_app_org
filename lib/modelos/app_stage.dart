@@ -81,7 +81,8 @@ AppStage resolveStage(Map<String, dynamic>? me) {
               (church['id'] != null || church['name'] != null)));
 
   if (role == 'platform_admin') return AppStage.platformAdmin;
-  if (status == 'membership_pending' || status == 'pending') {
+  if ((status == 'membership_pending' || status == 'pending') &&
+      !hasGenuineChurchData) {
     return AppStage.waitingApproval;
   }
   if (role == 'church_admin') {

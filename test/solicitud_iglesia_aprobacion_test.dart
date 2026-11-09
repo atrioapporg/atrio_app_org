@@ -17,7 +17,7 @@ void main() {
     int id = 1,
     String nombre = 'Test User',
     String email = 'test@atrio.org',
-    String iglesiaActual = 'Iglesia Atrio',
+    String iglesiaActual = 'Comunidad de la Fe',
     int? iglesiaId,
     String fechaRegistro = '2026-01-01',
     String avatarIniciales = 'TU',

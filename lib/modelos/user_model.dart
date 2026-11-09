@@ -77,14 +77,22 @@ class UserModel {
   bool get isMember => role == UserRole.member || role == UserRole.churchAdmin;
 
   /// Indica si la solicitud de membresía está pendiente de aprobación por el pastor o admin.
+  /// Solo aplica a usuarios que NO tienen una membresía activa aprobada (no aplica en traslados).
   bool get isMembershipPending =>
-      membershipStatus == 'membership_pending' ||
-      membershipStatus == 'pending' ||
-      membershipStatus == 'waiting' ||
-      membershipStatus == 'in_review';
+      !isChangePending &&
+      (membershipStatus == 'membership_pending' ||
+          membershipStatus == 'pending' ||
+          membershipStatus == 'waiting' ||
+          membershipStatus == 'in_review');
 
   /// Indica si el usuario tiene una solicitud de cambio de congregación en curso.
-  bool get isChangePending => membershipStatus == 'change_pending';
+  bool get isChangePending =>
+      membershipStatus == 'change_pending' ||
+      (hasChurchAssigned &&
+          isMember &&
+          requestedChurchId != null &&
+          requestedChurchId! > 0 &&
+          requestedChurchId != iglesiaId);
 
   /// Indica si el usuario tiene una recomendación de iglesia en curso activa en Atrio.
   bool get hasActiveRecommendation =>
@@ -130,13 +138,11 @@ class UserModel {
   String get churchStatus => membershipStatus;
 
   /// Indica si la congregación del usuario está plenamente asignada y aprobada por el backend.
-  /// No se considera aprobada si la membresía está pendiente ('membership_pending') o no tiene iglesia asignada.
+  /// Un cambio de iglesia en curso (isChangePending) mantiene la membresía activa actual.
   bool get isChurchApproved =>
       hasChurchAssigned &&
       (isMember || membershipStatus == 'approved') &&
-      !isMembershipPending &&
-      membershipStatus != 'membership_pending' &&
-      membershipStatus != 'pending';
+      !isMembershipPending;
 
   /// Indica si el usuario ya cuenta con una congregación seleccionada o vinculada
   /// en su perfil (asignada formalmente, solicitada/pendiente de aprobación, o guardada en perfil),
@@ -353,13 +359,19 @@ class UserModel {
         parseId(user['requested_church_id']) ??
         parseId(member['requested_church_id']);
 
+    final String? reqName = parseName(odooData['requested_church_name']) ??
+        parseName(user['requested_church_name']) ??
+        parseName(member['requested_church_name']);
+
     final Map<String, dynamic>? requestedChurchData =
         (odooData['requested_church'] as Map<String, dynamic>?) ??
-        (church.isNotEmpty &&
-                (membershipStatus == 'membership_pending' ||
-                    membershipStatus == 'pending')
-            ? church
-            : null);
+        (reqName != null && requestedChurchId != null
+            ? {'id': requestedChurchId, 'name': reqName}
+            : (church.isNotEmpty &&
+                    (membershipStatus == 'membership_pending' ||
+                        membershipStatus == 'pending')
+                ? church
+                : null));
 
     final String? nombreIglesiaExtraido =
         parseName(church['name']) ??
@@ -373,10 +385,12 @@ class UserModel {
         parseName(user['iglesia_nombre']) ??
         parseName(member['iglesia_nombre']) ??
         parseName(church['display_name']) ??
-        parseName(requestedChurchData?['name']) ??
-        parseName(requestedChurchData?['public_name']) ??
-        parseName(odooData['requested_church_name']) ??
-        parseName(user['requested_church_name']) ??
+        ((membershipStatus == 'membership_pending' ||
+                membershipStatus == 'pending')
+            ? (parseName(requestedChurchData?['name']) ??
+                parseName(requestedChurchData?['public_name']) ??
+                reqName)
+            : null) ??
         parseName(user['church_id']) ??
         parseName(member['church_id']) ??
         parseName(odooData['church_id']);
@@ -402,7 +416,10 @@ class UserModel {
                             .trim()
                             .isNotEmpty &&
                         !isDefaultOrDemoChurchName(
-                            requestedChurchData['name'] as String))
+                            requestedChurchData['name'] as String) &&
+                        (membershipStatus == 'membership_pending' ||
+                            membershipStatus == 'pending' ||
+                            iglesiaId == null))
                     ? (requestedChurchData['name'] as String).trim()
                     : 'Sin iglesia seleccionada'));
 

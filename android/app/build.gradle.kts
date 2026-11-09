@@ -40,7 +40,8 @@ val mapsApiKey = localProperties.getProperty("MAPS_API_KEY")
 
 android {
     namespace = "com.example.atrio"
-    compileSdk = flutter.compileSdkVersion
+    // Certificación Google Play: Orientado a Android 16 (API 36) o superior
+    compileSdk = maxOf(flutter.compileSdkVersion, 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -56,7 +57,8 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Requisito mínimo: Android 10 (API level 29) o superior
         minSdk = 29
-        targetSdk = flutter.targetSdkVersion
+        // Certificación Google Play: Orientado a Android 16 (API 36) o posterior
+        targetSdk = maxOf(flutter.targetSdkVersion, 36)
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
         // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`

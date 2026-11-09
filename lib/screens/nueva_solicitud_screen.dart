@@ -4,10 +4,8 @@ import 'package:provider/provider.dart';
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
-import '../screens/esperando_aprobacion_screen.dart';
 import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/modal_confirmacion_solicitud.dart';
-import '../widgets/modal_restriccion_donacion.dart';
 import '../widgets/modal_restriccion_solicitud.dart';
 import '../widgets/read_only_banner.dart';
 
@@ -520,47 +518,9 @@ class _NuevaSolicitudScreenState extends State<NuevaSolicitudScreen> {
                                     return;
                                   }
 
-                                  // Modo invitado: no autenticado
-                                  if (!ModalRestriccionDonacion.verificarAutenticacion(
+                                  if (!ModalRestriccionSolicitud.verificarAcceso(
                                     context: context,
-                                    mensaje: l10n?.solicitudRequiereSesion,
                                   )) {
-                                    return;
-                                  }
-
-                                  // Iglesia en revisión / pendiente de aprobación pastoral
-                                  final bool tieneIglesiaPendiente =
-                                      userProvider.isMembershipPending ||
-                                      userProvider.churchStatus ==
-                                          'membership_pending' ||
-                                      userProvider.churchStatus == 'pending' ||
-                                      userProvider.isWaitingApproval ||
-                                      userProvider.requestedChurchId != null ||
-                                      (userProvider
-                                              .currentUser
-                                              ?.isMembershipPending ==
-                                          true);
-
-                                  if (tieneIglesiaPendiente) {
-                                    ModalRestriccionSolicitud.mostrarIglesiaPendiente(
-                                      context: context,
-                                      onRedirigir: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          EsperandoAprobacionScreen.routeName,
-                                        );
-                                      },
-                                    );
-                                    return;
-                                  }
-
-                                  // Sin congregación asignada o no aprobada
-                                  if (!userProvider.hasChurchAssigned ||
-                                      !userProvider.isChurchApproved) {
-                                    ModalRestriccionSolicitud.mostrarAlertaIglesiaRequerida(
-                                      context: context,
-                                      duracion: const Duration(seconds: 7),
-                                    );
                                     return;
                                   }
                                   if (_formKey.currentState!.validate()) {

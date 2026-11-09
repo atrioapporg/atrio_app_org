@@ -4216,4 +4216,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get oracionMatutinaSubtitulo => 'Oración y devocional diario';
+
+  @override
+  String get qrIglesiaTooltip =>
+      'Código QR oficial de la congregación (toca para ampliar)';
+
+  @override
+  String get qrOficialIglesiaTitulo => 'Código QR Oficial';
+
+  @override
+  String get qrOficialIglesiaSubtitulo =>
+      'Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.';
+
+  @override
+  String get copiarEnlaceInvitacion => 'Copiar enlace de invitación';
+
+  @override
+  String get enlaceInvitacionCopiado =>
+      '¡Enlace de invitación copiado al portapapeles!';
+
+  @override
+  String get errorCargarQrIglesia =>
+      'No se pudo cargar el código QR de la congregación.';
 }

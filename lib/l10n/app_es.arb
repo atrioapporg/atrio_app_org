@@ -2097,5 +2097,11 @@
   "abriendoPasarelaTienda": "Abriendo pasarela de pago segura...",
   "amen": "Amén",
   "irAlCapitulo": "Ir al capítulo",
-  "oracionMatutinaSubtitulo": "Oración y devocional diario"
+  "oracionMatutinaSubtitulo": "Oración y devocional diario",
+  "qrIglesiaTooltip": "Código QR oficial de la congregación (toca para ampliar)",
+  "qrOficialIglesiaTitulo": "Código QR Oficial",
+  "qrOficialIglesiaSubtitulo": "Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.",
+  "copiarEnlaceInvitacion": "Copiar enlace de invitación",
+  "enlaceInvitacionCopiado": "¡Enlace de invitación copiado al portapapeles!",
+  "errorCargarQrIglesia": "No se pudo cargar el código QR de la congregación."
 }

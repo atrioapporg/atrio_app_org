@@ -2016,5 +2016,11 @@
   "abriendoPasarelaTienda": "Opening secure payment portal...",
   "amen": "Amen",
   "irAlCapitulo": "Go to chapter",
-  "oracionMatutinaSubtitulo": "Daily prayer and devotional"
+  "oracionMatutinaSubtitulo": "Daily prayer and devotional",
+  "qrIglesiaTooltip": "Official church QR code (tap to enlarge)",
+  "qrOficialIglesiaTitulo": "Official QR Code",
+  "qrOficialIglesiaSubtitulo": "Show this code so other parishioners or visitors can join this church on ATRIO.",
+  "copiarEnlaceInvitacion": "Copy invite link",
+  "enlaceInvitacionCopiado": "Invite link copied to clipboard!",
+  "errorCargarQrIglesia": "Could not load church QR code."
 }

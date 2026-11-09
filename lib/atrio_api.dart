@@ -1283,6 +1283,106 @@ class AtrioApi {
     if (token != null && token!.isNotEmpty) 'Authorization': 'Bearer $token',
   };
 
+  /// URL del código QR PNG de la iglesia asignada al usuario autenticado.
+  /// Endpoint: GET /atrio/portal/api/church/qr.png
+  /// Con [download] en true incluye '?download=1' para que Odoo lo entregue como archivo
+  /// e incluya el enlace oficial en la cabecera 'X-Atrio-Join-Url'.
+  String churchQrUrl({bool download = false}) {
+    final query = download ? '?download=1' : '';
+    return '$baseUrl/atrio/portal/api/church/qr.png$query';
+  }
+
+  /// Obtiene los bytes de la imagen PNG del código QR de la iglesia asignada al usuario
+  /// y el enlace directo de vinculación recibido en la cabecera `X-Atrio-Join-Url`.
+  /// Endpoint: GET /atrio/portal/api/church/qr.png
+  /// Funciona para miembros y administradores de iglesia.
+  /// Si el usuario no tiene iglesia asignada, Odoo responde 404 (código: 'no_church').
+  Future<({Uint8List bytes, String? joinUrl})> getChurchQr({
+    bool download = true,
+    bool retryAuth = true,
+  }) async {
+    await _ensureStorageLoaded();
+
+    final query = download ? {'download': '1'} : null;
+    final String fullPath = '$baseUrl/atrio/portal/api/church/qr.png';
+    final uri = Uri.parse(fullPath).replace(queryParameters: query);
+
+    final mergedHeaders = _buildHeaders(
+      '/church/qr.png',
+      extraHeaders: {
+        'Accept': 'image/png, application/json',
+      },
+    );
+
+    final request = http.Request('GET', uri)..headers.addAll(mergedHeaders);
+
+    final stopwatch = Stopwatch()..start();
+    http.Response response;
+    try {
+      final streamedResponse = await (client != null
+              ? client!.send(request)
+              : request.send())
+          .timeout(const Duration(seconds: 15));
+      response = await http.Response.fromStream(streamedResponse);
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      if (enableLogging) {
+        AtrioHttpLogger.logNetworkException(
+          method: 'GET',
+          uri: uri,
+          exception: e,
+          duration: stopwatch.elapsed,
+          stackTrace: stackTrace,
+        );
+      }
+      rethrow;
+    }
+    stopwatch.stop();
+
+    if (enableLogging) {
+      AtrioHttpLogger.logResponse(
+        method: 'GET',
+        uri: uri,
+        statusCode: response.statusCode,
+        duration: stopwatch.elapsed,
+        data: {
+          'bytes': response.bodyBytes.length,
+          if (response.headers['x-atrio-join-url'] != null)
+            'join_url': response.headers['x-atrio-join-url']!,
+        },
+      );
+    }
+
+    if (response.statusCode == 401 && retryAuth && refreshToken != null) {
+      try {
+        await _safeRefresh();
+        return await getChurchQr(download: download, retryAuth: false);
+      } catch (_) {
+        throw AtrioApiException(401, 'unauthorized', 'Sesión expirada.');
+      }
+    }
+
+    if (response.statusCode == 200) {
+      final joinUrl = response.headers['x-atrio-join-url'] ??
+          response.headers['X-Atrio-Join-Url'];
+      return (bytes: response.bodyBytes, joinUrl: joinUrl);
+    }
+
+    String code = 'qr_error';
+    String message = 'No se pudo obtener el código QR de la congregación.';
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) {
+        code = decoded['code'] as String? ?? code;
+        message = decoded['error'] as String? ??
+            decoded['message'] as String? ??
+            message;
+      }
+    } catch (_) {}
+
+    throw AtrioApiException(response.statusCode, code, message);
+  }
+
   // ===========================================================================
   // 12. HERRAMIENTA DE DIAGNÓSTICO Y VALIDACIÓN DE SESIÓN (ETAPA 3)
   // ===========================================================================

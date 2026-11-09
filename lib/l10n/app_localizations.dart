@@ -7451,6 +7451,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Oración y devocional diario'**
   String get oracionMatutinaSubtitulo;
+
+  /// No description provided for @qrIglesiaTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Código QR oficial de la congregación (toca para ampliar)'**
+  String get qrIglesiaTooltip;
+
+  /// No description provided for @qrOficialIglesiaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Código QR Oficial'**
+  String get qrOficialIglesiaTitulo;
+
+  /// No description provided for @qrOficialIglesiaSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.'**
+  String get qrOficialIglesiaSubtitulo;
+
+  /// No description provided for @copiarEnlaceInvitacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar enlace de invitación'**
+  String get copiarEnlaceInvitacion;
+
+  /// No description provided for @enlaceInvitacionCopiado.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Enlace de invitación copiado al portapapeles!'**
+  String get enlaceInvitacionCopiado;
+
+  /// No description provided for @errorCargarQrIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el código QR de la congregación.'**
+  String get errorCargarQrIglesia;
 }
 
 class _AppLocalizationsDelegate

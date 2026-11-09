@@ -8,8 +8,8 @@ import '../l10n/app_localizations.dart';
 import '../modelos/iglesia_model.dart';
 import '../providers/iglesia_provider.dart';
 import '../providers/user_provider.dart';
-import '../servicios/join_church_service.dart';
 import '../servicios/moderation_service.dart';
+import '../widgets/church_qr_dialog.dart';
 import 'donaciones_screen.dart';
 import 'qr_join_scanner_screen.dart';
 import 'seleccionar_iglesia_screen.dart';
@@ -1608,10 +1608,7 @@ class _ChurchQrAvatar extends StatefulWidget {
 }
 
 class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
-  static final Map<int, ({Uint8List bytes, String? joinUrl})> _qrCache = {};
-
   Uint8List? _qrBytes;
-  String? _joinUrl;
   bool _isLoading = true;
 
   @override
@@ -1630,74 +1627,26 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
 
   Future<void> _cargarQr() async {
     if (!mounted) return;
-
-    // Si ya existe en memoria para esta congregación, cargar instantáneamente
-    final cached = _qrCache[widget.iglesia.id];
-    if (cached != null) {
-      if (mounted) {
-        setState(() {
-          _qrBytes = cached.bytes;
-          _joinUrl = cached.joinUrl;
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    final userProvider = context.read<UserProvider>();
-    final api = userProvider.api;
-
-    if (!api.isAuthenticated && api.token == null) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      return;
-    }
-
-    try {
-      final res = await api.getChurchQr(download: true);
-      String? joinUrl = res.joinUrl;
-
-      // Respaldo de URL canónica de vinculación si el backend no entregó la cabecera
-      if ((joinUrl == null || joinUrl.isEmpty) && mounted) {
-        joinUrl = await JoinChurchService().resolveChurchJoinUrl(
-          churchId: widget.iglesia.id,
-          accessToken: api.token,
-        );
-      }
-
-      _qrCache[widget.iglesia.id] = (bytes: res.bytes, joinUrl: joinUrl);
-
-      if (mounted) {
-        setState(() {
-          _qrBytes = res.bytes;
-          _joinUrl = joinUrl;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('ℹ️ [_ChurchQrAvatar] No se pudo obtener QR de iglesia: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    final data = await ChurchQrManager.obtenerQr(
+      context: context,
+      churchId: widget.iglesia.id,
+    );
+    if (mounted) {
+      setState(() {
+        _qrBytes = data?.bytes;
+        _isLoading = false;
+      });
     }
   }
 
   void _abrirModalQr(BuildContext context) {
-    if (_qrBytes == null) return;
-    HapticFeedback.lightImpact();
-
-    showDialog<void>(
+    ChurchQrManager.mostrarModal(
       context: context,
-      barrierDismissible: true,
-      builder: (dialogCtx) => _ChurchQrDialog(
-        churchName: widget.iglesia.nombre,
-        denomination: widget.iglesia.denominacion,
-        qrBytes: _qrBytes!,
-        joinUrl: _joinUrl,
-        azulFondo: widget.azulFondo,
-        amarilloOro: widget.amarilloOro,
-      ),
+      churchName: widget.iglesia.nombre,
+      denomination: widget.iglesia.denominacion,
+      churchId: widget.iglesia.id,
+      azulFondo: widget.azulFondo,
+      amarilloOro: widget.amarilloOro,
     );
   }
 
@@ -1779,218 +1728,6 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
             borderRadius: borderRadius,
             onTap: () => _abrirModalQr(context),
             child: card,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Diálogo modal interactivo para visualizar el código QR oficial de la iglesia
-/// en alta resolución y permitir copiar/compartir el enlace canónico de vinculación.
-class _ChurchQrDialog extends StatelessWidget {
-  final String churchName;
-  final String denomination;
-  final Uint8List qrBytes;
-  final String? joinUrl;
-  final Color azulFondo;
-  final Color amarilloOro;
-
-  const _ChurchQrDialog({
-    required this.churchName,
-    required this.denomination,
-    required this.qrBytes,
-    required this.joinUrl,
-    required this.azulFondo,
-    required this.amarilloOro,
-  });
-
-  Future<void> _copiarEnlace(BuildContext context) async {
-    if (joinUrl == null || joinUrl!.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: joinUrl!));
-    if (!context.mounted) return;
-    HapticFeedback.mediumImpact();
-    final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n?.enlaceInvitacionCopiado ??
-                    '¡Enlace de invitación copiado al portapapeles!',
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF2E7D32),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final size = MediaQuery.sizeOf(context);
-    final qrBoxSize = (size.width * 0.62).clamp(180.0, 260.0);
-
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 24, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Badge de encabezado
-              Container(
-                padding: const EdgeInsetsDirectional.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: azulFondo.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.qr_code_2_rounded, size: 18, color: azulFondo),
-                    const SizedBox(width: 6),
-                    Text(
-                      l10n?.qrOficialIglesiaTitulo ?? 'Código QR Oficial',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.bold,
-                        color: azulFondo,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Nombre de la iglesia
-              Text(
-                churchName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF072B4F),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (denomination.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  denomination,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              // Contenedor del QR en alta resolución con marco dorado
-              Container(
-                width: qrBoxSize,
-                height: qrBoxSize,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: amarilloOro.withValues(alpha: 0.7),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.memory(
-                    qrBytes,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              // Subtítulo explicativo
-              Text(
-                l10n?.qrOficialIglesiaSubtitulo ??
-                    'Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Colors.grey.shade700,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Botón de copiar enlace si está disponible
-              if (joinUrl != null && joinUrl!.isNotEmpty) ...[
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: azulFondo,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    icon: const Icon(Icons.copy_rounded, size: 18),
-                    label: Text(
-                      l10n?.copiarEnlaceInvitacion ??
-                          'Copiar enlace de invitación',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    onPressed: () => _copiarEnlace(context),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              // Botón de cerrar
-              SizedBox(
-                width: double.infinity,
-                height: 42,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.grey.shade700,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    l10n?.cerrar ?? 'Cerrar',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ),

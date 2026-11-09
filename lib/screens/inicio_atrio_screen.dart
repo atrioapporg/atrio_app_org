@@ -27,7 +27,7 @@ import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
 import 'perfil_screen.dart';
-import 'qr_join_scanner_screen.dart';
+import '../widgets/church_qr_dialog.dart';
 import 'tradicion_cristiana_screen.dart';
 
 class InicioAtrioScreen extends StatefulWidget {
@@ -804,31 +804,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Tooltip(
-                          message:
-                              l10n?.escanearQrIglesia ??
-                              'Escanear QR de Iglesia',
-                          child: SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  QrJoinScannerScreen.routeName,
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(24),
-                              child: Center(
-                                child: Icon(
-                                  Icons.qr_code_scanner_rounded,
-                                  color: Colors.white,
-                                  size: screenWidth * 0.076,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                        _HeaderChurchQrButton(screenWidth: screenWidth),
                         SizedBox(width: screenWidth * 0.015),
                         Builder(
                           builder: (context) {
@@ -2400,6 +2376,80 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       decoration: BoxDecoration(
         color: isActive ? color : Colors.grey.shade400,
         borderRadius: BorderRadius.circular(screenWidth * 0.01),
+      ),
+    );
+  }
+}
+
+/// Botón de acción en el encabezado superior para visualizar el código QR oficial de la congregación.
+/// Activa respuesta háptica y abre el diálogo modal [ChurchQrDialog] con el QR ampliado y marco dorado.
+class _HeaderChurchQrButton extends StatelessWidget {
+  final double screenWidth;
+
+  const _HeaderChurchQrButton({required this.screenWidth});
+
+  void _abrirQr(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final iglesiaProvider = context.read<IglesiaProvider>();
+    final userProvider = context.read<UserProvider>();
+    final iglesia = iglesiaProvider.iglesiaActual;
+    final int? churchId = iglesia?.id ?? userProvider.currentUser?.iglesiaId;
+
+    if (churchId == null || churchId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final churchName = (iglesia != null && iglesia.nombre.trim().isNotEmpty)
+        ? iglesia.nombre.trim()
+        : ((userProvider.currentUser != null &&
+                userProvider.currentUser!.iglesiaActual.trim().isNotEmpty &&
+                userProvider.currentUser!.iglesiaActual != 'Sin iglesia seleccionada')
+            ? userProvider.currentUser!.iglesiaActual.trim()
+            : (l10n?.sinIglesiaSeleccionada ?? 'Mi Iglesia'));
+    final denomination = iglesia?.denominacion ?? '';
+
+    ChurchQrManager.mostrarModal(
+      context: context,
+      churchName: churchName,
+      denomination: denomination,
+      churchId: churchId,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Tooltip(
+      message: l10n?.qrIglesiaTooltip ??
+          'Código QR oficial de la congregación (toca para ampliar)',
+      child: Semantics(
+        button: true,
+        label: l10n?.qrIglesiaTooltip ??
+            'Código QR oficial de la congregación (toca para ampliar)',
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: InkWell(
+            onTap: () => _abrirQr(context),
+            borderRadius: BorderRadius.circular(24),
+            child: Center(
+              child: Icon(
+                Icons.qr_code_2_rounded,
+                color: Colors.white,
+                size: screenWidth * 0.076,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

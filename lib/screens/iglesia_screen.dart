@@ -1610,11 +1610,25 @@ class _ChurchQrAvatar extends StatefulWidget {
 class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
   Uint8List? _qrBytes;
   bool _isLoading = true;
+  bool _hasFetched = false;
+  int? _lastUserId;
+  bool? _lastIsAuthenticated;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _cargarQr());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final userProvider = Provider.of<UserProvider>(context);
+    final currentUserId = userProvider.currentUser?.id;
+    final currentIsAuth = userProvider.isAuthenticated;
+
+    if (!_hasFetched ||
+        _lastUserId != currentUserId ||
+        _lastIsAuthenticated != currentIsAuth) {
+      _lastUserId = currentUserId;
+      _lastIsAuthenticated = currentIsAuth;
+      _hasFetched = true;
+      _cargarQr();
+    }
   }
 
   @override
@@ -1627,6 +1641,7 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
 
   Future<void> _cargarQr() async {
     if (!mounted) return;
+    setState(() => _isLoading = true);
     final data = await ChurchQrManager.obtenerQr(
       context: context,
       churchId: widget.iglesia.id,

@@ -140,6 +140,7 @@ Future<void> main() async {
   final tokenStorage = TokenStorageService();
   final api = AtrioApi(
     baseUrl: AppConfig.odooBaseUrl,
+    database: AppConfig.odooDatabase.isNotEmpty ? AppConfig.odooDatabase : null,
     storageService: tokenStorage,
   );
   await api.initFromStorage();
@@ -202,27 +203,35 @@ Future<void> main() async {
             break;
         }
       } catch (e) {
-        debugPrint(
-          'ℹ️ [MAIN] Timeout o arranque offline al resolver AppStage: $e. Aplicando bypass con datos locales.',
-        );
-        final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
-        Map<String, dynamic>? usuario;
-        try {
-          usuario = await AtrioDatabaseHelper.instance.getUsuario();
-        } catch (_) {}
-        final bool tieneIglesiaLocal =
-            (iglesiaGuardada != null &&
-                iglesiaGuardada.trim().isNotEmpty &&
-                !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
-            (usuario != null &&
-                usuario['iglesia_nombre'] != null &&
-                !UserModel.isDefaultOrDemoChurchName(
-                  usuario['iglesia_nombre'].toString(),
-                ));
+        if (e is AtrioApiException && e.isUnauthorized) {
+          debugPrint(
+            '🔒 [MAIN] Sesión expirada definitivamente tras fallo fatal de refresh. Redirigiendo a InicioSesionScreen.',
+          );
+          await prefs.setBool('isLoggedIn', false);
+          rutaInicial = InicioSesionScreen.routeName;
+        } else {
+          debugPrint(
+            'ℹ️ [MAIN] Timeout o arranque offline al resolver AppStage: $e. Aplicando bypass con datos locales.',
+          );
+          final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
+          Map<String, dynamic>? usuario;
+          try {
+            usuario = await AtrioDatabaseHelper.instance.getUsuario();
+          } catch (_) {}
+          final bool tieneIglesiaLocal =
+              (iglesiaGuardada != null &&
+                  iglesiaGuardada.trim().isNotEmpty &&
+                  !UserModel.isDefaultOrDemoChurchName(iglesiaGuardada)) ||
+              (usuario != null &&
+                  usuario['iglesia_nombre'] != null &&
+                  !UserModel.isDefaultOrDemoChurchName(
+                    usuario['iglesia_nombre'].toString(),
+                  ));
 
-        rutaInicial = tieneIglesiaLocal
-            ? InicioAtrioScreen.routeName
-            : SeleccionarIglesiaScreen.routeName;
+          rutaInicial = tieneIglesiaLocal
+              ? InicioAtrioScreen.routeName
+              : SeleccionarIglesiaScreen.routeName;
+        }
       }
     } else {
       // Sesión activa respaldada por SharedPreferences (prefsLoggedIn == true)
@@ -250,20 +259,40 @@ Future<void> main() async {
   // 6. Iniciar monitoreo de conectividad en toda la app
   ConnectivityService.instance.startMonitoring();
 
-  // 7. Arrancar la app proyectando directamente la ruta calculada
-  runApp(AppState(initialRoute: rutaInicial));
+  // 7. Arrancar la app proyectando directamente la ruta calculada y compartiendo la instancia única de AtrioApi
+  runApp(
+    AppState(
+      initialRoute: rutaInicial,
+      api: api,
+      tokenStorage: tokenStorage,
+    ),
+  );
 }
 
 class AppState extends StatelessWidget {
   final String initialRoute;
-  const AppState({super.key, required this.initialRoute});
+  final AtrioApi? api;
+  final TokenStorageService? tokenStorage;
+
+  const AppState({
+    super.key,
+    required this.initialRoute,
+    this.api,
+    this.tokenStorage,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(
+          create: (_) => UserProvider(
+            api: api,
+            storageService: tokenStorage,
+            navigatorKey: MyApp.navigatorKey,
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => IglesiaProvider()),
         ChangeNotifierProvider(create: (_) => AporteProvider()),
         ChangeNotifierProvider(create: (_) => ProyectoSolidarioProvider()),

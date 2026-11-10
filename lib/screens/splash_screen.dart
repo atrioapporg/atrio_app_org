@@ -125,6 +125,13 @@ class _SplashScreenState extends State<SplashScreen> {
               break;
           }
         } catch (e) {
+          if (e is AtrioApiException && e.isUnauthorized) {
+            debugPrint(
+              '🔒 [SPLASH] Sesión expirada definitivamente tras fallo fatal de refresh. Redirigiendo a InicioSesionScreen.',
+            );
+            await prefs.setBool('isLoggedIn', false);
+            return InicioSesionScreen.routeName;
+          }
           debugPrint('ℹ️ [SPLASH] Modo offline o timeout en AppStage: $e');
           final String? iglesiaGuardada = prefs.getString('iglesia_guardada');
           Map<String, dynamic>? usuario;

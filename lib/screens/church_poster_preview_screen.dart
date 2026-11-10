@@ -39,7 +39,11 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
   Future<void> _resolveChurchUrl() async {
     final userProv = context.read<UserProvider>();
     final churchId = userProv.currentUser?.iglesiaId ?? 18;
-    final token = await userProv.storageService.getAccessToken();
+    String? token;
+    try {
+      token = await userProv.api.getValidAccessToken();
+    } catch (_) {}
+    token ??= await userProv.storageService.getAccessToken();
 
     final url = await _joinService.resolveChurchJoinUrl(
       churchId: churchId,

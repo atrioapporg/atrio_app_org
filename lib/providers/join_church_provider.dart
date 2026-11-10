@@ -108,7 +108,11 @@ class JoinChurchProvider extends ChangeNotifier {
 
       // 2. Verificar el estado de autenticación del feligrés
       final isAuthenticated = userProvider.isAuthenticated;
-      final accessToken = await _tokenStorage.getAccessToken();
+      String? accessToken;
+      try {
+        accessToken = await userProvider.api.getValidAccessToken();
+      } catch (_) {}
+      accessToken ??= await _tokenStorage.getAccessToken();
 
       if (!isAuthenticated || accessToken == null || accessToken.isEmpty) {
         // Guardar token en storage seguro para el flujo diferido (Deferred Join)
@@ -141,7 +145,11 @@ class JoinChurchProvider extends ChangeNotifier {
       return false;
     }
 
-    final accessToken = await _tokenStorage.getAccessToken();
+    String? accessToken;
+    try {
+      accessToken = await userProvider.api.getValidAccessToken();
+    } catch (_) {}
+    accessToken ??= await _tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       _step = JoinChurchStep.requiresLogin;
       notifyListeners();

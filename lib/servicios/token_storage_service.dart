@@ -7,6 +7,7 @@ class TokenStorageService {
 
   static const String _keyAccessToken = 'atrio_access_token';
   static const String _keyRefreshToken = 'atrio_refresh_token';
+  static const String _keyExpiresAt = 'atrio_token_expires_at';
 
   TokenStorageService({FlutterSecureStorage? storage})
     : _storage =
@@ -20,18 +21,43 @@ class TokenStorageService {
             ),
           );
 
-  /// Guarda de forma segura el access token y el refresh token.
+  /// Guarda de forma segura e inmediata el par de tokens (access_token y refresh_token)
+  /// junto con su marca temporal de expiración (expires_at) si está disponible.
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    DateTime? expiresAt,
   }) async {
     await _storage.write(key: _keyAccessToken, value: accessToken);
     await _storage.write(key: _keyRefreshToken, value: refreshToken);
+    if (expiresAt != null) {
+      await _storage.write(
+        key: _keyExpiresAt,
+        value: expiresAt.toUtc().toIso8601String(),
+      );
+    }
   }
 
-  /// Actualiza únicamente el access token (ej. tras un refresh).
-  Future<void> saveAccessToken(String accessToken) async {
+  /// Actualiza únicamente el access token y opcionalmente su fecha de expiración.
+  Future<void> saveAccessToken(
+    String accessToken, {
+    DateTime? expiresAt,
+  }) async {
     await _storage.write(key: _keyAccessToken, value: accessToken);
+    if (expiresAt != null) {
+      await _storage.write(
+        key: _keyExpiresAt,
+        value: expiresAt.toUtc().toIso8601String(),
+      );
+    }
+  }
+
+  /// Guarda la marca temporal de expiración del access token.
+  Future<void> saveTokenExpiry(DateTime expiresAt) async {
+    await _storage.write(
+      key: _keyExpiresAt,
+      value: expiresAt.toUtc().toIso8601String(),
+    );
   }
 
   /// Obtiene el access token guardado.
@@ -44,10 +70,26 @@ class TokenStorageService {
     return await _storage.read(key: _keyRefreshToken);
   }
 
-  /// Elimina ambos tokens del almacenamiento seguro (ej. al hacer logout).
+  /// Obtiene la fecha/hora de expiración del access token guardada (si existe).
+  Future<DateTime?> getTokenExpiry() async {
+    final raw = await _storage.read(key: _keyExpiresAt);
+    if (raw == null || raw.trim().isEmpty) return null;
+    final parsed = DateTime.tryParse(raw.trim());
+    if (parsed != null) return parsed.toLocal();
+    final epoch = int.tryParse(raw.trim());
+    if (epoch != null) {
+      return DateTime.fromMillisecondsSinceEpoch(
+        epoch > 1000000000000 ? epoch : epoch * 1000,
+      );
+    }
+    return null;
+  }
+
+  /// Elimina los tokens y la fecha de expiración del almacenamiento seguro (ej. al hacer logout o expirar sesión).
   Future<void> clearTokens() async {
     await _storage.delete(key: _keyAccessToken);
     await _storage.delete(key: _keyRefreshToken);
+    await _storage.delete(key: _keyExpiresAt);
   }
 
   /// Borra absolutamente todos los registros y llaves de flutter_secure_storage

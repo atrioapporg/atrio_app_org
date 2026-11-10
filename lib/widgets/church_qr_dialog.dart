@@ -15,6 +15,9 @@ class ChurchQrManager {
 
   static final Map<int, ({Uint8List bytes, String? joinUrl})> _cache = {};
 
+  /// Limpia la caché en memoria de códigos QR (ej. al cerrar o expirar la sesión).
+  static void clearCache() => _cache.clear();
+
   /// Obtiene o descarga los bytes PNG del código QR de la congregación especificada.
   /// Endpoint: `GET /atrio/portal/api/church/qr.png?download=1` con `Authorization: Bearer <token>`.
   static Future<({Uint8List bytes, String? joinUrl})?> obtenerQr({
@@ -29,7 +32,9 @@ class ChurchQrManager {
     final userProvider = context.read<UserProvider>();
     final api = userProvider.api;
 
-    if (!api.isAuthenticated && api.token == null) {
+    await api.ensureInitialized();
+
+    if (!api.isAuthenticated && api.refreshToken == null) {
       return null;
     }
 
@@ -39,9 +44,10 @@ class ChurchQrManager {
 
       // Respaldo de URL canónica de vinculación si Odoo no envió el encabezado
       if ((joinUrl == null || joinUrl.isEmpty) && context.mounted) {
+        final validToken = await api.getValidAccessToken();
         joinUrl = await JoinChurchService().resolveChurchJoinUrl(
           churchId: churchId,
-          accessToken: api.token,
+          accessToken: validToken,
         );
       }
 

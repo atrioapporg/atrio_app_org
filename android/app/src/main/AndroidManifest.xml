@@ -44,7 +44,7 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
-    <application android:label="ATRIO" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:usesCleartextTraffic="true">
+    <application android:label="ATRIO" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:allowBackup="false" android:fullBackupContent="false" android:usesCleartextTraffic="true">
         <!-- Clave de API de Google Maps inyectada de forma segura desde Gradle (local.properties o .env) -->
         <meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}"/>
         <!-- Canal e icono por defecto para Firebase Cloud Messaging -->

@@ -44,29 +44,77 @@ class UserProvider extends ChangeNotifier {
   final StreamController<ChurchStatusChangeEvent> _churchStatusChangeController =
       StreamController<ChurchStatusChangeEvent>.broadcast();
 
+  final StreamController<void> _sessionExpiredController =
+      StreamController<void>.broadcast();
+
+  /// Llave de navegación global opcional para redirigir limpiamente a `InicioSesionScreen`
+  /// cuando ocurre un error fatal de renovación de sesión.
+  GlobalKey<NavigatorState>? navigatorKey;
+
   /// Flujo reactivo que emite eventos inmediatamente cuando la iglesia del usuario
   /// es aprobada o cambia de estatus en Odoo 19.
   Stream<ChurchStatusChangeEvent> get onChurchStatusChanged =>
       _churchStatusChangeController.stream;
 
-  UserProvider({AtrioApi? api, TokenStorageService? storageService})
-      : _storageService = storageService ?? TokenStorageService(),
+  /// Flujo reactivo que emite cuando la sesión expira definitivamente tras agotar el refresh_token.
+  Stream<void> get onSessionExpired => _sessionExpiredController.stream;
+
+  UserProvider({
+    AtrioApi? api,
+    TokenStorageService? storageService,
+    this.navigatorKey,
+  })  : _storageService = storageService ?? TokenStorageService(),
         _api = api ??
             AtrioApi(
               baseUrl: AppConfig.odooBaseUrl,
               database: AppConfig.odooDatabase.isNotEmpty ? AppConfig.odooDatabase : null,
               storageService: storageService ?? TokenStorageService(),
             ) {
-    // Configurar callback cuando la sesión expire definitivamente
-    _api.onSessionExpired = () {
-      _currentUser = null;
-      _rawMeData = null;
-      _errorMessage = 'Tu sesión ha expirado. Por favor, ingresa de nuevo.';
-      notifyListeners();
-    };
+    // Configurar callback cuando la sesión expire definitivamente (error fatal en /auth/refresh)
+    _api.onSessionExpired = _handleFatalSessionExpiration;
 
     // Auto-restaurar sesión desde almacenamiento seguro
     _iniciarSesionPersistente();
+  }
+
+  /// Invalida la sesión local y redirige limpiamente a `InicioSesionScreen`
+  /// únicamente cuando el endpoint de renovación devuelve un error fatal.
+  void _handleFatalSessionExpiration() {
+    _currentUser = null;
+    _rawMeData = null;
+    _api.defaultChurchId = null;
+    _api.isReadOnly = false;
+    _errorMessage = 'Tu sesión ha expirado. Por favor, ingresa de nuevo.';
+    notifyListeners();
+
+    if (!_sessionExpiredController.isClosed) {
+      _sessionExpiredController.add(null);
+    }
+
+    // Limpiar banderas de sesión local en segundo plano para evitar falsos positivos al reiniciar
+    Future<void>(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', false);
+        await prefs.remove('cached_user_profile');
+      } catch (e) {
+        debugPrint('[UserProvider] Error limpiando preferencias tras expirar sesión: $e');
+      }
+    });
+
+    // Redirigir limpiamente a InicioSesionScreen si hay un Navigator activo
+    final nav = navigatorKey?.currentState;
+    if (nav != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final activeNav = navigatorKey?.currentState;
+        if (activeNav != null) {
+          activeNav.pushNamedAndRemoveUntil(
+            'inicio_sesion_screen',
+            (route) => false,
+          );
+        }
+      });
+    }
   }
 
   Future<void> _iniciarSesionPersistente() async {
@@ -79,12 +127,18 @@ class UserProvider extends ChangeNotifier {
           _currentUser = UserModel.fromOdooJson(meData);
           await _persistCurrentUserLocally();
         } catch (meError) {
+          if (meError is AtrioApiException && meError.isUnauthorized) {
+            debugPrint(
+              '🔒 [UserProvider] Sesión inválida en restauración inicial ($meError). Omitiendo caché local.',
+            );
+            return;
+          }
           debugPrint(
             'ℹ️ [UserProvider] /me no disponible en restauración: $meError. Cargando desde almacenamiento local...',
           );
           _currentUser = await _restaurarUsuarioLocal();
         }
-        if (_currentUser != null) {
+        if (_currentUser != null && _api.isAuthenticated) {
           _api.defaultChurchId = _currentUser?.iglesiaId;
           _api.isReadOnly = _currentUser?.isReadOnly ?? false;
           notifyListeners();
@@ -561,7 +615,11 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('[UserProvider] Error al refrescar perfil: $e');
-      if (_currentUser == null || !_currentUser!.hasChurchAssigned) {
+      if (e is AtrioApiException && e.isUnauthorized) {
+        return;
+      }
+      if ((_currentUser == null || !_currentUser!.hasChurchAssigned) &&
+          _api.isAuthenticated) {
         final restored = await _restaurarUsuarioLocal();
         if (restored != null) {
           _currentUser = restored;
@@ -1129,6 +1187,9 @@ class UserProvider extends ChangeNotifier {
         _currentUser = UserModel.fromOdooJson(meData);
         await _persistCurrentUserLocally();
       } catch (e) {
+        if (e is AtrioApiException && e.isUnauthorized) {
+          return false;
+        }
         debugPrint(
           'ℹ️ [UserProvider] /me no disponible en tryAutoLogin: $e. Restaurando desde almacenamiento local...',
         );
@@ -1440,6 +1501,7 @@ class UserProvider extends ChangeNotifier {
   @override
   void dispose() {
     _churchStatusChangeController.close();
+    _sessionExpiredController.close();
     super.dispose();
   }
 }

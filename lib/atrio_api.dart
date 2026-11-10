@@ -50,11 +50,23 @@ class AtrioApi {
   /// Callback opcional invocado cuando el refresh_token expira o es inválido y se debe redirigir al login.
   void Function()? onSessionExpired;
 
+  /// Vigencia estándar del access_token en Odoo 19 (30 minutos = 1800 segundos).
+  static const int defaultAccessTokenTtlSeconds = 1800;
+
+  /// Margen preventivo antes del vencimiento del access_token para renovar silenciosamente (3 minutos).
+  static const Duration defaultPreemptiveRefreshBuffer = Duration(minutes: 3);
+
   /// Token de acceso corto (JWT/Bearer) para peticiones autenticadas.
   String? token;
 
-  /// Token de refresco de larga duración para renovar el token de acceso sin pedir clave al usuario.
+  /// Token de refresco de larga duración (90 días en PostgreSQL) para renovar el token de acceso.
   String? refreshToken;
+
+  /// Marca temporal de expiración del [token] actual para renovación preventiva (Pre-emptive Refresh).
+  DateTime? tokenExpiresAt;
+
+  /// Ventana de anticipación para disparar la renovación preventiva antes de [tokenExpiresAt].
+  final Duration preemptiveRefreshBuffer;
 
   /// ID de la iglesia contextual para consultas de auditoría global (enviado en cabecera X-Atrio-Church
   /// exclusivamente para sesiones de Super Admin con isReadOnly == true).
@@ -76,6 +88,8 @@ class AtrioApi {
     this.database,
     this.token,
     this.refreshToken,
+    this.tokenExpiresAt,
+    this.preemptiveRefreshBuffer = defaultPreemptiveRefreshBuffer,
     this.storageService,
     this.onSessionExpired,
     this.defaultChurchId,
@@ -85,13 +99,18 @@ class AtrioApi {
   });
 
   bool _storageInitialized = false;
+  bool _sessionExpiredNotified = false;
 
-  /// Inicializa los tokens en memoria leyendo desde el almacenamiento seguro (si fue provisto).
+  /// Inicializa los tokens y su expiración en memoria leyendo desde el almacenamiento seguro (si fue provisto).
   Future<void> initFromStorage() async {
     _storageInitialized = true;
     if (storageService != null) {
       token = await storageService!.getAccessToken();
       refreshToken = await storageService!.getRefreshToken();
+      tokenExpiresAt = await storageService!.getTokenExpiry();
+      if (token != null && token!.isNotEmpty) {
+        _sessionExpiredNotified = false;
+      }
     }
   }
 
@@ -104,12 +123,135 @@ class AtrioApi {
     }
   }
 
-  /// Control de concurrencia: si varias peticiones reciben 401 en paralelo,
-  /// todas esperan a la misma renovación para no invalidar el refresh_token rotativo.
-  Future<void>? _refreshOperation;
+  /// Garantiza públicamente que el almacenamiento seguro haya sido cargado.
+  Future<void> ensureInitialized() => _ensureStorageLoaded();
+
+  /// Mutex asíncrono (Single Flight) basado en [Completer]:
+  /// Si existe una renovación de token en curso, todas las peticiones concurrentes
+  /// esperan el futuro de este único [Completer] en lugar de disparar múltiples `/auth/refresh`.
+  Completer<void>? _refreshCompleter;
+
+  /// Indica si actualmente hay una operación de renovación de token en vuelo.
+  bool get isRefreshing =>
+      _refreshCompleter != null && !_refreshCompleter!.isCompleted;
 
   /// Indica si actualmente existe una sesión iniciada con token disponible.
   bool get isAuthenticated => token != null && token!.isNotEmpty;
+
+  /// Indica si el [token] actual ya superó su fecha/hora de expiración ([tokenExpiresAt]).
+  bool get isTokenExpired =>
+      tokenExpiresAt != null && !DateTime.now().isBefore(tokenExpiresAt!);
+
+  /// Indica si el [token] está dentro de la ventana de renovación proactiva (2 a 3 minutos antes de vencer)
+  /// o ya expiró, y se cuenta con un [refreshToken] válido para renovarlo preventivamente.
+  bool get shouldRefreshTokenPreemptively {
+    if (refreshToken == null || refreshToken!.isEmpty) return false;
+    if (tokenExpiresAt == null) return false;
+    final threshold = tokenExpiresAt!.subtract(preemptiveRefreshBuffer);
+    return !DateTime.now().isBefore(threshold);
+  }
+
+  /// Determina si una ruta corresponde a un endpoint público de autenticación que no usa Bearer token.
+  bool _isPublicAuthEndpoint(String path) {
+    return path == '/auth/login' ||
+        path == '/auth/google' ||
+        path == '/auth/refresh' ||
+        path == '/auth/password/reset' ||
+        path == '/register' ||
+        path == '/churches/register' ||
+        path == '/plans' ||
+        path.contains('/auth/social_login') ||
+        path.endsWith('/social_login') ||
+        path == AppConfig.odooSocialAuthEndpoint;
+  }
+
+  /// Calcula la marca temporal de expiración ([DateTime]) del access_token a partir del payload de Odoo 19
+  /// (`expires_at` o `expires_in: 1800` s) o del claim `exp` si es un JWT, con fallback a 1800 s (30 min).
+  DateTime _extractTokenExpiry(Map<String, dynamic> data, String? accessToken) {
+    final rawExpiresAt = data['expires_at'];
+    if (rawExpiresAt is String && rawExpiresAt.trim().isNotEmpty) {
+      final parsed = DateTime.tryParse(rawExpiresAt.trim());
+      if (parsed != null) return parsed.toLocal();
+      final asInt = int.tryParse(rawExpiresAt.trim());
+      if (asInt != null && asInt > 0) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          asInt > 1000000000000 ? asInt : asInt * 1000,
+        );
+      }
+    } else if (rawExpiresAt is num && rawExpiresAt > 0) {
+      final val = rawExpiresAt.toInt();
+      return DateTime.fromMillisecondsSinceEpoch(
+        val > 1000000000000 ? val : val * 1000,
+      );
+    }
+
+    final rawExpiresIn = data['expires_in'];
+    if (rawExpiresIn is num && rawExpiresIn > 0) {
+      return DateTime.now().add(Duration(seconds: rawExpiresIn.toInt()));
+    } else if (rawExpiresIn is String) {
+      final seconds = int.tryParse(rawExpiresIn.trim());
+      if (seconds != null && seconds > 0) {
+        return DateTime.now().add(Duration(seconds: seconds));
+      }
+    }
+
+    // Fallback: intentar leer 'exp' si el token tiene estructura JWT estándar (header.payload.signature)
+    if (accessToken != null && accessToken.contains('.')) {
+      try {
+        final parts = accessToken.split('.');
+        if (parts.length == 3) {
+          final normalized = base64Url.normalize(parts[1]);
+          final payloadMap = jsonDecode(
+            utf8.decode(base64Url.decode(normalized)),
+          );
+          if (payloadMap is Map && payloadMap['exp'] is num) {
+            final expSeconds = (payloadMap['exp'] as num).toInt();
+            if (expSeconds > 0) {
+              return DateTime.fromMillisecondsSinceEpoch(expSeconds * 1000);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    return DateTime.now().add(
+      const Duration(seconds: defaultAccessTokenTtlSeconds),
+    );
+  }
+
+  /// Determina si una excepción ocurrida durante `/auth/refresh` es un error fatal de sesión
+  /// (ej. refresh_token revocado, inválido o vencido tras los 90 días y fuera del período de gracia de Odoo 19).
+  /// Los errores de red (timeouts, sin conexión) o errores 5xx del servidor NO son fatales.
+  bool _isFatalRefreshError(Object error) {
+    if (error is AtrioApiException) {
+      if (error.status == 401) return true;
+      final lowerCode = error.code.toLowerCase();
+      if (error.status == 403 || error.status == 400) {
+        return lowerCode == 'invalid_refresh_token' ||
+            lowerCode == 'refresh_token_expired' ||
+            lowerCode == 'expired_refresh_token' ||
+            lowerCode == 'token_revoked' ||
+            lowerCode == 'revoked_token' ||
+            lowerCode == 'invalid_grant' ||
+            lowerCode == 'missing_refresh_token' ||
+            lowerCode == 'session_expired';
+      }
+    }
+    return false;
+  }
+
+  /// Invalida la sesión localmente y notifica por única vez a [onSessionExpired]
+  /// cuando la renovación falla con un error fatal irremediable.
+  Future<void> _handleFatalSessionExpiration() async {
+    debugPrint(
+      '🔒 [AtrioApi] Sesión expirada definitivamente tras fallo fatal de refresh_token. Limpiando credenciales locales...',
+    );
+    await logoutLocal();
+    if (!_sessionExpiredNotified) {
+      _sessionExpiredNotified = true;
+      onSessionExpired?.call();
+    }
+  }
 
   /// Cabeceras HTTP estándar requeridas por la API de Odoo.
   /// En endpoints públicos de autenticación (/auth/login y /auth/refresh) se omite Authorization
@@ -155,27 +297,99 @@ class AtrioApi {
     Map<String, String>? extraHeaders,
   }) => _buildHeaders(path, churchId: churchId, extraHeaders: extraHeaders);
 
-  /// Método thread-safe que asegura que solo se ejecute un refresh de tokens a la vez.
-  Future<void> _safeRefresh() async {
-    if (_refreshOperation != null) {
+  /// Mutex Single-Flight con [Completer] que garantiza que solo se ejecute una petición
+  /// `POST /auth/refresh` a la vez ante múltiples `401` simultáneos o renovaciones preventivas.
+  ///
+  /// - Si ya hay una renovación en curso, pausa la llamada actual hasta que el [Completer] termine.
+  /// - Si [failedAccessToken] es provisto y el [token] en memoria ya cambió a uno nuevo,
+  ///   retorna de inmediato sin disparar una segunda rotación de `refresh_token`.
+  Future<void> _safeRefresh({
+    String? failedAccessToken,
+    bool isPreemptive = false,
+  }) async {
+    if (_refreshCompleter != null) {
       debugPrint(
-        '⏳ [AtrioApi] Ya existe una renovación en curso. Esperando resultado...',
+        '⏳ [AtrioApi] Renovación Single-Flight en curso. Esperando nuevo access_token...',
       );
-      return await _refreshOperation!;
+      return await _refreshCompleter!.future;
+    }
+
+    // Protección contra 401 escalonados: si la petición que recibió 401 fue enviada
+    // con un token anterior y otra petición paralela ya completó el refresh, reutilizar el nuevo token.
+    if (failedAccessToken != null &&
+        failedAccessToken.isNotEmpty &&
+        token != null &&
+        token!.isNotEmpty &&
+        token != failedAccessToken &&
+        !shouldRefreshTokenPreemptively) {
+      debugPrint(
+        '⚡ [AtrioApi] Token ya renovado por petición previa en lote paralelo. Reintentando directamente con nuevo access_token.',
+      );
+      return;
     }
 
     final completer = Completer<void>();
-    _refreshOperation = completer.future;
+    // Evitar errores de Future no manejado en la zona si el completer reporta error antes de que algún listener adicional se suscriba.
+    completer.future.ignore();
+    _refreshCompleter = completer;
 
     try {
       await refresh();
+      _sessionExpiredNotified = false;
       completer.complete();
-    } catch (e) {
-      completer.completeError(e);
+    } catch (e, stackTrace) {
+      if (_isFatalRefreshError(e)) {
+        await _handleFatalSessionExpiration();
+      }
+      completer.completeError(e, stackTrace);
       rethrow;
     } finally {
-      _refreshOperation = null;
+      if (identical(_refreshCompleter, completer)) {
+        _refreshCompleter = null;
+      }
     }
+  }
+
+  /// Verifica antes de despachar una petición autenticada si hay una renovación en curso
+  /// o si el `access_token` debe renovarse preventivamente (2-3 minutos antes de expirar).
+  Future<void> _ensureValidToken(String path, {required bool retryAuth}) async {
+    await _ensureStorageLoaded();
+
+    if (!retryAuth || _isPublicAuthEndpoint(path)) {
+      return;
+    }
+
+    // 1. Si ya hay una renovación Single-Flight en curso, esperar a que termine antes de armar cabeceras
+    if (_refreshCompleter != null) {
+      await _refreshCompleter!.future;
+      return;
+    }
+
+    // 2. Renovación Proactiva / Preventiva (Pre-emptive Refresh)
+    if (shouldRefreshTokenPreemptively) {
+      final bool alreadyExpired = isTokenExpired;
+      debugPrint(
+        '⏱️ [AtrioApi] Renovación proactiva de access_token iniciada (expira: $tokenExpiresAt)...',
+      );
+      try {
+        await _safeRefresh(isPreemptive: true);
+      } catch (e) {
+        // Si el error fue fatal (401 invalid_refresh_token) o el token ya estaba vencido, propagar
+        if (_isFatalRefreshError(e) || alreadyExpired) {
+          rethrow;
+        }
+        // Si fue un fallo de red transitorio y al token aún le quedan segundos de vida, continuar con el token actual
+        debugPrint(
+          '⚠️ [AtrioApi] Fallo transitorio en renovación preventiva ($e). Continuando con access_token vigente.',
+        );
+      }
+    }
+  }
+
+  /// Devuelve un `access_token` válido, ejecutando renovación preventiva si está próximo a vencer.
+  Future<String?> getValidAccessToken() async {
+    await _ensureValidToken('/me', retryAuth: true);
+    return token;
   }
 
   /// Método interno de transporte HTTP con soporte de reintento automático por expiración de token (401)
@@ -207,7 +421,9 @@ class AtrioApi {
       );
     }
 
-    await _ensureStorageLoaded();
+    await _ensureValidToken(path, retryAuth: retryAuth);
+
+    final String? requestToken = token;
 
     final String fullPath = path.startsWith('http')
         ? path
@@ -276,7 +492,7 @@ class AtrioApi {
       }
     }
 
-    // Manejo de expiración de sesión (401): intenta renovar el token y repetir la llamada original.
+    // Manejo de expiración de sesión (401): encola/ejecuta renovación Single-Flight y repite la llamada original.
     if (response.statusCode == 401 &&
         retryAuth &&
         refreshToken != null &&
@@ -293,10 +509,10 @@ class AtrioApi {
         );
       }
       debugPrint(
-        '🔄 [AtrioApi] 401 Unauthorized detectado en $path. Renovando sesión con refresh_token...',
+        '🔄 [AtrioApi] 401 Unauthorized detectado en $path. Sincronizando renovación Single-Flight...',
       );
       try {
-        await _safeRefresh();
+        await _safeRefresh(failedAccessToken: requestToken);
         debugPrint(
           '✅ [AtrioApi] Token renovado exitosamente. Reintentando $method $path con nuevo Bearer...',
         );
@@ -308,15 +524,11 @@ class AtrioApi {
           query: query,
           extraHeaders: extraHeaders,
           churchId: churchId,
+          idempotencyKey: idempotencyKey,
           retryAuth: false,
         );
-      } on AtrioApiException catch (e) {
+      } catch (e) {
         debugPrint('❌ [AtrioApi] Falló renovación automática de sesión: $e');
-        if (e.isUnauthorized) {
-          // El refresh token también venció; notificamos sesión expirada y limpiamos
-          await logoutLocal();
-          onSessionExpired?.call();
-        }
         rethrow;
       }
     }
@@ -397,11 +609,16 @@ class AtrioApi {
 
     token = (data['access_token'] ?? data['token']) as String?;
     refreshToken = data['refresh_token'] as String?;
+    if (token != null && token!.isNotEmpty) {
+      tokenExpiresAt = _extractTokenExpiry(data, token);
+      _sessionExpiredNotified = false;
+    }
 
     if (storageService != null && token != null && refreshToken != null) {
       await storageService!.saveTokens(
         accessToken: token!,
         refreshToken: refreshToken!,
+        expiresAt: tokenExpiresAt,
       );
     }
 
@@ -424,11 +641,16 @@ class AtrioApi {
 
     token = (data['token'] ?? data['access_token']) as String?;
     refreshToken = data['refresh_token'] as String?;
+    if (token != null && token!.isNotEmpty) {
+      tokenExpiresAt = _extractTokenExpiry(data, token);
+      _sessionExpiredNotified = false;
+    }
 
     if (storageService != null && token != null && refreshToken != null) {
       await storageService!.saveTokens(
         accessToken: token!,
         refreshToken: refreshToken!,
+        expiresAt: tokenExpiresAt,
       );
     }
 
@@ -534,20 +756,27 @@ class AtrioApi {
 
     token = (data['access_token'] ?? data['token']) as String?;
     refreshToken = data['refresh_token'] as String?;
+    if (token != null && token!.isNotEmpty) {
+      tokenExpiresAt = _extractTokenExpiry(data, token);
+      _sessionExpiredNotified = false;
+    }
 
     if (storageService != null && token != null && token!.isNotEmpty) {
       await storageService!.saveTokens(
         accessToken: token!,
         refreshToken: refreshToken ?? 'refresh_social_$provider',
+        expiresAt: tokenExpiresAt,
       );
     }
 
     return data;
   }
 
-  /// Renueva el token de acceso utilizando el refresh_token guardado.
+  /// Renueva el par de tokens (`access_token` y `refresh_token`) utilizando el `refresh_token` actual.
+  /// Persiste inmediatamente ambos tokens y su nueva expiración en `flutter_secure_storage`
+  /// antes de liberar cualquier petición encolada en el Mutex Single-Flight.
   Future<void> refresh() async {
-    if (refreshToken == null) {
+    if (refreshToken == null || refreshToken!.isEmpty) {
       throw AtrioApiException(
         401,
         'missing_refresh_token',
@@ -555,26 +784,76 @@ class AtrioApi {
       );
     }
 
-    final data = await _send(
-      'POST',
-      '/auth/refresh',
-      body: {'refresh_token': refreshToken},
-      retryAuth: false,
-    );
+    final String usedRefreshToken = refreshToken!;
+    Map<String, dynamic> data;
 
-    token = (data['access_token'] ?? data['token']) as String?;
-    if (data['refresh_token'] != null) {
-      refreshToken = data['refresh_token'] as String?;
+    try {
+      data = await _send(
+        'POST',
+        '/auth/refresh',
+        body: {'refresh_token': usedRefreshToken},
+        retryAuth: false,
+      );
+    } on AtrioApiException catch (e) {
+      // Si el servidor devolvió 401 pero otra instancia persistió un nuevo par de tokens en paralelo,
+      // adoptamos los tokens recién guardados en lugar de invalidar la sesión.
+      if (e.isUnauthorized && storageService != null) {
+        final storedRefresh = await storageService!.getRefreshToken();
+        final storedAccess = await storageService!.getAccessToken();
+        if (storedRefresh != null &&
+            storedRefresh.isNotEmpty &&
+            storedRefresh != usedRefreshToken &&
+            storedAccess != null &&
+            storedAccess.isNotEmpty) {
+          debugPrint(
+            '⚡ [AtrioApi] Detectado nuevo par de tokens en almacenamiento seguro tras colisión de refresh. Sincronizando...',
+          );
+          token = storedAccess;
+          refreshToken = storedRefresh;
+          tokenExpiresAt =
+              await storageService!.getTokenExpiry() ??
+              DateTime.now().add(
+                const Duration(seconds: defaultAccessTokenTtlSeconds),
+              );
+          _sessionExpiredNotified = false;
+          return;
+        }
+      }
+      rethrow;
     }
 
+    final String? newAccessToken =
+        (data['access_token'] ?? data['token']) as String?;
+    final String? newRefreshToken = data['refresh_token'] as String?;
+
+    if (newAccessToken == null || newAccessToken.isEmpty) {
+      throw AtrioApiException(
+        401,
+        'invalid_refresh_response',
+        'El servidor no devolvió un access_token válido al renovar la sesión.',
+      );
+    }
+
+    token = newAccessToken;
+    if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+      refreshToken = newRefreshToken;
+    }
+    tokenExpiresAt = _extractTokenExpiry(data, token);
+    _sessionExpiredNotified = false;
+
+    // Persistencia inmediata del par de tokens en flutter_secure_storage antes de liberar la cola
     if (storageService != null && token != null) {
-      if (refreshToken != null) {
+      if (refreshToken != null && refreshToken!.isNotEmpty) {
         await storageService!.saveTokens(
           accessToken: token!,
           refreshToken: refreshToken!,
+          expiresAt: tokenExpiresAt,
         );
       } else {
-        await storageService!.saveAccessToken(token!);
+        await storageService!.saveAccessToken(
+          token!,
+          expiresAt: tokenExpiresAt,
+        );
       }
     }
   }
@@ -603,6 +882,7 @@ class AtrioApi {
   Future<void> logoutLocal() async {
     token = null;
     refreshToken = null;
+    tokenExpiresAt = null;
     _storageInitialized = true;
     if (storageService != null) {
       await storageService!.clearTokens();
@@ -613,6 +893,7 @@ class AtrioApi {
   Future<void> clearAllStorage() async {
     token = null;
     refreshToken = null;
+    tokenExpiresAt = null;
     defaultChurchId = null;
     isReadOnly = false;
     _storageInitialized = true;
@@ -1301,7 +1582,9 @@ class AtrioApi {
     bool download = true,
     bool retryAuth = true,
   }) async {
-    await _ensureStorageLoaded();
+    await _ensureValidToken('/church/qr.png', retryAuth: retryAuth);
+
+    final String? requestToken = token;
 
     final query = download ? {'download': '1'} : null;
     final String fullPath = '$baseUrl/atrio/portal/api/church/qr.png';
@@ -1309,9 +1592,7 @@ class AtrioApi {
 
     final mergedHeaders = _buildHeaders(
       '/church/qr.png',
-      extraHeaders: {
-        'Accept': 'image/png, application/json',
-      },
+      extraHeaders: {'Accept': 'image/png, application/json'},
     );
 
     final request = http.Request('GET', uri)..headers.addAll(mergedHeaders);
@@ -1319,10 +1600,9 @@ class AtrioApi {
     final stopwatch = Stopwatch()..start();
     http.Response response;
     try {
-      final streamedResponse = await (client != null
-              ? client!.send(request)
-              : request.send())
-          .timeout(const Duration(seconds: 15));
+      final streamedResponse =
+          await (client != null ? client!.send(request) : request.send())
+              .timeout(const Duration(seconds: 15));
       response = await http.Response.fromStream(streamedResponse);
     } catch (e, stackTrace) {
       stopwatch.stop();
@@ -1355,15 +1635,18 @@ class AtrioApi {
 
     if (response.statusCode == 401 && retryAuth && refreshToken != null) {
       try {
-        await _safeRefresh();
+        await _safeRefresh(failedAccessToken: requestToken);
         return await getChurchQr(download: download, retryAuth: false);
+      } on AtrioApiException {
+        rethrow;
       } catch (_) {
         throw AtrioApiException(401, 'unauthorized', 'Sesión expirada.');
       }
     }
 
     if (response.statusCode == 200) {
-      final joinUrl = response.headers['x-atrio-join-url'] ??
+      final joinUrl =
+          response.headers['x-atrio-join-url'] ??
           response.headers['X-Atrio-Join-Url'];
       return (bytes: response.bodyBytes, joinUrl: joinUrl);
     }
@@ -1374,7 +1657,8 @@ class AtrioApi {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is Map<String, dynamic>) {
         code = decoded['code'] as String? ?? code;
-        message = decoded['error'] as String? ??
+        message =
+            decoded['error'] as String? ??
             decoded['message'] as String? ??
             message;
       }

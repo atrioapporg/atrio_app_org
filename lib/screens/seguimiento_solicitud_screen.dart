@@ -121,7 +121,17 @@ class _SeguimientoSolicitudScreenState
       dateFormatted = rawDate.toString().split('T').first;
     }
 
+    final id = m['id'] is int
+        ? m['id'] as int
+        : (int.tryParse(m['id']?.toString() ?? '') ?? 0);
+    final odooId = m['odoo_id'] is int
+        ? m['odoo_id'] as int
+        : (int.tryParse(m['odoo_id']?.toString() ?? '') ?? 0);
+
     return {
+      'id': id,
+      'odoo_id': odooId,
+      'raw_state': state,
       'title':
           m['title'] ?? m['titulo'] ?? m['name'] ?? 'Solicitud Ministerial',
       'status': m['status_label'] ?? m['estado_label'] ?? statusText,
@@ -1125,6 +1135,36 @@ class _SeguimientoSolicitudScreenState
 
               SizedBox(height: usableHeight * 0.025),
 
+              // Botón para cancelar petición (solo disponible si está pendiente y sin respuesta ministerial)
+              if (_puedeCancelarSolicitud(item)) ...[
+                SizedBox(
+                  width: screenWidth,
+                  height: usableHeight * 0.052,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFC62828),
+                      side: const BorderSide(color: Color(0xFFEF9A9A), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      ),
+                    ),
+                    icon: Icon(Icons.cancel_outlined, size: screenWidth * 0.045),
+                    label: Text(
+                      l10n?.cancelarPeticionPastoral ?? 'Cancelar petición',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.036,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _confirmarCancelarSolicitud(item);
+                    },
+                  ),
+                ),
+                SizedBox(height: usableHeight * 0.012),
+              ],
+
               // Botón de cerrar
               SizedBox(
                 width: screenWidth,
@@ -1153,6 +1193,117 @@ class _SeguimientoSolicitudScreenState
         );
       },
     );
+  }
+
+  /// Verifica si una solicitud puede ser cancelada por el creyente.
+  /// Regla de negocio: Solo se pueden cancelar solicitudes pendientes
+  /// que aún NO hayan sido atendidas, respondidas ni completadas por el pastor.
+  bool _puedeCancelarSolicitud(Map<String, dynamic> item) {
+    final rawState = (item['raw_state'] ?? '').toString().toLowerCase().trim();
+    final tieneRespuesta = item['respuesta'] != null &&
+        item['respuesta'].toString().trim().isNotEmpty;
+    if (tieneRespuesta) return false;
+
+    // Solo se pueden cancelar peticiones en estados pendientes iniciales
+    final estadosCancelables = [
+      'pending',
+      'draft',
+      'received',
+      'recibida',
+      'nueva',
+      'new',
+      'proceso',
+      'en_proceso',
+      'en_progreso',
+      'in_progress',
+    ];
+
+    if (!estadosCancelables.contains(rawState)) return false;
+
+    final id = item['id'] as int? ?? 0;
+    final odooId = item['odoo_id'] as int? ?? 0;
+    return id > 0 || odooId > 0;
+  }
+
+  /// Diálogo modal de confirmación antes de cancelar la solicitud
+  Future<void> _confirmarCancelarSolicitud(
+    Map<String, dynamic> item,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dlgCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n?.cancelarPeticionPastoral ?? 'Cancelar petición',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          l10n?.confirmarCancelarPeticion ??
+              '¿Deseas cancelar esta petición pastoral? Ya no será procesada por el equipo ministerial.',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dlgCtx, false),
+            child: Text(l10n?.cancelar ?? 'Volver'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC62828),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(dlgCtx, true),
+            child: Text(l10n?.cancelarPeticionPastoral ?? 'Cancelar petición'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final userProvider = context.read<UserProvider>();
+    final requestId = (item['odoo_id'] as int? ?? 0) > 0
+        ? item['odoo_id'] as int
+        : (item['id'] as int? ?? 0);
+    final localId = item['id'] as int?;
+
+    final ok = await userProvider.cancelarPeticionPastoral(
+      requestId,
+      localId: localId,
+    );
+
+    if (!mounted) return;
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.peticionCanceladaExito ?? 'Petición cancelada exitosamente',
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+        ),
+      );
+      _cargarSolicitudes();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.noSePudoCancelar ?? 'No se pudo cancelar la solicitud.',
+          ),
+          backgroundColor: const Color(0xFFC62828),
+        ),
+      );
+    }
   }
 }
 

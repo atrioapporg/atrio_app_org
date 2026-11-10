@@ -13,6 +13,11 @@ class AjustesModel {
   final bool notifCultosEnVivo;
   final bool notifAnunciosEventos;
   final String horaNotifDevocional; // Ej: '07:00'
+  final bool dobleNotifVersiculoDia; // Switch para segunda notificación diaria
+  final String segundaHoraNotifDevocional; // Ej: '14:00'
+
+  /// Alias semántico para el interruptor de doble notificación
+  bool get isDoubleNotificationEnabled => dobleNotifVersiculoDia;
 
   // 4. Lectura Bíblica
   final String bibliaVersionPredeterminada; // 'RVR1960', 'NVI', 'DHH'
@@ -46,6 +51,8 @@ class AjustesModel {
     this.notifCultosEnVivo = true,
     this.notifAnunciosEventos = true,
     this.horaNotifDevocional = '07:00',
+    this.dobleNotifVersiculoDia = false,
+    this.segundaHoraNotifDevocional = '14:00',
     this.bibliaVersionPredeterminada = 'RVR1960',
     this.tamanoFuenteLectura = 1.0,
     this.mantenerPantallaActiva = true,
@@ -74,6 +81,10 @@ class AjustesModel {
       notifAnunciosEventos: (map['notif_anuncios_eventos'] as int? ?? 1) == 1,
       horaNotifDevocional:
           map['hora_notif_devocional'] as String? ?? '07:00',
+      dobleNotifVersiculoDia:
+          (map['doble_notif_versiculo_dia'] as int? ?? 0) == 1,
+      segundaHoraNotifDevocional:
+          map['segunda_hora_notif_devocional'] as String? ?? '14:00',
       bibliaVersionPredeterminada:
           map['biblia_version_predeterminada'] as String? ?? 'RVR1960',
       tamanoFuenteLectura:
@@ -108,6 +119,8 @@ class AjustesModel {
       'notif_cultos_en_vivo': notifCultosEnVivo ? 1 : 0,
       'notif_anuncios_eventos': notifAnunciosEventos ? 1 : 0,
       'hora_notif_devocional': horaNotifDevocional,
+      'doble_notif_versiculo_dia': dobleNotifVersiculoDia ? 1 : 0,
+      'segunda_hora_notif_devocional': segundaHoraNotifDevocional,
       'biblia_version_predeterminada': bibliaVersionPredeterminada,
       'tamano_fuente_lectura': tamanoFuenteLectura,
       'mantener_pantalla_activa': mantenerPantallaActiva ? 1 : 0,
@@ -132,6 +145,8 @@ class AjustesModel {
     bool? notifCultosEnVivo,
     bool? notifAnunciosEventos,
     String? horaNotifDevocional,
+    bool? dobleNotifVersiculoDia,
+    String? segundaHoraNotifDevocional,
     String? bibliaVersionPredeterminada,
     double? tamanoFuenteLectura,
     bool? mantenerPantallaActiva,
@@ -155,6 +170,10 @@ class AjustesModel {
           notifAnunciosEventos ?? this.notifAnunciosEventos,
       horaNotifDevocional:
           horaNotifDevocional ?? this.horaNotifDevocional,
+      dobleNotifVersiculoDia:
+          dobleNotifVersiculoDia ?? this.dobleNotifVersiculoDia,
+      segundaHoraNotifDevocional:
+          segundaHoraNotifDevocional ?? this.segundaHoraNotifDevocional,
       bibliaVersionPredeterminada:
           bibliaVersionPredeterminada ?? this.bibliaVersionPredeterminada,
       tamanoFuenteLectura:

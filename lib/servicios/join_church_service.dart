@@ -113,7 +113,7 @@ class JoinChurchService {
     }
   }
 
-  /// Obtiene o resuelve la URL canónica de vinculación (/c/<uuid>) para la iglesia con ID [churchId].
+  /// Obtiene o resuelve la URL canónica de vinculación (`/c/<uuid>`) para la iglesia con ID [churchId].
   Future<String> resolveChurchJoinUrl({
     required int churchId,
     String? accessToken,

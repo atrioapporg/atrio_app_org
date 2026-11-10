@@ -17,6 +17,7 @@ import '../providers/iglesia_provider.dart';
 import '../providers/recomendacion_iglesia_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/atrio_connectivity_alert.dart';
+import '../widgets/daily_verse_notification_settings_card.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/change_pending_banner.dart';
 import '../widgets/read_only_banner.dart';
@@ -542,6 +543,16 @@ class _PerfilScreenState extends State<PerfilScreen>
                         ),
                       ),
                     ),
+
+                    // Sección de Recordatorios del Versículo del Día (Doble Notificación)
+                    _sectionLabel(
+                      l10n?.notificacionesVersiculoDiario ??
+                          'Versículo del Día',
+                      screenWidth,
+                      usableHeight,
+                    ),
+                    const DailyVerseNotificationSettingsCard(),
+                    SizedBox(height: usableHeight * 0.025),
 
                     _sectionLabel(
                       l10n?.cuenta ?? 'Cuenta',
@@ -1149,8 +1160,8 @@ class _PerfilScreenState extends State<PerfilScreen>
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    SizedBox(height: usableHeight * 0.005),
-                    // Badges de Rol y Estado de Lectura (RBAC Odoo 19)
+                    SizedBox(height: usableHeight * 0.006),
+                    // Badges de Rol y Estado de Iglesia juntos en una misma fila (RBAC Odoo 19)
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
@@ -1159,11 +1170,11 @@ class _PerfilScreenState extends State<PerfilScreen>
                         Container(
                           padding: const EdgeInsetsDirectional.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 2.5,
                           ),
                           decoration: BoxDecoration(
                             color: amarilloOro.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: amarilloOro.withValues(alpha: 0.7),
                               width: 0.8,
@@ -1180,15 +1191,23 @@ class _PerfilScreenState extends State<PerfilScreen>
                             ),
                           ),
                         ),
+                        if (estaAutenticado)
+                          _buildHeaderChurchStatusBadge(
+                            context: context,
+                            isChurchApproved: isChurchApproved,
+                            isMembershipPending: isMembershipPending,
+                            isChangePending: isChangePending,
+                            hasChurchAssigned: hasChurchAssigned,
+                          ),
                         if (estaAutenticado && userProvider.isReadOnly)
                           Container(
                             padding: const EdgeInsetsDirectional.symmetric(
                               horizontal: 8,
-                              vertical: 2,
+                              vertical: 2.5,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white12,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: Colors.white38,
                                 width: 0.8,
@@ -1241,11 +1260,11 @@ class _PerfilScreenState extends State<PerfilScreen>
           ),
           SizedBox(height: usableHeight * 0.014),
 
-          // Cápsula horizontal de información y estatus de la Iglesia
+          // Cápsula horizontal de información de la Iglesia (nombre completo en hasta dos líneas)
           Container(
             padding: EdgeInsetsDirectional.symmetric(
               horizontal: screenWidth * 0.035,
-              vertical: usableHeight * 0.01,
+              vertical: usableHeight * 0.012,
             ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.08),
@@ -1256,9 +1275,10 @@ class _PerfilScreenState extends State<PerfilScreen>
               ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(5),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: amarilloOro.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(screenWidth * 0.018),
@@ -1266,30 +1286,23 @@ class _PerfilScreenState extends State<PerfilScreen>
                   child: Icon(
                     Icons.church_rounded,
                     color: amarilloOro,
-                    size: screenWidth * 0.042,
+                    size: screenWidth * 0.046,
                   ),
                 ),
-                SizedBox(width: screenWidth * 0.025),
+                SizedBox(width: screenWidth * 0.028),
                 Expanded(
                   child: Text(
                     iglesia,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: screenWidth * 0.033,
+                      fontSize: screenWidth * 0.034,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.2,
+                      height: 1.25,
                     ),
                     overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                    maxLines: 2,
                   ),
-                ),
-                SizedBox(width: screenWidth * 0.02),
-                _buildHeaderChurchStatusBadge(
-                  context: context,
-                  isChurchApproved: isChurchApproved,
-                  isMembershipPending: isMembershipPending,
-                  isChangePending: isChangePending,
-                  hasChurchAssigned: hasChurchAssigned,
                 ),
               ],
             ),
@@ -1583,9 +1596,94 @@ class _PerfilScreenState extends State<PerfilScreen>
               ),
             ),
           ),
+          if (isChangePending) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFC62828),
+                ),
+                onPressed: () =>
+                    _confirmarCancelarCambioIglesia(context, iglesia),
+                icon: const Icon(Icons.close_rounded, size: 18),
+                label: Text(
+                  l10n?.cancelarSolicitudCambio ??
+                      'Cancelar solicitud de cambio',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _confirmarCancelarCambioIglesia(
+    BuildContext context,
+    String iglesiaActual,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final userProvider = context.read<UserProvider>();
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          l10n?.cancelarSolicitudCambio ?? '¿Cancelar solicitud de cambio?',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          l10n?.cancelarSolicitudCambioDesc ??
+              '¿Deseas cancelar la solicitud de cambio? Permanecerás como miembro activo en tu congregación actual ($iglesiaActual).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              l10n?.continuarConCambio ?? 'Continuar con el cambio',
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC62828),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              l10n?.permanecerEnMiIglesia ?? 'Permanecer en mi iglesia',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado == true && context.mounted) {
+      final exito = await userProvider.cancelarSolicitudCambioIglesia();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF16A34A),
+            content: Text(
+              exito
+                  ? (l10n?.solicitudCambioCanceladaExito ??
+                      'Solicitud de cambio cancelada. Permaneces en tu congregación.')
+                  : (l10n?.noSePudoCancelar ??
+                      'No se pudo cancelar la solicitud. Intenta nuevamente.'),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _mostrarDetallesIglesiaAprobada(

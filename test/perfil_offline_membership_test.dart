@@ -21,7 +21,11 @@ class _MockTokenStorage extends Fake implements TokenStorageService {
   @override
   Future<String?> getRefreshToken() async => 'test_refresh';
   @override
-  Future<void> saveTokens({required String accessToken, required String refreshToken}) async {}
+  Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+    DateTime? expiresAt,
+  }) async {}
   @override
   Future<void> clearTokens() async {}
 }

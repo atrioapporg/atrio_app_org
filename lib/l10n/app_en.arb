@@ -2022,5 +2022,38 @@
   "qrOficialIglesiaSubtitulo": "Show this code so other parishioners or visitors can join this church on ATRIO.",
   "copiarEnlaceInvitacion": "Copy invite link",
   "enlaceInvitacionCopiado": "Invite link copied to clipboard!",
-  "errorCargarQrIglesia": "Could not load church QR code."
+  "errorCargarQrIglesia": "Could not load church QR code.",
+  "dailyPrayerEveningTitle": "Evening Word & Prayer",
+  "notificacionesVersiculoDiario": "Daily Verse Notifications",
+  "notificacionesVersiculoDiarioDesc": "Receive scriptures and prayers to strengthen your faith in community.",
+  "primeraHoraNotificacion": "First notification (Morning)",
+  "primeraHoraNotificacionDesc": "Morning scripture to start your day in God's presence.",
+  "dobleNotificacionDiaria": "Double daily notification",
+  "dobleNotificacionDiariaDesc": "Enable an optional second reminder with a word for the afternoon.",
+  "segundaHoraNotificacion": "Second notification (Afternoon/Evening)",
+  "segundaHoraNotificacionDesc": "Afternoon time to renew your spirit and continue your day.",
+  "seleccionarHora": "Select time",
+  "seleccionarSegundaHora": "Select second time",
+  "horaNotificacionActualizada": "Notification time updated to {hora}",
+  "@horaNotificacionActualizada": {
+    "description": "Confirmation message upon updating notification time",
+    "placeholders": {
+      "hora": {
+        "type": "String"
+      }
+    }
+  },
+  "dobleNotificacionActivada": "Double daily notification enabled",
+  "dobleNotificacionDesactivada": "Double daily notification disabled",
+  "cancelarSolicitudCambio": "Cancel transfer request",
+  "cancelarSolicitudCambioDesc": "Do you want to cancel the transfer request? You will remain an active member in your current congregation.",
+  "permanecerEnMiIglesia": "Stay in my church",
+  "continuarConCambio": "Continue with transfer",
+  "solicitudCambioCanceladaExito": "Transfer request cancelled. You remain in your congregation.",
+  "cancelarSolicitudMembresia": "Cancel join request",
+  "cancelarSolicitudMembresiaDesc": "Do you want to cancel your request to join this congregation?",
+  "cancelarPeticionPastoral": "Cancel petition",
+  "confirmarCancelarPeticion": "Do you want to cancel this pastoral petition? It will no longer be processed by the ministerial team.",
+  "peticionCanceladaExito": "Petition cancelled successfully",
+  "noSePudoCancelar": "Could not cancel request. Please try again."
 }

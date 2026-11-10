@@ -204,6 +204,8 @@ class UserModel {
     String? membershipStatus,
     int? requestedChurchId,
     Map<String, dynamic>? requestedChurchData,
+    bool clearRequestedChurch = false,
+    bool clearRequestedChurchData = false,
     bool? hasActiveSubscription,
     ChurchKycStatus? churchKycStatus,
     ChurchRecommendationModel? churchRecommendation,
@@ -223,8 +225,12 @@ class UserModel {
       permissions: permissions ?? this.permissions,
       isReadOnly: isReadOnly ?? this.isReadOnly,
       membershipStatus: membershipStatus ?? this.membershipStatus,
-      requestedChurchId: requestedChurchId ?? this.requestedChurchId,
-      requestedChurchData: requestedChurchData ?? this.requestedChurchData,
+      requestedChurchId: clearRequestedChurch
+          ? null
+          : (requestedChurchId ?? this.requestedChurchId),
+      requestedChurchData: (clearRequestedChurch || clearRequestedChurchData)
+          ? null
+          : (requestedChurchData ?? this.requestedChurchData),
       hasActiveSubscription:
           hasActiveSubscription ?? this.hasActiveSubscription,
       churchKycStatus: churchKycStatus ?? this.churchKycStatus,

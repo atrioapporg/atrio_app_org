@@ -374,6 +374,23 @@ class ConfiguracionScreen extends StatelessWidget {
                           provider: provider,
                           screenWidth: screenWidth,
                         ),
+                        const Divider(height: 1),
+                        _buildSwitchTile(
+                          title: l10n.dobleNotificacionDiaria,
+                          subtitle: l10n.dobleNotificacionDiariaDesc,
+                          value: provider.isDoubleNotificationEnabled,
+                          onChanged: (val) =>
+                              provider.toggleDobleNotificacion(val),
+                          screenWidth: screenWidth,
+                        ),
+                        if (provider.isDoubleNotificationEnabled) ...[
+                          const Divider(height: 1),
+                          _buildSecondTimePickerTile(
+                            context: context,
+                            provider: provider,
+                            screenWidth: screenWidth,
+                          ),
+                        ],
                       ],
                       const Divider(height: 1),
                       _buildSwitchTile(
@@ -1245,6 +1262,80 @@ class ConfiguracionScreen extends StatelessWidget {
           final horaStr =
               '${seleccion.hour.toString().padLeft(2, '0')}:${seleccion.minute.toString().padLeft(2, '0')}';
           provider.cambiarHoraDevocional(horaStr);
+        }
+      },
+    );
+  }
+
+  Widget _buildSecondTimePickerTile({
+    required BuildContext context,
+    required AjustesProvider provider,
+    required double screenWidth,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(screenWidth * 0.02),
+        ),
+        child: Icon(
+          Icons.nightlight_round,
+          color: const Color(0xFF1E3A8A),
+          size: screenWidth * 0.05,
+        ),
+      ),
+      title: Text(
+        l10n.segundaHoraNotificacion,
+        style: TextStyle(
+          color: azulFondo,
+          fontSize: screenWidth * 0.035,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        l10n.segundaHoraNotificacionDesc,
+        style: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: screenWidth * 0.028,
+        ),
+      ),
+      trailing: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.03,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: azulFondo.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(screenWidth * 0.02),
+        ),
+        child: Text(
+          provider.segundaHoraNotifDevocional,
+          style: TextStyle(
+            color: azulFondo,
+            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.035,
+          ),
+        ),
+      ),
+      onTap: () async {
+        final partes = provider.segundaHoraNotifDevocional.split(':');
+        final horaActual = TimeOfDay(
+          hour: int.tryParse(partes[0]) ?? 14,
+          minute: partes.length > 1 ? int.tryParse(partes[1]) ?? 0 : 0,
+        );
+
+        final seleccion = await showTimePicker(
+          context: context,
+          initialTime: horaActual,
+        );
+
+        if (seleccion != null) {
+          final horaStr =
+              '${seleccion.hour.toString().padLeft(2, '0')}:${seleccion.minute.toString().padLeft(2, '0')}';
+          provider.cambiarSegundaHoraDevocional(horaStr);
         }
       },
     );

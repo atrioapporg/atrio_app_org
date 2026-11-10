@@ -4206,4 +4206,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorCargarQrIglesia => 'Could not load church QR code.';
+
+  @override
+  String get dailyPrayerEveningTitle => 'Evening Word & Prayer';
+
+  @override
+  String get notificacionesVersiculoDiario => 'Daily Verse Notifications';
+
+  @override
+  String get notificacionesVersiculoDiarioDesc =>
+      'Receive scriptures and prayers to strengthen your faith in community.';
+
+  @override
+  String get primeraHoraNotificacion => 'First notification (Morning)';
+
+  @override
+  String get primeraHoraNotificacionDesc =>
+      'Morning scripture to start your day in God\'s presence.';
+
+  @override
+  String get dobleNotificacionDiaria => 'Double daily notification';
+
+  @override
+  String get dobleNotificacionDiariaDesc =>
+      'Enable an optional second reminder with a word for the afternoon.';
+
+  @override
+  String get segundaHoraNotificacion =>
+      'Second notification (Afternoon/Evening)';
+
+  @override
+  String get segundaHoraNotificacionDesc =>
+      'Afternoon time to renew your spirit and continue your day.';
+
+  @override
+  String get seleccionarHora => 'Select time';
+
+  @override
+  String get seleccionarSegundaHora => 'Select second time';
+
+  @override
+  String horaNotificacionActualizada(String hora) {
+    return 'Notification time updated to $hora';
+  }
+
+  @override
+  String get dobleNotificacionActivada => 'Double daily notification enabled';
+
+  @override
+  String get dobleNotificacionDesactivada =>
+      'Double daily notification disabled';
+
+  @override
+  String get cancelarSolicitudCambio => 'Cancel transfer request';
+
+  @override
+  String get cancelarSolicitudCambioDesc =>
+      'Do you want to cancel the transfer request? You will remain an active member in your current congregation.';
+
+  @override
+  String get permanecerEnMiIglesia => 'Stay in my church';
+
+  @override
+  String get continuarConCambio => 'Continue with transfer';
+
+  @override
+  String get solicitudCambioCanceladaExito =>
+      'Transfer request cancelled. You remain in your congregation.';
+
+  @override
+  String get cancelarSolicitudMembresia => 'Cancel join request';
+
+  @override
+  String get cancelarSolicitudMembresiaDesc =>
+      'Do you want to cancel your request to join this congregation?';
+
+  @override
+  String get cancelarPeticionPastoral => 'Cancel petition';
+
+  @override
+  String get confirmarCancelarPeticion =>
+      'Do you want to cancel this pastoral petition? It will no longer be processed by the ministerial team.';
+
+  @override
+  String get peticionCanceladaExito => 'Petition cancelled successfully';
+
+  @override
+  String get noSePudoCancelar => 'Could not cancel request. Please try again.';
 }

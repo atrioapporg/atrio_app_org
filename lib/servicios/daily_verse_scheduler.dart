@@ -76,37 +76,61 @@ class DailyVerseScheduler {
     if (!service.isInitialized) return;
 
     if (!ajustes.notifVersiculoDia) {
-      await service.cancelMorningVerses();
+      await service.cancelAllDailyVerses();
       return;
     }
 
     final l10n = localizationsFor(ajustes.idiomaCodigo);
-    final (hour, minute) = _parseHora(ajustes.horaNotifDevocional);
+    final (morningHour, morningMinute) = _parseHora(ajustes.horaNotifDevocional);
 
+    // 1. Programación de la notificación matutina principal
     await service.scheduleMorningBatch(
-      buildItem: (date) => itemForDate(date, l10n),
+      buildItem: (date) => itemForDate(date, l10n, isSecondNotification: false),
       channelName: l10n.dailyWordChannelName,
       channelDescription: l10n.dailyWordChannelDescription,
       actionAmenLabel: l10n.dailyPrayerAmenAction,
-      hour: hour,
-      minute: minute,
+      hour: morningHour,
+      minute: morningMinute,
     );
+
+    // 2. Programación de la segunda notificación o cancelación según el switch
+    if (ajustes.dobleNotifVersiculoDia) {
+      final (secondHour, secondMinute) =
+          _parseHora(ajustes.segundaHoraNotifDevocional);
+      await service.scheduleSecondDailyBatch(
+        buildItem: (date) => itemForDate(date, l10n, isSecondNotification: true),
+        channelName: l10n.dailyWordChannelName,
+        channelDescription: l10n.dailyWordChannelDescription,
+        actionAmenLabel: l10n.dailyPrayerAmenAction,
+        hour: secondHour,
+        minute: secondMinute,
+      );
+    } else {
+      await service.cancelSecondDailyVerses();
+    }
   }
 
   /// Contenido determinista para una fecha: el mismo día siempre recibe la
   /// misma oración, sin importar cuántas veces se reprograme el lote.
+  /// [isSecondNotification] permite variar la porción y el título para la segunda hora diaria.
   static DailyVerseNotificationItem itemForDate(
     DateTime date,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    bool isSecondNotification = false,
+  }) {
     final int dayNumber =
         DateTime.utc(date.year, date.month, date.day).millisecondsSinceEpoch ~/
             Duration.millisecondsPerDay;
-    final entry = _catalog[dayNumber % _catalog.length];
+    final int catalogIndex = isSecondNotification
+        ? (dayNumber + 3) % _catalog.length
+        : dayNumber % _catalog.length;
+    final entry = _catalog[catalogIndex];
     final reference = entry.reference(l10n);
 
     return DailyVerseNotificationItem(
-      title: l10n.dailyPrayerMorningTitle,
+      title: isSecondNotification
+          ? l10n.dailyPrayerEveningTitle
+          : l10n.dailyPrayerMorningTitle,
       reference: reference,
       body: entry.body(l10n),
       bookId: entry.bookId,
@@ -119,10 +143,18 @@ class DailyVerseScheduler {
   }
 
   /// Dispara una notificación de prueba con el contenido de hoy.
-  static Future<void> showTest(AjustesModel ajustes, {int delaySeconds = 4}) {
+  static Future<void> showTest(
+    AjustesModel ajustes, {
+    int delaySeconds = 4,
+    bool isSecondNotification = false,
+  }) {
     final l10n = localizationsFor(ajustes.idiomaCodigo);
     return DailyVerseNotificationService.instance.showTestNotificationImmediately(
-      item: itemForDate(tz.TZDateTime.now(tz.local), l10n),
+      item: itemForDate(
+        tz.TZDateTime.now(tz.local),
+        l10n,
+        isSecondNotification: isSecondNotification,
+      ),
       channelName: l10n.dailyWordChannelName,
       channelDescription: l10n.dailyWordChannelDescription,
       actionAmenLabel: l10n.dailyPrayerAmenAction,

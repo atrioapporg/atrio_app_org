@@ -807,6 +807,150 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Cancela formalmente la solicitud de cambio de congregación (traslado eclesial).
+  /// Restaura al usuario como miembro activo ('approved') en su iglesia actual,
+  /// limpiando la congregación solicitada en memoria reactiva, SQLite y SharedPreferences,
+  /// y notificando al backend Odoo 19.
+  Future<bool> cancelarSolicitudCambioIglesia() async {
+    final user = _currentUser;
+    if (user == null) return false;
+
+    // Solo procede si efectivamente hay una solicitud de cambio pendiente
+    if (!user.isChangePending && user.membershipStatus != 'change_pending') {
+      return false;
+    }
+
+    // 1. Rollback reactivo inmediato (Optimistic UI)
+    _currentUser = user.copyWith(
+      membershipStatus: 'approved',
+      clearRequestedChurch: true,
+    );
+
+    if (_rawMeData != null) {
+      _rawMeData!['membership_status'] = 'approved';
+      _rawMeData!['requested_church_id'] = null;
+      _rawMeData!['requested_church'] = null;
+    }
+
+    notifyListeners();
+
+    // 2. Persistir localmente en SQLite y SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('requested_church_id');
+      await prefs.remove('requested_church_data');
+      await prefs.setString('membership_status', 'approved');
+      if (user.iglesiaActual.isNotEmpty &&
+          user.iglesiaActual != 'Sin iglesia seleccionada') {
+        await prefs.setString('iglesia_guardada', user.iglesiaActual);
+        await AtrioDatabaseHelper.instance
+            .guardarIglesiaNombre(user.iglesiaActual);
+      }
+    } catch (e) {
+      debugPrint('[UserProvider] Error al persistir cancelación de cambio: $e');
+    }
+
+    // 3. Notificar la cancelación al backend de Odoo 19
+    if (_api.isAuthenticated) {
+      try {
+        await _api.cancelMembershipRequest();
+        debugPrint('✅ [UserProvider] Solicitud de cambio cancelada en Odoo con éxito');
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Error cancelando cambio en Odoo: $e');
+      }
+
+      // Sincronizar perfil protegiendo el estado aprobado restaurado
+      try {
+        await refreshUserProfile();
+        if (_currentUser != null && _currentUser!.isChangePending) {
+          _currentUser = _currentUser!.copyWith(
+            membershipStatus: 'approved',
+            clearRequestedChurch: true,
+          );
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('ℹ️ [UserProvider] Error refrescando tras cancelar cambio: $e');
+      }
+    }
+
+    return true;
+  }
+
+  /// Cancela la solicitud inicial de membresía para usuarios que aún no tenían congregación asignada.
+  Future<bool> cancelarSolicitudMembresia() async {
+    final user = _currentUser;
+    if (user == null) return false;
+
+    // Si ya era miembro y solo estaba cambiando, delegar al flujo de cambio
+    if (user.isChangePending) {
+      return await cancelarSolicitudCambioIglesia();
+    }
+
+    _currentUser = user.copyWith(
+      membershipStatus: 'none',
+      clearRequestedChurch: true,
+      iglesiaActual: 'Sin iglesia seleccionada',
+      iglesiaId: 0,
+    );
+
+    if (_rawMeData != null) {
+      _rawMeData!['membership_status'] = 'none';
+      _rawMeData!['requested_church_id'] = null;
+      _rawMeData!['requested_church'] = null;
+      _rawMeData!['iglesia_actual'] = 'Sin iglesia seleccionada';
+    }
+
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('requested_church_id');
+      await prefs.remove('requested_church_data');
+      await prefs.setString('membership_status', 'none');
+      await prefs.remove('iglesia_guardada');
+      await AtrioDatabaseHelper.instance
+          .guardarIglesiaNombre('Sin iglesia seleccionada');
+    } catch (e) {
+      debugPrint('[UserProvider] Error persistiendo cancelación de membresía: $e');
+    }
+
+    if (_api.isAuthenticated) {
+      try {
+        await _api.cancelMembershipRequest();
+        debugPrint('✅ [UserProvider] Solicitud de membresía inicial cancelada en Odoo');
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Error cancelando membresía en Odoo: $e');
+      }
+    }
+
+    return true;
+  }
+
+  /// Cancela una petición pastoral o de oración en Odoo y en la caché local SQLite.
+  Future<bool> cancelarPeticionPastoral(int requestId, {int? localId}) async {
+    bool exitoOdoo = false;
+    if (_api.isAuthenticated && requestId > 0) {
+      try {
+        await _api.cancelRequest(requestId);
+        exitoOdoo = true;
+        debugPrint('✅ [UserProvider] Petición $requestId cancelada en Odoo');
+      } catch (e) {
+        debugPrint('⚠️ [UserProvider] Error al cancelar petición $requestId en Odoo: $e');
+      }
+    }
+
+    // Actualizar estado en SQLite local
+    try {
+      await AtrioDatabaseHelper.instance
+          .actualizarEstadoSolicitudLocal(localId ?? requestId, 'cancelled');
+    } catch (e) {
+      debugPrint('[UserProvider] Error actualizando SQLite local: $e');
+    }
+
+    return exitoOdoo;
+  }
+
   // ===========================================================================
   // FLUJO DE AUTENTICACIÓN CON ODOO (ETAPA 2)
   // ===========================================================================

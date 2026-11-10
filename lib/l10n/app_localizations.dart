@@ -7487,6 +7487,156 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo cargar el código QR de la congregación.'**
   String get errorCargarQrIglesia;
+
+  /// No description provided for @dailyPrayerEveningTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Palabra y Oración Vespertina'**
+  String get dailyPrayerEveningTitle;
+
+  /// No description provided for @notificacionesVersiculoDiario.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones del Versículo del Día'**
+  String get notificacionesVersiculoDiario;
+
+  /// No description provided for @notificacionesVersiculoDiarioDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibe versículos bíblicos y oraciones para fortalecer tu fe en comunidad.'**
+  String get notificacionesVersiculoDiarioDesc;
+
+  /// No description provided for @primeraHoraNotificacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Primera notificación (Mañana)'**
+  String get primeraHoraNotificacion;
+
+  /// No description provided for @primeraHoraNotificacionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Porción matutina para comenzar el día en la presencia de Dios.'**
+  String get primeraHoraNotificacionDesc;
+
+  /// No description provided for @dobleNotificacionDiaria.
+  ///
+  /// In es, this message translates to:
+  /// **'Doble notificación diaria'**
+  String get dobleNotificacionDiaria;
+
+  /// No description provided for @dobleNotificacionDiariaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa un segundo recordatorio opcional con una palabra para la tarde.'**
+  String get dobleNotificacionDiariaDesc;
+
+  /// No description provided for @segundaHoraNotificacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Segunda notificación (Tarde/Noche)'**
+  String get segundaHoraNotificacion;
+
+  /// No description provided for @segundaHoraNotificacionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario vespertino para renovar tu espíritu y continuar la jornada.'**
+  String get segundaHoraNotificacionDesc;
+
+  /// No description provided for @seleccionarHora.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar hora'**
+  String get seleccionarHora;
+
+  /// No description provided for @seleccionarSegundaHora.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar segunda hora'**
+  String get seleccionarSegundaHora;
+
+  /// Mensaje de confirmación al actualizar la hora de notificación
+  ///
+  /// In es, this message translates to:
+  /// **'Horario de notificación actualizado a las {hora}'**
+  String horaNotificacionActualizada(String hora);
+
+  /// No description provided for @dobleNotificacionActivada.
+  ///
+  /// In es, this message translates to:
+  /// **'Doble notificación diaria activada'**
+  String get dobleNotificacionActivada;
+
+  /// No description provided for @dobleNotificacionDesactivada.
+  ///
+  /// In es, this message translates to:
+  /// **'Doble notificación diaria desactivada'**
+  String get dobleNotificacionDesactivada;
+
+  /// No description provided for @cancelarSolicitudCambio.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar solicitud de cambio'**
+  String get cancelarSolicitudCambio;
+
+  /// No description provided for @cancelarSolicitudCambioDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas cancelar la solicitud de cambio? Permanecerás como miembro activo en tu congregación actual.'**
+  String get cancelarSolicitudCambioDesc;
+
+  /// No description provided for @permanecerEnMiIglesia.
+  ///
+  /// In es, this message translates to:
+  /// **'Permanecer en mi iglesia'**
+  String get permanecerEnMiIglesia;
+
+  /// No description provided for @continuarConCambio.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con el cambio'**
+  String get continuarConCambio;
+
+  /// No description provided for @solicitudCambioCanceladaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud de cambio cancelada. Permaneces en tu congregación.'**
+  String get solicitudCambioCanceladaExito;
+
+  /// No description provided for @cancelarSolicitudMembresia.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar solicitud de ingreso'**
+  String get cancelarSolicitudMembresia;
+
+  /// No description provided for @cancelarSolicitudMembresiaDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas cancelar tu solicitud de ingreso a esta congregación?'**
+  String get cancelarSolicitudMembresiaDesc;
+
+  /// No description provided for @cancelarPeticionPastoral.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar petición'**
+  String get cancelarPeticionPastoral;
+
+  /// No description provided for @confirmarCancelarPeticion.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas cancelar esta petición pastoral? Ya no será procesada por el equipo ministerial.'**
+  String get confirmarCancelarPeticion;
+
+  /// No description provided for @peticionCanceladaExito.
+  ///
+  /// In es, this message translates to:
+  /// **'Petición cancelada exitosamente'**
+  String get peticionCanceladaExito;
+
+  /// No description provided for @noSePudoCancelar.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cancelar la solicitud. Intenta nuevamente.'**
+  String get noSePudoCancelar;
 }
 
 class _AppLocalizationsDelegate

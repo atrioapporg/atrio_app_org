@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/atrio_database_helper.dart';
 import '../modelos/ajustes_model.dart';
 import '../servicios/daily_verse_scheduler.dart';
@@ -33,6 +34,10 @@ class AjustesProvider extends ChangeNotifier {
   bool get notifCultosEnVivo => _ajustes.notifCultosEnVivo;
   bool get notifAnunciosEventos => _ajustes.notifAnunciosEventos;
   String get horaNotifDevocional => _ajustes.horaNotifDevocional;
+  bool get dobleNotifVersiculoDia => _ajustes.dobleNotifVersiculoDia;
+  bool get isDoubleNotificationEnabled => _ajustes.dobleNotifVersiculoDia;
+  String get segundaHoraNotifDevocional => _ajustes.segundaHoraNotifDevocional;
+  String get secondNotificationTime => _ajustes.segundaHoraNotifDevocional;
 
   String get bibliaVersionPredeterminada =>
       _ajustes.bibliaVersionPredeterminada;
@@ -68,6 +73,41 @@ class AjustesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _ajustes = await AtrioDatabaseHelper.instance.getAjustes();
+
+      // Sincronización bidireccional y fallback con SharedPreferences
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (prefs.containsKey('is_double_notification_enabled')) {
+          final bool? spVal = prefs.getBool('is_double_notification_enabled');
+          if (spVal != null && spVal != _ajustes.dobleNotifVersiculoDia) {
+            _ajustes = _ajustes.copyWith(dobleNotifVersiculoDia: spVal);
+          }
+        } else {
+          await prefs.setBool(
+            'is_double_notification_enabled',
+            _ajustes.dobleNotifVersiculoDia,
+          );
+        }
+
+        if (prefs.containsKey('second_notification_time')) {
+          final String? spHora = prefs.getString('second_notification_time');
+          if (spHora != null &&
+              spHora.isNotEmpty &&
+              spHora != _ajustes.segundaHoraNotifDevocional) {
+            _ajustes = _ajustes.copyWith(segundaHoraNotifDevocional: spHora);
+          }
+        } else {
+          await prefs.setString(
+            'second_notification_time',
+            _ajustes.segundaHoraNotifDevocional,
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          '[AJUSTES_PROVIDER] Sincronización preventiva con SharedPreferences: $e',
+        );
+      }
+
       // Si el usuario tenía configurado un idioma previo ya no soportado, restablecer a 'es'
       if (_ajustes.idiomaCodigo != 'es' && _ajustes.idiomaCodigo != 'en') {
         _ajustes = _ajustes.copyWith(idiomaCodigo: 'es', paisRegion: 'DO');
@@ -146,6 +186,42 @@ class AjustesProvider extends ChangeNotifier {
 
     await AtrioDatabaseHelper.instance
         .actualizarAjusteCampo('hora_notif_devocional', hora);
+    _sincronizarOracionMatutina();
+  }
+
+  /// Conmuta la activación de la doble notificación diaria del versículo
+  Future<void> toggleDobleNotificacion(bool activo) async {
+    _ajustes = _ajustes.copyWith(dobleNotifVersiculoDia: activo);
+    notifyListeners();
+
+    try {
+      await AtrioDatabaseHelper.instance
+          .actualizarAjusteCampo('doble_notif_versiculo_dia', activo);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_double_notification_enabled', activo);
+    } catch (e) {
+      debugPrint(
+        '[AJUSTES_PROVIDER] Error guardando toggle doble notificación: $e',
+      );
+    }
+    _sincronizarOracionMatutina();
+  }
+
+  /// Cambia la segunda hora opcional para el versículo del día (ej. '14:00')
+  Future<void> cambiarSegundaHoraDevocional(String hora) async {
+    _ajustes = _ajustes.copyWith(segundaHoraNotifDevocional: hora);
+    notifyListeners();
+
+    try {
+      await AtrioDatabaseHelper.instance
+          .actualizarAjusteCampo('segunda_hora_notif_devocional', hora);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('second_notification_time', hora);
+    } catch (e) {
+      debugPrint(
+        '[AJUSTES_PROVIDER] Error guardando segunda hora devocional: $e',
+      );
+    }
     _sincronizarOracionMatutina();
   }
 

@@ -531,6 +531,27 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
+                      const SizedBox(height: 6),
+
+                      // Botón de cancelación de solicitud de cambio o membresía
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFFC62828),
+                        ),
+                        onPressed: () => _confirmarCancelar(context),
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        label: Text(
+                          userProvider.isChangePending
+                              ? (l10n?.cancelarSolicitudCambio ??
+                                  'Cancelar solicitud de cambio')
+                              : (l10n?.cancelarSolicitudMembresia ??
+                                  'Cancelar solicitud de ingreso'),
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                       SizedBox(height: screenHeight * 0.02),
                     ],
                   ),
@@ -541,5 +562,89 @@ class _EsperandoAprobacionScreenState extends State<EsperandoAprobacionScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _confirmarCancelar(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final userProvider = context.read<UserProvider>();
+    final isChange = userProvider.isChangePending;
+    final iglesiaActual =
+        userProvider.currentUser?.iglesiaActual ?? 'tu congregación actual';
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          isChange
+              ? (l10n?.cancelarSolicitudCambio ?? '¿Cancelar solicitud de cambio?')
+              : (l10n?.cancelarSolicitudMembresia ?? '¿Cancelar solicitud de ingreso?'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          isChange
+              ? (l10n?.cancelarSolicitudCambioDesc ??
+                  '¿Deseas cancelar la solicitud de cambio? Permanecerás como miembro activo en tu congregación actual ($iglesiaActual).')
+              : (l10n?.cancelarSolicitudMembresiaDesc ??
+                  '¿Deseas cancelar tu solicitud de ingreso a esta congregación?'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              isChange
+                  ? (l10n?.continuarConCambio ?? 'Continuar con el cambio')
+                  : (l10n?.cancelar ?? 'Volver'),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC62828),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              isChange
+                  ? (l10n?.permanecerEnMiIglesia ?? 'Permanecer en mi iglesia')
+                  : (l10n?.confirmar ?? 'Sí, cancelar'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado == true && context.mounted) {
+      if (isChange) {
+        await userProvider.cancelarSolicitudCambioIglesia();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF16A34A),
+              content: Text(
+                l10n?.solicitudCambioCanceladaExito ??
+                    'Solicitud de cambio cancelada. Permaneces en tu congregación.',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            InicioAtrioScreen.routeName,
+            (route) => false,
+          );
+        }
+      } else {
+        await userProvider.cancelarSolicitudMembresia();
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            SeleccionarIglesiaScreen.routeName,
+            (route) => false,
+          );
+        }
+      }
+    }
   }
 }

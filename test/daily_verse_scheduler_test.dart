@@ -29,5 +29,19 @@ void main() {
     expect(itemEs.reference.startsWith(itemEs.bookName), isTrue);
     expect(itemEs.bookName.contains(':'), isFalse);
   });
+
+  test('segunda notificación produce título vespertino y porción complementaria', () {
+    final day = DateTime(2026, 11, 7);
+    final morningEs = DailyVerseScheduler.itemForDate(day, es, isSecondNotification: false);
+    final eveningEs = DailyVerseScheduler.itemForDate(day, es, isSecondNotification: true);
+    final eveningEn = DailyVerseScheduler.itemForDate(day, en, isSecondNotification: true);
+
+    expect(morningEs.title, es.dailyPrayerMorningTitle);
+    expect(eveningEs.title, es.dailyPrayerEveningTitle);
+    expect(eveningEn.title, en.dailyPrayerEveningTitle);
+
+    // La segunda notificación del día ofrece una porción bíblica distinta a la matutina
+    expect(morningEs.reference, isNot(eveningEs.reference));
+  });
 }
 

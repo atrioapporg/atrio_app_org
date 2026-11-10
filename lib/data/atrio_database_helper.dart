@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../modelos/ajustes_model.dart';
 
 class AtrioDatabaseHelper {
   static const _databaseName = "atrio.db";
-  // Subimos a versión 4 para la tabla de solicitudes locales (caché y fallback offline)
-  static const _databaseVersion = 4;
+  // Subimos a versión 5 para soporte de doble notificación diaria del versículo
+  static const _databaseVersion = 5;
 
   // Nombres de las tablas
   static const tableUsuario = 'usuario';
@@ -123,6 +124,8 @@ class AtrioDatabaseHelper {
         notif_cultos_en_vivo INTEGER DEFAULT 1,
         notif_anuncios_eventos INTEGER DEFAULT 1,
         hora_notif_devocional TEXT DEFAULT '07:00',
+        doble_notif_versiculo_dia INTEGER DEFAULT 0,
+        segunda_hora_notif_devocional TEXT DEFAULT '14:00',
         biblia_version_predeterminada TEXT DEFAULT 'RVR1960',
         tamano_fuente_lectura REAL DEFAULT 1.0,
         mantener_pantalla_activa INTEGER DEFAULT 1,
@@ -232,7 +235,9 @@ class AtrioDatabaseHelper {
       if (existing.isEmpty) {
         await db.insert(tableAjustes, AjustesModel.predeterminado().toMap());
       }
-      debugPrint('[ATRIO_DB] Migración a v3 completada (tabla $tableAjustes creada).');
+      debugPrint(
+        '[ATRIO_DB] Migración a v3 completada (tabla $tableAjustes creada).',
+      );
     }
 
     // Asegurar columna tiempo_cierre_modal_versiculo en caso de base de datos existente
@@ -256,6 +261,19 @@ class AtrioDatabaseHelper {
       );
     } catch (_) {}
 
+    // Asegurar columnas de doble notificación diaria en caso de base de datos existente
+    try {
+      await db.execute(
+        'ALTER TABLE $tableAjustes ADD COLUMN doble_notif_versiculo_dia INTEGER DEFAULT 0',
+      );
+    } catch (_) {}
+
+    try {
+      await db.execute(
+        'ALTER TABLE $tableAjustes ADD COLUMN segunda_hora_notif_devocional TEXT DEFAULT \'14:00\'',
+      );
+    } catch (_) {}
+
     if (oldVersion < 4) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS $tableSolicitudesLocales (
@@ -272,7 +290,15 @@ class AtrioDatabaseHelper {
           usuario_email TEXT
         )
       ''');
-      debugPrint('[ATRIO_DB] Migración a v4 completada (tabla $tableSolicitudesLocales creada).');
+      debugPrint(
+        '[ATRIO_DB] Migración a v4 completada (tabla $tableSolicitudesLocales creada).',
+      );
+    }
+
+    if (oldVersion < 5) {
+      debugPrint(
+        '[ATRIO_DB] Migración a v5 completada (doble notificación diaria).',
+      );
     }
   }
 
@@ -341,7 +367,9 @@ class AtrioDatabaseHelper {
   /// (Cumplimiento de directrices de eliminación de cuenta de Apple y Google).
   Future<void> eliminarUsuarioYDatos() async {
     final db = await instance.database;
-    debugPrint('[ATRIO_DB] Eliminando todos los datos del usuario localmente...');
+    debugPrint(
+      '[ATRIO_DB] Eliminando todos los datos del usuario localmente...',
+    );
     await db.delete(tableUsuario);
     await db.delete(tableNotas);
     await db.delete(tableFavoritos);
@@ -356,7 +384,9 @@ class AtrioDatabaseHelper {
   /// Purga todos los datos de usuario y restablece las tablas de configuración base.
   Future<void> purgarBaseDeDatosCompleta() async {
     final db = await instance.database;
-    debugPrint('[ATRIO_DB] Iniciando purga total de la base de datos local (estado virgen)...');
+    debugPrint(
+      '[ATRIO_DB] Iniciando purga total de la base de datos local (estado virgen)...',
+    );
     await eliminarUsuarioYDatos();
     await db.delete(tableConfig);
     await db.delete(tableAjustes);
@@ -369,7 +399,9 @@ class AtrioDatabaseHelper {
       'url_privacidad': 'https://atrioapp.com/privacidad',
       'actualizado_en': DateTime.now().toIso8601String(),
     });
-    debugPrint('[ATRIO_DB] Base de datos SQLite restablecida a estado virgen con éxito.');
+    debugPrint(
+      '[ATRIO_DB] Base de datos SQLite restablecida a estado virgen con éxito.',
+    );
   }
 
   // ============================================================
@@ -626,7 +658,9 @@ class AtrioDatabaseHelper {
   }
 
   /// Obtiene las solicitudes guardadas localmente, filtradas opcionalmente por usuario
-  Future<List<Map<String, dynamic>>> getSolicitudesLocales({String? usuarioEmail}) async {
+  Future<List<Map<String, dynamic>>> getSolicitudesLocales({
+    String? usuarioEmail,
+  }) async {
     final db = await instance.database;
     await db.execute('''
       CREATE TABLE IF NOT EXISTS $tableSolicitudesLocales (
@@ -653,9 +687,24 @@ class AtrioDatabaseHelper {
         orderBy: 'id DESC',
       );
     }
-    return await db.query(
+    return await db.query(tableSolicitudesLocales, orderBy: 'id DESC');
+  }
+
+  /// Actualiza el estado de una solicitud local en SQLite (ej. 'cancelled' / 'Cancelada')
+  Future<int> actualizarEstadoSolicitudLocal(
+    int id,
+    String nuevoEstado, {
+    String estadoLabel = 'Cancelada',
+  }) async {
+    final db = await instance.database;
+    return await db.update(
       tableSolicitudesLocales,
-      orderBy: 'id DESC',
+      {
+        'estado': nuevoEstado,
+        'estado_label': estadoLabel,
+      },
+      where: 'id = ? OR odoo_id = ?',
+      whereArgs: [id, id],
     );
   }
 

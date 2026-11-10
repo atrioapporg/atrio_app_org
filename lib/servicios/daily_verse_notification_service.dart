@@ -74,6 +74,7 @@ class DailyVerseNotificationService {
 
   static const String channelId = 'atrio_daily_word_channel';
   static const int baseNotificationId = 7000;
+  static const int secondNotificationBaseId = 7100;
 
   /// Días cubiertos por lote. iOS limita a 64 notificaciones pendientes por app,
   /// por lo que se mantiene muy por debajo para no competir con otros avisos.
@@ -254,7 +255,64 @@ class DailyVerseNotificationService {
     }
 
     debugPrint(
-      '🔔 [DailyVerse] Lote programado: $total días desde $first ($scheduleMode)',
+      '🔔 [DailyVerse] Lote matutino programado: $total días desde $first ($scheduleMode)',
+    );
+  }
+
+  /// 3b. Programa un lote de [days] notificaciones para la segunda hora diaria
+  /// (vespertina/nocturna opcional), una por día a la hora [hour]:[minute].
+  Future<void> scheduleSecondDailyBatch({
+    required DailyVerseNotificationItem Function(tz.TZDateTime date) buildItem,
+    required String channelName,
+    required String channelDescription,
+    required String actionAmenLabel,
+    int days = maxBatchDays,
+    int hour = 14,
+    int minute = 0,
+  }) async {
+    if (!_isInitialized) {
+      debugPrint('⚠️ [DailyVerse] scheduleSecondDailyBatch antes de initialize()');
+      return;
+    }
+
+    await cancelSecondDailyVerses();
+
+    final int total = days.clamp(0, maxBatchDays);
+    final AndroidScheduleMode scheduleMode = await _resolveScheduleMode();
+    final tz.TZDateTime first = _nextInstanceOfTime(hour: hour, minute: minute);
+
+    for (int i = 0; i < total; i++) {
+      final scheduledDate = tz.TZDateTime(
+        tz.local,
+        first.year,
+        first.month,
+        first.day + i,
+        hour,
+        minute,
+      );
+      final item = buildItem(scheduledDate);
+
+      await _plugin.zonedSchedule(
+        secondNotificationBaseId + i,
+        item.title,
+        item.body,
+        scheduledDate,
+        _buildDetails(
+          item: item,
+          channelName: channelName,
+          channelDescription: channelDescription,
+          actionAmenLabel: actionAmenLabel,
+          isEvening: true,
+        ),
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: item.toPayload(),
+      );
+    }
+
+    debugPrint(
+      '🔔 [DailyVerse] Segundo lote diario programado: $total días desde $first ($scheduleMode)',
     );
   }
 
@@ -264,6 +322,20 @@ class DailyVerseNotificationService {
     for (int i = 0; i < maxBatchDays; i++) {
       await _plugin.cancel(baseNotificationId + i);
     }
+  }
+
+  /// Cancela las notificaciones de la segunda hora diaria de ATRIO.
+  Future<void> cancelSecondDailyVerses() async {
+    if (!_isInitialized) return;
+    for (int i = 0; i < maxBatchDays; i++) {
+      await _plugin.cancel(secondNotificationBaseId + i);
+    }
+  }
+
+  /// Cancela todas las notificaciones diarias programadas (mañana y segunda hora)
+  Future<void> cancelAllDailyVerses() async {
+    await cancelMorningVerses();
+    await cancelSecondDailyVerses();
   }
 
   /// Cancela todas las notificaciones programadas
@@ -318,11 +390,13 @@ class DailyVerseNotificationService {
     required String channelName,
     required String channelDescription,
     required String actionAmenLabel,
+    bool isEvening = false,
   }) {
+    final prefix = isEvening ? '🌙 ' : '☀️ ';
     final bigTextStyle = BigTextStyleInformation(
       '${item.body}\n\n📖 ${item.reference}',
       htmlFormatBigText: false,
-      contentTitle: '☀️ ${item.title}',
+      contentTitle: '$prefix${item.title}',
       htmlFormatContentTitle: false,
       summaryText: item.reference,
       htmlFormatSummaryText: false,

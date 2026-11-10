@@ -1113,6 +1113,26 @@ class AtrioApi {
     return _send('POST', '/membership/request', body: body);
   }
 
+  /// Cancela la solicitud pendiente de membresía o cambio de congregación en Odoo 19.
+  /// Implementa fallback progresivo:
+  /// 1. POST /membership/cancel
+  /// 2. DELETE /membership/request
+  /// 3. PUT /me con requested_church_id: false
+  Future<Map<String, dynamic>> cancelMembershipRequest() async {
+    try {
+      return await _send('POST', '/membership/cancel');
+    } catch (_) {
+      try {
+        return await _send('DELETE', '/membership/request');
+      } catch (_) {
+        return await updateMe({
+          'requested_church_id': false,
+          'cancel_membership_request': true,
+        });
+      }
+    }
+  }
+
   /// Registra una nueva iglesia para el usuario actual autenticado (POST /me/church).
   /// Quien crea la iglesia queda automáticamente con rol 'church_admin'.
   /// La congregación queda pendiente de asignación de plan por parte de ATRIO.
@@ -1256,6 +1276,28 @@ class AtrioApi {
       '/requests',
       body: {'type': normalizedType, 'title': title, 'message': message},
     );
+  }
+
+  /// Cancela una solicitud ministerial / pastoral enviada por el feligrés a Odoo 19.
+  /// Se ejecuta mediante soft-cancel protegiendo la trazabilidad en backend.
+  Future<Map<String, dynamic>> cancelRequest(int requestId) async {
+    try {
+      return await _send('POST', '/requests/$requestId/cancel');
+    } catch (_) {
+      try {
+        return await _send('PUT', '/requests/$requestId/cancel');
+      } catch (_) {
+        try {
+          return await _send('DELETE', '/requests/$requestId');
+        } catch (_) {
+          return await _send(
+            'PUT',
+            '/requests/$requestId',
+            body: {'state': 'cancelled', 'status': 'cancelled'},
+          );
+        }
+      }
+    }
   }
 
   // ===========================================================================

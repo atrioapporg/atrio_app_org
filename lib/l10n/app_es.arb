@@ -2103,5 +2103,38 @@
   "qrOficialIglesiaSubtitulo": "Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.",
   "copiarEnlaceInvitacion": "Copiar enlace de invitación",
   "enlaceInvitacionCopiado": "¡Enlace de invitación copiado al portapapeles!",
-  "errorCargarQrIglesia": "No se pudo cargar el código QR de la congregación."
+  "errorCargarQrIglesia": "No se pudo cargar el código QR de la congregación.",
+  "dailyPrayerEveningTitle": "Palabra y Oración Vespertina",
+  "notificacionesVersiculoDiario": "Notificaciones del Versículo del Día",
+  "notificacionesVersiculoDiarioDesc": "Recibe versículos bíblicos y oraciones para fortalecer tu fe en comunidad.",
+  "primeraHoraNotificacion": "Primera notificación (Mañana)",
+  "primeraHoraNotificacionDesc": "Porción matutina para comenzar el día en la presencia de Dios.",
+  "dobleNotificacionDiaria": "Doble notificación diaria",
+  "dobleNotificacionDiariaDesc": "Activa un segundo recordatorio opcional con una palabra para la tarde.",
+  "segundaHoraNotificacion": "Segunda notificación (Tarde/Noche)",
+  "segundaHoraNotificacionDesc": "Horario vespertino para renovar tu espíritu y continuar la jornada.",
+  "seleccionarHora": "Seleccionar hora",
+  "seleccionarSegundaHora": "Seleccionar segunda hora",
+  "horaNotificacionActualizada": "Horario de notificación actualizado a las {hora}",
+  "@horaNotificacionActualizada": {
+    "description": "Mensaje de confirmación al actualizar la hora de notificación",
+    "placeholders": {
+      "hora": {
+        "type": "String"
+      }
+    }
+  },
+  "dobleNotificacionActivada": "Doble notificación diaria activada",
+  "dobleNotificacionDesactivada": "Doble notificación diaria desactivada",
+  "cancelarSolicitudCambio": "Cancelar solicitud de cambio",
+  "cancelarSolicitudCambioDesc": "¿Deseas cancelar la solicitud de cambio? Permanecerás como miembro activo en tu congregación actual.",
+  "permanecerEnMiIglesia": "Permanecer en mi iglesia",
+  "continuarConCambio": "Continuar con el cambio",
+  "solicitudCambioCanceladaExito": "Solicitud de cambio cancelada. Permaneces en tu congregación.",
+  "cancelarSolicitudMembresia": "Cancelar solicitud de ingreso",
+  "cancelarSolicitudMembresiaDesc": "¿Deseas cancelar tu solicitud de ingreso a esta congregación?",
+  "cancelarPeticionPastoral": "Cancelar petición",
+  "confirmarCancelarPeticion": "¿Deseas cancelar esta petición pastoral? Ya no será procesada por el equipo ministerial.",
+  "peticionCanceladaExito": "Petición cancelada exitosamente",
+  "noSePudoCancelar": "No se pudo cancelar la solicitud. Intenta nuevamente."
 }

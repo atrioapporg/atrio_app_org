@@ -4238,4 +4238,92 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get errorCargarQrIglesia =>
       'No se pudo cargar el código QR de la congregación.';
+
+  @override
+  String get dailyPrayerEveningTitle => 'Palabra y Oración Vespertina';
+
+  @override
+  String get notificacionesVersiculoDiario =>
+      'Notificaciones del Versículo del Día';
+
+  @override
+  String get notificacionesVersiculoDiarioDesc =>
+      'Recibe versículos bíblicos y oraciones para fortalecer tu fe en comunidad.';
+
+  @override
+  String get primeraHoraNotificacion => 'Primera notificación (Mañana)';
+
+  @override
+  String get primeraHoraNotificacionDesc =>
+      'Porción matutina para comenzar el día en la presencia de Dios.';
+
+  @override
+  String get dobleNotificacionDiaria => 'Doble notificación diaria';
+
+  @override
+  String get dobleNotificacionDiariaDesc =>
+      'Activa un segundo recordatorio opcional con una palabra para la tarde.';
+
+  @override
+  String get segundaHoraNotificacion => 'Segunda notificación (Tarde/Noche)';
+
+  @override
+  String get segundaHoraNotificacionDesc =>
+      'Horario vespertino para renovar tu espíritu y continuar la jornada.';
+
+  @override
+  String get seleccionarHora => 'Seleccionar hora';
+
+  @override
+  String get seleccionarSegundaHora => 'Seleccionar segunda hora';
+
+  @override
+  String horaNotificacionActualizada(String hora) {
+    return 'Horario de notificación actualizado a las $hora';
+  }
+
+  @override
+  String get dobleNotificacionActivada => 'Doble notificación diaria activada';
+
+  @override
+  String get dobleNotificacionDesactivada =>
+      'Doble notificación diaria desactivada';
+
+  @override
+  String get cancelarSolicitudCambio => 'Cancelar solicitud de cambio';
+
+  @override
+  String get cancelarSolicitudCambioDesc =>
+      '¿Deseas cancelar la solicitud de cambio? Permanecerás como miembro activo en tu congregación actual.';
+
+  @override
+  String get permanecerEnMiIglesia => 'Permanecer en mi iglesia';
+
+  @override
+  String get continuarConCambio => 'Continuar con el cambio';
+
+  @override
+  String get solicitudCambioCanceladaExito =>
+      'Solicitud de cambio cancelada. Permaneces en tu congregación.';
+
+  @override
+  String get cancelarSolicitudMembresia => 'Cancelar solicitud de ingreso';
+
+  @override
+  String get cancelarSolicitudMembresiaDesc =>
+      '¿Deseas cancelar tu solicitud de ingreso a esta congregación?';
+
+  @override
+  String get cancelarPeticionPastoral => 'Cancelar petición';
+
+  @override
+  String get confirmarCancelarPeticion =>
+      '¿Deseas cancelar esta petición pastoral? Ya no será procesada por el equipo ministerial.';
+
+  @override
+  String get peticionCanceladaExito => 'Petición cancelada exitosamente';
+
+  @override
+  String get noSePudoCancelar =>
+      'No se pudo cancelar la solicitud. Intenta nuevamente.';
 }

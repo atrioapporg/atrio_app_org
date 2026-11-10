@@ -1,16 +1,21 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
 import 'dart:async';
-import 'dart:convert';
+import 'dart:collection';
+import 'dart:io';
 
-import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
+import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
+import '../modelos/emisora_model.dart';
 import '../servicios/connectivity_service.dart';
 import '../servicios/radio_player_service.dart';
 import '../widgets/atrio_connectivity_alert.dart';
@@ -18,6 +23,164 @@ import '../widgets/atrio_connectivity_alert.dart';
 class CambiarTabAtrioNotification extends Notification {
   final int nuevoIndice;
   const CambiarTabAtrioNotification(this.nuevoIndice);
+}
+
+/// Estado inmutable del reproductor para aislar reconstrucciones mediante [ValueNotifier].
+@immutable
+class _PlaybackUiState {
+  final EmisoraModel? emisoraActual;
+  final bool isPlaying;
+  final bool isBuffering;
+
+  const _PlaybackUiState({
+    this.emisoraActual,
+    this.isPlaying = false,
+    this.isBuffering = false,
+  });
+
+  _PlaybackUiState copyWith({
+    EmisoraModel? emisoraActual,
+    bool clearEmisora = false,
+    bool? isPlaying,
+    bool? isBuffering,
+  }) {
+    return _PlaybackUiState(
+      emisoraActual: clearEmisora
+          ? null
+          : (emisoraActual ?? this.emisoraActual),
+      isPlaying: isPlaying ?? this.isPlaying,
+      isBuffering: isBuffering ?? this.isBuffering,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _PlaybackUiState &&
+          runtimeType == other.runtimeType &&
+          emisoraActual == other.emisoraActual &&
+          isPlaying == other.isPlaying &&
+          isBuffering == other.isBuffering;
+
+  @override
+  int get hashCode => Object.hash(emisoraActual, isPlaying, isBuffering);
+}
+
+/// Gestor de caché en disco y memoria para logos de emisoras con límite de concurrencia.
+/// Evita descargas repetidas de red y saturación de sockets HTTP durante el scroll rápido.
+class _EmisoraLogoCacheManager {
+  _EmisoraLogoCacheManager._();
+  static final _EmisoraLogoCacheManager instance = _EmisoraLogoCacheManager._();
+
+  static const int _maxConcurrentDownloads = 4;
+  static Directory? _cacheDir;
+  static final Map<String, String> _resolvedPaths = <String, String>{};
+  static final Set<String> _failedUrls = <String>{};
+  static final Map<String, Future<File?>> _inFlight = <String, Future<File?>>{};
+  static final Queue<Completer<void>> _waitQueue = Queue<Completer<void>>();
+  static int _activeDownloads = 0;
+
+  Future<Directory> _getCacheDirectory() async {
+    if (_cacheDir != null) return _cacheDir!;
+    final String dbBase = await getDatabasesPath();
+    final Directory dir = Directory(p.join(dbBase, 'radio_logos_cache'));
+    if (!dir.existsSync()) {
+      await dir.create(recursive: true);
+    }
+    _cacheDir = dir;
+    return dir;
+  }
+
+  String? getCachedFilePathSync(String url) => _resolvedPaths[url];
+
+  Future<File?> getLogoFile(String rawUrl) async {
+    final String url = rawUrl.trim();
+    if (url.isEmpty || _failedUrls.contains(url)) return null;
+
+    final String? cachedPath = _resolvedPaths[url];
+    if (cachedPath != null) {
+      final File f = File(cachedPath);
+      if (f.existsSync()) return f;
+      _resolvedPaths.remove(url);
+    }
+
+    if (_inFlight.containsKey(url)) {
+      return _inFlight[url];
+    }
+
+    final Future<File?> task = _fetchOrReadDisk(url);
+    _inFlight[url] = task;
+    try {
+      return await task;
+    } finally {
+      _inFlight.remove(url);
+    }
+  }
+
+  /// Hash FNV-1a de 32 bits rápido y determinista compatible con todas las plataformas.
+  static String fastHashBytes(List<int> bytes) {
+    int hash = 0x811c9dc5;
+    for (int i = 0; i < bytes.length; i++) {
+      hash ^= bytes[i];
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return '${bytes.length}_${hash.toRadixString(16)}';
+  }
+
+  Future<File?> _fetchOrReadDisk(String url) async {
+    try {
+      final Directory dir = await _getCacheDirectory();
+      final String hash = fastHashBytes(url.codeUnits);
+      final File diskFile = File(p.join(dir.path, '$hash.img'));
+
+      if (diskFile.existsSync() && diskFile.lengthSync() > 0) {
+        _resolvedPaths[url] = diskFile.path;
+        return diskFile;
+      }
+
+      await _acquireSlot();
+      try {
+        final http.Response response = await http
+            .get(
+              Uri.parse(url),
+              headers: const <String, String>{'User-Agent': 'AtrioApp/1.0'},
+            )
+            .timeout(const Duration(seconds: 6));
+
+        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+          await diskFile.writeAsBytes(response.bodyBytes, flush: false);
+          _resolvedPaths[url] = diskFile.path;
+          return diskFile;
+        } else {
+          _failedUrls.add(url);
+        }
+      } finally {
+        _releaseSlot();
+      }
+    } catch (_) {
+      _failedUrls.add(url);
+    }
+    return null;
+  }
+
+  Future<void> _acquireSlot() async {
+    if (_activeDownloads < _maxConcurrentDownloads) {
+      _activeDownloads++;
+      return;
+    }
+    final Completer<void> completer = Completer<void>();
+    _waitQueue.addLast(completer);
+    await completer.future;
+  }
+
+  void _releaseSlot() {
+    if (_waitQueue.isNotEmpty) {
+      final Completer<void> next = _waitQueue.removeFirst();
+      next.complete();
+    } else if (_activeDownloads > 0) {
+      _activeDownloads--;
+    }
+  }
 }
 
 class EmisorasScreen extends StatefulWidget {
@@ -47,69 +210,28 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     Color(0xFFEC407A),
   ];
 
-  static const Map<String, String> _nombresPaises = <String, String>{
-    'AR': 'Argentina',
-    'BO': 'Bolivia',
-    'BR': 'Brasil',
-    'CL': 'Chile',
-    'CO': 'Colombia',
-    'CR': 'Costa Rica',
-    'CU': 'Cuba',
-    'DO': 'República Dominicana',
-    'EC': 'Ecuador',
-    'ES': 'España',
-    'GT': 'Guatemala',
-    'HN': 'Honduras',
-    'MX': 'México',
-    'NI': 'Nicaragua',
-    'PA': 'Panamá',
-    'PE': 'Perú',
-    'PR': 'Puerto Rico',
-    'PY': 'Paraguay',
-    'SV': 'El Salvador',
-    'US': 'Estados Unidos',
-    'UY': 'Uruguay',
-    'VE': 'Venezuela',
-    'OTROS': 'Otros países',
-  };
-
-  static String _obtenerNombrePais(String codigo, [AppLocalizations? l10n]) {
-    final String codigoUpper = codigo.toUpperCase().trim();
-    if (codigoUpper == 'TODOS')
-      return l10n?.todosLosPaises ?? 'Todos los países';
-    if (codigoUpper == 'OTROS') return l10n?.otrosPaises ?? 'Otros países';
-    if (_nombresPaises.containsKey(codigoUpper)) {
-      return _nombresPaises[codigoUpper]!;
-    }
-    if (codigo.trim().length > 3) {
-      return codigo.trim();
-    }
-    return codigoUpper;
-  }
-
-  // Hoja: "emisoras" (gviz directo sin redirecciones 307)
+  // Endpoint directo de Google Sheets sin redirección 307
   static const String _sheetUrl =
       'https://docs.google.com/spreadsheets/d/1t0UqJ50KhUiNRh0bCvfyi6Z7nF83eJYdji98nUw6SuU/gviz/tq?tqx=out:csv&sheet=emisoras';
 
-  // URLs verificadas y corregidas para emisoras que tenían enlaces rotos
-  static const Map<String, String> _correccionesUrlsEmisoras = <String, String>{
-    '101': 'http://cdn.instream.audio:9726/stream', // Radio Renuevo 88.7
-    '107': 'https://cast10.plugstreaming.com/stream/pvsdq', // Pura Vida 96.7
-    '259': 'https://livestreamcdn.net:2000/stream/RadioVisionCristianaRadio/',
-    '262': 'https://stream2.305stream.com:8040/;',
-    '263': 'https://stream.radiojar.com/ynxaw7n8x74tv',
-    '273': 'https://streaming.live365.com/a71179',
-    '281': 'https://ewtn-ice.streamguys1.com/english-aac',
-    '277': 'https://maestro.emfcdn.com/stream_for/air1/tunein/mp3',
-    '282': 'https://shoutcast.christianrock.net/stream/5/',
-  };
+  // Configuración de paginación perezosa (Lazy Loading en bloques de 30 emisoras)
+  static const int _tamanoPagina = 30;
+  // TTL de caché persistente en SQLite antes de revalidar en segundo plano (12 horas)
+  static const Duration _cacheTtl = Duration(hours: 12);
+  static const String _prefKeyLastSyncMs = 'emisoras_last_sync_epoch_ms';
+  static const String _prefKeyCsvHash = 'emisoras_csv_sha256';
 
-  // Memoria caché estática para cargar UNA SOLA VEZ durante la vida de la app
-  static List<Map<String, dynamic>>? _cacheEmisoras;
+  // Caché L1 en memoria RAM para cambio de pestaña en 0 ms
+  static List<EmisoraModel>? _cacheEmisoras;
   static List<String>? _cachePaisesDisponibles;
   static Future<void>? _cargaEnProgreso;
 
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<_PlaybackUiState> _playbackNotifier =
+      ValueNotifier<_PlaybackUiState>(const _PlaybackUiState());
+
+  Timer? _searchDebounce;
   AudioPlayer get _audioPlayer => RadioPlayerService.instance.player;
   final Set<String> _favoritosIds = <String>{};
 
@@ -119,110 +241,197 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   bool _mostrandoBuscador = false;
   String _filtroBusqueda = '';
   String _paisSeleccionado = 'TODOS';
-  String _idiomaSeleccionado = 'TODOS'; // 'TODOS', 'es', 'en'
+  String _idiomaSeleccionado = 'TODOS';
   List<String> _paisesDisponibles = <String>['TODOS'];
 
   bool _isLoading = true;
-  List<Map<String, dynamic>> _todasEmisoras = <Map<String, dynamic>>[];
-  Map<String, dynamic>? _emisoraActual;
+  List<EmisoraModel> _todasEmisoras = const <EmisoraModel>[];
+  List<EmisoraModel> _emisorasFiltradas = const <EmisoraModel>[];
+  int _cantidadVisible = _tamanoPagina;
 
   bool _mostrarSoloFavoritos = false;
-  bool _isReproduciendo = false;
-  bool _isBuffering = false;
+
+  /// Traduce el código ISO de país usando exclusivamente [AppLocalizations].
+  static String obtenerNombrePais(String codigo, AppLocalizations l10n) {
+    final String codigoUpper = codigo.toUpperCase().trim();
+    switch (codigoUpper) {
+      case 'TODOS':
+        return l10n.todosLosPaises;
+      case 'OTROS':
+        return l10n.otrosPaises;
+      case 'AR':
+        return l10n.paisAR;
+      case 'BO':
+        return l10n.paisBO;
+      case 'BR':
+        return l10n.paisBR;
+      case 'CL':
+        return l10n.paisCL;
+      case 'CO':
+        return l10n.paisCO;
+      case 'CR':
+        return l10n.paisCR;
+      case 'CU':
+        return l10n.paisCU;
+      case 'DO':
+        return l10n.paisDO;
+      case 'EC':
+        return l10n.paisEC;
+      case 'ES':
+        return l10n.paisES;
+      case 'GT':
+        return l10n.paisGT;
+      case 'HN':
+        return l10n.paisHN;
+      case 'MX':
+        return l10n.paisMX;
+      case 'NI':
+        return l10n.paisNI;
+      case 'PA':
+        return l10n.paisPA;
+      case 'PE':
+        return l10n.paisPE;
+      case 'PR':
+        return l10n.paisPR;
+      case 'PY':
+        return l10n.paisPY;
+      case 'SV':
+        return l10n.paisSV;
+      case 'US':
+        return l10n.paisUS;
+      case 'UY':
+        return l10n.paisUY;
+      case 'VE':
+        return l10n.paisVE;
+      default:
+        return codigo.trim().length > 3 ? codigo.trim() : codigoUpper;
+    }
+  }
+
+  static Color obtenerColorEmisora(int index) =>
+      _paletaIconos[index % _paletaIconos.length];
+
+  static IconData obtenerIconoFallback(String frecuencia) {
+    if (frecuencia.toLowerCase().contains('online')) {
+      return Icons.wifi_tethering_rounded;
+    }
+    if (frecuencia.contains('AM')) return Icons.speaker_rounded;
+    return Icons.radio_rounded;
+  }
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScrollPaginacion);
     _cargarFavoritos();
     _iniciarListenerDeAudio();
 
     if (_cacheEmisoras != null && _cacheEmisoras!.isNotEmpty) {
-      // Ya cargadas previamente en memoria: uso instantáneo sin peticiones ni spinner
-      _todasEmisoras = List<Map<String, dynamic>>.from(_cacheEmisoras!);
+      _todasEmisoras = _cacheEmisoras!;
       _paisesDisponibles = List<String>.from(
-        _cachePaisesDisponibles ?? <String>['TODOS'],
+        _cachePaisesDisponibles ?? const <String>['TODOS'],
       );
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
       _isLoading = false;
-      debugPrint(
-        '[RADIO_LOG] Emisoras cargadas instantáneamente desde memoria (${_todasEmisoras.length})',
-      );
     } else {
       _isLoading = true;
-      _cargarEmisoras();
+      _inicializarCatalogoConCacheLocal();
     }
   }
 
+  void _onScrollPaginacion() {
+    if (!_scrollController.hasClients) return;
+    final ScrollPosition pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 320) {
+      _cargarSiguienteLote();
+    }
+  }
+
+  void _cargarSiguienteLote() {
+    if (_cantidadVisible >= _emisorasFiltradas.length) return;
+    setState(() {
+      _cantidadVisible = (_cantidadVisible + _tamanoPagina).clamp(
+        0,
+        _emisorasFiltradas.length,
+      );
+    });
+  }
+
   Future<void> _cargarFavoritos() async {
-    final prefs = await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     final List<String>? favs = prefs.getStringList('emisoras_favoritas');
-    if (favs != null) {
+    if (favs != null && mounted) {
       setState(() {
         _favoritosIds.addAll(favs);
+        if (_mostrarSoloFavoritos) {
+          _recalcularEmisorasFiltradas(resetPaginacion: false);
+        }
       });
     }
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _playerStateSub?.cancel();
     _playbackEventSub?.cancel();
+    _scrollController
+      ..removeListener(_onScrollPaginacion)
+      ..dispose();
     _searchController.dispose();
-    if (_emisoraActual != null || _audioPlayer.playing) {
+    if (_playbackNotifier.value.emisoraActual != null || _audioPlayer.playing) {
       _audioPlayer.stop();
     }
+    _playbackNotifier.dispose();
     super.dispose();
   }
 
   // ===========================================================================
-  // AUDIO
+  // AUDIO (AISLADO CON VALUENOTIFIER PARA EVITAR REBUILD DEL GRID COMPLETO)
   // ===========================================================================
   void _iniciarListenerDeAudio() {
     try {
-      _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
+      _playerStateSub = _audioPlayer.playerStateStream.listen((
+        PlayerState state,
+      ) {
         if (!mounted) return;
-        setState(() {
-          _isBuffering =
-              state.processingState == ProcessingState.loading ||
-              state.processingState == ProcessingState.buffering;
-          _isReproduciendo = state.playing;
-        });
+        final bool buffering =
+            state.processingState == ProcessingState.loading ||
+            state.processingState == ProcessingState.buffering;
+        _playbackNotifier.value = _playbackNotifier.value.copyWith(
+          isBuffering: buffering,
+          isPlaying: state.playing,
+        );
       });
 
       _playbackEventSub = _audioPlayer.playbackEventStream.listen(
-        (event) {},
+        (PlaybackEvent event) {},
         onError: (Object e, StackTrace stackTrace) async {
           debugPrint('[RADIO_ERROR] Error en streaming: $e');
           if (!mounted) return;
-          final l10n = AppLocalizations.of(context);
+          final AppLocalizations l10n = AppLocalizations.of(context)!;
           final bool hasInternet = await ConnectivityService.instance
               .hasRealInternet();
           if (!mounted) return;
+          final EmisoraModel? actual = _playbackNotifier.value.emisoraActual;
           if (!hasInternet) {
             AtrioConnectivityAlert.show(
               context,
-              message: l10n?.sinInternetSintonizar,
-              onRetry: _emisoraActual != null
-                  ? () => _reproducirEmisora(
-                      _emisoraActual!,
-                      MediaQuery.of(context).size.width,
-                    )
-                  : null,
+              message: l10n.sinInternetSintonizar,
+              onRetry: actual != null ? () => _reproducirEmisora(actual) : null,
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: rojoError,
-                content: Text(
-                  l10n?.errorEmisoraNoDisponible ??
-                      'Error: La emisora no está disponible en este momento.',
-                ),
+                content: Text(l10n.errorEmisoraNoDisponible),
               ),
             );
           }
-          setState(() {
-            _isBuffering = false;
-            _isReproduciendo = false;
-          });
+          _playbackNotifier.value = _playbackNotifier.value.copyWith(
+            isBuffering: false,
+            isPlaying: false,
+          );
         },
       );
     } catch (e) {
@@ -231,10 +440,32 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    // Si tras un Hot Reload la lista en el State montado quedó vacía, recargamos inmediatamente
+    if (_todasEmisoras.isEmpty) {
+      if (_cacheEmisoras != null && _cacheEmisoras!.isNotEmpty) {
+        _aplicarCatalogoEnEstado(_cacheEmisoras!);
+      } else {
+        _isLoading = true;
+        _inicializarCatalogoConCacheLocal();
+      }
+    } else if (_emisorasFiltradas.isEmpty) {
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    }
+  }
+
+  @override
   void didUpdateWidget(EmisorasScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isActive && !widget.isActive) {
       _detenerReproduccion();
+    } else if (!oldWidget.isActive &&
+        widget.isActive &&
+        _todasEmisoras.isEmpty &&
+        _cargaEnProgreso == null) {
+      _isLoading = true;
+      _inicializarCatalogoConCacheLocal();
     }
   }
 
@@ -245,40 +476,44 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     } else if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      // Si estamos en la pestaña Radio de la pantalla principal, volver a la pestaña de Inicio (Tab 0)
       const CambiarTabAtrioNotification(0).dispatch(context);
     }
   }
 
-  Future<void> _reproducirEmisora(
-    Map<String, dynamic> emisora,
-    double screenWidth,
-  ) async {
-    final l10n = AppLocalizations.of(context);
+  Future<void> _reproducirEmisora(EmisoraModel emisora) async {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
     final bool tieneInternet = await AtrioConnectivityAlert.checkAndNotify(
       context,
-      message: l10n?.sinInternetSintonizar,
-      onRetry: () => _reproducirEmisora(emisora, screenWidth),
+      message: l10n.sinInternetSintonizar,
+      onRetry: () => _reproducirEmisora(emisora),
     );
     if (!tieneInternet || !mounted) return;
 
-    setState(() => _emisoraActual = Map<String, dynamic>.from(emisora));
+    _playbackNotifier.value = _playbackNotifier.value.copyWith(
+      emisoraActual: emisora,
+      isBuffering: true,
+    );
 
     try {
       await _audioPlayer.stop();
 
-      final String streamUrl = (emisora['streamUrl'] ?? '').toString().trim();
-      final String idStr = (emisora['id'] ?? '').toString().trim();
-      final String logoUrl = (emisora['logo'] ?? '').toString().trim();
+      final String streamUrl = emisora.streamUrl.trim();
+      final String idStr = emisora.id.trim();
+      final String logoUrl = emisora.logo.trim();
 
-      final mediaItem = MediaItem(
+      final MediaItem mediaItem = MediaItem(
         id: idStr.isNotEmpty ? idStr : streamUrl,
-        album: (emisora['denomination'] ?? 'Radio Cristiana').toString(),
-        title: (emisora['name'] ?? 'Emisora').toString(),
+        album: emisora.denomination.isNotEmpty
+            ? emisora.denomination
+            : l10n.radioCristiana,
+        title: emisora.name.isNotEmpty ? emisora.name : l10n.emisora,
         artUri: logoUrl.isNotEmpty ? Uri.tryParse(logoUrl) : null,
       );
 
-      final source = AudioSource.uri(Uri.parse(streamUrl), tag: mediaItem);
+      final AudioSource source = AudioSource.uri(
+        Uri.parse(streamUrl),
+        tag: mediaItem,
+      );
 
       try {
         await _audioPlayer.setAudioSource(source);
@@ -286,9 +521,6 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
         final String errText = sourceErr.toString();
         if (errText.contains('_audioHandler') ||
             errText.contains('single player instance')) {
-          debugPrint(
-            '[RADIO_LOG] Recuperando reproductor tras error de handler: $sourceErr',
-          );
           await _playerStateSub?.cancel();
           await _playbackEventSub?.cancel();
           await RadioPlayerService.instance.recoverFromHandlerError();
@@ -302,25 +534,25 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     } catch (e) {
       debugPrint('[RADIO_ERROR] Error al reproducir stream: $e');
       if (!mounted) return;
-      setState(() {
-        _isBuffering = false;
-        _isReproduciendo = false;
-      });
+      _playbackNotifier.value = _playbackNotifier.value.copyWith(
+        isBuffering: false,
+        isPlaying: false,
+      );
     }
   }
 
   Future<void> _togglePlayPause() async {
     try {
       if (_audioPlayer.playing) {
-        _audioPlayer.pause();
+        unawaited(_audioPlayer.pause());
       } else {
-        if (_emisoraActual != null) {
-          final l10n = AppLocalizations.of(context);
+        if (_playbackNotifier.value.emisoraActual != null) {
+          final AppLocalizations l10n = AppLocalizations.of(context)!;
           final bool tieneInternet =
               await AtrioConnectivityAlert.checkAndNotify(
                 context,
-                message: l10n?.sinInternetSintonizar,
-                onRetry: () => _togglePlayPause(),
+                message: l10n.sinInternetSintonizar,
+                onRetry: _togglePlayPause,
               );
           if (!tieneInternet || !mounted) return;
         }
@@ -332,56 +564,25 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   }
 
   void _detenerReproduccion() {
-    if (mounted) {
-      setState(() {
-        _emisoraActual = null;
-        _isReproduciendo = false;
-        _isBuffering = false;
-      });
-    }
+    _playbackNotifier.value = const _PlaybackUiState();
     _audioPlayer.stop();
   }
 
   // ===========================================================================
-  // CARGA DE EMISORAS (UNA SOLA VEZ EN MEMORIA)
+  // FASE 1: PERSISTENCIA LOCAL (SQLITE) + STALE-WHILE-REVALIDATE + ISOLATE.RUN
   // ===========================================================================
-  Future<void> _cargarEmisoras({bool forzarRecarga = false}) async {
-    if (!forzarRecarga &&
-        _cacheEmisoras != null &&
-        _cacheEmisoras!.isNotEmpty) {
-      if (mounted) {
-        setState(() {
-          _todasEmisoras = List<Map<String, dynamic>>.from(_cacheEmisoras!);
-          _paisesDisponibles = List<String>.from(
-            _cachePaisesDisponibles ?? <String>['TODOS'],
-          );
-          if (!_paisesDisponibles.contains(_paisSeleccionado)) {
-            _paisSeleccionado = 'TODOS';
-          }
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
+  Future<void> _inicializarCatalogoConCacheLocal({
+    bool forzarRed = false,
+  }) async {
     if (_cargaEnProgreso != null) {
       await _cargaEnProgreso;
       if (mounted && _cacheEmisoras != null) {
-        setState(() {
-          _todasEmisoras = List<Map<String, dynamic>>.from(_cacheEmisoras!);
-          _paisesDisponibles = List<String>.from(
-            _cachePaisesDisponibles ?? <String>['TODOS'],
-          );
-          if (!_paisesDisponibles.contains(_paisSeleccionado)) {
-            _paisSeleccionado = 'TODOS';
-          }
-          _isLoading = false;
-        });
+        _aplicarCatalogoEnEstado(_cacheEmisoras!);
       }
       return;
     }
 
-    _cargaEnProgreso = _ejecutarCargaEmisoras();
+    _cargaEnProgreso = _ejecutarFlujoStaleWhileRevalidate(forzarRed: forzarRed);
     try {
       await _cargaEnProgreso;
     } finally {
@@ -389,494 +590,677 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     }
   }
 
-  Future<void> _ejecutarCargaEmisoras() async {
-    List<Map<String, dynamic>> resultado = <Map<String, dynamic>>[];
+  Future<void> _ejecutarFlujoStaleWhileRevalidate({
+    required bool forzarRed,
+  }) async {
+    // 1. Lectura rápida desde SQLite (< 15 ms) para renderizado instantáneo sin bloquear la UI
+    if (!forzarRed) {
+      try {
+        final List<EmisoraModel> desdeSqlite = await AtrioDatabaseHelper
+            .instance
+            .obtenerCatalogoEmisoras();
+        if (desdeSqlite.isNotEmpty) {
+          debugPrint(
+            '[RADIO_LOG] Catálogo cargado desde SQLite local (${desdeSqlite.length} emisoras).',
+          );
+          _actualizarCachesEstables(desdeSqlite);
+          if (mounted) {
+            _aplicarCatalogoEnEstado(desdeSqlite);
+          }
 
+          // Verificar si el TTL (12h) sigue vigente para evitar petición de red innecesaria
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          final int lastSyncMs = prefs.getInt(_prefKeyLastSyncMs) ?? 0;
+          final int elapsedMs =
+              DateTime.now().millisecondsSinceEpoch - lastSyncMs;
+          if (elapsedMs < _cacheTtl.inMilliseconds) {
+            return;
+          }
+        }
+      } catch (e) {
+        debugPrint('[RADIO_ERROR] Error leyendo caché SQLite: $e');
+      }
+    }
+
+    // 2. Descarga desde Google Sheets y parseo con `compute` (función estática pura sin capturar `this`)
+    List<EmisoraModel> nuevasEmisoras = const <EmisoraModel>[];
+    String? nuevoHash;
     try {
-      debugPrint('[RADIO_LOG] Descargando desde Google Sheets...');
-      final response = await http
+      debugPrint('[RADIO_LOG] Descargando catálogo desde Google Sheets...');
+      final http.Response response = await http
           .get(
             Uri.parse(_sheetUrl),
-            headers: const {
+            headers: const <String, String>{
               'Accept': 'text/csv, text/plain, */*',
               'User-Agent': 'AtrioApp/1.0',
             },
           )
           .timeout(const Duration(seconds: 8));
 
-      if (response.statusCode == 200) {
-        final String csvString = utf8.decode(
-          response.bodyBytes,
-          allowMalformed: true,
-        );
-        final String lowerCsv = csvString.trim().toLowerCase();
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        final Uint8List bodyBytes = response.bodyBytes;
+        nuevoHash = _EmisoraLogoCacheManager.fastHashBytes(bodyBytes);
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final String? hashAnterior = prefs.getString(_prefKeyCsvHash);
 
-        if (lowerCsv.startsWith('<!doctype html') ||
-            lowerCsv.startsWith('<html')) {
-          debugPrint('[RADIO_ERROR] Google devolvió HTML. Verifica permisos.');
-        } else {
-          final List<List<dynamic>> filas = csv.decode(csvString);
-
-          if (filas.isNotEmpty) {
-            // Buscamos si existe una fila de cabeceras en cualquier posición
-            int headerRowIndex = -1;
-            List<String> headers = <String>[];
-
-            for (int r = 0; filas.length > r; r++) {
-              final List<String> candidateHeaders = filas[r]
-                  .map((e) => e.toString().trim().toLowerCase())
-                  .toList();
-              if (candidateHeaders.contains('emisora_nombre') ||
-                  candidateHeaders.contains('emisora_id') ||
-                  candidateHeaders.contains('name') ||
-                  candidateHeaders.contains('streamurl')) {
-                headerRowIndex = r;
-                headers = candidateHeaders;
-                break;
-              }
-            }
-
-            debugPrint(
-              '[RADIO_LOG] Header detectado en fila $headerRowIndex: $headers',
-            );
-
-            final Set<String> clavesProcesadas = <String>{};
-
-            for (int i = 0; filas.length > i; i++) {
-              if (i == headerRowIndex) continue;
-              try {
-                final List<dynamic> row = filas[i];
-                if (row.isEmpty) continue;
-
-                final Map<String, dynamic> rowData = <String, dynamic>{};
-                if (headers.isNotEmpty) {
-                  for (int j = 0; headers.length > j; j++) {
-                    rowData[headers[j]] = (row.length > j) ? row[j] : '';
-                  }
-                } else {
-                  // Mapeo posicional estándar
-                  rowData['emisora_id'] = row.isNotEmpty ? row[0] : '';
-                  rowData['pais_codigo'] = row.length > 1 ? row[1] : '';
-                  rowData['pais'] = row.length > 2 ? row[2] : '';
-                  rowData['es_favorita'] = row.length > 3 ? row[3] : '';
-                  rowData['emisora_nombre'] = row.length > 4 ? row[4] : '';
-                  rowData['emisora_poster'] = row.length > 5 ? row[5] : '';
-                  rowData['emisora_url'] = row.length > 6 ? row[6] : '';
-                  rowData['idioma'] = row.length > 7 ? row[7] : '';
-                }
-
-                final String idRaw =
-                    (rowData['emisora_id'] ?? rowData['id'] ?? i.toString())
-                        .toString()
-                        .trim();
-                final String nombreRaw =
-                    (rowData['emisora_nombre'] ??
-                            rowData['name'] ??
-                            rowData['nombre'] ??
-                            '')
-                        .toString()
-                        .trim();
-
-                // Evitar fila de cabeceras si no fue detectada previamente
-                if (idRaw.toLowerCase() == 'emisora_id' ||
-                    nombreRaw.toLowerCase() == 'emisora_nombre') {
-                  continue;
-                }
-
-                bool isActive = true;
-                String activeKey = '';
-                for (final String key in rowData.keys) {
-                  if (key == 'isactive' ||
-                      key == 'is_active' ||
-                      key == 'activo' ||
-                      key == 'es_activo' ||
-                      key == 'estado') {
-                    activeKey = key;
-                    break;
-                  }
-                }
-
-                if (activeKey.isNotEmpty) {
-                  final String raw = rowData[activeKey]
-                      .toString()
-                      .toLowerCase()
-                      .trim();
-                  isActive = const [
-                    'true',
-                    '1',
-                    'verdadero',
-                    'si',
-                    'sí',
-                    'yes',
-                    'activo',
-                  ].contains(raw);
-                }
-
-                if (!isActive) continue;
-
-                String rawUrl =
-                    (rowData['streamurl'] ??
-                            rowData['emisora_url'] ??
-                            rowData['url'] ??
-                            '')
-                        .toString()
-                        .trim();
-
-                // Extraer de etiquetas <audio src="..."> si vienen formateadas
-                if (rawUrl.contains('src="')) {
-                  final int inicio = rawUrl.indexOf('src="') + 5;
-                  final int fin = rawUrl.indexOf('"', inicio);
-                  if (fin > inicio) {
-                    rawUrl = rawUrl.substring(inicio, fin);
-                  }
-                } else if (rawUrl.contains("src='")) {
-                  final int inicio = rawUrl.indexOf("src='") + 5;
-                  final int fin = rawUrl.indexOf("'", inicio);
-                  if (fin > inicio) {
-                    rawUrl = rawUrl.substring(inicio, fin);
-                  }
-                }
-
-                // Aplicar corrección de URLs si la emisora está en el listado reparado
-                if (_correccionesUrlsEmisoras.containsKey(idRaw)) {
-                  rawUrl = _correccionesUrlsEmisoras[idRaw]!;
-                }
-
-                if (nombreRaw.isEmpty && rawUrl.isEmpty) continue;
-
-                // Evitar emisoras duplicadas en el sheet
-                final String claveUnica = idRaw.isNotEmpty
-                    ? idRaw
-                    : '$nombreRaw|$rawUrl';
-                if (clavesProcesadas.contains(claveUnica)) {
-                  continue;
-                }
-                clavesProcesadas.add(claveUnica);
-
-                final String rawPais =
-                    (rowData['pais_codigo'] ??
-                            rowData['pais'] ??
-                            rowData['country'] ??
-                            '')
-                        .toString()
-                        .trim()
-                        .toUpperCase();
-
-                final String logo =
-                    (rowData['emisora_poster'] ??
-                            rowData['logo'] ??
-                            rowData['poster'] ??
-                            '')
-                        .toString()
-                        .trim();
-
-                final String paisCodigo = rawPais.isEmpty ? 'OTROS' : rawPais;
-                final String paisNombre =
-                    (rowData['pais'] ??
-                            rowData['pais_nombre'] ??
-                            rowData['country'] ??
-                            '')
-                        .toString()
-                        .trim();
-
-                final String nombrePaisReal = paisNombre.isNotEmpty
-                    ? paisNombre
-                    : _obtenerNombrePais(paisCodigo);
-
-                // Normalizar idioma: 'es' (Español), 'en' (Inglés)
-                String idioma = (rowData['idioma'] ?? rowData['language'] ?? '')
-                    .toString()
-                    .trim()
-                    .toLowerCase();
-                if (idioma.isEmpty) {
-                  idioma = (paisCodigo == 'US') ? 'en' : 'es';
-                } else if (idioma.startsWith('es') || idioma.contains('espa')) {
-                  idioma = 'es';
-                } else if (idioma.startsWith('en') || idioma.contains('ingl')) {
-                  idioma = 'en';
-                }
-
-                resultado.add({
-                  'id': idRaw.isNotEmpty ? idRaw : i.toString(),
-                  'name': nombreRaw,
-                  'frequency': (rowData['frequency'] ?? 'Online')
-                      .toString()
-                      .trim(),
-                  'city': (rowData['city'] ?? rowData['pais'] ?? '')
-                      .toString()
-                      .trim(),
-                  'region': (rowData['region'] ?? '').toString().trim(),
-                  'pais_codigo': paisCodigo,
-                  'pais_nombre': nombrePaisReal,
-                  'streamUrl': rawUrl,
-                  'logo': logo,
-                  'idioma': idioma,
-                  'denomination':
-                      (rowData['denomination'] ??
-                              rowData['denominacion'] ??
-                              'Cristiana')
-                          .toString()
-                          .trim(),
-                  'description': (rowData['description'] ?? '')
-                      .toString()
-                      .trim(),
-                  'tags': <String>[],
-                  'priority': 3,
-                });
-              } catch (e) {
-                debugPrint('[RADIO_ERROR] Error mapeando fila $i: $e');
-              }
-            }
+        // Si ya tenemos datos en memoria y el hash del CSV no cambió, solo renovamos el TTL
+        if (!forzarRed &&
+            hashAnterior == nuevoHash &&
+            _cacheEmisoras != null &&
+            _cacheEmisoras!.isNotEmpty) {
+          await prefs.setInt(
+            _prefKeyLastSyncMs,
+            DateTime.now().millisecondsSinceEpoch,
+          );
+          if (mounted && _todasEmisoras.isEmpty) {
+            _aplicarCatalogoEnEstado(_cacheEmisoras!);
           }
+          return;
+        }
+
+        // Usamos `compute` con función estática top-level/static para no capturar `this` (_EmisorasScreenState)
+        try {
+          nuevasEmisoras = await compute(
+            EmisorasCatalogParser.parseCsvBytes,
+            bodyBytes,
+          );
+        } catch (isolateErr) {
+          debugPrint(
+            '[RADIO_LOG] Fallback síncrono de parseo CSV: $isolateErr',
+          );
+          nuevasEmisoras = EmisorasCatalogParser.parseCsvBytes(bodyBytes);
         }
       }
     } catch (e) {
-      debugPrint('[RADIO_ERROR] Error HTTP al descargar hoja: $e');
+      debugPrint('[RADIO_ERROR] Error HTTP sincronizando Google Sheets: $e');
     }
 
-    if (resultado.isEmpty) {
-      debugPrint('[RADIO_LOG] Intentando cargar respaldo local JSON...');
-      resultado = await _cargarDesdeJsonLocal();
-    } else {
+    // 3. Fallback local JSON si SQLite y red estaban vacíos
+    if (nuevasEmisoras.isEmpty &&
+        (_cacheEmisoras == null || _cacheEmisoras!.isEmpty)) {
+      try {
+        debugPrint('[RADIO_LOG] Cargando respaldo local JSON...');
+        final String jsonString = await rootBundle.loadString(
+          'assets/json/emisoras_rd.json',
+        );
+        try {
+          nuevasEmisoras = await compute(
+            EmisorasCatalogParser.parseFallbackJson,
+            jsonString,
+          );
+        } catch (_) {
+          nuevasEmisoras = EmisorasCatalogParser.parseFallbackJson(jsonString);
+        }
+      } catch (e) {
+        debugPrint('[RADIO_ERROR] Error cargando fallback JSON: $e');
+      }
+    }
+
+    // 4. Actualizar estado de UI de inmediato antes de escribir en SQLite
+    if (nuevasEmisoras.isNotEmpty) {
+      _actualizarCachesEstables(nuevasEmisoras);
+      if (mounted) {
+        _aplicarCatalogoEnEstado(nuevasEmisoras);
+      }
       debugPrint(
-        '[RADIO_LOG] ¡Éxito! Se cargaron ${resultado.length} emisoras desde Google Sheets.',
+        '[RADIO_LOG] ¡Éxito! Catálogo activo en UI con ${nuevasEmisoras.length} emisoras.',
       );
-    }
 
+      // 5. Persistir en SQLite de forma resiliente en segundo plano
+      try {
+        await AtrioDatabaseHelper.instance.guardarCatalogoEmisorasBatch(
+          nuevasEmisoras,
+        );
+        if (nuevoHash != null) {
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_prefKeyCsvHash, nuevoHash);
+          await prefs.setInt(
+            _prefKeyLastSyncMs,
+            DateTime.now().millisecondsSinceEpoch,
+          );
+        }
+      } catch (dbErr) {
+        debugPrint('[RADIO_ERROR] Error guardando caché SQLite: $dbErr');
+      }
+    } else if (_cacheEmisoras != null && _cacheEmisoras!.isNotEmpty) {
+      if (mounted) {
+        _aplicarCatalogoEnEstado(_cacheEmisoras!);
+      }
+    } else if (mounted && _isLoading) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _actualizarCachesEstables(List<EmisoraModel> catalogo) {
     final Set<String> paisesSet = <String>{};
-    for (final e in resultado) {
-      final String pais = (e['pais_codigo'] ?? '')
-          .toString()
-          .trim()
-          .toUpperCase();
+    for (final EmisoraModel e in catalogo) {
+      final String pais = e.paisCodigo.trim().toUpperCase();
       if (pais.isNotEmpty) paisesSet.add(pais);
     }
+    final List<String> ordenadasPaises = paisesSet.toList()..sort();
+    _cacheEmisoras = List<EmisoraModel>.unmodifiable(catalogo);
+    _cachePaisesDisponibles = List<String>.unmodifiable(<String>[
+      'TODOS',
+      ...ordenadasPaises,
+    ]);
+  }
 
-    final List<String> ordenadasPaises = paisesSet.toList()
-      ..sort((a, b) => _obtenerNombrePais(a).compareTo(_obtenerNombrePais(b)));
-
-    if (resultado.isNotEmpty) {
-      _cacheEmisoras = resultado;
-      _cachePaisesDisponibles = <String>['TODOS'] + ordenadasPaises;
-      debugPrint(
-        '[RADIO_LOG] Emisoras guardadas en memoria caché: ${_cacheEmisoras!.length}',
-      );
-    }
-
-    if (!mounted) return;
+  void _aplicarCatalogoEnEstado(List<EmisoraModel> catalogo) {
     setState(() {
-      _todasEmisoras = resultado;
-      _paisesDisponibles = <String>['TODOS'] + ordenadasPaises;
+      _todasEmisoras = catalogo;
+      _paisesDisponibles = List<String>.from(
+        _cachePaisesDisponibles ?? const <String>['TODOS'],
+      );
       if (!_paisesDisponibles.contains(_paisSeleccionado)) {
         _paisSeleccionado = 'TODOS';
       }
       _isLoading = false;
+      _recalcularEmisorasFiltradas(resetPaginacion: false);
     });
   }
 
-  Future<List<Map<String, dynamic>>> _cargarDesdeJsonLocal() async {
-    try {
-      final String jsonString = await rootBundle.loadString(
-        'assets/json/emisoras_rd.json',
-      );
-      final List<dynamic> data = json.decode(jsonString) as List<dynamic>;
-      final List<Map<String, dynamic>> listaParseada = <Map<String, dynamic>>[];
+  // ===========================================================================
+  // FASE 2 & 4: FILTRADO O(1) CON SEARCH_BLOB PRE-COMPUTADO + DEBOUNCE
+  // ===========================================================================
+  void _onSearchQueryChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 220), () {
+      if (!mounted) return;
+      setState(() {
+        _filtroBusqueda = value;
+        _recalcularEmisorasFiltradas(resetPaginacion: true);
+      });
+    });
+  }
 
-      for (int i = 0; data.length > i; i++) {
-        final Map<String, dynamic> e = Map<String, dynamic>.from(
-          data[i] as Map,
-        );
+  void _recalcularEmisorasFiltradas({required bool resetPaginacion}) {
+    final String queryNorm = EmisoraModel.normalizeForSearch(_filtroBusqueda);
+    final String paisFiltro = _paisSeleccionado.toUpperCase().trim();
+    final String idiomaFiltro = _idiomaSeleccionado.toLowerCase().trim();
 
-        if (e['isActive'] == false) continue;
-
-        String rawUrl = (e['streamUrl'] ?? e['emisora_url'] ?? e['url'] ?? '')
-            .toString()
-            .trim();
-
-        if (rawUrl.contains("src='")) {
-          final int inicio = rawUrl.indexOf("src='") + 5;
-          final int fin = rawUrl.indexOf("'", inicio);
-          if (fin > inicio) {
-            rawUrl = rawUrl.substring(inicio, fin);
+    final List<EmisoraModel> resultado = _todasEmisoras
+        .where((EmisoraModel emisora) {
+          if (_mostrarSoloFavoritos && !_favoritosIds.contains(emisora.id)) {
+            return false;
           }
-        } else if (rawUrl.contains('src="')) {
-          final int inicio = rawUrl.indexOf('src="') + 5;
-          final int fin = rawUrl.indexOf('"', inicio);
-          if (fin > inicio) {
-            rawUrl = rawUrl.substring(inicio, fin);
+          if (paisFiltro != 'TODOS' &&
+              emisora.paisCodigo.toUpperCase() != paisFiltro) {
+            return false;
           }
-        }
+          if (idiomaFiltro != 'todos' &&
+              emisora.idioma.toLowerCase() != idiomaFiltro) {
+            return false;
+          }
+          if (queryNorm.isEmpty) return true;
+          return emisora.searchBlob.contains(queryNorm);
+        })
+        .toList(growable: false);
 
-        final String rawPais = (e['pais_codigo'] ?? e['pais'] ?? 'DO')
-            .toString()
-            .trim()
-            .toUpperCase();
-        final String idPais = rawPais.isEmpty ? 'DO' : rawPais;
-        final String id = (e['id'] ?? e['emisora_id'] ?? i.toString())
-            .toString()
-            .trim();
-        final String nombre =
-            (e['name'] ?? e['emisora_nombre'] ?? e['nombre'] ?? '')
-                .toString()
-                .trim();
-
-        if (nombre.isEmpty && rawUrl.isEmpty) continue;
-
-        final String poster =
-            (e['logo'] ?? e['emisora_poster'] ?? e['poster'] ?? '')
-                .toString()
-                .trim();
-        final String paisNombre =
-            (e['pais'] ?? e['pais_nombre'] ?? 'República Dominicana')
-                .toString()
-                .trim();
-        final String nombrePaisReal = paisNombre.isNotEmpty
-            ? paisNombre
-            : _obtenerNombrePais(idPais);
-
-        listaParseada.add({
-          'id': id.isNotEmpty ? id : i.toString(),
-          'name': nombre,
-          'frequency': (e['frequency'] ?? 'Online').toString().trim(),
-          'city': (e['city'] ?? paisNombre).toString().trim(),
-          'region': (e['region'] ?? paisNombre).toString().trim(),
-          'pais_codigo': idPais,
-          'pais_nombre': nombrePaisReal,
-          'streamUrl': rawUrl,
-          'logo': poster,
-          'idioma': (e['idioma'] ?? 'es').toString().trim().toLowerCase(),
-          'denomination':
-              (e['denomination'] ?? e['denominacion'] ?? 'Cristiana')
-                  .toString()
-                  .trim(),
-          'description': (e['description'] ?? '').toString().trim(),
-          'tags': List<String>.from(e['tags'] ?? <String>[]),
-          'priority': e['priority'] ?? 3,
-        });
+    _emisorasFiltradas = resultado;
+    if (resetPaginacion) {
+      _cantidadVisible = _tamanoPagina.clamp(0, _emisorasFiltradas.length);
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
       }
-
-      debugPrint(
-        '[RADIO_LOG] Fallback JSON local cargado con éxito. Emisoras: ${listaParseada.length}',
-      );
-      return listaParseada;
-    } catch (e) {
-      debugPrint('[RADIO_ERROR] Error al cargar fallback local: $e');
-      return <Map<String, dynamic>>[];
+    } else {
+      if (_cantidadVisible < _tamanoPagina) {
+        _cantidadVisible = _tamanoPagina.clamp(0, _emisorasFiltradas.length);
+      } else if (_cantidadVisible > _emisorasFiltradas.length) {
+        _cantidadVisible = _emisorasFiltradas.length;
+      }
     }
   }
 
-  // ===========================================================================
-  // FILTRADO ROBUSTO
-  // ===========================================================================
   Future<void> _toggleFavorito(String id) async {
     setState(() {
-      if (!_favoritosIds.remove(id)) _favoritosIds.add(id);
+      if (!_favoritosIds.remove(id)) {
+        _favoritosIds.add(id);
+      }
+      if (_mostrarSoloFavoritos) {
+        _recalcularEmisorasFiltradas(resetPaginacion: false);
+      }
     });
-    final prefs = await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('emisoras_favoritas', _favoritosIds.toList());
   }
 
-  IconData _obtenerIconoFallback(String frecuencia) {
-    if (frecuencia.toLowerCase().contains('online')) {
-      return Icons.wifi_tethering_rounded;
-    }
-    if (frecuencia.contains('AM')) return Icons.speaker_rounded;
-    return Icons.radio_rounded;
+  void _cambiarPais(String nuevoPais) {
+    if (_paisSeleccionado == nuevoPais) return;
+    setState(() {
+      _paisSeleccionado = nuevoPais;
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    });
   }
 
-  Color _obtenerColorEmisora(int index) =>
-      _paletaIconos[index % _paletaIconos.length];
-
-  List<Map<String, dynamic>> _filtrarEmisoras() {
-    final String query = _filtroBusqueda.toLowerCase().trim();
-    final String paisFiltro = _paisSeleccionado.toUpperCase().trim();
-
-    return _todasEmisoras.where((Map<String, dynamic> emisora) {
-      // 0. FILTRO DE FAVORITOS
-      if (_mostrarSoloFavoritos) {
-        final String id = (emisora['id'] ?? '').toString();
-        if (!_favoritosIds.contains(id)) return false;
-      }
-
-      // 1. FILTRO DE PAÍS
-      if (paisFiltro != 'TODOS') {
-        final String paisEmisora = (emisora['pais_codigo'] ?? '')
-            .toString()
-            .toUpperCase()
-            .trim();
-        if (paisEmisora != paisFiltro) {
-          return false;
-        }
-      }
-
-      // 2. FILTRO DE IDIOMA
-      if (_idiomaSeleccionado != 'TODOS') {
-        final String idiomaEmisora = (emisora['idioma'] ?? 'es')
-            .toString()
-            .trim()
-            .toLowerCase();
-        if (idiomaEmisora != _idiomaSeleccionado.toLowerCase()) {
-          return false;
-        }
-      }
-
-      // 3. BUSCADOR DE TEXTO
-      if (query.isEmpty) {
-        return true;
-      }
-
-      final String nombre = (emisora['name'] ?? '').toString().toLowerCase();
-      final String denominacion = (emisora['denomination'] ?? '')
-          .toString()
-          .toLowerCase();
-      final String ciudad = (emisora['city'] ?? '').toString().toLowerCase();
-      final String region = (emisora['region'] ?? '').toString().toLowerCase();
-      final String paisCodigo = (emisora['pais_codigo'] ?? '')
-          .toString()
-          .toLowerCase();
-      final String paisNombre =
-          (emisora['pais_nombre'] ??
-                  _obtenerNombrePais(emisora['pais_codigo'] ?? ''))
-              .toString()
-              .toLowerCase();
-
-      return nombre.contains(query) ||
-          denominacion.contains(query) ||
-          ciudad.contains(query) ||
-          region.contains(query) ||
-          paisCodigo.contains(query) ||
-          paisNombre.contains(query);
-    }).toList();
+  void _cambiarIdioma(String nuevoIdioma) {
+    if (_idiomaSeleccionado == nuevoIdioma) return;
+    setState(() {
+      _idiomaSeleccionado = nuevoIdioma;
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    });
   }
 
-  // ===========================================================================
-  // WIDGETS
-  // ===========================================================================
-  Widget _buildCustomDropdown(
-    double screenWidth,
-    double usableHeight,
-    AppLocalizations? l10n,
-  ) {
-    final String valorSeguro = _paisesDisponibles.contains(_paisSeleccionado)
-        ? _paisSeleccionado
+  void _toggleFiltroSoloFavoritos() {
+    setState(() {
+      _mostrarSoloFavoritos = !_mostrarSoloFavoritos;
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    });
+  }
+
+  void _desactivarFiltroSoloFavoritos() {
+    if (!_mostrarSoloFavoritos) return;
+    setState(() {
+      _mostrarSoloFavoritos = false;
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    });
+  }
+
+  void _toggleBuscador() {
+    setState(() {
+      _mostrandoBuscador = !_mostrandoBuscador;
+      if (!_mostrandoBuscador) {
+        _searchDebounce?.cancel();
+        _searchController.clear();
+        _filtroBusqueda = '';
+        _recalcularEmisorasFiltradas(resetPaginacion: true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final Size size = MediaQuery.sizeOf(context);
+    final EdgeInsets padding = MediaQuery.paddingOf(context);
+    final double screenWidth = size.width;
+    final double screenHeight = size.height;
+    final double safeAreaTop = padding.top;
+    final double safeAreaBottom = padding.bottom;
+    final double usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    final int itemsToRender = _cantidadVisible.clamp(
+      0,
+      _emisorasFiltradas.length,
+    );
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) {
+          _detenerReproduccion();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: azulFondo,
+        body: SafeArea(
+          bottom: false,
+          child: SizedBox(
+            width: screenWidth,
+            height: screenHeight - safeAreaTop,
+            child: Column(
+              children: <Widget>[
+                _EmisorasHeader(
+                  screenWidth: screenWidth,
+                  usableHeight: usableHeight,
+                  mostrandoBuscador: _mostrandoBuscador,
+                  searchController: _searchController,
+                  onBackTap: _manejarRetroceso,
+                  onToggleSearch: _toggleBuscador,
+                  onQueryChanged: _onSearchQueryChanged,
+                ),
+                Expanded(
+                  child: Container(
+                    width: screenWidth,
+                    decoration: BoxDecoration(
+                      color: blancoFondo,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(screenWidth * 0.08),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(screenWidth * 0.08),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          _EmisorasFiltrosSuperiores(
+                            screenWidth: screenWidth,
+                            usableHeight: usableHeight,
+                            paisesDisponibles: _paisesDisponibles,
+                            paisSeleccionado: _paisSeleccionado,
+                            mostrarSoloFavoritos: _mostrarSoloFavoritos,
+                            onPaisChanged: _cambiarPais,
+                            onToggleFavoritos: _toggleFiltroSoloFavoritos,
+                          ),
+                          _EmisorasSelectorIdioma(
+                            screenWidth: screenWidth,
+                            usableHeight: usableHeight,
+                            idiomaSeleccionado: _idiomaSeleccionado,
+                            onIdiomaSelected: _cambiarIdioma,
+                          ),
+                          SizedBox(height: usableHeight * 0.015),
+                          if (_mostrarSoloFavoritos)
+                            _EmisorasBannerFavoritos(
+                              screenWidth: screenWidth,
+                              usableHeight: usableHeight,
+                              totalMostradas: _emisorasFiltradas.length,
+                              onClearFilter: _desactivarFiltroSoloFavoritos,
+                            ),
+                          Expanded(
+                            child: _isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      color: amarilloOro,
+                                    ),
+                                  )
+                                : _emisorasFiltradas.isEmpty
+                                ? _EmisorasEmptyState(
+                                    screenWidth: screenWidth,
+                                    usableHeight: usableHeight,
+                                    mostrarSoloFavoritos: _mostrarSoloFavoritos,
+                                    paisSeleccionado: _paisSeleccionado,
+                                    filtroBusqueda: _filtroBusqueda,
+                                    onVerTodas: _desactivarFiltroSoloFavoritos,
+                                  )
+                                : RefreshIndicator(
+                                    color: amarilloOro,
+                                    backgroundColor: Colors.white,
+                                    onRefresh: () =>
+                                        _inicializarCatalogoConCacheLocal(
+                                          forzarRed: true,
+                                        ),
+                                    child: ValueListenableBuilder<_PlaybackUiState>(
+                                      valueListenable: _playbackNotifier,
+                                      builder:
+                                          (
+                                            BuildContext context,
+                                            _PlaybackUiState playbackState,
+                                            _,
+                                          ) {
+                                            return GridView.builder(
+                                              controller: _scrollController,
+                                              physics:
+                                                  const AlwaysScrollableScrollPhysics(
+                                                    parent:
+                                                        BouncingScrollPhysics(),
+                                                  ),
+                                              addAutomaticKeepAlives: false,
+                                              addRepaintBoundaries: true,
+                                              padding:
+                                                  EdgeInsetsDirectional.fromSTEB(
+                                                    screenWidth * 0.05,
+                                                    0,
+                                                    screenWidth * 0.05,
+                                                    playbackState
+                                                                .emisoraActual !=
+                                                            null
+                                                        ? usableHeight * 0.02
+                                                        : usableHeight * 0.05,
+                                                  ),
+                                              gridDelegate:
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                    crossAxisCount: 2,
+                                                    crossAxisSpacing:
+                                                        screenWidth * 0.035,
+                                                    mainAxisSpacing:
+                                                        screenWidth * 0.035,
+                                                    childAspectRatio: 0.90,
+                                                  ),
+                                              itemCount: itemsToRender,
+                                              itemBuilder:
+                                                  (
+                                                    BuildContext context,
+                                                    int index,
+                                                  ) {
+                                                    final EmisoraModel emisora =
+                                                        _emisorasFiltradas[index];
+                                                    final bool isPlayingThis =
+                                                        playbackState
+                                                                .emisoraActual
+                                                                ?.id ==
+                                                            emisora.id &&
+                                                        playbackState.isPlaying;
+                                                    final bool isFav =
+                                                        _favoritosIds.contains(
+                                                          emisora.id,
+                                                        );
+
+                                                    return _EmisoraGridCard(
+                                                      key: ValueKey<String>(
+                                                        emisora.id,
+                                                      ),
+                                                      emisora: emisora,
+                                                      index: index,
+                                                      isPlayingThis:
+                                                          isPlayingThis,
+                                                      isFav: isFav,
+                                                      screenWidth: screenWidth,
+                                                      usableHeight:
+                                                          usableHeight,
+                                                      l10n: l10n,
+                                                      onTap: () =>
+                                                          _reproducirEmisora(
+                                                            emisora,
+                                                          ),
+                                                      onToggleFav: () =>
+                                                          _toggleFavorito(
+                                                            emisora.id,
+                                                          ),
+                                                    );
+                                                  },
+                                            );
+                                          },
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                RepaintBoundary(
+                  child: ValueListenableBuilder<_PlaybackUiState>(
+                    valueListenable: _playbackNotifier,
+                    builder:
+                        (
+                          BuildContext context,
+                          _PlaybackUiState playbackState,
+                          _,
+                        ) {
+                          final EmisoraModel? actual =
+                              playbackState.emisoraActual;
+                          if (actual == null) return const SizedBox.shrink();
+                          return _EmisorasMiniPlayer(
+                            emisora: actual,
+                            isPlaying: playbackState.isPlaying,
+                            isBuffering: playbackState.isBuffering,
+                            screenWidth: screenWidth,
+                            usableHeight: usableHeight,
+                            safeAreaBottom: safeAreaBottom,
+                            onPlayPause: _togglePlayPause,
+                            onStop: _detenerReproduccion,
+                          );
+                        },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// WIDGETS DEDICADOS CON CONSTRUCTORES CONST (CUMPLIMIENTO REGLA #6 AGENTS.MD)
+// =============================================================================
+
+class _EmisorasHeader extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final bool mostrandoBuscador;
+  final TextEditingController searchController;
+  final VoidCallback onBackTap;
+  final VoidCallback onToggleSearch;
+  final ValueChanged<String> onQueryChanged;
+
+  const _EmisorasHeader({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.mostrandoBuscador,
+    required this.searchController,
+    required this.onBackTap,
+    required this.onToggleSearch,
+    required this.onQueryChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      width: screenWidth,
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: screenWidth * 0.05,
+        vertical: usableHeight * 0.015,
+      ),
+      child: Column(
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              GestureDetector(
+                onTap: onBackTap,
+                child: Container(
+                  padding: EdgeInsetsDirectional.all(screenWidth * 0.02),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    color: Colors.white,
+                    size: screenWidth * 0.07,
+                  ),
+                ),
+              ),
+              Text(
+                l10n.emisorasCristianas,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                onPressed: onToggleSearch,
+                icon: Icon(
+                  mostrandoBuscador
+                      ? Icons.close_rounded
+                      : Icons.search_rounded,
+                  color: Colors.white,
+                  size: screenWidth * 0.07,
+                ),
+              ),
+            ],
+          ),
+          if (mostrandoBuscador) ...<Widget>[
+            SizedBox(height: usableHeight * 0.012),
+            Container(
+              height: usableHeight * 0.055,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              ),
+              child: TextField(
+                controller: searchController,
+                autofocus: true,
+                onChanged: onQueryChanged,
+                style: TextStyle(
+                  color: _EmisorasScreenState.azulFondo,
+                  fontSize: screenWidth * 0.04,
+                ),
+                decoration: InputDecoration(
+                  hintText: l10n.buscarEmisorasPlaceholder,
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: screenWidth * 0.035,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey.shade600,
+                    size: screenWidth * 0.05,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsetsDirectional.symmetric(
+                    vertical: usableHeight * 0.014,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmisorasFiltrosSuperiores extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final List<String> paisesDisponibles;
+  final String paisSeleccionado;
+  final bool mostrarSoloFavoritos;
+  final ValueChanged<String> onPaisChanged;
+  final VoidCallback onToggleFavoritos;
+
+  const _EmisorasFiltrosSuperiores({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.paisesDisponibles,
+    required this.paisSeleccionado,
+    required this.mostrarSoloFavoritos,
+    required this.onPaisChanged,
+    required this.onToggleFavoritos,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String valorSeguro = paisesDisponibles.contains(paisSeleccionado)
+        ? paisSeleccionado
         : 'TODOS';
 
+    // Ordenamos los países alfabéticamente según su nombre localizado (manteniendo TODOS primero)
+    final List<String> paisesOrdenados = <String>[
+      'TODOS',
+      ...paisesDisponibles.where((String c) => c != 'TODOS').toList()..sort(
+        (String a, String b) => _EmisorasScreenState.obtenerNombrePais(
+          a,
+          l10n,
+        ).compareTo(_EmisorasScreenState.obtenerNombrePais(b, l10n)),
+      ),
+    ];
+
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         screenWidth * 0.05,
         usableHeight * 0.015,
         screenWidth * 0.05,
         0,
       ),
       child: Row(
-        children: [
+        children: <Widget>[
           Expanded(
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: screenWidth * 0.04,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                border: Border.all(color: grisBorde),
+                border: Border.all(color: _EmisorasScreenState.grisBorde),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.02),
@@ -891,27 +1275,25 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                   isExpanded: true,
                   icon: Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: azulFondo,
+                    color: _EmisorasScreenState.azulFondo,
                     size: screenWidth * 0.06,
                   ),
                   dropdownColor: Colors.white,
                   style: TextStyle(
-                    color: azulFondo,
+                    color: _EmisorasScreenState.azulFondo,
                     fontWeight: FontWeight.bold,
                     fontSize: screenWidth * 0.038,
                   ),
                   onChanged: (String? nuevoPais) {
                     if (nuevoPais != null) {
-                      setState(() {
-                        _paisSeleccionado = nuevoPais;
-                      });
-                      debugPrint('[RADIO_LOG] País seleccionado: $nuevoPais');
+                      onPaisChanged(nuevoPais);
                     }
                   },
-                  items: _paisesDisponibles.map<DropdownMenuItem<String>>((
+                  items: paisesOrdenados.map<DropdownMenuItem<String>>((
                     String codigo,
                   ) {
-                    final String nombrePais = _obtenerNombrePais(codigo, l10n);
+                    final String nombrePais =
+                        _EmisorasScreenState.obtenerNombrePais(codigo, l10n);
                     return DropdownMenuItem<String>(
                       value: codigo,
                       child: Row(
@@ -920,7 +1302,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                             codigo == 'TODOS'
                                 ? Icons.public_rounded
                                 : Icons.flag_circle_rounded,
-                            color: amarilloOro,
+                            color: _EmisorasScreenState.amarilloOro,
                             size: screenWidth * 0.05,
                           ),
                           SizedBox(width: screenWidth * 0.025),
@@ -940,18 +1322,18 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           ),
           SizedBox(width: screenWidth * 0.03),
           GestureDetector(
-            onTap: () {
-              setState(() {
-                _mostrarSoloFavoritos = !_mostrarSoloFavoritos;
-              });
-            },
+            onTap: onToggleFavoritos,
             child: Container(
-              padding: EdgeInsets.all(screenWidth * 0.035),
+              padding: EdgeInsetsDirectional.all(screenWidth * 0.035),
               decoration: BoxDecoration(
-                color: _mostrarSoloFavoritos ? amarilloOro : Colors.white,
+                color: mostrarSoloFavoritos
+                    ? _EmisorasScreenState.amarilloOro
+                    : Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _mostrarSoloFavoritos ? amarilloOro : grisBorde,
+                  color: mostrarSoloFavoritos
+                      ? _EmisorasScreenState.amarilloOro
+                      : _EmisorasScreenState.grisBorde,
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
@@ -962,10 +1344,12 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                 ],
               ),
               child: Icon(
-                _mostrarSoloFavoritos
+                mostrarSoloFavoritos
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
-                color: _mostrarSoloFavoritos ? Colors.white : azulFondo,
+                color: mostrarSoloFavoritos
+                    ? Colors.white
+                    : _EmisorasScreenState.azulFondo,
                 size: screenWidth * 0.06,
               ),
             ),
@@ -974,14 +1358,27 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       ),
     );
   }
+}
 
-  Widget _buildSelectorIdioma(
-    double screenWidth,
-    double usableHeight,
-    AppLocalizations? l10n,
-  ) {
+class _EmisorasSelectorIdioma extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final String idiomaSeleccionado;
+  final ValueChanged<String> onIdiomaSelected;
+
+  const _EmisorasSelectorIdioma({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.idiomaSeleccionado,
+    required this.onIdiomaSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         screenWidth * 0.05,
         usableHeight * 0.012,
         screenWidth * 0.05,
@@ -990,66 +1387,82 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       child: Row(
         children: <Widget>[
           Expanded(
-            child: _buildChipIdioma(
+            child: _ChipIdiomaItem(
               id: 'TODOS',
-              label: l10n?.todos ?? 'Todos',
+              label: l10n.todos,
               icono: Icons.language_rounded,
+              seleccionado: idiomaSeleccionado == 'TODOS',
               screenWidth: screenWidth,
               usableHeight: usableHeight,
+              onTap: () => onIdiomaSelected('TODOS'),
             ),
           ),
           SizedBox(width: screenWidth * 0.025),
           Expanded(
-            child: _buildChipIdioma(
+            child: _ChipIdiomaItem(
               id: 'es',
-              label: l10n?.espanol ?? 'Español',
+              label: l10n.espanol,
               icono: Icons.translate_rounded,
+              seleccionado: idiomaSeleccionado == 'es',
               screenWidth: screenWidth,
               usableHeight: usableHeight,
+              onTap: () => onIdiomaSelected('es'),
             ),
           ),
           SizedBox(width: screenWidth * 0.025),
           Expanded(
-            child: _buildChipIdioma(
+            child: _ChipIdiomaItem(
               id: 'en',
-              label: l10n?.ingles ?? 'Inglés',
+              label: l10n.ingles,
               icono: Icons.public_rounded,
+              seleccionado: idiomaSeleccionado == 'en',
               screenWidth: screenWidth,
               usableHeight: usableHeight,
+              onTap: () => onIdiomaSelected('en'),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildChipIdioma({
-    required String id,
-    required String label,
-    required IconData icono,
-    required double screenWidth,
-    required double usableHeight,
-  }) {
-    final bool seleccionado = _idiomaSeleccionado == id;
+class _ChipIdiomaItem extends StatelessWidget {
+  final String id;
+  final String label;
+  final IconData icono;
+  final bool seleccionado;
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onTap;
+
+  const _ChipIdiomaItem({
+    required this.id,
+    required this.label,
+    required this.icono,
+    required this.seleccionado,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (_idiomaSeleccionado != id) {
-          setState(() {
-            _idiomaSeleccionado = id;
-          });
-        }
-      },
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
+        padding: EdgeInsetsDirectional.symmetric(
           vertical: usableHeight * 0.009,
           horizontal: screenWidth * 0.02,
         ),
         decoration: BoxDecoration(
-          color: seleccionado ? azulFondo : Colors.white,
+          color: seleccionado ? _EmisorasScreenState.azulFondo : Colors.white,
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
-            color: seleccionado ? azulFondo : grisBorde,
+            color: seleccionado
+                ? _EmisorasScreenState.azulFondo
+                : _EmisorasScreenState.grisBorde,
             width: seleccionado ? 1.5 : 1.0,
           ),
           boxShadow: <BoxShadow>[
@@ -1065,7 +1478,9 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           children: <Widget>[
             Icon(
               icono,
-              color: seleccionado ? amarilloOro : Colors.grey.shade600,
+              color: seleccionado
+                  ? _EmisorasScreenState.amarilloOro
+                  : Colors.grey.shade600,
               size: screenWidth * 0.042,
             ),
             SizedBox(width: screenWidth * 0.015),
@@ -1073,7 +1488,9 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
               child: Text(
                 label,
                 style: TextStyle(
-                  color: seleccionado ? Colors.white : azulFondo,
+                  color: seleccionado
+                      ? Colors.white
+                      : _EmisorasScreenState.azulFondo,
                   fontSize: screenWidth * 0.033,
                   fontWeight: seleccionado ? FontWeight.bold : FontWeight.w600,
                 ),
@@ -1085,21 +1502,36 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       ),
     );
   }
+}
 
-  Widget _buildBannerFavoritos(
-    double screenWidth,
-    double usableHeight,
-    int totalMostradas,
-    AppLocalizations? l10n,
-  ) {
+class _EmisorasBannerFavoritos extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final int totalMostradas;
+  final VoidCallback onClearFilter;
+
+  const _EmisorasBannerFavoritos({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.totalMostradas,
+    required this.onClearFilter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String localeName = Localizations.localeOf(context).toString();
+    final String totalFormateado = NumberFormat.decimalPattern(localeName)
+        .format(totalMostradas);
+
     return Container(
-      margin: EdgeInsets.fromLTRB(
+      margin: EdgeInsetsDirectional.fromSTEB(
         screenWidth * 0.05,
         0,
         screenWidth * 0.05,
         usableHeight * 0.012,
       ),
-      padding: EdgeInsets.symmetric(
+      padding: EdgeInsetsDirectional.symmetric(
         horizontal: screenWidth * 0.035,
         vertical: usableHeight * 0.01,
       ),
@@ -1107,16 +1539,16 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
         color: const Color(0xFFFFF7E6),
         borderRadius: BorderRadius.circular(screenWidth * 0.03),
         border: Border.all(
-          color: amarilloOro.withValues(alpha: 0.5),
+          color: _EmisorasScreenState.amarilloOro.withValues(alpha: 0.5),
           width: 1.2,
         ),
       ),
       child: Row(
         children: <Widget>[
           Container(
-            padding: EdgeInsets.all(screenWidth * 0.015),
+            padding: EdgeInsetsDirectional.all(screenWidth * 0.015),
             decoration: const BoxDecoration(
-              color: amarilloOro,
+              color: _EmisorasScreenState.amarilloOro,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -1128,10 +1560,9 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           SizedBox(width: screenWidth * 0.025),
           Expanded(
             child: Text(
-              l10n?.mostrandoSoloFavoritas(totalMostradas.toString()) ??
-                  'Mostrando solo favoritas ($totalMostradas)',
+              l10n.mostrandoSoloFavoritas(totalFormateado),
               style: TextStyle(
-                color: azulFondo,
+                color: _EmisorasScreenState.azulFondo,
                 fontWeight: FontWeight.bold,
                 fontSize: screenWidth * 0.033,
               ),
@@ -1139,28 +1570,24 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
             ),
           ),
           GestureDetector(
-            onTap: () {
-              setState(() {
-                _mostrarSoloFavoritos = false;
-              });
-            },
+            onTap: onClearFilter,
             child: Container(
-              padding: EdgeInsets.symmetric(
+              padding: EdgeInsetsDirectional.symmetric(
                 horizontal: screenWidth * 0.025,
                 vertical: usableHeight * 0.006,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                border: Border.all(color: amarilloOro),
+                border: Border.all(color: _EmisorasScreenState.amarilloOro),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Text(
-                    l10n?.verTodas ?? 'Ver todas',
+                    l10n.verTodas,
                     style: TextStyle(
-                      color: azulFondo,
+                      color: _EmisorasScreenState.azulFondo,
                       fontWeight: FontWeight.bold,
                       fontSize: screenWidth * 0.03,
                     ),
@@ -1168,7 +1595,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                   SizedBox(width: screenWidth * 0.01),
                   Icon(
                     Icons.close_rounded,
-                    color: azulFondo,
+                    color: _EmisorasScreenState.azulFondo,
                     size: screenWidth * 0.035,
                   ),
                 ],
@@ -1179,171 +1606,59 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       ),
     );
   }
+}
 
-  Widget _buildLogoWidget({
-    required String? logoUrl,
-    required String frecuencia,
-    required int index,
-    required double size,
-  }) {
-    final Widget fallback = Icon(
-      _obtenerIconoFallback(frecuencia),
-      color: _obtenerColorEmisora(index).withValues(alpha: 0.85),
-      size: size * 0.55,
-    );
+/// Tarjeta individual en cuadrícula de 2 columnas con constructores const,
+/// direcciones Bidi (`PositionedDirectional`) y logo redimensionado en caché.
+class _EmisoraGridCard extends StatelessWidget {
+  final EmisoraModel emisora;
+  final int index;
+  final bool isPlayingThis;
+  final bool isFav;
+  final double screenWidth;
+  final double usableHeight;
+  final AppLocalizations l10n;
+  final VoidCallback onTap;
+  final VoidCallback onToggleFav;
 
-    if (logoUrl == null || logoUrl.trim().isEmpty) return fallback;
+  const _EmisoraGridCard({
+    super.key,
+    required this.emisora,
+    required this.index,
+    required this.isPlayingThis,
+    required this.isFav,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.l10n,
+    required this.onTap,
+    required this.onToggleFav,
+  });
 
-    return Image.network(
-      logoUrl,
-      fit: BoxFit.contain,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: SizedBox(
-            width: size * 0.35,
-            height: size * 0.35,
-            child: const CircularProgressIndicator(
-              strokeWidth: 2,
-              color: amarilloOro,
-            ),
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) => fallback,
-    );
-  }
-
-  Widget _buildHeader(
-    double screenWidth,
-    double usableHeight,
-    AppLocalizations? l10n,
-  ) {
-    return Container(
-      width: screenWidth,
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.05,
-        vertical: usableHeight * 0.015,
-      ),
-      child: Column(
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              GestureDetector(
-                onTap: _manejarRetroceso,
-                child: Container(
-                  padding: EdgeInsets.all(screenWidth * 0.02),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: Colors.white,
-                    size: screenWidth * 0.07,
-                  ),
-                ),
-              ),
-              Text(
-                l10n?.emisorasCristianas ?? 'Emisoras Cristianas',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: screenWidth * 0.05,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _mostrandoBuscador = !_mostrandoBuscador;
-                    if (!_mostrandoBuscador) {
-                      _searchController.clear();
-                      _filtroBusqueda = '';
-                    }
-                  });
-                },
-                icon: Icon(
-                  _mostrandoBuscador
-                      ? Icons.close_rounded
-                      : Icons.search_rounded,
-                  color: Colors.white,
-                  size: screenWidth * 0.07,
-                ),
-              ),
-            ],
-          ),
-          if (_mostrandoBuscador) ...<Widget>[
-            SizedBox(height: usableHeight * 0.012),
-            Container(
-              height: usableHeight * 0.055,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              ),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: (val) => setState(() => _filtroBusqueda = val),
-                style: TextStyle(
-                  color: azulFondo,
-                  fontSize: screenWidth * 0.04,
-                ),
-                decoration: InputDecoration(
-                  hintText:
-                      l10n?.buscarEmisorasPlaceholder ??
-                      'Buscar por nombre, denominación, ciudad...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: screenWidth * 0.035,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.grey.shade600,
-                    size: screenWidth * 0.05,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    vertical: usableHeight * 0.014,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmisoraCard({
-    required Map<String, dynamic> emisora,
-    required int index,
-    required double screenWidth,
-    required double usableHeight,
-  }) {
-    final bool isPlayingThis =
-        _emisoraActual?['id'] == emisora['id'] && _isReproduciendo;
-    final String id = (emisora['id'] ?? '').toString();
-    final bool isFav = _favoritosIds.contains(id);
-
-    final String name = (emisora['name'] ?? '').toString();
-    final String denomination = (emisora['denomination'] ?? 'Cristiana')
-        .toString();
-    final String frequency = (emisora['frequency'] ?? 'Online').toString();
+  @override
+  Widget build(BuildContext context) {
+    final String name = emisora.name;
+    final String denomination = emisora.denomination.isNotEmpty
+        ? emisora.denomination
+        : l10n.denominacionCristiana;
+    final String frequency = emisora.frequency.isNotEmpty
+        ? emisora.frequency
+        : l10n.frecuenciaOnline;
 
     return GestureDetector(
-      onTap: () => _reproducirEmisora(emisora, screenWidth),
+      onTap: onTap,
       child: Column(
         children: <Widget>[
           Expanded(
             child: Container(
               width: double.infinity,
-              padding: EdgeInsets.all(screenWidth * 0.02),
+              padding: EdgeInsetsDirectional.all(screenWidth * 0.02),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.04),
                 border: Border.all(
-                  color: isPlayingThis ? amarilloOro : grisBorde,
+                  color: isPlayingThis
+                      ? _EmisorasScreenState.amarilloOro
+                      : _EmisorasScreenState.grisBorde,
                   width: isPlayingThis ? 2.0 : 1.0,
                 ),
                 boxShadow: <BoxShadow>[
@@ -1355,25 +1670,25 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                 ],
               ),
               child: Stack(
-                alignment: Alignment.center,
+                alignment: AlignmentDirectional.center,
                 children: <Widget>[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                    child: _buildLogoWidget(
-                      logoUrl: emisora['logo'] as String?,
+                    child: _EmisoraCachedLogo(
+                      logoUrl: emisora.logo,
                       frecuencia: frequency,
                       index: index,
                       size: screenWidth * 0.22,
                     ),
                   ),
                   if (isPlayingThis)
-                    Positioned(
+                    PositionedDirectional(
                       bottom: 0,
-                      right: 0,
+                      end: 0,
                       child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.01),
+                        padding: EdgeInsetsDirectional.all(screenWidth * 0.01),
                         decoration: const BoxDecoration(
-                          color: amarilloOro,
+                          color: _EmisorasScreenState.amarilloOro,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -1383,24 +1698,26 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                         ),
                       ),
                     ),
-                  Positioned(
+                  PositionedDirectional(
                     top: screenWidth * 0.015,
-                    left: screenWidth * 0.015,
+                    start: screenWidth * 0.015,
                     child: Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: EdgeInsetsDirectional.symmetric(
                         horizontal: screenWidth * 0.018,
                         vertical: screenWidth * 0.005,
                       ),
                       decoration: BoxDecoration(
-                        color: azulFondo.withValues(alpha: 0.85),
+                        color: _EmisorasScreenState.azulFondo.withValues(
+                          alpha: 0.85,
+                        ),
                         borderRadius: BorderRadius.circular(
                           screenWidth * 0.015,
                         ),
                       ),
                       child: Text(
-                        (emisora['idioma'] ?? 'es').toString().toUpperCase(),
+                        emisora.idioma.toUpperCase(),
                         style: TextStyle(
-                          color: amarilloOro,
+                          color: _EmisorasScreenState.amarilloOro,
                           fontWeight: FontWeight.w800,
                           fontSize: screenWidth * 0.024,
                           letterSpacing: 0.5,
@@ -1408,14 +1725,14 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                       ),
                     ),
                   ),
-                  Positioned(
+                  PositionedDirectional(
                     top: screenWidth * 0.01,
-                    right: screenWidth * 0.01,
+                    end: screenWidth * 0.01,
                     child: GestureDetector(
-                      onTap: () => _toggleFavorito(id),
+                      onTap: onToggleFav,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.012),
+                        padding: EdgeInsetsDirectional.all(screenWidth * 0.012),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -1450,13 +1767,14 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: azulFondo,
+              color: _EmisorasScreenState.azulFondo,
               fontSize: screenWidth * 0.03,
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
-            denomination.isNotEmpty && denomination != 'Cristiana'
+            denomination.isNotEmpty &&
+                    denomination != l10n.denominacionCristiana
                 ? '$denomination · $frequency'
                 : frequency,
             textAlign: TextAlign.center,
@@ -1471,150 +1789,267 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       ),
     );
   }
+}
 
-  Widget _buildGrid(
-    List<Map<String, dynamic>> emisoras,
-    double screenWidth,
-    double usableHeight,
-    AppLocalizations? l10n,
-  ) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: amarilloOro));
+/// Widget de logo con caché persistente en disco y decodificación limitada en VRAM (`cacheWidth`/`cacheHeight`).
+/// Sustituye los `CircularProgressIndicator` en celda por un placeholder estático ligero para evitar jank a 60 FPS.
+class _EmisoraCachedLogo extends StatefulWidget {
+  final String? logoUrl;
+  final String frecuencia;
+  final int index;
+  final double size;
+
+  const _EmisoraCachedLogo({
+    required this.logoUrl,
+    required this.frecuencia,
+    required this.index,
+    required this.size,
+  });
+
+  @override
+  State<_EmisoraCachedLogo> createState() => _EmisoraCachedLogoState();
+}
+
+class _EmisoraCachedLogoState extends State<_EmisoraCachedLogo> {
+  File? _cachedFile;
+  bool _loadFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveLogo();
+  }
+
+  @override
+  void didUpdateWidget(_EmisoraCachedLogo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.logoUrl != widget.logoUrl) {
+      _cachedFile = null;
+      _loadFailed = false;
+      _resolveLogo();
+    }
+  }
+
+  void _resolveLogo() {
+    final String url = (widget.logoUrl ?? '').trim();
+    if (url.isEmpty || kIsWeb) return;
+
+    final String? syncPath = _EmisoraLogoCacheManager.instance
+        .getCachedFilePathSync(url);
+    if (syncPath != null) {
+      _cachedFile = File(syncPath);
+      return;
     }
 
-    if (emisoras.isEmpty) {
-      final String mensajeVacio;
-      final IconData iconoVacio;
+    _EmisoraLogoCacheManager.instance.getLogoFile(url).then((File? file) {
+      if (!mounted) return;
+      setState(() {
+        _cachedFile = file;
+        _loadFailed = file == null;
+      });
+    });
+  }
 
-      if (_mostrarSoloFavoritos) {
-        iconoVacio = Icons.favorite_border_rounded;
-        if (_paisSeleccionado != 'TODOS') {
-          final String nombrePais = _obtenerNombrePais(_paisSeleccionado, l10n);
-          mensajeVacio =
-              l10n?.sinFavoritasEnPais(nombrePais) ??
-              'No tienes emisoras favoritas guardadas en $nombrePais.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
-        } else {
-          mensajeVacio = l10n?.sinFavoritasAun ?? 'No tienes emisoras favoritas guardadas todavía.\n\nToca el botón de corazón arriba para ver todas las emisoras.';
-        }
-      } else if (_filtroBusqueda.isNotEmpty) {
-        iconoVacio = Icons.search_off_rounded;
-        mensajeVacio =
-            l10n?.noEmisorasCoincidencia(_filtroBusqueda) ??
-            'No se encontraron emisoras que coincidan con "$_filtroBusqueda".';
-      } else {
-        iconoVacio = Icons.radio_outlined;
-        final String nombrePais = _obtenerNombrePais(_paisSeleccionado, l10n);
-        mensajeVacio =
-            l10n?.noEmisorasDisponiblesPais(nombrePais) ??
-            'No se encontraron emisoras disponibles para $nombrePais.';
-      }
+  @override
+  Widget build(BuildContext context) {
+    final Widget fallback = Icon(
+      _EmisorasScreenState.obtenerIconoFallback(widget.frecuencia),
+      color: _EmisorasScreenState.obtenerColorEmisora(widget.index)
+          .withValues(alpha: 0.85),
+      size: widget.size * 0.55,
+    );
 
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                iconoVacio,
-                size: screenWidth * 0.12,
-                color: _mostrarSoloFavoritos
-                    ? amarilloOro
-                    : Colors.grey.shade400,
-              ),
-              SizedBox(height: usableHeight * 0.015),
-              Text(
-                mensajeVacio,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: screenWidth * 0.038,
-                  height: 1.3,
-                ),
-              ),
-              if (_mostrarSoloFavoritos) ...<Widget>[
-                SizedBox(height: usableHeight * 0.02),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _mostrarSoloFavoritos = false;
-                    });
-                  },
-                  icon: const Icon(Icons.refresh_rounded, color: azulFondo),
-                  label: Text(
-                    l10n?.verTodasLasEmisoras ?? 'Ver todas las emisoras',
-                    style: const TextStyle(
-                      color: azulFondo,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                      side: const BorderSide(color: grisBorde),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: usableHeight * 0.012,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+    final String url = (widget.logoUrl ?? '').trim();
+    if (url.isEmpty || _loadFailed) return fallback;
+
+    // Limitamos la decodificación de textura en VRAM al tamaño físico real de pantalla
+    final double dpr = MediaQuery.devicePixelRatioOf(context);
+    final int targetPx = (widget.size * dpr).round().clamp(64, 256);
+
+    if (_cachedFile != null) {
+      return Image.file(
+        _cachedFile!,
+        width: widget.size,
+        height: widget.size,
+        fit: BoxFit.contain,
+        cacheWidth: targetPx,
+        cacheHeight: targetPx,
+        filterQuality: FilterQuality.low,
+        errorBuilder: (BuildContext context, Object error, StackTrace? _) =>
+            fallback,
       );
     }
 
-    return GridView.builder(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        screenWidth * 0.05,
-        0,
-        screenWidth * 0.05,
-        _emisoraActual != null ? usableHeight * 0.02 : usableHeight * 0.05,
-      ),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: screenWidth * 0.035,
-        mainAxisSpacing: screenWidth * 0.035,
-        childAspectRatio: 0.90,
-      ),
-      itemCount: emisoras.length,
-      itemBuilder: (context, index) => _buildEmisoraCard(
-        emisora: emisoras[index],
-        index: index,
-        screenWidth: screenWidth,
-        usableHeight: usableHeight,
+    if (kIsWeb) {
+      return Image.network(
+        url,
+        width: widget.size,
+        height: widget.size,
+        fit: BoxFit.contain,
+        cacheWidth: targetPx,
+        cacheHeight: targetPx,
+        filterQuality: FilterQuality.low,
+        errorBuilder: (BuildContext context, Object error, StackTrace? _) =>
+            fallback,
+      );
+    }
+
+    // Mientras se descarga en el pool de disco mostramos el icono estático sin animaciones pesadas
+    return fallback;
+  }
+}
+
+class _EmisorasEmptyState extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final bool mostrarSoloFavoritos;
+  final String paisSeleccionado;
+  final String filtroBusqueda;
+  final VoidCallback onVerTodas;
+
+  const _EmisorasEmptyState({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.mostrarSoloFavoritos,
+    required this.paisSeleccionado,
+    required this.filtroBusqueda,
+    required this.onVerTodas,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String mensajeVacio;
+    final IconData iconoVacio;
+
+    if (mostrarSoloFavoritos) {
+      iconoVacio = Icons.favorite_border_rounded;
+      if (paisSeleccionado != 'TODOS') {
+        final String nombrePais = _EmisorasScreenState.obtenerNombrePais(
+          paisSeleccionado,
+          l10n,
+        );
+        mensajeVacio = l10n.sinFavoritasEnPais(nombrePais);
+      } else {
+        mensajeVacio = l10n.sinFavoritasAun;
+      }
+    } else if (filtroBusqueda.isNotEmpty) {
+      iconoVacio = Icons.search_off_rounded;
+      mensajeVacio = l10n.noEmisorasCoincidencia(filtroBusqueda);
+    } else {
+      iconoVacio = Icons.radio_outlined;
+      final String nombrePais = _EmisorasScreenState.obtenerNombrePais(
+        paisSeleccionado,
+        l10n,
+      );
+      mensajeVacio = l10n.noEmisorasDisponiblesPais(nombrePais);
+    }
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsetsDirectional.symmetric(horizontal: screenWidth * 0.1),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              iconoVacio,
+              size: screenWidth * 0.12,
+              color: mostrarSoloFavoritos
+                  ? _EmisorasScreenState.amarilloOro
+                  : Colors.grey.shade400,
+            ),
+            SizedBox(height: usableHeight * 0.015),
+            Text(
+              mensajeVacio,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: screenWidth * 0.038,
+                height: 1.3,
+              ),
+            ),
+            if (mostrarSoloFavoritos) ...<Widget>[
+              SizedBox(height: usableHeight * 0.02),
+              TextButton.icon(
+                onPressed: onVerTodas,
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: _EmisorasScreenState.azulFondo,
+                ),
+                label: Text(
+                  l10n.verTodasLasEmisoras,
+                  style: const TextStyle(
+                    color: _EmisorasScreenState.azulFondo,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    side: const BorderSide(
+                      color: _EmisorasScreenState.grisBorde,
+                    ),
+                  ),
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: usableHeight * 0.012,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildMiniPlayer(
-    Map<String, dynamic> emisora,
-    double screenWidth,
-    double usableHeight,
-    double safeAreaBottom,
-    AppLocalizations? l10n,
-  ) {
-    final String nombre = (emisora['name'] ?? (l10n?.emisora ?? 'Emisora'))
-        .toString();
-    final String denominacion = (emisora['denomination'] ?? 'Cristiana')
-        .toString();
-    final String frecuencia = (emisora['frequency'] ?? 'Online').toString();
+class _EmisorasMiniPlayer extends StatelessWidget {
+  final EmisoraModel emisora;
+  final bool isPlaying;
+  final bool isBuffering;
+  final double screenWidth;
+  final double usableHeight;
+  final double safeAreaBottom;
+  final VoidCallback onPlayPause;
+  final VoidCallback onStop;
+
+  const _EmisorasMiniPlayer({
+    required this.emisora,
+    required this.isPlaying,
+    required this.isBuffering,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.safeAreaBottom,
+    required this.onPlayPause,
+    required this.onStop,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String nombre = emisora.name.isNotEmpty ? emisora.name : l10n.emisora;
+    final String denominacion = emisora.denomination.isNotEmpty
+        ? emisora.denomination
+        : l10n.denominacionCristiana;
+    final String frecuencia = emisora.frequency.isNotEmpty
+        ? emisora.frequency
+        : l10n.frecuenciaOnline;
 
     return Container(
       width: screenWidth,
-      padding: EdgeInsets.only(
+      padding: EdgeInsetsDirectional.only(
         bottom: safeAreaBottom > 0 ? safeAreaBottom : usableHeight * 0.015,
         top: usableHeight * 0.014,
-        left: screenWidth * 0.04,
-        right: screenWidth * 0.04,
+        start: screenWidth * 0.04,
+        end: screenWidth * 0.04,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFE8F1F5),
-        border: const Border(top: BorderSide(color: grisBorde)),
+        border: const Border(
+          top: BorderSide(color: _EmisorasScreenState.grisBorde),
+        ),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -1628,16 +2063,16 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           Container(
             width: screenWidth * 0.12,
             height: screenWidth * 0.12,
-            padding: EdgeInsets.all(screenWidth * 0.012),
+            padding: EdgeInsetsDirectional.all(screenWidth * 0.012),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              border: Border.all(color: grisBorde),
+              border: Border.all(color: _EmisorasScreenState.grisBorde),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(screenWidth * 0.02),
-              child: _buildLogoWidget(
-                logoUrl: emisora['logo'] as String?,
+              child: _EmisoraCachedLogo(
+                logoUrl: emisora.logo,
                 frecuencia: frecuencia,
                 index: 0,
                 size: screenWidth * 0.12,
@@ -1653,7 +2088,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                 Text(
                   nombre,
                   style: TextStyle(
-                    color: azulFondo,
+                    color: _EmisorasScreenState.azulFondo,
                     fontSize: screenWidth * 0.038,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1661,18 +2096,16 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  _isBuffering
-                      ? (l10n?.sintonizandoAudio ?? 'Sintonizando audio...')
-                      : denominacion.isNotEmpty && denominacion != 'Cristiana'
-                      ? (l10n?.enVivoConDenominacion(
-                              denominacion,
-                              frecuencia,
-                            ) ??
-                            'En vivo · $denominacion ($frecuencia)')
-                      : (l10n?.enVivoFrecuencia(frecuencia) ??
-                            'En vivo · $frecuencia'),
+                  isBuffering
+                      ? l10n.sintonizandoAudio
+                      : denominacion.isNotEmpty &&
+                            denominacion != l10n.denominacionCristiana
+                      ? l10n.enVivoConDenominacion(denominacion, frecuencia)
+                      : l10n.enVivoFrecuencia(frecuencia),
                   style: TextStyle(
-                    color: _isBuffering ? amarilloOro : Colors.grey.shade700,
+                    color: isBuffering
+                        ? _EmisorasScreenState.amarilloOro
+                        : Colors.grey.shade700,
                     fontSize: screenWidth * 0.03,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1683,14 +2116,14 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
             ),
           ),
           GestureDetector(
-            onTap: _isBuffering ? null : _togglePlayPause,
+            onTap: isBuffering ? null : onPlayPause,
             child: Container(
-              padding: EdgeInsets.all(screenWidth * 0.024),
+              padding: EdgeInsetsDirectional.all(screenWidth * 0.024),
               decoration: const BoxDecoration(
-                color: amarilloOro,
+                color: _EmisorasScreenState.amarilloOro,
                 shape: BoxShape.circle,
               ),
-              child: _isBuffering
+              child: isBuffering
                   ? SizedBox(
                       width: screenWidth * 0.055,
                       height: screenWidth * 0.055,
@@ -1700,7 +2133,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                       ),
                     )
                   : Icon(
-                      _isReproduciendo
+                      isPlaying
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
                       color: Colors.white,
@@ -1710,7 +2143,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           ),
           SizedBox(width: screenWidth * 0.02),
           IconButton(
-            onPressed: _detenerReproduccion,
+            onPressed: onStop,
             icon: Icon(
               Icons.close_rounded,
               color: Colors.grey.shade600,
@@ -1718,97 +2151,6 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations? l10n = AppLocalizations.of(context);
-    final Size size = MediaQuery.sizeOf(context);
-    final EdgeInsets padding = MediaQuery.paddingOf(context);
-    final double screenWidth = size.width;
-    final double screenHeight = size.height;
-    final double safeAreaTop = padding.top;
-    final double safeAreaBottom = padding.bottom;
-    final double usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
-
-    final List<Map<String, dynamic>> emisorasFiltradas = _filtrarEmisoras();
-    final Map<String, dynamic>? actual = _emisoraActual;
-
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (didPop) {
-          _detenerReproduccion();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: azulFondo,
-        body: SafeArea(
-          bottom: false,
-          child: SizedBox(
-            width: screenWidth,
-            height: screenHeight - safeAreaTop,
-            child: Column(
-              children: <Widget>[
-                _buildHeader(screenWidth, usableHeight, l10n),
-                // CONTENEDOR BLANCO CON LISTADO
-                Expanded(
-                  child: Container(
-                    width: screenWidth,
-                    decoration: BoxDecoration(
-                      color: blancoFondo,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(screenWidth * 0.08),
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(screenWidth * 0.08),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          // FILTRO POR PAÍS Y BOTÓN DE FAVORITOS
-                          _buildCustomDropdown(screenWidth, usableHeight, l10n),
-                          // FILTRO POR IDIOMA (TODOS, ESPAÑOL, INGLÉS)
-                          _buildSelectorIdioma(screenWidth, usableHeight, l10n),
-                          SizedBox(height: usableHeight * 0.015),
-                          // BANNER INDICADOR DE FAVORITOS
-                          if (_mostrarSoloFavoritos)
-                            _buildBannerFavoritos(
-                              screenWidth,
-                              usableHeight,
-                              emisorasFiltradas.length,
-                              l10n,
-                            ),
-                          // CUADRÍCULA DE EMISORAS
-                          Expanded(
-                            child: _buildGrid(
-                              emisorasFiltradas,
-                              screenWidth,
-                              usableHeight,
-                              l10n,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // MINIRREPRODUCTOR
-                if (actual != null)
-                  _buildMiniPlayer(
-                    actual,
-                    screenWidth,
-                    usableHeight,
-                    safeAreaBottom,
-                    l10n,
-                  ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -4326,4 +4326,79 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get noSePudoCancelar =>
       'No se pudo cancelar la solicitud. Intenta nuevamente.';
+
+  @override
+  String get radioCristiana => 'Radio Cristiana';
+
+  @override
+  String get denominacionCristiana => 'Cristiana';
+
+  @override
+  String get frecuenciaOnline => 'Online';
+
+  @override
+  String get paisAR => 'Argentina';
+
+  @override
+  String get paisBO => 'Bolivia';
+
+  @override
+  String get paisBR => 'Brasil';
+
+  @override
+  String get paisCL => 'Chile';
+
+  @override
+  String get paisCO => 'Colombia';
+
+  @override
+  String get paisCR => 'Costa Rica';
+
+  @override
+  String get paisCU => 'Cuba';
+
+  @override
+  String get paisDO => 'República Dominicana';
+
+  @override
+  String get paisEC => 'Ecuador';
+
+  @override
+  String get paisES => 'España';
+
+  @override
+  String get paisGT => 'Guatemala';
+
+  @override
+  String get paisHN => 'Honduras';
+
+  @override
+  String get paisMX => 'México';
+
+  @override
+  String get paisNI => 'Nicaragua';
+
+  @override
+  String get paisPA => 'Panamá';
+
+  @override
+  String get paisPE => 'Perú';
+
+  @override
+  String get paisPR => 'Puerto Rico';
+
+  @override
+  String get paisPY => 'Paraguay';
+
+  @override
+  String get paisSV => 'El Salvador';
+
+  @override
+  String get paisUS => 'Estados Unidos';
+
+  @override
+  String get paisUY => 'Uruguay';
+
+  @override
+  String get paisVE => 'Venezuela';
 }

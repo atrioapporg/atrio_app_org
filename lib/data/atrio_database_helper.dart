@@ -3,11 +3,12 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../modelos/ajustes_model.dart';
+import '../modelos/emisora_model.dart';
 
 class AtrioDatabaseHelper {
   static const _databaseName = "atrio.db";
-  // Subimos a versión 5 para soporte de doble notificación diaria del versículo
-  static const _databaseVersion = 5;
+  // Subimos a versión 6 para soporte de caché persistente de catálogo de emisoras
+  static const _databaseVersion = 6;
 
   // Nombres de las tablas
   static const tableUsuario = 'usuario';
@@ -16,6 +17,7 @@ class AtrioDatabaseHelper {
   static const tableFavoritos = 'favoritos_biblia';
   static const tableAjustes = 'ajustes_atrio';
   static const tableSolicitudesLocales = 'solicitudes_locales';
+  static const tableCatalogoEmisoras = 'catalogo_emisoras';
 
   // Singleton
   AtrioDatabaseHelper._init();
@@ -155,6 +157,9 @@ class AtrioDatabaseHelper {
         usuario_email TEXT
       )
     ''');
+
+    // 8. Tabla: catalogo_emisoras (Caché local persistente de las ~280 emisoras de Google Sheets)
+    await _crearTablaCatalogoEmisoras(db);
 
     // Configuración inicial por defecto
     await db.insert(tableConfig, {
@@ -300,6 +305,37 @@ class AtrioDatabaseHelper {
         '[ATRIO_DB] Migración a v5 completada (doble notificación diaria).',
       );
     }
+
+    if (oldVersion < 6) {
+      await _crearTablaCatalogoEmisoras(db);
+      debugPrint(
+        '[ATRIO_DB] Migración a v6 completada (tabla $tableCatalogoEmisoras creada).',
+      );
+    }
+  }
+
+  Future<void> _crearTablaCatalogoEmisoras(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $tableCatalogoEmisoras (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        frequency TEXT NOT NULL,
+        city TEXT,
+        region TEXT,
+        pais_codigo TEXT NOT NULL,
+        pais_nombre TEXT NOT NULL,
+        stream_url TEXT NOT NULL,
+        logo TEXT,
+        idioma TEXT NOT NULL,
+        denomination TEXT,
+        description TEXT,
+        priority INTEGER DEFAULT 3,
+        search_blob TEXT NOT NULL
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_emisoras_pais_idioma ON $tableCatalogoEmisoras (pais_codigo, idioma)',
+    );
   }
 
   // ============================================================
@@ -719,5 +755,37 @@ class AtrioDatabaseHelper {
       );
     }
     return await db.delete(tableSolicitudesLocales);
+  }
+
+  // ============================================================
+  // MÉTODOS CRUD: CATÁLOGO DE EMISORAS (Caché Local Persistente)
+  // ============================================================
+  /// Obtiene todas las emisoras almacenadas en la caché local SQLite.
+  Future<List<EmisoraModel>> obtenerCatalogoEmisoras() async {
+    final db = await instance.database;
+    await _crearTablaCatalogoEmisoras(db);
+    final List<Map<String, dynamic>> rows = await db.query(
+      tableCatalogoEmisoras,
+    );
+    return rows.map(EmisoraModel.fromSqlMap).toList(growable: false);
+  }
+
+  /// Persiste el lote completo de emisoras dentro de una transacción atómica batch.
+  Future<void> guardarCatalogoEmisorasBatch(List<EmisoraModel> emisoras) async {
+    if (emisoras.isEmpty) return;
+    final db = await instance.database;
+    await _crearTablaCatalogoEmisoras(db);
+    await db.transaction((txn) async {
+      await txn.delete(tableCatalogoEmisoras);
+      final batch = txn.batch();
+      for (final emisora in emisoras) {
+        batch.insert(
+          tableCatalogoEmisoras,
+          emisora.toSqlMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
   }
 }

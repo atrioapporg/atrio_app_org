@@ -7637,6 +7637,156 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo cancelar la solicitud. Intenta nuevamente.'**
   String get noSePudoCancelar;
+
+  /// No description provided for @radioCristiana.
+  ///
+  /// In es, this message translates to:
+  /// **'Radio Cristiana'**
+  String get radioCristiana;
+
+  /// No description provided for @denominacionCristiana.
+  ///
+  /// In es, this message translates to:
+  /// **'Cristiana'**
+  String get denominacionCristiana;
+
+  /// No description provided for @frecuenciaOnline.
+  ///
+  /// In es, this message translates to:
+  /// **'Online'**
+  String get frecuenciaOnline;
+
+  /// No description provided for @paisAR.
+  ///
+  /// In es, this message translates to:
+  /// **'Argentina'**
+  String get paisAR;
+
+  /// No description provided for @paisBO.
+  ///
+  /// In es, this message translates to:
+  /// **'Bolivia'**
+  String get paisBO;
+
+  /// No description provided for @paisBR.
+  ///
+  /// In es, this message translates to:
+  /// **'Brasil'**
+  String get paisBR;
+
+  /// No description provided for @paisCL.
+  ///
+  /// In es, this message translates to:
+  /// **'Chile'**
+  String get paisCL;
+
+  /// No description provided for @paisCO.
+  ///
+  /// In es, this message translates to:
+  /// **'Colombia'**
+  String get paisCO;
+
+  /// No description provided for @paisCR.
+  ///
+  /// In es, this message translates to:
+  /// **'Costa Rica'**
+  String get paisCR;
+
+  /// No description provided for @paisCU.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuba'**
+  String get paisCU;
+
+  /// No description provided for @paisDO.
+  ///
+  /// In es, this message translates to:
+  /// **'República Dominicana'**
+  String get paisDO;
+
+  /// No description provided for @paisEC.
+  ///
+  /// In es, this message translates to:
+  /// **'Ecuador'**
+  String get paisEC;
+
+  /// No description provided for @paisES.
+  ///
+  /// In es, this message translates to:
+  /// **'España'**
+  String get paisES;
+
+  /// No description provided for @paisGT.
+  ///
+  /// In es, this message translates to:
+  /// **'Guatemala'**
+  String get paisGT;
+
+  /// No description provided for @paisHN.
+  ///
+  /// In es, this message translates to:
+  /// **'Honduras'**
+  String get paisHN;
+
+  /// No description provided for @paisMX.
+  ///
+  /// In es, this message translates to:
+  /// **'México'**
+  String get paisMX;
+
+  /// No description provided for @paisNI.
+  ///
+  /// In es, this message translates to:
+  /// **'Nicaragua'**
+  String get paisNI;
+
+  /// No description provided for @paisPA.
+  ///
+  /// In es, this message translates to:
+  /// **'Panamá'**
+  String get paisPA;
+
+  /// No description provided for @paisPE.
+  ///
+  /// In es, this message translates to:
+  /// **'Perú'**
+  String get paisPE;
+
+  /// No description provided for @paisPR.
+  ///
+  /// In es, this message translates to:
+  /// **'Puerto Rico'**
+  String get paisPR;
+
+  /// No description provided for @paisPY.
+  ///
+  /// In es, this message translates to:
+  /// **'Paraguay'**
+  String get paisPY;
+
+  /// No description provided for @paisSV.
+  ///
+  /// In es, this message translates to:
+  /// **'El Salvador'**
+  String get paisSV;
+
+  /// No description provided for @paisUS.
+  ///
+  /// In es, this message translates to:
+  /// **'Estados Unidos'**
+  String get paisUS;
+
+  /// No description provided for @paisUY.
+  ///
+  /// In es, this message translates to:
+  /// **'Uruguay'**
+  String get paisUY;
+
+  /// No description provided for @paisVE.
+  ///
+  /// In es, this message translates to:
+  /// **'Venezuela'**
+  String get paisVE;
 }
 
 class _AppLocalizationsDelegate

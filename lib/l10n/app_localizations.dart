@@ -7482,6 +7482,30 @@ abstract class AppLocalizations {
   /// **'¡Enlace de invitación copiado al portapapeles!'**
   String get enlaceInvitacionCopiado;
 
+  /// No description provided for @compartirInvitacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir'**
+  String get compartirInvitacion;
+
+  /// Asunto de correo para invitar a una congregación
+  ///
+  /// In es, this message translates to:
+  /// **'Invitación a {iglesia} en ATRIO'**
+  String asuntoInvitacionIglesia(String iglesia);
+
+  /// Mensaje para invitar por WhatsApp a una congregación
+  ///
+  /// In es, this message translates to:
+  /// **'¡Hola! Te invito a unirte a {iglesia} en la aplicación ATRIO:\n{url}'**
+  String mensajeWhatsAppInvitacionIglesia(String iglesia, String url);
+
+  /// Cuerpo de correo para invitar a una congregación
+  ///
+  /// In es, this message translates to:
+  /// **'¡Hola!\n\nTe invito a formar parte de nuestra congregación en {iglesia} a través de la aplicación ATRIO.\n\nPuedes unirte directamente usando este enlace de invitación:\n{url}\n\n¡Te esperamos!'**
+  String cuerpoCorreoInvitacionIglesia(String iglesia, String url);
+
   /// No description provided for @errorCargarQrIglesia.
   ///
   /// In es, this message translates to:
@@ -7787,6 +7811,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Venezuela'**
   String get paisVE;
+
+  /// Título de la sección de privacidad y analítica en Configuración
+  ///
+  /// In es, this message translates to:
+  /// **'Privacidad y datos de uso'**
+  String get privacidadYDatosDeUso;
+
+  /// Título del interruptor de consentimiento de analítica de producto
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir estadísticas de uso'**
+  String get compartirDatosDeUsoAnonimos;
+
+  /// Descripción del interruptor de consentimiento de analítica de producto
+  ///
+  /// In es, this message translates to:
+  /// **'Nos ayuda a mejorar ATRIO midiendo qué pantallas y funciones usas. Nunca se envía el contenido de tus peticiones ni datos personales.'**
+  String get compartirDatosDeUsoAnonimosDesc;
 }
 
 class _AppLocalizationsDelegate

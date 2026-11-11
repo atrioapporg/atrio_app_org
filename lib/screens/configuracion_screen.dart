@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/ajustes_provider.dart';
+import '../servicios/analytics/analytics_service.dart';
 
 class ConfiguracionScreen extends StatelessWidget {
   static const routeName = 'configuracion_screen';
@@ -680,7 +681,19 @@ class ConfiguracionScreen extends StatelessWidget {
                   ),
                   SizedBox(height: usableHeight * 0.025),
 
-                  // 6. Almacenamiento y Caché
+                  // 6. Privacidad y analítica de uso
+                  _buildSectionHeader(
+                    icon: Icons.privacy_tip_rounded,
+                    title: l10n.privacidadYDatosDeUso,
+                    screenWidth: screenWidth,
+                  ),
+                  _buildCardContainer(
+                    screenWidth: screenWidth,
+                    children: [_AnalyticsConsentTile(screenWidth: screenWidth)],
+                  ),
+                  SizedBox(height: usableHeight * 0.025),
+
+                  // 7. Almacenamiento y Caché
                   _buildSectionHeader(
                     icon: Icons.cleaning_services_rounded,
                     title: l10n.almacenamientoYMemoria,
@@ -740,7 +753,7 @@ class ConfiguracionScreen extends StatelessWidget {
                   ),
                   SizedBox(height: usableHeight * 0.025),
 
-                  // 7. Restablecer valores
+                  // 8. Restablecer valores
                   Center(
                     child: TextButton.icon(
                       style: TextButton.styleFrom(
@@ -1486,6 +1499,44 @@ class ConfiguracionScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Interruptor de consentimiento para la analítica de producto.
+///
+/// Widget dedicado para que solo este sub-árbol se reconstruya al cambiar el
+/// consentimiento, sin repintar toda la pantalla de configuración.
+class _AnalyticsConsentTile extends StatelessWidget {
+  const _AnalyticsConsentTile({required this.screenWidth});
+
+  final double screenWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final analytics = context.watch<AnalyticsService>();
+
+    return SwitchListTile.adaptive(
+      activeThumbColor: ConfiguracionScreen.amarilloOro,
+      activeTrackColor: ConfiguracionScreen.amarilloOro.withValues(alpha: 0.4),
+      title: Text(
+        l10n.compartirDatosDeUsoAnonimos,
+        style: TextStyle(
+          color: ConfiguracionScreen.azulFondo,
+          fontWeight: FontWeight.w600,
+          fontSize: screenWidth * 0.036,
+        ),
+      ),
+      subtitle: Text(
+        l10n.compartirDatosDeUsoAnonimosDesc,
+        style: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: screenWidth * 0.03,
+        ),
+      ),
+      value: analytics.isEnabled,
+      onChanged: analytics.setConsent,
     );
   }
 }

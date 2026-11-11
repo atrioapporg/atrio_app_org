@@ -50,6 +50,9 @@
         <!-- Canal e icono por defecto para Firebase Cloud Messaging -->
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="atrio_general_notifications" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@mipmap/ic_launcher" />
+        <!-- Firebase Analytics: privacidad por diseño (sin ID publicitario ni personalización de anuncios) -->
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_personalization_signals" android:value="false" />
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. -->

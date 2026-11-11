@@ -2103,6 +2103,40 @@
   "qrOficialIglesiaSubtitulo": "Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.",
   "copiarEnlaceInvitacion": "Copiar enlace de invitación",
   "enlaceInvitacionCopiado": "¡Enlace de invitación copiado al portapapeles!",
+  "compartirInvitacion": "Compartir",
+  "asuntoInvitacionIglesia": "Invitación a {iglesia} en ATRIO",
+  "@asuntoInvitacionIglesia": {
+    "description": "Asunto de correo para invitar a una congregación",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "mensajeWhatsAppInvitacionIglesia": "¡Hola! Te invito a unirte a {iglesia} en la aplicación ATRIO:\n{url}",
+  "@mensajeWhatsAppInvitacionIglesia": {
+    "description": "Mensaje para invitar por WhatsApp a una congregación",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "cuerpoCorreoInvitacionIglesia": "¡Hola!\n\nTe invito a formar parte de nuestra congregación en {iglesia} a través de la aplicación ATRIO.\n\nPuedes unirte directamente usando este enlace de invitación:\n{url}\n\n¡Te esperamos!",
+  "@cuerpoCorreoInvitacionIglesia": {
+    "description": "Cuerpo de correo para invitar a una congregación",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "errorCargarQrIglesia": "No se pudo cargar el código QR de la congregación.",
   "dailyPrayerEveningTitle": "Palabra y Oración Vespertina",
   "notificacionesVersiculoDiario": "Notificaciones del Versículo del Día",
@@ -2161,5 +2195,17 @@
   "paisSV": "El Salvador",
   "paisUS": "Estados Unidos",
   "paisUY": "Uruguay",
-  "paisVE": "Venezuela"
+  "paisVE": "Venezuela",
+  "privacidadYDatosDeUso": "Privacidad y datos de uso",
+  "@privacidadYDatosDeUso": {
+    "description": "Título de la sección de privacidad y analítica en Configuración"
+  },
+  "compartirDatosDeUsoAnonimos": "Compartir estadísticas de uso",
+  "@compartirDatosDeUsoAnonimos": {
+    "description": "Título del interruptor de consentimiento de analítica de producto"
+  },
+  "compartirDatosDeUsoAnonimosDesc": "Nos ayuda a mejorar ATRIO midiendo qué pantallas y funciones usas. Nunca se envía el contenido de tus peticiones ni datos personales.",
+  "@compartirDatosDeUsoAnonimosDesc": {
+    "description": "Descripción del interruptor de consentimiento de analítica de producto"
+  }
 }

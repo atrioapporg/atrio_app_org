@@ -4236,6 +4236,24 @@ class AppLocalizationsEs extends AppLocalizations {
       '¡Enlace de invitación copiado al portapapeles!';
 
   @override
+  String get compartirInvitacion => 'Compartir';
+
+  @override
+  String asuntoInvitacionIglesia(String iglesia) {
+    return 'Invitación a $iglesia en ATRIO';
+  }
+
+  @override
+  String mensajeWhatsAppInvitacionIglesia(String iglesia, String url) {
+    return '¡Hola! Te invito a unirte a $iglesia en la aplicación ATRIO:\n$url';
+  }
+
+  @override
+  String cuerpoCorreoInvitacionIglesia(String iglesia, String url) {
+    return '¡Hola!\n\nTe invito a formar parte de nuestra congregación en $iglesia a través de la aplicación ATRIO.\n\nPuedes unirte directamente usando este enlace de invitación:\n$url\n\n¡Te esperamos!';
+  }
+
+  @override
   String get errorCargarQrIglesia =>
       'No se pudo cargar el código QR de la congregación.';
 
@@ -4401,4 +4419,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get paisVE => 'Venezuela';
+
+  @override
+  String get privacidadYDatosDeUso => 'Privacidad y datos de uso';
+
+  @override
+  String get compartirDatosDeUsoAnonimos => 'Compartir estadísticas de uso';
+
+  @override
+  String get compartirDatosDeUsoAnonimosDesc =>
+      'Nos ayuda a mejorar ATRIO midiendo qué pantallas y funciones usas. Nunca se envía el contenido de tus peticiones ni datos personales.';
 }

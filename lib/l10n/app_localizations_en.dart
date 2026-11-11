@@ -4205,6 +4205,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enlaceInvitacionCopiado => 'Invite link copied to clipboard!';
 
   @override
+  String get compartirInvitacion => 'Share';
+
+  @override
+  String asuntoInvitacionIglesia(String iglesia) {
+    return 'Invitation to $iglesia on ATRIO';
+  }
+
+  @override
+  String mensajeWhatsAppInvitacionIglesia(String iglesia, String url) {
+    return 'Hello! I invite you to join $iglesia on the ATRIO app:\n$url';
+  }
+
+  @override
+  String cuerpoCorreoInvitacionIglesia(String iglesia, String url) {
+    return 'Hello!\n\nI invite you to be part of our congregation at $iglesia through the ATRIO app.\n\nYou can join directly using this invite link:\n$url\n\nWe look forward to seeing you!';
+  }
+
+  @override
   String get errorCargarQrIglesia => 'Could not load church QR code.';
 
   @override
@@ -4368,4 +4386,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paisVE => 'Venezuela';
+
+  @override
+  String get privacidadYDatosDeUso => 'Privacy & usage data';
+
+  @override
+  String get compartirDatosDeUsoAnonimos => 'Share usage statistics';
+
+  @override
+  String get compartirDatosDeUsoAnonimosDesc =>
+      'Helps us improve ATRIO by measuring which screens and features you use. The content of your requests and your personal data are never sent.';
 }

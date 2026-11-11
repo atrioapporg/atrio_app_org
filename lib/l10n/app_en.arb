@@ -2022,6 +2022,40 @@
   "qrOficialIglesiaSubtitulo": "Show this code so other parishioners or visitors can join this church on ATRIO.",
   "copiarEnlaceInvitacion": "Copy invite link",
   "enlaceInvitacionCopiado": "Invite link copied to clipboard!",
+  "compartirInvitacion": "Share",
+  "asuntoInvitacionIglesia": "Invitation to {iglesia} on ATRIO",
+  "@asuntoInvitacionIglesia": {
+    "description": "Email subject to invite to a congregation",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      }
+    }
+  },
+  "mensajeWhatsAppInvitacionIglesia": "Hello! I invite you to join {iglesia} on the ATRIO app:\n{url}",
+  "@mensajeWhatsAppInvitacionIglesia": {
+    "description": "WhatsApp message to invite to a congregation",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "cuerpoCorreoInvitacionIglesia": "Hello!\n\nI invite you to be part of our congregation at {iglesia} through the ATRIO app.\n\nYou can join directly using this invite link:\n{url}\n\nWe look forward to seeing you!",
+  "@cuerpoCorreoInvitacionIglesia": {
+    "description": "Email body to invite to a congregation",
+    "placeholders": {
+      "iglesia": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "errorCargarQrIglesia": "Could not load church QR code.",
   "dailyPrayerEveningTitle": "Evening Word & Prayer",
   "notificacionesVersiculoDiario": "Daily Verse Notifications",
@@ -2080,5 +2114,8 @@
   "paisSV": "El Salvador",
   "paisUS": "United States",
   "paisUY": "Uruguay",
-  "paisVE": "Venezuela"
+  "paisVE": "Venezuela",
+  "privacidadYDatosDeUso": "Privacy & usage data",
+  "compartirDatosDeUsoAnonimos": "Share usage statistics",
+  "compartirDatosDeUsoAnonimosDesc": "Helps us improve ATRIO by measuring which screens and features you use. The content of your requests and your personal data are never sent."
 }

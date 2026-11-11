@@ -79,6 +79,8 @@ import 'package:atrio/screens/tienda_screen.dart';
 import 'package:atrio/screens/tipos_solicitud_screen.dart';
 import 'package:atrio/screens/tradicion_cristiana_screen.dart';
 import 'package:atrio/screens/videos_transmisiones_screen.dart';
+import 'package:atrio/servicios/analytics/analytics_route_observer.dart';
+import 'package:atrio/servicios/analytics/analytics_service.dart';
 import 'package:atrio/servicios/connectivity_service.dart';
 import 'package:atrio/servicios/daily_verse_notification_service.dart';
 import 'package:atrio/servicios/daily_verse_scheduler.dart';
@@ -91,6 +93,7 @@ import 'package:atrio/theme/atrio_feedback_theme.dart';
 import 'package:atrio/widgets/atrio_better_feedback.dart';
 import 'package:atrio/widgets/atrio_feedback_form.dart';
 import 'package:feedback/feedback.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // Paquetes - Google Maps
@@ -129,6 +132,15 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('💥 Error inicializando bases de datos SQLite: $e');
   }
+
+  // 4.1 Firebase Core + Analítica de producto (tolerante a fallos: si falta la
+  // configuración nativa de Firebase en una plataforma, la app sigue arrancando)
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('ℹ️ [MAIN] Firebase Core no disponible: $e');
+  }
+  await AnalyticsService.instance.initialize();
 
   // 5. Determinar la ruta inicial de forma condicional y nativa.
   // Mientras este proceso asíncrono se ejecuta, el sistema operativo presenta nativamente
@@ -285,6 +297,10 @@ class AppState extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Analítica de producto (singleton; expone el consentimiento a la UI)
+        ChangeNotifierProvider<AnalyticsService>.value(
+          value: AnalyticsService.instance,
+        ),
         ChangeNotifierProvider(create: (_) => AppProvider()),
         ChangeNotifierProvider(
           create: (_) => UserProvider(
@@ -340,6 +356,10 @@ class MyApp extends StatefulWidget {
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
+  /// Observador global que registra `screen_view` en la analítica de producto.
+  static final AnalyticsRouteObserver analyticsObserver =
+      AnalyticsRouteObserver();
+
   final String initialRoute;
   const MyApp({super.key, required this.initialRoute});
 
@@ -348,10 +368,22 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  UserProvider? _analyticsUserProvider;
+
+  /// Mantiene sincronizados el ID seudónimo y las propiedades de usuario
+  /// (rol, iglesia, estado de membresía) con la analítica de producto.
+  void _syncAnalyticsUser() {
+    AnalyticsService.instance.syncUser(_analyticsUserProvider?.currentUser);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _analyticsUserProvider = context.read<UserProvider>()
+      ..addListener(_syncAnalyticsUser);
+    _syncAnalyticsUser();
+    AnalyticsService.instance.addListener(_syncAnalyticsUser);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         final userProvider = context.read<UserProvider>();
@@ -439,6 +471,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _analyticsUserProvider?.removeListener(_syncAnalyticsUser);
+    AnalyticsService.instance.removeListener(_syncAnalyticsUser);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -515,6 +549,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         supportedLocales: AppLocalizations.supportedLocales,
         routes: _routes,
         initialRoute: widget.initialRoute,
+        navigatorObservers: [MyApp.analyticsObserver],
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);
           return MediaQuery(

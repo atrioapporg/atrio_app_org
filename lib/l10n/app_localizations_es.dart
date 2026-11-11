@@ -412,6 +412,49 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay conexión a internet para sintonizar la emisora.';
 
   @override
+  String get denominaciones => 'Denominaciones';
+
+  @override
+  String get todasLasDenominaciones => 'Todas';
+
+  @override
+  String get filtrarPorDenominacion => 'Filtrar por denominación';
+
+  @override
+  String get sinEmisorasDenominacion =>
+      'No se encontraron emisoras para esta denominación.';
+
+  @override
+  String get denominacionOtras => 'Otras';
+
+  @override
+  String get cambiarTemaClaro => 'Cambiar a tema claro';
+
+  @override
+  String get cambiarTemaOscuro => 'Cambiar a tema oscuro';
+
+  @override
+  String get restablecerFiltros => 'Restablecer filtros';
+
+  @override
+  String get denominacionEvangelica => 'Evangélica';
+
+  @override
+  String get denominacionCatolica => 'Católica';
+
+  @override
+  String get denominacionPentecostal => 'Pentecostal';
+
+  @override
+  String get denominacionAdventista => 'Adventista';
+
+  @override
+  String get denominacionBautista => 'Bautista';
+
+  @override
+  String get denominacionReformada => 'Reformada';
+
+  @override
   String get usuario => 'Usuario';
 
   @override

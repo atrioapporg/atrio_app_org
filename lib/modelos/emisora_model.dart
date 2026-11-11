@@ -364,12 +364,18 @@ class EmisorasCatalogParser {
             streamUrl: rawUrl,
             logo: logo,
             idioma: idioma,
-            denomination:
-                (rowData['denomination'] ??
-                        rowData['denominacion'] ??
-                        'Cristiana')
-                    .toString()
-                    .trim(),
+            denomination: () {
+              final String rawVal = (rowData['denominacion'] ??
+                      rowData['denominación'] ??
+                      rowData['denomination'] ??
+                      '')
+                  .toString()
+                  .trim();
+              if (rawVal.isEmpty || rawVal.toLowerCase() == 'desconocida') {
+                return 'Desconocida';
+              }
+              return rawVal;
+            }(),
             description: (rowData['description'] ?? '').toString().trim(),
             priority: 3,
           ),
@@ -439,10 +445,18 @@ class EmisorasCatalogParser {
             streamUrl: rawUrl,
             logo: poster,
             idioma: (e['idioma'] ?? 'es').toString().trim().toLowerCase(),
-            denomination:
-                (e['denomination'] ?? e['denominacion'] ?? 'Cristiana')
-                    .toString()
-                    .trim(),
+            denomination: () {
+              final String rawVal = (e['denomination'] ??
+                      e['denominacion'] ??
+                      e['denominación'] ??
+                      '')
+                  .toString()
+                  .trim();
+              if (rawVal.isEmpty || rawVal.toLowerCase() == 'desconocida') {
+                return 'Desconocida';
+              }
+              return rawVal;
+            }(),
             description: (e['description'] ?? '').toString().trim(),
             priority: e['priority'] is int ? e['priority'] as int : 3,
           ),

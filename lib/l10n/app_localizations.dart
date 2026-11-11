@@ -824,6 +824,90 @@ abstract class AppLocalizations {
   /// **'No hay conexión a internet para sintonizar la emisora.'**
   String get sinInternetSintonizar;
 
+  /// No description provided for @denominaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Denominaciones'**
+  String get denominaciones;
+
+  /// No description provided for @todasLasDenominaciones.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas'**
+  String get todasLasDenominaciones;
+
+  /// No description provided for @filtrarPorDenominacion.
+  ///
+  /// In es, this message translates to:
+  /// **'Filtrar por denominación'**
+  String get filtrarPorDenominacion;
+
+  /// No description provided for @sinEmisorasDenominacion.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron emisoras para esta denominación.'**
+  String get sinEmisorasDenominacion;
+
+  /// No description provided for @denominacionOtras.
+  ///
+  /// In es, this message translates to:
+  /// **'Otras'**
+  String get denominacionOtras;
+
+  /// No description provided for @cambiarTemaClaro.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar a tema claro'**
+  String get cambiarTemaClaro;
+
+  /// No description provided for @cambiarTemaOscuro.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar a tema oscuro'**
+  String get cambiarTemaOscuro;
+
+  /// No description provided for @restablecerFiltros.
+  ///
+  /// In es, this message translates to:
+  /// **'Restablecer filtros'**
+  String get restablecerFiltros;
+
+  /// No description provided for @denominacionEvangelica.
+  ///
+  /// In es, this message translates to:
+  /// **'Evangélica'**
+  String get denominacionEvangelica;
+
+  /// No description provided for @denominacionCatolica.
+  ///
+  /// In es, this message translates to:
+  /// **'Católica'**
+  String get denominacionCatolica;
+
+  /// No description provided for @denominacionPentecostal.
+  ///
+  /// In es, this message translates to:
+  /// **'Pentecostal'**
+  String get denominacionPentecostal;
+
+  /// No description provided for @denominacionAdventista.
+  ///
+  /// In es, this message translates to:
+  /// **'Adventista'**
+  String get denominacionAdventista;
+
+  /// No description provided for @denominacionBautista.
+  ///
+  /// In es, this message translates to:
+  /// **'Bautista'**
+  String get denominacionBautista;
+
+  /// No description provided for @denominacionReformada.
+  ///
+  /// In es, this message translates to:
+  /// **'Reformada'**
+  String get denominacionReformada;
+
   /// No description provided for @usuario.
   ///
   /// In es, this message translates to:

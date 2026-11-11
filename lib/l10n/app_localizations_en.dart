@@ -409,6 +409,49 @@ class AppLocalizationsEn extends AppLocalizations {
       'No internet connection to tune the station.';
 
   @override
+  String get denominaciones => 'Denominations';
+
+  @override
+  String get todasLasDenominaciones => 'All';
+
+  @override
+  String get filtrarPorDenominacion => 'Filter by denomination';
+
+  @override
+  String get sinEmisorasDenominacion =>
+      'No radio stations found for this denomination.';
+
+  @override
+  String get denominacionOtras => 'Other';
+
+  @override
+  String get cambiarTemaClaro => 'Switch to light theme';
+
+  @override
+  String get cambiarTemaOscuro => 'Switch to dark theme';
+
+  @override
+  String get restablecerFiltros => 'Reset filters';
+
+  @override
+  String get denominacionEvangelica => 'Evangelical';
+
+  @override
+  String get denominacionCatolica => 'Catholic';
+
+  @override
+  String get denominacionPentecostal => 'Pentecostal';
+
+  @override
+  String get denominacionAdventista => 'Adventist';
+
+  @override
+  String get denominacionBautista => 'Baptist';
+
+  @override
+  String get denominacionReformada => 'Reformed';
+
+  @override
   String get usuario => 'User';
 
   @override

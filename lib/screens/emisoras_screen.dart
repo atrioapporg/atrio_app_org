@@ -10,12 +10,14 @@ import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../data/atrio_database_helper.dart';
 import '../l10n/app_localizations.dart';
 import '../modelos/emisora_model.dart';
+import '../providers/ajustes_provider.dart';
 import '../servicios/connectivity_service.dart';
 import '../servicios/radio_player_service.dart';
 import '../widgets/atrio_connectivity_alert.dart';
@@ -188,6 +190,18 @@ class EmisorasScreen extends StatefulWidget {
   final bool isActive;
   const EmisorasScreen({super.key, this.isActive = true});
 
+  /// Métodos estáticos públicos de utilidad y localización
+  static String obtenerNombreDenominacion(
+    String codigo,
+    AppLocalizations l10n,
+  ) => _EmisorasScreenState.obtenerNombreDenominacion(codigo, l10n);
+
+  static IconData obtenerIconoDenominacion(String codigo) =>
+      _EmisorasScreenState.obtenerIconoDenominacion(codigo);
+
+  static String obtenerNombrePais(String codigo, AppLocalizations l10n) =>
+      _EmisorasScreenState.obtenerNombrePais(codigo, l10n);
+
   @override
   State<EmisorasScreen> createState() => _EmisorasScreenState();
 }
@@ -241,8 +255,11 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   bool _mostrandoBuscador = false;
   String _filtroBusqueda = '';
   String _paisSeleccionado = 'TODOS';
+  String _denominacionSeleccionada = 'TODOS';
   String _idiomaSeleccionado = 'TODOS';
   List<String> _paisesDisponibles = <String>['TODOS'];
+  List<String> _denominacionesDisponibles = <String>['TODOS'];
+  Map<String, int> _conteoPorDenominacion = <String, int>{};
 
   bool _isLoading = true;
   List<EmisoraModel> _todasEmisoras = const <EmisoraModel>[];
@@ -319,6 +336,61 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     return Icons.radio_rounded;
   }
 
+  /// Traduce el código o nombre de denominación usando exclusivamente [AppLocalizations].
+  static String obtenerNombreDenominacion(
+    String codigo,
+    AppLocalizations l10n,
+  ) {
+    switch (codigo.toUpperCase().trim()) {
+      case 'TODOS':
+        return l10n.todasLasDenominaciones;
+      case 'OTRAS':
+        return l10n.denominacionOtras;
+      case 'EVANGÉLICA':
+      case 'EVANGELICA':
+        return l10n.denominacionEvangelica;
+      case 'CATÓLICA':
+      case 'CATOLICA':
+        return l10n.denominacionCatolica;
+      case 'PENTECOSTAL':
+        return l10n.denominacionPentecostal;
+      case 'ADVENTISTA':
+        return l10n.denominacionAdventista;
+      case 'BAUTISTA':
+        return l10n.denominacionBautista;
+      case 'REFORMADA':
+        return l10n.denominacionReformada;
+      default:
+        return codigo;
+    }
+  }
+
+  /// Retorna un icono minimalista representativo para la denominación cristiana.
+  static IconData obtenerIconoDenominacion(String codigo) {
+    switch (codigo.toUpperCase().trim()) {
+      case 'TODOS':
+        return Icons.radio_rounded;
+      case 'OTRAS':
+        return Icons.auto_awesome_outlined;
+      case 'CATÓLICA':
+      case 'CATOLICA':
+        return Icons.church_rounded;
+      case 'EVANGÉLICA':
+      case 'EVANGELICA':
+        return Icons.menu_book_rounded;
+      case 'PENTECOSTAL':
+        return Icons.local_fire_department_rounded;
+      case 'ADVENTISTA':
+        return Icons.wb_sunny_outlined;
+      case 'BAUTISTA':
+        return Icons.water_drop_outlined;
+      case 'REFORMADA':
+        return Icons.history_edu_rounded;
+      default:
+        return Icons.church_outlined;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -331,6 +403,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       _paisesDisponibles = List<String>.from(
         _cachePaisesDisponibles ?? const <String>['TODOS'],
       );
+      _actualizarDenominacionesDisponibles();
       _recalcularEmisorasFiltradas(resetPaginacion: true);
       _isLoading = false;
     } else {
@@ -745,6 +818,54 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     ]);
   }
 
+  void _actualizarDenominacionesDisponibles() {
+    final Map<String, int> conteos = <String, int>{};
+    int totalCount = 0;
+    int otrasCount = 0;
+
+    final String paisFiltro = _paisSeleccionado.toUpperCase().trim();
+    final String idiomaFiltro = _idiomaSeleccionado.toLowerCase().trim();
+
+    for (final EmisoraModel e in _todasEmisoras) {
+      if (_mostrarSoloFavoritos && !_favoritosIds.contains(e.id)) continue;
+      if (paisFiltro != 'TODOS' && e.paisCodigo.toUpperCase() != paisFiltro) {
+        continue;
+      }
+      if (idiomaFiltro != 'todos' && e.idioma.toLowerCase() != idiomaFiltro) {
+        continue;
+      }
+
+      totalCount++;
+      final String denom = e.denomination.trim();
+      final String denomLower = denom.toLowerCase();
+
+      if (denom.isEmpty ||
+          denomLower == 'desconocida' ||
+          denomLower == 'cristiana') {
+        otrasCount++;
+      } else {
+        conteos[denom] = (conteos[denom] ?? 0) + 1;
+      }
+    }
+
+    // Ordenamos las denominaciones por cantidad de emisoras (mayor a menor)
+    final List<String> sortedDenoms = conteos.keys.toList()
+      ..sort((String a, String b) {
+        final int cmp = (conteos[b] ?? 0).compareTo(conteos[a] ?? 0);
+        if (cmp != 0) return cmp;
+        return a.compareTo(b);
+      });
+
+    conteos['TODOS'] = totalCount;
+    if (otrasCount > 0) {
+      conteos['OTRAS'] = otrasCount;
+      sortedDenoms.add('OTRAS');
+    }
+
+    _conteoPorDenominacion = conteos;
+    _denominacionesDisponibles = <String>['TODOS', ...sortedDenoms];
+  }
+
   void _aplicarCatalogoEnEstado(List<EmisoraModel> catalogo) {
     setState(() {
       _todasEmisoras = catalogo;
@@ -753,6 +874,10 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
       );
       if (!_paisesDisponibles.contains(_paisSeleccionado)) {
         _paisSeleccionado = 'TODOS';
+      }
+      _actualizarDenominacionesDisponibles();
+      if (!_denominacionesDisponibles.contains(_denominacionSeleccionada)) {
+        _denominacionSeleccionada = 'TODOS';
       }
       _isLoading = false;
       _recalcularEmisorasFiltradas(resetPaginacion: false);
@@ -777,6 +902,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     final String queryNorm = EmisoraModel.normalizeForSearch(_filtroBusqueda);
     final String paisFiltro = _paisSeleccionado.toUpperCase().trim();
     final String idiomaFiltro = _idiomaSeleccionado.toLowerCase().trim();
+    final String denomFiltro = _denominacionSeleccionada.trim();
 
     final List<EmisoraModel> resultado = _todasEmisoras
         .where((EmisoraModel emisora) {
@@ -790,6 +916,21 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
           if (idiomaFiltro != 'todos' &&
               emisora.idioma.toLowerCase() != idiomaFiltro) {
             return false;
+          }
+          if (denomFiltro != 'TODOS') {
+            final String ed = emisora.denomination.trim();
+            final String edLower = ed.toLowerCase();
+            if (denomFiltro == 'OTRAS') {
+              if (ed.isNotEmpty &&
+                  edLower != 'desconocida' &&
+                  edLower != 'cristiana') {
+                return false;
+              }
+            } else {
+              if (edLower != denomFiltro.toLowerCase()) {
+                return false;
+              }
+            }
           }
           if (queryNorm.isEmpty) return true;
           return emisora.searchBlob.contains(queryNorm);
@@ -817,6 +958,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
         _favoritosIds.add(id);
       }
       if (_mostrarSoloFavoritos) {
+        _actualizarDenominacionesDisponibles();
         _recalcularEmisorasFiltradas(resetPaginacion: false);
       }
     });
@@ -828,6 +970,19 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     if (_paisSeleccionado == nuevoPais) return;
     setState(() {
       _paisSeleccionado = nuevoPais;
+      _actualizarDenominacionesDisponibles();
+      if (!_denominacionesDisponibles.contains(_denominacionSeleccionada)) {
+        _denominacionSeleccionada = 'TODOS';
+      }
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    });
+  }
+
+  void _cambiarDenominacion(String nuevaDenominacion) {
+    if (_denominacionSeleccionada == nuevaDenominacion) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _denominacionSeleccionada = nuevaDenominacion;
       _recalcularEmisorasFiltradas(resetPaginacion: true);
     });
   }
@@ -836,6 +991,10 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     if (_idiomaSeleccionado == nuevoIdioma) return;
     setState(() {
       _idiomaSeleccionado = nuevoIdioma;
+      _actualizarDenominacionesDisponibles();
+      if (!_denominacionesDisponibles.contains(_denominacionSeleccionada)) {
+        _denominacionSeleccionada = 'TODOS';
+      }
       _recalcularEmisorasFiltradas(resetPaginacion: true);
     });
   }
@@ -843,6 +1002,10 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   void _toggleFiltroSoloFavoritos() {
     setState(() {
       _mostrarSoloFavoritos = !_mostrarSoloFavoritos;
+      _actualizarDenominacionesDisponibles();
+      if (!_denominacionesDisponibles.contains(_denominacionSeleccionada)) {
+        _denominacionSeleccionada = 'TODOS';
+      }
       _recalcularEmisorasFiltradas(resetPaginacion: true);
     });
   }
@@ -851,8 +1014,34 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     if (!_mostrarSoloFavoritos) return;
     setState(() {
       _mostrarSoloFavoritos = false;
+      _actualizarDenominacionesDisponibles();
       _recalcularEmisorasFiltradas(resetPaginacion: true);
     });
+  }
+
+  void _restablecerTodosLosFiltros() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _paisSeleccionado = 'TODOS';
+      _denominacionSeleccionada = 'TODOS';
+      _idiomaSeleccionado = 'TODOS';
+      _mostrarSoloFavoritos = false;
+      _mostrandoBuscador = false;
+      _searchController.clear();
+      _filtroBusqueda = '';
+      _actualizarDenominacionesDisponibles();
+      _recalcularEmisorasFiltradas(resetPaginacion: true);
+    });
+  }
+
+  void _toggleTema() {
+    HapticFeedback.lightImpact();
+    final AjustesProvider provider = context.read<AjustesProvider>();
+    final bool currentDark =
+        provider.temaModo == 'oscuro' ||
+        (provider.temaModo == 'sistema' &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    provider.cambiarTema(currentDark ? 'claro' : 'oscuro');
   }
 
   void _toggleBuscador() {
@@ -870,6 +1059,12 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AjustesProvider ajustesProvider = context.watch<AjustesProvider>();
+    final bool isDark =
+        ajustesProvider.temaModo == 'oscuro' ||
+        (ajustesProvider.temaModo == 'sistema' &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
     final Size size = MediaQuery.sizeOf(context);
     final EdgeInsets padding = MediaQuery.paddingOf(context);
     final double screenWidth = size.width;
@@ -877,6 +1072,9 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
     final double safeAreaTop = padding.top;
     final double safeAreaBottom = padding.bottom;
     final double usableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+
+    final Color colorScaffold = isDark ? const Color(0xFF0A0F14) : azulFondo;
+    final Color colorCuerpo = isDark ? const Color(0xFF0F172A) : blancoFondo;
 
     final int itemsToRender = _cantidadVisible.clamp(
       0,
@@ -891,7 +1089,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: azulFondo,
+        backgroundColor: colorScaffold,
         body: SafeArea(
           bottom: false,
           child: SizedBox(
@@ -902,17 +1100,21 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                 _EmisorasHeader(
                   screenWidth: screenWidth,
                   usableHeight: usableHeight,
+                  isDark: isDark,
                   mostrandoBuscador: _mostrandoBuscador,
                   searchController: _searchController,
+                  idiomaSeleccionado: _idiomaSeleccionado,
                   onBackTap: _manejarRetroceso,
+                  onToggleTheme: _toggleTema,
                   onToggleSearch: _toggleBuscador,
                   onQueryChanged: _onSearchQueryChanged,
+                  onIdiomaChanged: _cambiarIdioma,
                 ),
                 Expanded(
                   child: Container(
                     width: screenWidth,
                     decoration: BoxDecoration(
-                      color: blancoFondo,
+                      color: colorCuerpo,
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(screenWidth * 0.08),
                       ),
@@ -926,23 +1128,29 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                           _EmisorasFiltrosSuperiores(
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
+                            isDark: isDark,
                             paisesDisponibles: _paisesDisponibles,
                             paisSeleccionado: _paisSeleccionado,
                             mostrarSoloFavoritos: _mostrarSoloFavoritos,
                             onPaisChanged: _cambiarPais,
                             onToggleFavoritos: _toggleFiltroSoloFavoritos,
                           ),
-                          _EmisorasSelectorIdioma(
+                          _EmisorasSelectorDenominacion(
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
-                            idiomaSeleccionado: _idiomaSeleccionado,
-                            onIdiomaSelected: _cambiarIdioma,
+                            isDark: isDark,
+                            denominacionesDisponibles:
+                                _denominacionesDisponibles,
+                            denominacionSeleccionada: _denominacionSeleccionada,
+                            conteoPorDenominacion: _conteoPorDenominacion,
+                            onDenominacionSelected: _cambiarDenominacion,
                           ),
-                          SizedBox(height: usableHeight * 0.015),
+                          SizedBox(height: usableHeight * 0.012),
                           if (_mostrarSoloFavoritos)
                             _EmisorasBannerFavoritos(
                               screenWidth: screenWidth,
                               usableHeight: usableHeight,
+                              isDark: isDark,
                               totalMostradas: _emisorasFiltradas.length,
                               onClearFilter: _desactivarFiltroSoloFavoritos,
                             ),
@@ -957,14 +1165,19 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                                 ? _EmisorasEmptyState(
                                     screenWidth: screenWidth,
                                     usableHeight: usableHeight,
+                                    isDark: isDark,
                                     mostrarSoloFavoritos: _mostrarSoloFavoritos,
                                     paisSeleccionado: _paisSeleccionado,
+                                    denominacionSeleccionada:
+                                        _denominacionSeleccionada,
                                     filtroBusqueda: _filtroBusqueda,
-                                    onVerTodas: _desactivarFiltroSoloFavoritos,
+                                    onResetFilters: _restablecerTodosLosFiltros,
                                   )
                                 : RefreshIndicator(
                                     color: amarilloOro,
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF1E293B)
+                                        : Colors.white,
                                     onRefresh: () =>
                                         _inicializarCatalogoConCacheLocal(
                                           forzarRed: true,
@@ -1034,6 +1247,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                                                       isPlayingThis:
                                                           isPlayingThis,
                                                       isFav: isFav,
+                                                      isDark: isDark,
                                                       screenWidth: screenWidth,
                                                       usableHeight:
                                                           usableHeight,
@@ -1074,6 +1288,7 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
                             emisora: actual,
                             isPlaying: playbackState.isPlaying,
                             isBuffering: playbackState.isBuffering,
+                            isDark: isDark,
                             screenWidth: screenWidth,
                             usableHeight: usableHeight,
                             safeAreaBottom: safeAreaBottom,
@@ -1099,20 +1314,28 @@ class _EmisorasScreenState extends State<EmisorasScreen> {
 class _EmisorasHeader extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
+  final bool isDark;
   final bool mostrandoBuscador;
   final TextEditingController searchController;
+  final String idiomaSeleccionado;
   final VoidCallback onBackTap;
+  final VoidCallback onToggleTheme;
   final VoidCallback onToggleSearch;
   final ValueChanged<String> onQueryChanged;
+  final ValueChanged<String> onIdiomaChanged;
 
   const _EmisorasHeader({
     required this.screenWidth,
     required this.usableHeight,
+    required this.isDark,
     required this.mostrandoBuscador,
     required this.searchController,
+    required this.idiomaSeleccionado,
     required this.onBackTap,
+    required this.onToggleTheme,
     required this.onToggleSearch,
     required this.onQueryChanged,
+    required this.onIdiomaChanged,
   });
 
   @override
@@ -1128,14 +1351,13 @@ class _EmisorasHeader extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               GestureDetector(
                 onTap: onBackTap,
                 child: Container(
                   padding: EdgeInsetsDirectional.all(screenWidth * 0.02),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.14),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -1145,12 +1367,42 @@ class _EmisorasHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                l10n.emisorasCristianas,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: screenWidth * 0.05,
-                  fontWeight: FontWeight.bold,
+              SizedBox(width: screenWidth * 0.03),
+              Expanded(
+                child: _EmisorasHeaderLanguageFilter(
+                  screenWidth: screenWidth,
+                  usableHeight: usableHeight,
+                  isDark: isDark,
+                  idiomaSeleccionado: idiomaSeleccionado,
+                  onIdiomaChanged: onIdiomaChanged,
+                ),
+              ),
+              // Botón de opción rápida para alternar entre tema claro y tema oscuro
+              IconButton(
+                tooltip: isDark
+                    ? l10n.cambiarTemaClaro
+                    : l10n.cambiarTemaOscuro,
+                onPressed: onToggleTheme,
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return RotationTransition(
+                          turns: animation,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                  child: Icon(
+                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                    key: ValueKey<bool>(isDark),
+                    color: isDark
+                        ? _EmisorasScreenState.amarilloOro
+                        : Colors.white,
+                    size: screenWidth * 0.065,
+                  ),
                 ),
               ),
               IconButton(
@@ -1160,7 +1412,7 @@ class _EmisorasHeader extends StatelessWidget {
                       ? Icons.close_rounded
                       : Icons.search_rounded,
                   color: Colors.white,
-                  size: screenWidth * 0.07,
+                  size: screenWidth * 0.065,
                 ),
               ),
             ],
@@ -1170,26 +1422,33 @@ class _EmisorasHeader extends StatelessWidget {
             Container(
               height: usableHeight * 0.055,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : Colors.transparent,
+                ),
               ),
               child: TextField(
                 controller: searchController,
                 autofocus: true,
                 onChanged: onQueryChanged,
                 style: TextStyle(
-                  color: _EmisorasScreenState.azulFondo,
+                  color: isDark ? Colors.white : _EmisorasScreenState.azulFondo,
                   fontSize: screenWidth * 0.04,
                 ),
                 decoration: InputDecoration(
                   hintText: l10n.buscarEmisorasPlaceholder,
                   hintStyle: TextStyle(
-                    color: Colors.grey.shade500,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : Colors.grey.shade500,
                     fontSize: screenWidth * 0.035,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.grey.shade600,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : Colors.grey.shade600,
                     size: screenWidth * 0.05,
                   ),
                   border: InputBorder.none,
@@ -1209,6 +1468,7 @@ class _EmisorasHeader extends StatelessWidget {
 class _EmisorasFiltrosSuperiores extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
+  final bool isDark;
   final List<String> paisesDisponibles;
   final String paisSeleccionado;
   final bool mostrarSoloFavoritos;
@@ -1218,6 +1478,7 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
   const _EmisorasFiltrosSuperiores({
     required this.screenWidth,
     required this.usableHeight,
+    required this.isDark,
     required this.paisesDisponibles,
     required this.paisSeleccionado,
     required this.mostrarSoloFavoritos,
@@ -1243,6 +1504,11 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
       ),
     ];
 
+    final Color cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color borderCol = isDark
+        ? const Color(0xFF334155)
+        : _EmisorasScreenState.grisBorde;
+
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
         screenWidth * 0.05,
@@ -1258,12 +1524,12 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
                 horizontal: screenWidth * 0.04,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(screenWidth * 0.035),
-                border: Border.all(color: _EmisorasScreenState.grisBorde),
+                border: Border.all(color: borderCol),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
+                    color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.02),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -1275,12 +1541,16 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
                   isExpanded: true,
                   icon: Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: _EmisorasScreenState.azulFondo,
+                    color: isDark
+                        ? _EmisorasScreenState.amarilloOro
+                        : _EmisorasScreenState.azulFondo,
                     size: screenWidth * 0.06,
                   ),
-                  dropdownColor: Colors.white,
+                  dropdownColor: cardBg,
                   style: TextStyle(
-                    color: _EmisorasScreenState.azulFondo,
+                    color: isDark
+                        ? Colors.white
+                        : _EmisorasScreenState.azulFondo,
                     fontWeight: FontWeight.bold,
                     fontSize: screenWidth * 0.038,
                   ),
@@ -1310,6 +1580,11 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
                             child: Text(
                               nombrePais,
                               overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white
+                                    : _EmisorasScreenState.azulFondo,
+                              ),
                             ),
                           ),
                         ],
@@ -1328,16 +1603,16 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
               decoration: BoxDecoration(
                 color: mostrarSoloFavoritos
                     ? _EmisorasScreenState.amarilloOro
-                    : Colors.white,
+                    : cardBg,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: mostrarSoloFavoritos
                       ? _EmisorasScreenState.amarilloOro
-                      : _EmisorasScreenState.grisBorde,
+                      : borderCol,
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
+                    color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.02),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -1348,8 +1623,10 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
                     ? Icons.favorite_rounded
                     : Icons.favorite_border_rounded,
                 color: mostrarSoloFavoritos
-                    ? Colors.white
-                    : _EmisorasScreenState.azulFondo,
+                    ? (isDark ? const Color(0xFF0D2235) : Colors.white)
+                    : (isDark
+                          ? const Color(0xFFCBD5E1)
+                          : _EmisorasScreenState.azulFondo),
                 size: screenWidth * 0.06,
               ),
             ),
@@ -1360,87 +1637,96 @@ class _EmisorasFiltrosSuperiores extends StatelessWidget {
   }
 }
 
-class _EmisorasSelectorIdioma extends StatelessWidget {
+/// Selector minimalista horizontal para filtrar emisoras según su denominación cristiana.
+class _EmisorasSelectorDenominacion extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
-  final String idiomaSeleccionado;
-  final ValueChanged<String> onIdiomaSelected;
+  final bool isDark;
+  final List<String> denominacionesDisponibles;
+  final String denominacionSeleccionada;
+  final Map<String, int> conteoPorDenominacion;
+  final ValueChanged<String> onDenominacionSelected;
 
-  const _EmisorasSelectorIdioma({
+  const _EmisorasSelectorDenominacion({
     required this.screenWidth,
     required this.usableHeight,
-    required this.idiomaSeleccionado,
-    required this.onIdiomaSelected,
+    required this.isDark,
+    required this.denominacionesDisponibles,
+    required this.denominacionSeleccionada,
+    required this.conteoPorDenominacion,
+    required this.onDenominacionSelected,
   });
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String localeName = Localizations.localeOf(context).toString();
 
     return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        screenWidth * 0.05,
-        usableHeight * 0.012,
-        screenWidth * 0.05,
-        0,
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: _ChipIdiomaItem(
-              id: 'TODOS',
-              label: l10n.todos,
-              icono: Icons.language_rounded,
-              seleccionado: idiomaSeleccionado == 'TODOS',
+      padding: EdgeInsetsDirectional.only(top: usableHeight * 0.012),
+      child: SizedBox(
+        height: usableHeight * 0.048,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsetsDirectional.symmetric(
+            horizontal: screenWidth * 0.05,
+          ),
+          itemCount: denominacionesDisponibles.length,
+          separatorBuilder: (_, _) => SizedBox(width: screenWidth * 0.02),
+          itemBuilder: (BuildContext context, int index) {
+            final String codigo = denominacionesDisponibles[index];
+            final bool seleccionado =
+                codigo.toUpperCase() == denominacionSeleccionada.toUpperCase();
+            final String label = _EmisorasScreenState.obtenerNombreDenominacion(
+              codigo,
+              l10n,
+            );
+            final IconData icono =
+                _EmisorasScreenState.obtenerIconoDenominacion(codigo);
+            final int count = conteoPorDenominacion[codigo] ?? 0;
+            final String countStr = NumberFormat.decimalPattern(localeName)
+                .format(count);
+
+            return _ChipDenominacionItem(
+              codigo: codigo,
+              label: label,
+              icono: icono,
+              countFormatted: countStr,
+              count: count,
+              seleccionado: seleccionado,
+              isDark: isDark,
               screenWidth: screenWidth,
               usableHeight: usableHeight,
-              onTap: () => onIdiomaSelected('TODOS'),
-            ),
-          ),
-          SizedBox(width: screenWidth * 0.025),
-          Expanded(
-            child: _ChipIdiomaItem(
-              id: 'es',
-              label: l10n.espanol,
-              icono: Icons.translate_rounded,
-              seleccionado: idiomaSeleccionado == 'es',
-              screenWidth: screenWidth,
-              usableHeight: usableHeight,
-              onTap: () => onIdiomaSelected('es'),
-            ),
-          ),
-          SizedBox(width: screenWidth * 0.025),
-          Expanded(
-            child: _ChipIdiomaItem(
-              id: 'en',
-              label: l10n.ingles,
-              icono: Icons.public_rounded,
-              seleccionado: idiomaSeleccionado == 'en',
-              screenWidth: screenWidth,
-              usableHeight: usableHeight,
-              onTap: () => onIdiomaSelected('en'),
-            ),
-          ),
-        ],
+              onTap: () => onDenominacionSelected(codigo),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _ChipIdiomaItem extends StatelessWidget {
-  final String id;
+class _ChipDenominacionItem extends StatelessWidget {
+  final String codigo;
   final String label;
   final IconData icono;
+  final String countFormatted;
+  final int count;
   final bool seleccionado;
+  final bool isDark;
   final double screenWidth;
   final double usableHeight;
   final VoidCallback onTap;
 
-  const _ChipIdiomaItem({
-    required this.id,
+  const _ChipDenominacionItem({
+    required this.codigo,
     required this.label,
     required this.icono,
+    required this.countFormatted,
+    required this.count,
     required this.seleccionado,
+    required this.isDark,
     required this.screenWidth,
     required this.usableHeight,
     required this.onTap,
@@ -1448,56 +1734,239 @@ class _ChipIdiomaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color backgroundColor;
+    final Color borderColor;
+    final Color textColor;
+    final Color iconColor;
+    final Color badgeBgColor;
+    final Color badgeTextColor;
+
+    if (seleccionado) {
+      if (isDark) {
+        backgroundColor = _EmisorasScreenState.amarilloOro;
+        borderColor = _EmisorasScreenState.amarilloOro;
+        textColor = const Color(0xFF0D2235);
+        iconColor = const Color(0xFF0D2235);
+        badgeBgColor = const Color(0xFF0D2235).withValues(alpha: 0.16);
+        badgeTextColor = const Color(0xFF0D2235);
+      } else {
+        backgroundColor = _EmisorasScreenState.azulFondo;
+        borderColor = _EmisorasScreenState.azulFondo;
+        textColor = Colors.white;
+        iconColor = _EmisorasScreenState.amarilloOro;
+        badgeBgColor = Colors.white.withValues(alpha: 0.20);
+        badgeTextColor = Colors.white;
+      }
+    } else {
+      if (isDark) {
+        backgroundColor = const Color(0xFF1E293B);
+        borderColor = const Color(0xFF334155);
+        textColor = const Color(0xFFCBD5E1);
+        iconColor = const Color(0xFF94A3B8);
+        badgeBgColor = const Color(0xFF0F172A);
+        badgeTextColor = const Color(0xFF94A3B8);
+      } else {
+        backgroundColor = Colors.white;
+        borderColor = _EmisorasScreenState.grisBorde;
+        textColor = const Color(0xFF334155);
+        iconColor = Colors.grey.shade600;
+        badgeBgColor = const Color(0xFFF1F5F9);
+        badgeTextColor = const Color(0xFF475569);
+      }
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         padding: EdgeInsetsDirectional.symmetric(
-          vertical: usableHeight * 0.009,
-          horizontal: screenWidth * 0.02,
+          horizontal: screenWidth * 0.028,
+          vertical: usableHeight * 0.006,
         ),
         decoration: BoxDecoration(
-          color: seleccionado ? _EmisorasScreenState.azulFondo : Colors.white,
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(
-            color: seleccionado
-                ? _EmisorasScreenState.azulFondo
-                : _EmisorasScreenState.grisBorde,
+            color: borderColor,
             width: seleccionado ? 1.5 : 1.0,
           ),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withValues(alpha: seleccionado ? 0.08 : 0.02),
+              color: Colors.black.withValues(
+                alpha: seleccionado ? 0.08 : (isDark ? 0.15 : 0.02),
+              ),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              icono,
-              color: seleccionado
-                  ? _EmisorasScreenState.amarilloOro
-                  : Colors.grey.shade600,
-              size: screenWidth * 0.042,
-            ),
+            Icon(icono, color: iconColor, size: screenWidth * 0.038),
             SizedBox(width: screenWidth * 0.015),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: seleccionado
-                      ? Colors.white
-                      : _EmisorasScreenState.azulFondo,
-                  fontSize: screenWidth * 0.033,
-                  fontWeight: seleccionado ? FontWeight.bold : FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontSize: screenWidth * 0.031,
+                fontWeight: seleccionado ? FontWeight.bold : FontWeight.w600,
               ),
             ),
+            if (count > 0) ...<Widget>[
+              SizedBox(width: screenWidth * 0.016),
+              Container(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.016,
+                  vertical: screenWidth * 0.003,
+                ),
+                decoration: BoxDecoration(
+                  color: badgeBgColor,
+                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                ),
+                child: Text(
+                  countFormatted,
+                  style: TextStyle(
+                    color: badgeTextColor,
+                    fontSize: screenWidth * 0.024,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmisorasHeaderLanguageFilter extends StatelessWidget {
+  final double screenWidth;
+  final double usableHeight;
+  final bool isDark;
+  final String idiomaSeleccionado;
+  final ValueChanged<String> onIdiomaChanged;
+
+  const _EmisorasHeaderLanguageFilter({
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.isDark,
+    required this.idiomaSeleccionado,
+    required this.onIdiomaChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Flexible(
+          child: _HeaderLanguageChip(
+            label: l10n.espanol,
+            isSelected: idiomaSeleccionado == 'es',
+            isDark: isDark,
+            screenWidth: screenWidth,
+            usableHeight: usableHeight,
+            onTap: () {
+              // Si ya está seleccionado, alternar a 'TODOS' para ver todas las emisoras
+              onIdiomaChanged(idiomaSeleccionado == 'es' ? 'TODOS' : 'es');
+            },
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.02),
+        Flexible(
+          child: _HeaderLanguageChip(
+            label: l10n.ingles,
+            isSelected: idiomaSeleccionado == 'en',
+            isDark: isDark,
+            screenWidth: screenWidth,
+            usableHeight: usableHeight,
+            onTap: () {
+              // Si ya está seleccionado, alternar a 'TODOS' para ver todas las emisoras
+              onIdiomaChanged(idiomaSeleccionado == 'en' ? 'TODOS' : 'en');
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeaderLanguageChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final bool isDark;
+  final double screenWidth;
+  final double usableHeight;
+  final VoidCallback onTap;
+
+  const _HeaderLanguageChip({
+    required this.label,
+    required this.isSelected,
+    required this.isDark,
+    required this.screenWidth,
+    required this.usableHeight,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color backgroundColor;
+    final Color borderColor;
+    final Color textColor;
+
+    if (isSelected) {
+      backgroundColor = _EmisorasScreenState.amarilloOro;
+      borderColor = _EmisorasScreenState.amarilloOro;
+      textColor = const Color(0xFF0D2235);
+    } else {
+      backgroundColor = Colors.white.withValues(alpha: isDark ? 0.08 : 0.14);
+      borderColor = Colors.white.withValues(alpha: isDark ? 0.16 : 0.22);
+      textColor = Colors.white.withValues(alpha: 0.92);
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsetsDirectional.symmetric(
+          horizontal: screenWidth * 0.028,
+          vertical: usableHeight * 0.007,
+        ),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          border: Border.all(color: borderColor, width: isSelected ? 1.4 : 1.0),
+          boxShadow: isSelected
+              ? <BoxShadow>[
+                  BoxShadow(
+                    color: _EmisorasScreenState.amarilloOro.withValues(
+                      alpha: 0.35,
+                    ),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textColor,
+              fontSize: screenWidth * 0.033,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
         ),
       ),
     );
@@ -1507,12 +1976,14 @@ class _ChipIdiomaItem extends StatelessWidget {
 class _EmisorasBannerFavoritos extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
+  final bool isDark;
   final int totalMostradas;
   final VoidCallback onClearFilter;
 
   const _EmisorasBannerFavoritos({
     required this.screenWidth,
     required this.usableHeight,
+    required this.isDark,
     required this.totalMostradas,
     required this.onClearFilter,
   });
@@ -1523,6 +1994,16 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
     final String localeName = Localizations.localeOf(context).toString();
     final String totalFormateado = NumberFormat.decimalPattern(localeName)
         .format(totalMostradas);
+
+    final Color bannerBg = isDark
+        ? const Color(0xFF261E0F)
+        : const Color(0xFFFFF7E6);
+    final Color borderCol = _EmisorasScreenState.amarilloOro.withValues(
+      alpha: isDark ? 0.70 : 0.50,
+    );
+    final Color txtColor = isDark
+        ? Colors.white
+        : _EmisorasScreenState.azulFondo;
 
     return Container(
       margin: EdgeInsetsDirectional.fromSTEB(
@@ -1536,12 +2017,9 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
         vertical: usableHeight * 0.01,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7E6),
+        color: bannerBg,
         borderRadius: BorderRadius.circular(screenWidth * 0.03),
-        border: Border.all(
-          color: _EmisorasScreenState.amarilloOro.withValues(alpha: 0.5),
-          width: 1.2,
-        ),
+        border: Border.all(color: borderCol, width: 1.2),
       ),
       child: Row(
         children: <Widget>[
@@ -1553,7 +2031,7 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
             ),
             child: Icon(
               Icons.favorite_rounded,
-              color: Colors.white,
+              color: isDark ? const Color(0xFF0D2235) : Colors.white,
               size: screenWidth * 0.04,
             ),
           ),
@@ -1562,7 +2040,7 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
             child: Text(
               l10n.mostrandoSoloFavoritas(totalFormateado),
               style: TextStyle(
-                color: _EmisorasScreenState.azulFondo,
+                color: txtColor,
                 fontWeight: FontWeight.bold,
                 fontSize: screenWidth * 0.033,
               ),
@@ -1577,7 +2055,7 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
                 vertical: usableHeight * 0.006,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(screenWidth * 0.02),
                 border: Border.all(color: _EmisorasScreenState.amarilloOro),
               ),
@@ -1587,7 +2065,9 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
                   Text(
                     l10n.verTodas,
                     style: TextStyle(
-                      color: _EmisorasScreenState.azulFondo,
+                      color: isDark
+                          ? _EmisorasScreenState.amarilloOro
+                          : _EmisorasScreenState.azulFondo,
                       fontWeight: FontWeight.bold,
                       fontSize: screenWidth * 0.03,
                     ),
@@ -1595,7 +2075,9 @@ class _EmisorasBannerFavoritos extends StatelessWidget {
                   SizedBox(width: screenWidth * 0.01),
                   Icon(
                     Icons.close_rounded,
-                    color: _EmisorasScreenState.azulFondo,
+                    color: isDark
+                        ? _EmisorasScreenState.amarilloOro
+                        : _EmisorasScreenState.azulFondo,
                     size: screenWidth * 0.035,
                   ),
                 ],
@@ -1615,6 +2097,7 @@ class _EmisoraGridCard extends StatelessWidget {
   final int index;
   final bool isPlayingThis;
   final bool isFav;
+  final bool isDark;
   final double screenWidth;
   final double usableHeight;
   final AppLocalizations l10n;
@@ -1627,6 +2110,7 @@ class _EmisoraGridCard extends StatelessWidget {
     required this.index,
     required this.isPlayingThis,
     required this.isFav,
+    required this.isDark,
     required this.screenWidth,
     required this.usableHeight,
     required this.l10n,
@@ -1637,12 +2121,28 @@ class _EmisoraGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String name = emisora.name;
-    final String denomination = emisora.denomination.isNotEmpty
-        ? emisora.denomination
+    final String rawDenom = emisora.denomination.trim();
+    final bool hasDenom =
+        rawDenom.isNotEmpty &&
+        rawDenom.toLowerCase() != 'desconocida' &&
+        rawDenom.toLowerCase() != 'cristiana';
+    final String denomination = hasDenom
+        ? _EmisorasScreenState.obtenerNombreDenominacion(rawDenom, l10n)
         : l10n.denominacionCristiana;
     final String frequency = emisora.frequency.isNotEmpty
         ? emisora.frequency
         : l10n.frecuenciaOnline;
+
+    final Color cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color borderCol = isPlayingThis
+        ? _EmisorasScreenState.amarilloOro
+        : (isDark ? const Color(0xFF334155) : _EmisorasScreenState.grisBorde);
+    final Color titleColor = isDark
+        ? Colors.white
+        : _EmisorasScreenState.azulFondo;
+    final Color subtitleColor = isDark
+        ? const Color(0xFF94A3B8)
+        : Colors.grey.shade600;
 
     return GestureDetector(
       onTap: onTap,
@@ -1651,68 +2151,80 @@ class _EmisoraGridCard extends StatelessWidget {
           Expanded(
             child: Container(
               width: double.infinity,
-              padding: EdgeInsetsDirectional.all(screenWidth * 0.02),
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(screenWidth * 0.04),
                 border: Border.all(
-                  color: isPlayingThis
-                      ? _EmisorasScreenState.amarilloOro
-                      : _EmisorasScreenState.grisBorde,
+                  color: borderCol,
                   width: isPlayingThis ? 2.0 : 1.0,
                 ),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 4,
+                    color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.03),
+                    blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Stack(
+                fit: StackFit.expand,
                 alignment: AlignmentDirectional.center,
                 children: <Widget>[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                    child: _EmisoraCachedLogo(
-                      logoUrl: emisora.logo,
-                      frecuencia: frequency,
-                      index: index,
-                      size: screenWidth * 0.22,
-                    ),
+                  _EmisoraCachedLogo(
+                    logoUrl: emisora.logo,
+                    frecuencia: frequency,
+                    index: index,
+                    fit: BoxFit.cover,
                   ),
                   if (isPlayingThis)
                     PositionedDirectional(
-                      bottom: 0,
-                      end: 0,
+                      bottom: screenWidth * 0.02,
+                      end: screenWidth * 0.02,
                       child: Container(
-                        padding: EdgeInsetsDirectional.all(screenWidth * 0.01),
-                        decoration: const BoxDecoration(
+                        padding: EdgeInsetsDirectional.all(screenWidth * 0.012),
+                        decoration: BoxDecoration(
                           color: _EmisorasScreenState.amarilloOro,
                           shape: BoxShape.circle,
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.35),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
                         child: Icon(
                           Icons.graphic_eq_rounded,
                           color: Colors.white,
-                          size: screenWidth * 0.032,
+                          size: screenWidth * 0.035,
                         ),
                       ),
                     ),
                   PositionedDirectional(
-                    top: screenWidth * 0.015,
-                    start: screenWidth * 0.015,
+                    top: screenWidth * 0.018,
+                    start: screenWidth * 0.018,
                     child: Container(
                       padding: EdgeInsetsDirectional.symmetric(
-                        horizontal: screenWidth * 0.018,
-                        vertical: screenWidth * 0.005,
+                        horizontal: screenWidth * 0.02,
+                        vertical: screenWidth * 0.006,
                       ),
                       decoration: BoxDecoration(
-                        color: _EmisorasScreenState.azulFondo.withValues(
-                          alpha: 0.85,
-                        ),
+                        color:
+                            (isDark
+                                    ? const Color(0xFF0F172A)
+                                    : _EmisorasScreenState.azulFondo)
+                                .withValues(alpha: 0.90),
                         borderRadius: BorderRadius.circular(
-                          screenWidth * 0.015,
+                          screenWidth * 0.016,
                         ),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
                       child: Text(
                         emisora.idioma.toUpperCase(),
@@ -1726,19 +2238,23 @@ class _EmisoraGridCard extends StatelessWidget {
                     ),
                   ),
                   PositionedDirectional(
-                    top: screenWidth * 0.01,
-                    end: screenWidth * 0.01,
+                    top: screenWidth * 0.015,
+                    end: screenWidth * 0.015,
                     child: GestureDetector(
                       onTap: onToggleFav,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        padding: EdgeInsetsDirectional.all(screenWidth * 0.012),
+                        padding: EdgeInsetsDirectional.all(screenWidth * 0.014),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark
+                              ? const Color(0xFF0F172A).withValues(alpha: 0.92)
+                              : Colors.white.withValues(alpha: 0.92),
                           shape: BoxShape.circle,
                           boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.18),
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.35 : 0.20,
+                              ),
                               blurRadius: 4,
                               offset: const Offset(0, 1),
                             ),
@@ -1750,8 +2266,10 @@ class _EmisoraGridCard extends StatelessWidget {
                               : Icons.favorite_border_rounded,
                           color: isFav
                               ? Colors.redAccent
-                              : Colors.grey.shade600,
-                          size: screenWidth * 0.068,
+                              : (isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : Colors.grey.shade600),
+                          size: screenWidth * 0.062,
                         ),
                       ),
                     ),
@@ -1767,21 +2285,18 @@ class _EmisoraGridCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: _EmisorasScreenState.azulFondo,
+              color: titleColor,
               fontSize: screenWidth * 0.03,
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
-            denomination.isNotEmpty &&
-                    denomination != l10n.denominacionCristiana
-                ? '$denomination · $frequency'
-                : frequency,
+            hasDenom ? '$denomination · $frequency' : frequency,
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: subtitleColor,
               fontSize: screenWidth * 0.024,
             ),
           ),
@@ -1797,13 +2312,15 @@ class _EmisoraCachedLogo extends StatefulWidget {
   final String? logoUrl;
   final String frecuencia;
   final int index;
-  final double size;
+  final double? size;
+  final BoxFit fit;
 
   const _EmisoraCachedLogo({
     required this.logoUrl,
     required this.frecuencia,
     required this.index,
-    required this.size,
+    this.size,
+    this.fit = BoxFit.cover,
   });
 
   @override
@@ -1852,11 +2369,17 @@ class _EmisoraCachedLogoState extends State<_EmisoraCachedLogo> {
 
   @override
   Widget build(BuildContext context) {
-    final Widget fallback = Icon(
-      _EmisorasScreenState.obtenerIconoFallback(widget.frecuencia),
-      color: _EmisorasScreenState.obtenerColorEmisora(widget.index)
-          .withValues(alpha: 0.85),
-      size: widget.size * 0.55,
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final double imageWidth = widget.size ?? double.infinity;
+    final double imageHeight = widget.size ?? double.infinity;
+
+    final Widget fallback = Center(
+      child: Icon(
+        _EmisorasScreenState.obtenerIconoFallback(widget.frecuencia),
+        color: _EmisorasScreenState.obtenerColorEmisora(widget.index)
+            .withValues(alpha: 0.85),
+        size: widget.size != null ? widget.size! * 0.55 : screenWidth * 0.16,
+      ),
     );
 
     final String url = (widget.logoUrl ?? '').trim();
@@ -1864,14 +2387,15 @@ class _EmisoraCachedLogoState extends State<_EmisoraCachedLogo> {
 
     // Limitamos la decodificación de textura en VRAM al tamaño físico real de pantalla
     final double dpr = MediaQuery.devicePixelRatioOf(context);
-    final int targetPx = (widget.size * dpr).round().clamp(64, 256);
+    final double baseDimension = widget.size ?? (screenWidth * 0.45);
+    final int targetPx = (baseDimension * dpr).round().clamp(64, 512);
 
     if (_cachedFile != null) {
       return Image.file(
         _cachedFile!,
-        width: widget.size,
-        height: widget.size,
-        fit: BoxFit.contain,
+        width: imageWidth,
+        height: imageHeight,
+        fit: widget.fit,
         cacheWidth: targetPx,
         cacheHeight: targetPx,
         filterQuality: FilterQuality.low,
@@ -1883,9 +2407,9 @@ class _EmisoraCachedLogoState extends State<_EmisoraCachedLogo> {
     if (kIsWeb) {
       return Image.network(
         url,
-        width: widget.size,
-        height: widget.size,
-        fit: BoxFit.contain,
+        width: imageWidth,
+        height: imageHeight,
+        fit: widget.fit,
         cacheWidth: targetPx,
         cacheHeight: targetPx,
         filterQuality: FilterQuality.low,
@@ -1902,18 +2426,22 @@ class _EmisoraCachedLogoState extends State<_EmisoraCachedLogo> {
 class _EmisorasEmptyState extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
+  final bool isDark;
   final bool mostrarSoloFavoritos;
   final String paisSeleccionado;
+  final String denominacionSeleccionada;
   final String filtroBusqueda;
-  final VoidCallback onVerTodas;
+  final VoidCallback onResetFilters;
 
   const _EmisorasEmptyState({
     required this.screenWidth,
     required this.usableHeight,
+    required this.isDark,
     required this.mostrarSoloFavoritos,
     required this.paisSeleccionado,
+    required this.denominacionSeleccionada,
     required this.filtroBusqueda,
-    required this.onVerTodas,
+    required this.onResetFilters,
   });
 
   @override
@@ -1936,6 +2464,9 @@ class _EmisorasEmptyState extends StatelessWidget {
     } else if (filtroBusqueda.isNotEmpty) {
       iconoVacio = Icons.search_off_rounded;
       mensajeVacio = l10n.noEmisorasCoincidencia(filtroBusqueda);
+    } else if (denominacionSeleccionada != 'TODOS') {
+      iconoVacio = Icons.church_outlined;
+      mensajeVacio = l10n.sinEmisorasDenominacion;
     } else {
       iconoVacio = Icons.radio_outlined;
       final String nombrePais = _EmisorasScreenState.obtenerNombrePais(
@@ -1944,6 +2475,14 @@ class _EmisorasEmptyState extends StatelessWidget {
       );
       mensajeVacio = l10n.noEmisorasDisponiblesPais(nombrePais);
     }
+
+    final Color cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color borderCol = isDark
+        ? const Color(0xFF334155)
+        : _EmisorasScreenState.grisBorde;
+    final Color btnTextColor = isDark
+        ? _EmisorasScreenState.amarilloOro
+        : _EmisorasScreenState.azulFondo;
 
     return Center(
       child: Padding(
@@ -1956,48 +2495,43 @@ class _EmisorasEmptyState extends StatelessWidget {
               size: screenWidth * 0.12,
               color: mostrarSoloFavoritos
                   ? _EmisorasScreenState.amarilloOro
-                  : Colors.grey.shade400,
+                  : (isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
             ),
             SizedBox(height: usableHeight * 0.015),
             Text(
               mensajeVacio,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade600,
                 fontSize: screenWidth * 0.038,
                 height: 1.3,
               ),
             ),
-            if (mostrarSoloFavoritos) ...<Widget>[
-              SizedBox(height: usableHeight * 0.02),
-              TextButton.icon(
-                onPressed: onVerTodas,
-                icon: const Icon(
-                  Icons.refresh_rounded,
-                  color: _EmisorasScreenState.azulFondo,
-                ),
-                label: Text(
-                  l10n.verTodasLasEmisoras,
-                  style: const TextStyle(
-                    color: _EmisorasScreenState.azulFondo,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                    side: const BorderSide(
-                      color: _EmisorasScreenState.grisBorde,
-                    ),
-                  ),
-                  padding: EdgeInsetsDirectional.symmetric(
-                    horizontal: screenWidth * 0.04,
-                    vertical: usableHeight * 0.012,
-                  ),
+            SizedBox(height: usableHeight * 0.02),
+            TextButton.icon(
+              onPressed: onResetFilters,
+              icon: Icon(Icons.refresh_rounded, color: btnTextColor),
+              label: Text(
+                mostrarSoloFavoritos
+                    ? l10n.verTodasLasEmisoras
+                    : l10n.restablecerFiltros,
+                style: TextStyle(
+                  color: btnTextColor,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
+              style: TextButton.styleFrom(
+                backgroundColor: cardBg,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  side: BorderSide(color: borderCol),
+                ),
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: screenWidth * 0.045,
+                  vertical: usableHeight * 0.012,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -2009,6 +2543,7 @@ class _EmisorasMiniPlayer extends StatelessWidget {
   final EmisoraModel emisora;
   final bool isPlaying;
   final bool isBuffering;
+  final bool isDark;
   final double screenWidth;
   final double usableHeight;
   final double safeAreaBottom;
@@ -2019,6 +2554,7 @@ class _EmisorasMiniPlayer extends StatelessWidget {
     required this.emisora,
     required this.isPlaying,
     required this.isBuffering,
+    required this.isDark,
     required this.screenWidth,
     required this.usableHeight,
     required this.safeAreaBottom,
@@ -2030,12 +2566,31 @@ class _EmisorasMiniPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final String nombre = emisora.name.isNotEmpty ? emisora.name : l10n.emisora;
-    final String denominacion = emisora.denomination.isNotEmpty
-        ? emisora.denomination
+    final String rawDenom = emisora.denomination.trim();
+    final bool hasDenom =
+        rawDenom.isNotEmpty &&
+        rawDenom.toLowerCase() != 'desconocida' &&
+        rawDenom.toLowerCase() != 'cristiana';
+    final String denominacion = hasDenom
+        ? _EmisorasScreenState.obtenerNombreDenominacion(rawDenom, l10n)
         : l10n.denominacionCristiana;
     final String frecuencia = emisora.frequency.isNotEmpty
         ? emisora.frequency
         : l10n.frecuenciaOnline;
+
+    final Color miniBg = isDark
+        ? const Color(0xFF131D2A)
+        : const Color(0xFFEEF4F8);
+    final Color borderTopCol = isDark
+        ? const Color(0xFF263548)
+        : _EmisorasScreenState.grisBorde;
+    final Color logoBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color titleCol = isDark
+        ? Colors.white
+        : _EmisorasScreenState.azulFondo;
+    final Color subtitleCol = isBuffering
+        ? _EmisorasScreenState.amarilloOro
+        : (isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700);
 
     return Container(
       width: screenWidth,
@@ -2046,13 +2601,11 @@ class _EmisorasMiniPlayer extends StatelessWidget {
         end: screenWidth * 0.04,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F1F5),
-        border: const Border(
-          top: BorderSide(color: _EmisorasScreenState.grisBorde),
-        ),
+        color: miniBg,
+        border: Border(top: BorderSide(color: borderTopCol)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
             blurRadius: 10,
             offset: const Offset(0, -3),
           ),
@@ -2061,22 +2614,24 @@ class _EmisorasMiniPlayer extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Container(
-            width: screenWidth * 0.12,
-            height: screenWidth * 0.12,
-            padding: EdgeInsetsDirectional.all(screenWidth * 0.012),
+            width: screenWidth * 0.125,
+            height: screenWidth * 0.125,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: logoBg,
               borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              border: Border.all(color: _EmisorasScreenState.grisBorde),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(screenWidth * 0.02),
-              child: _EmisoraCachedLogo(
-                logoUrl: emisora.logo,
-                frecuencia: frecuencia,
-                index: 0,
-                size: screenWidth * 0.12,
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : _EmisorasScreenState.grisBorde,
               ),
+            ),
+            child: _EmisoraCachedLogo(
+              logoUrl: emisora.logo,
+              frecuencia: frecuencia,
+              index: 0,
+              size: screenWidth * 0.125,
+              fit: BoxFit.cover,
             ),
           ),
           SizedBox(width: screenWidth * 0.03),
@@ -2088,7 +2643,7 @@ class _EmisorasMiniPlayer extends StatelessWidget {
                 Text(
                   nombre,
                   style: TextStyle(
-                    color: _EmisorasScreenState.azulFondo,
+                    color: titleCol,
                     fontSize: screenWidth * 0.038,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2098,14 +2653,11 @@ class _EmisorasMiniPlayer extends StatelessWidget {
                 Text(
                   isBuffering
                       ? l10n.sintonizandoAudio
-                      : denominacion.isNotEmpty &&
-                            denominacion != l10n.denominacionCristiana
+                      : hasDenom
                       ? l10n.enVivoConDenominacion(denominacion, frecuencia)
                       : l10n.enVivoFrecuencia(frecuencia),
                   style: TextStyle(
-                    color: isBuffering
-                        ? _EmisorasScreenState.amarilloOro
-                        : Colors.grey.shade700,
+                    color: subtitleCol,
                     fontSize: screenWidth * 0.03,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2119,9 +2671,18 @@ class _EmisorasMiniPlayer extends StatelessWidget {
             onTap: isBuffering ? null : onPlayPause,
             child: Container(
               padding: EdgeInsetsDirectional.all(screenWidth * 0.024),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: _EmisorasScreenState.amarilloOro,
                 shape: BoxShape.circle,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: _EmisorasScreenState.amarilloOro.withValues(
+                      alpha: 0.35,
+                    ),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: isBuffering
                   ? SizedBox(
@@ -2146,7 +2707,7 @@ class _EmisorasMiniPlayer extends StatelessWidget {
             onPressed: onStop,
             icon: Icon(
               Icons.close_rounded,
-              color: Colors.grey.shade600,
+              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
               size: screenWidth * 0.06,
             ),
           ),

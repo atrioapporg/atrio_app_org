@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../servicios/join_church_service.dart';
+import 'atrio_connectivity_alert.dart';
 
 /// Gestor y caché centralizado del código QR oficial de la iglesia.
 /// Permite precargar y abrir el diálogo modal de QR desde cualquier pantalla
@@ -161,6 +164,108 @@ class ChurchQrDialog extends StatelessWidget {
     required this.amarilloOro,
   });
 
+  Future<void> _compartirWhatsApp(BuildContext context) async {
+    if (joinUrl == null || joinUrl!.isEmpty) return;
+    HapticFeedback.lightImpact();
+
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !context.mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    final String mensaje = l10n?.mensajeWhatsAppInvitacionIglesia(
+          churchName,
+          joinUrl!,
+        ) ??
+        '¡Hola! Te invito a unirte a $churchName en la aplicación ATRIO:\n$joinUrl';
+
+    final String encoded = Uri.encodeComponent(mensaje);
+    final Uri appUri = Uri.parse('whatsapp://send?text=$encoded');
+    final Uri webUri = Uri.parse('https://wa.me/?text=$encoded');
+
+    try {
+      if (await canLaunchUrl(appUri)) {
+        await launchUrl(appUri, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.errorAbrirWhatsAppDispositivo ??
+                  'No se pudo abrir WhatsApp en este dispositivo.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorAbrirWhatsApp ??
+                'Ocurrió un error al intentar abrir WhatsApp.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _compartirCorreo(BuildContext context) async {
+    if (joinUrl == null || joinUrl!.isEmpty) return;
+    HapticFeedback.lightImpact();
+
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !context.mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    final String subject = l10n?.asuntoInvitacionIglesia(churchName) ??
+        'Invitación a $churchName en ATRIO';
+    final String body = l10n?.cuerpoCorreoInvitacionIglesia(
+          churchName,
+          joinUrl!,
+        ) ??
+        '¡Hola!\n\nTe invito a formar parte de nuestra congregación en $churchName a través de la aplicación ATRIO.\n\nPuedes unirte directamente usando este enlace de invitación:\n$joinUrl\n\n¡Te esperamos!';
+
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      queryParameters: {
+        'subject': subject,
+        'body': body,
+      },
+    );
+
+    try {
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri);
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n?.errorNoClienteCorreo ??
+                  'No se encontró un cliente de correo configurado.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n?.errorAbrirCorreo ??
+                'Ocurrió un error al intentar abrir el correo.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   Future<void> _copiarEnlace(BuildContext context) async {
     if (joinUrl == null || joinUrl!.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: joinUrl!));
@@ -299,9 +404,33 @@ class ChurchQrDialog extends StatelessWidget {
                   height: 1.35,
                 ),
               ),
-              const SizedBox(height: 20),
-              // Botón de copiar enlace si está disponible
+              const SizedBox(height: 18),
+              // Botones de compartir vía WhatsApp y Correo (justo encima de Copiar enlace de invitación)
               if (joinUrl != null && joinUrl!.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ChurchQrShareCard(
+                        title: 'WhatsApp',
+                        subtitle: l10n?.compartirInvitacion ?? 'Compartir',
+                        faIcon: FontAwesomeIcons.whatsapp,
+                        colorIcon: const Color(0xFF25D366),
+                        onTap: () => _compartirWhatsApp(context),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ChurchQrShareCard(
+                        title: l10n?.correo ?? 'Correo',
+                        subtitle: l10n?.compartirInvitacion ?? 'Compartir',
+                        icon: Icons.mail_outline_rounded,
+                        colorIcon: azulFondo,
+                        onTap: () => _compartirCorreo(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 46,
@@ -344,6 +473,97 @@ class ChurchQrDialog extends StatelessWidget {
                     l10n?.cerrar ?? 'Cerrar',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tarjeta compacta para compartir la invitación de la congregación vía WhatsApp o Correo,
+/// con diseño interactivo coherente con los canales de atención de `AyudaSoporteScreen`.
+class _ChurchQrShareCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData? icon;
+  final FaIconData? faIcon;
+  final Color colorIcon;
+  final VoidCallback onTap;
+
+  const _ChurchQrShareCard({
+    required this.title,
+    required this.subtitle,
+    this.icon,
+    this.faIcon,
+    required this.colorIcon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF8FAFC),
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.symmetric(
+            horizontal: 10,
+            vertical: 10,
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 17,
+                backgroundColor: colorIcon.withValues(alpha: 0.12),
+                child: faIcon != null
+                    ? FaIcon(
+                        faIcon,
+                        color: colorIcon,
+                        size: 18,
+                      )
+                    : (icon != null
+                          ? Icon(
+                              icon,
+                              color: colorIcon,
+                              size: 18,
+                            )
+                          : const SizedBox.shrink()),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

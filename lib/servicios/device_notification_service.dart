@@ -1,13 +1,13 @@
 import 'dart:io' show Platform;
 
+import 'package:atrio/atrio_api.dart';
+import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/screens/inicio_atrio_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:atrio/atrio_api.dart';
-import 'package:atrio/providers/user_provider.dart';
-import 'package:atrio/screens/inicio_atrio_screen.dart';
 
 /// Handler de ejecución en segundo plano para notificaciones Firebase Cloud Messaging.
 /// Debe ser una función top-level declarada con @pragma('vm:entry-point').
@@ -85,25 +85,18 @@ class DeviceNotificationService {
         '🔔 [DeviceNotificationService] Permisos de notificación concedidos: ${settings.authorizationStatus}',
       );
 
-      // 4. Escuchar registro y rotación de tokens FCM (API estándar firebase_messaging v17+)
-      messaging.onRegistered.listen((token) async {
-        debugPrint('🔑 [DeviceNotificationService] FCM Token registrado: $token');
+      // 4. Escuchar rotación de tokens FCM (API estándar multiplataforma)
+      messaging.onTokenRefresh.listen((token) async {
+        debugPrint(
+          '🔑 [DeviceNotificationService] FCM Token actualizado: $token',
+        );
         await setFcmToken(token);
         if (api != null && api.isAuthenticated) {
           await registerDeviceWithBackend(api, customToken: token);
         }
       });
 
-      // 5. Registrar la aplicación con Firebase Cloud Messaging
-      try {
-        await messaging.register();
-      } catch (regErr) {
-        debugPrint(
-          'ℹ️ [DeviceNotificationService] Registro en FCM completado o en espera: $regErr',
-        );
-      }
-
-      // Fallback para obtener token de inmediato si ya está emitido
+      // 5. Fallback para obtener token de inmediato si ya está emitido
       try {
         // ignore: deprecated_member_use
         final fcmToken = await messaging.getToken();
@@ -154,7 +147,9 @@ class DeviceNotificationService {
       });
 
       _isFCMInitialized = true;
-      debugPrint('✅ [DeviceNotificationService] Firebase Cloud Messaging inicializado exitosamente.');
+      debugPrint(
+        '✅ [DeviceNotificationService] Firebase Cloud Messaging inicializado exitosamente.',
+      );
     } catch (e) {
       debugPrint(
         '⚠️ [DeviceNotificationService] Inicialización de FCM en espera de credenciales nativas completas: $e',

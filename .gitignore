@@ -89,6 +89,7 @@ app.*.map.json
 *firebase-adminsdk*.json
 *credentials*.json
 google-services.json
+*google-services*.json
 GoogleService-Info.plist
 *CREDENCIALES*
 *credenciales*

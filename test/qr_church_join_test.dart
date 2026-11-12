@@ -35,6 +35,43 @@ void main() {
       expect(joinTokenFromUri(upper), equals(validUuid));
     });
 
+    test('Extrae token de slug de iglesia (ej. church-18)', () {
+      const url = 'https://atrioapp.odoo19rd.com/c/church-18';
+      expect(joinTokenFromUri(url), equals('church-18'));
+    });
+
+    test('Extrae church_code público en mayúsculas (ej. CENTRAL de app.atrio.org)', () {
+      const url = 'https://app.atrio.org/c/CENTRAL';
+      expect(joinTokenFromUri(url), equals('CENTRAL'));
+    });
+
+    test('Extrae church_code con guiones de Odoo 19 (ej. PARROQ-1, ATRIO-DEMO)', () {
+      expect(
+        joinTokenFromUri('https://atrioapp.odoo19rd.com/c/PARROQ-1'),
+        equals('PARROQ-1'),
+      );
+      expect(
+        joinTokenFromUri('https://atrioapp.odoo19rd.com/c/ATRIO-DEMO'),
+        equals('ATRIO-DEMO'),
+      );
+      expect(
+        joinTokenFromUri('https://app.atrio.org/c/PARROQ-2'),
+        equals('PARROQ-2'),
+      );
+    });
+
+    test('Detecta y descarta URLs defectuosas con centinelas de Odoo (/c/False)', () {
+      const brokenUrl = 'http://atrioapp.odoo19rd.com/c/False';
+      expect(joinTokenFromUri(brokenUrl), isNull);
+      expect(isOutdatedOrFalseQr(brokenUrl), isTrue);
+      expect(isOutdatedOrFalseQr('http://atrioapp.odoo19rd.com/c/PARROQ-1'), isFalse);
+    });
+
+    test('Extrae token de URL con query parameters', () {
+      const url = 'https://atrioapp.odoo19rd.com/c/6f1c2b1e-8a3d-4b7e-9c55-2d0e7a41c3f9?utm_source=qr';
+      expect(joinTokenFromUri(url), equals(validUuid));
+    });
+
     test('Retorna null ante URLs o textos no válidos', () {
       expect(joinTokenFromUri(null), isNull);
       expect(joinTokenFromUri(''), isNull);
@@ -167,6 +204,20 @@ void main() {
               .having((e) => e.code, 'code', 'already_member'),
         ),
       );
+    });
+
+    test('resolveChurchJoinUrl() resuelve URL canónica para iglesia 22 (PARROQ-1)', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('{"churches": []}', 200);
+      });
+
+      final service = JoinChurchService(
+        baseUrl: 'https://atrioapp.odoo19rd.com',
+        client: mockClient,
+      );
+
+      final joinUrl = await service.resolveChurchJoinUrl(churchId: 22);
+      expect(joinUrl, equals('https://atrioapp.odoo19rd.com/c/PARROQ-1'));
     });
   });
 }

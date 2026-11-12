@@ -3787,6 +3787,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorQrInvalido => 'The scanned QR code is not valid for ATRIO.';
 
   @override
+  String get errorQrDesactualizado =>
+      'The scanned QR code is outdated. Please regenerate or reopen the code from the church screen.';
+
+  @override
   String get aficheQrOficial => 'Official QR Poster';
 
   @override
@@ -4439,4 +4443,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get compartirDatosDeUsoAnonimosDesc =>
       'Helps us improve ATRIO by measuring which screens and features you use. The content of your requests and your personal data are never sent.';
+
+  @override
+  String get errorPermisoCamara =>
+      'Camera access permission is required to scan the QR code.';
+
+  @override
+  String get errorHardwareCamara =>
+      'Could not access the camera on this device.';
+
+  @override
+  String get abrirAjustesDispositivo => 'Open Settings';
 }

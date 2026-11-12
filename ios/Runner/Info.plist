@@ -106,6 +106,8 @@
 		<string>ATRIO necesita acceder a tu ubicación para encontrar iglesias cercanas a ti.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>ATRIO necesita acceder a tu ubicación para encontrar iglesias cercanas a ti.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>ATRIO necesita acceso a la cámara para escanear los códigos QR de las iglesias y vincularte a tu comunidad.</string>
 		<key>GMSApiKey</key>
 		<string>$(MAPS_API_KEY)</string>
 		<key>GIDClientID</key>

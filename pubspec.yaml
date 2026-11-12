@@ -88,7 +88,7 @@ dependencies:
   # ----------------------------------------------------------------------------
   # Escáner QR & Deep Linking (Universal Links / App Links)
   # ----------------------------------------------------------------------------
-  mobile_scanner: ^6.0.0 # Escáner de códigos QR de alto rendimiento mediante hardware de cámara
+  mobile_scanner: ^7.5.0 # Escáner de códigos QR de alto rendimiento mediante hardware de cámara (Apple Vision / ML Kit)
   app_links: ^6.3.0 # Gestión unificada de Universal Links (iOS) y App Links (Android)
   qr_flutter: ^4.1.0
   pdf: ^3.13.1

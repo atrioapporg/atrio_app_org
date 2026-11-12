@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
@@ -126,7 +127,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
   ) async {
     final l10n = AppLocalizations.of(context);
     final plusCode = iglesia.plusCode;
-    final mensaje = l10n?.compartirUbicacionMensaje(iglesia.nombre, plusCode) ??
+    final mensaje =
+        l10n?.compartirUbicacionMensaje(iglesia.nombre, plusCode) ??
         'Ubicación de ${iglesia.nombre}: $plusCode';
     await Clipboard.setData(ClipboardData(text: plusCode));
     if (!context.mounted) return;
@@ -310,9 +312,11 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       final Uri emailUri = Uri(
                         scheme: 'mailto',
                         queryParameters: {
-                          'subject': l10n?.asuntoCorreoPlusCode(iglesia.nombre) ??
+                          'subject':
+                              l10n?.asuntoCorreoPlusCode(iglesia.nombre) ??
                               'Plus Code de ${iglesia.nombre}',
-                          'body': l10n?.cuerpoCorreoPlusCode(mensaje) ??
+                          'body':
+                              l10n?.cuerpoCorreoPlusCode(mensaje) ??
                               '$mensaje\n\nPuedes buscar este código directamente en Google Maps.',
                         },
                       );
@@ -455,7 +459,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                         if (iglesia.esVerificada) ...[
                           SizedBox(width: screenWidth * 0.015),
                           Tooltip(
-                            message: l10n?.iglesiaVerificadaTooltip ??
+                            message:
+                                l10n?.iglesiaVerificadaTooltip ??
                                 'Congregación verificada',
                             child: Icon(
                               Icons.verified_rounded,
@@ -468,7 +473,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     ),
                     SizedBox(height: usableHeight * 0.004),
                     Semantics(
-                      label: l10n?.resenasCalificacionSemantics(
+                      label:
+                          l10n?.resenasCalificacionSemantics(
                             iglesia.calificacion.toString(),
                             iglesia.totalResenas,
                           ) ??
@@ -1439,76 +1445,76 @@ class _UgcSafetyMenuButton extends StatelessWidget {
         ),
         padding: EdgeInsetsDirectional.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      onSelected: (value) async {
-        if (value == 'report') {
-          await _mostrarDialogoReporte(context, l10n, azulFondo);
-        } else if (value == 'block') {
-          final service = ModerationService(
-            api: context.read<UserProvider>().api,
-          );
-          await service.blockUgcUser(
-            targetId: contentId,
-            targetType: contentType,
-          );
-          onAuthorBlocked();
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  l10n?.ugcUsuarioBloqueadoExito ?? 'Autor bloqueado. Sus publicaciones han sido ocultadas de tu vista inmediatamente.',
-                ),
-                backgroundColor: azulFondo,
-                behavior: SnackBarBehavior.floating,
-              ),
+        onSelected: (value) async {
+          if (value == 'report') {
+            await _mostrarDialogoReporte(context, l10n, azulFondo);
+          } else if (value == 'block') {
+            final service = ModerationService(
+              api: context.read<UserProvider>().api,
             );
-          }
-        }
-      },
-      itemBuilder: (ctx) => [
-        PopupMenuItem<String>(
-          value: 'report',
-          child: Row(
-            children: [
-              const Icon(
-                Icons.flag_outlined,
-                color: Color(0xFFD97706),
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  l10n?.ugcReportarContenido ??
-                      'Reportar contenido inapropiado',
-                  style: const TextStyle(fontSize: 13.5),
+            await service.blockUgcUser(
+              targetId: contentId,
+              targetType: contentType,
+            );
+            onAuthorBlocked();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    l10n?.ugcUsuarioBloqueadoExito ?? 'Autor bloqueado. Sus publicaciones han sido ocultadas de tu vista inmediatamente.',
+                  ),
+                  backgroundColor: azulFondo,
+                  behavior: SnackBarBehavior.floating,
                 ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'block',
-          child: Row(
-            children: [
-              const Icon(
-                Icons.block_rounded,
-                color: Color(0xFFDC2626),
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  l10n?.ugcBloquearUsuario ?? 'Bloquear autor / contenido',
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: Color(0xFFDC2626),
-                    fontWeight: FontWeight.w600,
+              );
+            }
+          }
+        },
+        itemBuilder: (ctx) => [
+          PopupMenuItem<String>(
+            value: 'report',
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.flag_outlined,
+                  color: Color(0xFFD97706),
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n?.ugcReportarContenido ??
+                        'Reportar contenido inapropiado',
+                    style: const TextStyle(fontSize: 13.5),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          PopupMenuItem<String>(
+            value: 'block',
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.block_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n?.ugcBloquearUsuario ?? 'Bloquear autor / contenido',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1609,6 +1615,7 @@ class _ChurchQrAvatar extends StatefulWidget {
 
 class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
   Uint8List? _qrBytes;
+  String? _joinUrl;
   bool _isLoading = true;
   bool _hasFetched = false;
   int? _lastUserId;
@@ -1649,6 +1656,7 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
     if (mounted) {
       setState(() {
         _qrBytes = data?.bytes;
+        _joinUrl = data?.joinUrl;
         _isLoading = false;
       });
     }
@@ -1672,6 +1680,11 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
     final height = widget.screenWidth * 0.19;
     final borderRadius = BorderRadius.circular(widget.screenWidth * 0.035);
 
+    final bool hasValidJoinUrl =
+        _joinUrl != null &&
+        _joinUrl!.trim().isNotEmpty &&
+        !_joinUrl!.toLowerCase().contains('/false');
+
     Widget contenido;
     if (_isLoading) {
       contenido = Center(
@@ -1681,6 +1694,24 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(widget.azulFondo),
+          ),
+        ),
+      );
+    } else if (hasValidJoinUrl) {
+      contenido = Padding(
+        padding: EdgeInsets.all(widget.screenWidth * 0.012),
+        child: QrImageView(
+          data: _joinUrl!,
+          version: QrVersions.auto,
+          size: width,
+          padding: EdgeInsets.zero,
+          eyeStyle: QrEyeStyle(
+            eyeShape: QrEyeShape.square,
+            color: widget.azulFondo,
+          ),
+          dataModuleStyle: QrDataModuleStyle(
+            dataModuleShape: QrDataModuleShape.square,
+            color: widget.azulFondo,
           ),
         ),
       );
@@ -1730,10 +1761,12 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
     }
 
     return Tooltip(
-      message: l10n?.qrIglesiaTooltip ??
+      message:
+          l10n?.qrIglesiaTooltip ??
           'Código QR oficial de la congregación (toca para ampliar)',
       child: Semantics(
-        label: l10n?.qrIglesiaTooltip ??
+        label:
+            l10n?.qrIglesiaTooltip ??
             'Código QR oficial de la congregación (toca para ampliar)',
         button: true,
         child: Material(

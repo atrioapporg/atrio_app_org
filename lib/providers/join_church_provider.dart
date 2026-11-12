@@ -81,6 +81,14 @@ class JoinChurchProvider extends ChangeNotifier {
       return false;
     }
 
+    if (isOutdatedOrFalseQr(rawInput)) {
+      _setError(
+        'outdated_qr',
+        'El código QR escaneado está desactualizado. Por favor, regenera o vuelve a abrir el código en la pantalla de la iglesia.',
+      );
+      return false;
+    }
+
     final token = joinTokenFromUri(rawInput);
     if (token == null) {
       _setError('invalid_qr', 'El código QR no corresponde a una iglesia de ATRIO.');

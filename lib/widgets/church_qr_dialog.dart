@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../servicios/join_church_service.dart';
 import 'atrio_connectivity_alert.dart';
+
+/// Validador de URLs canónicas de vinculación para filtrar centinelas de Odoo.
+bool _isInvalidJoinUrl(String? url) {
+  if (url == null || url.trim().isEmpty) return true;
+  final lower = url.trim().toLowerCase();
+  return lower.endsWith('/false') ||
+      lower.contains('/false?') ||
+      lower.endsWith('/null') ||
+      lower.contains('/null?') ||
+      lower.endsWith('/none') ||
+      lower.endsWith('/c/');
+}
 
 /// Gestor y caché centralizado del código QR oficial de la iglesia.
 /// Permite precargar y abrir el diálogo modal de QR desde cualquier pantalla
@@ -28,7 +41,7 @@ class ChurchQrManager {
     required int churchId,
   }) async {
     final cached = _cache[churchId];
-    if (cached != null) {
+    if (cached != null && !_isInvalidJoinUrl(cached.joinUrl)) {
       return cached;
     }
 
@@ -45,8 +58,8 @@ class ChurchQrManager {
       final res = await api.getChurchQr(download: true);
       String? joinUrl = res.joinUrl;
 
-      // Respaldo de URL canónica de vinculación si Odoo no envió el encabezado
-      if ((joinUrl == null || joinUrl.isEmpty) && context.mounted) {
+      // Respaldo de URL canónica de vinculación si Odoo no envió el encabezado o es inválida
+      if (_isInvalidJoinUrl(joinUrl) && context.mounted) {
         final validToken = await api.getValidAccessToken();
         joinUrl = await JoinChurchService().resolveChurchJoinUrl(
           churchId: churchId,
@@ -165,17 +178,16 @@ class ChurchQrDialog extends StatelessWidget {
   });
 
   Future<void> _compartirWhatsApp(BuildContext context) async {
-    if (joinUrl == null || joinUrl!.isEmpty) return;
+    if (joinUrl == null || joinUrl!.isEmpty || _isInvalidJoinUrl(joinUrl))
+      return;
     HapticFeedback.lightImpact();
 
     final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
     if (!hasInternet || !context.mounted) return;
 
     final l10n = AppLocalizations.of(context);
-    final String mensaje = l10n?.mensajeWhatsAppInvitacionIglesia(
-          churchName,
-          joinUrl!,
-        ) ??
+    final String mensaje =
+        l10n?.mensajeWhatsAppInvitacionIglesia(churchName, joinUrl!) ??
         '¡Hola! Te invito a unirte a $churchName en la aplicación ATRIO:\n$joinUrl';
 
     final String encoded = Uri.encodeComponent(mensaje);
@@ -214,27 +226,24 @@ class ChurchQrDialog extends StatelessWidget {
   }
 
   Future<void> _compartirCorreo(BuildContext context) async {
-    if (joinUrl == null || joinUrl!.isEmpty) return;
+    if (joinUrl == null || joinUrl!.isEmpty || _isInvalidJoinUrl(joinUrl))
+      return;
     HapticFeedback.lightImpact();
 
     final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
     if (!hasInternet || !context.mounted) return;
 
     final l10n = AppLocalizations.of(context);
-    final String subject = l10n?.asuntoInvitacionIglesia(churchName) ??
+    final String subject =
+        l10n?.asuntoInvitacionIglesia(churchName) ??
         'Invitación a $churchName en ATRIO';
-    final String body = l10n?.cuerpoCorreoInvitacionIglesia(
-          churchName,
-          joinUrl!,
-        ) ??
+    final String body =
+        l10n?.cuerpoCorreoInvitacionIglesia(churchName, joinUrl!) ??
         '¡Hola!\n\nTe invito a formar parte de nuestra congregación en $churchName a través de la aplicación ATRIO.\n\nPuedes unirte directamente usando este enlace de invitación:\n$joinUrl\n\n¡Te esperamos!';
 
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
-      queryParameters: {
-        'subject': subject,
-        'body': body,
-      },
+      queryParameters: {'subject': subject, 'body': body},
     );
 
     try {
@@ -267,7 +276,8 @@ class ChurchQrDialog extends StatelessWidget {
   }
 
   Future<void> _copiarEnlace(BuildContext context) async {
-    if (joinUrl == null || joinUrl!.isEmpty) return;
+    if (joinUrl == null || joinUrl!.isEmpty || _isInvalidJoinUrl(joinUrl))
+      return;
     await Clipboard.setData(ClipboardData(text: joinUrl!));
     if (!context.mounted) return;
     HapticFeedback.mediumImpact();
@@ -276,7 +286,11 @@ class ChurchQrDialog extends StatelessWidget {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -356,10 +370,7 @@ class ChurchQrDialog extends StatelessWidget {
                 Text(
                   denomination,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                 ),
               ],
               const SizedBox(height: 16),
@@ -385,18 +396,41 @@ class ChurchQrDialog extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.memory(
-                    qrBytes,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                  ),
+                  child:
+                      joinUrl != null &&
+                          joinUrl!.isNotEmpty &&
+                          !_isInvalidJoinUrl(joinUrl)
+                      ? QrImageView(
+                          data: joinUrl!,
+                          version: QrVersions.auto,
+                          size: qrBoxSize - 24,
+                          eyeStyle: QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: azulFondo,
+                          ),
+                          dataModuleStyle: QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: azulFondo,
+                          ),
+                          embeddedImage: const AssetImage(
+                            'assets/images/logo_encabezado_sinfondo.png',
+                          ),
+                          embeddedImageStyle: const QrEmbeddedImageStyle(
+                            size: Size(36, 36),
+                          ),
+                          errorCorrectionLevel: QrErrorCorrectLevel.Q,
+                        )
+                      : Image.memory(
+                          qrBytes,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                        ),
                 ),
               ),
               const SizedBox(height: 14),
               // Subtítulo explicativo
               Text(
-                l10n?.qrOficialIglesiaSubtitulo ??
-                    'Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.',
+                l10n?.qrOficialIglesiaSubtitulo ?? 'Muestra este código para que otros feligreses o visitantes se unan a esta iglesia en ATRIO.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12.5,
@@ -406,7 +440,9 @@ class ChurchQrDialog extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               // Botones de compartir vía WhatsApp y Correo (justo encima de Copiar enlace de invitación)
-              if (joinUrl != null && joinUrl!.isNotEmpty) ...[
+              if (joinUrl != null &&
+                  joinUrl!.isNotEmpty &&
+                  !_isInvalidJoinUrl(joinUrl)) ...[
                 Row(
                   children: [
                     Expanded(
@@ -524,17 +560,9 @@ class _ChurchQrShareCard extends StatelessWidget {
                 radius: 17,
                 backgroundColor: colorIcon.withValues(alpha: 0.12),
                 child: faIcon != null
-                    ? FaIcon(
-                        faIcon,
-                        color: colorIcon,
-                        size: 18,
-                      )
+                    ? FaIcon(faIcon, color: colorIcon, size: 18)
                     : (icon != null
-                          ? Icon(
-                              icon,
-                              color: colorIcon,
-                              size: 18,
-                            )
+                          ? Icon(icon, color: colorIcon, size: 18)
                           : const SizedBox.shrink()),
               ),
               const SizedBox(width: 8),

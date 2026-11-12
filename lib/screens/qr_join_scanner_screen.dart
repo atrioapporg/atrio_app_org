@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/join_church_provider.dart';
@@ -30,6 +31,8 @@ class _QrJoinScannerScreenState extends State<QrJoinScannerScreen> with WidgetsB
       detectionSpeed: DetectionSpeed.noDuplicates,
       facing: CameraFacing.back,
       torchEnabled: false,
+      formats: const [BarcodeFormat.qrCode],
+      returnImage: false,
     );
   }
 
@@ -84,7 +87,7 @@ class _QrJoinScannerScreenState extends State<QrJoinScannerScreen> with WidgetsB
         // Redirigir al inicio de sesión conservando el deferred token guardado
         Navigator.pushReplacementNamed(context, InicioSesionScreen.routeName);
       } else if (joinProvider.step == JoinChurchStep.previewReady) {
-        // Desplegar modal modal reactivo de confirmación
+        // Desplegar modal reactivo de confirmación
         await showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
@@ -101,19 +104,25 @@ class _QrJoinScannerScreenState extends State<QrJoinScannerScreen> with WidgetsB
       }
     } else {
       // Notificar error al usuario y reactivar el escáner
+      final l10n = AppLocalizations.of(context);
+      final String mensajeError = joinProvider.errorCode == 'outdated_qr'
+          ? (l10n?.errorQrDesactualizado ??
+              'El código QR escaneado está desactualizado. Por favor, regenera o vuelve a abrir el código en la pantalla de la iglesia.')
+          : (joinProvider.errorMessage ??
+              l10n?.errorQrInvalido ??
+              'Código QR no válido para ATRIO');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            joinProvider.errorMessage ??
-                AppLocalizations.of(context)?.errorQrInvalido ??
-                'Código QR no válido para ATRIO',
-          ),
+          content: Text(mensajeError),
           backgroundColor: Colors.redAccent,
         ),
       );
       joinProvider.reset();
-      await _scannerController.start();
-      setState(() => _isProcessingCode = false);
+      if (mounted) {
+        await _scannerController.start();
+        setState(() => _isProcessingCode = false);
+      }
     }
   }
 
@@ -126,10 +135,16 @@ class _QrJoinScannerScreenState extends State<QrJoinScannerScreen> with WidgetsB
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 1. Capa de visualización del visor de cámara
+          // 1. Capa de visualización del visor de cámara con control de error integrado
           MobileScanner(
             controller: _scannerController,
             onDetect: _handleBarcodeDetected,
+            errorBuilder: (context, error) {
+              return ScannerErrorCard(
+                error: error,
+                onRetry: () => _scannerController.start(),
+              );
+            },
           ),
 
           // 2. Overlay visual con marco de encuadre y efecto semitransparente
@@ -164,6 +179,129 @@ class _QrJoinScannerScreenState extends State<QrJoinScannerScreen> with WidgetsB
               child: ScannerLoadingIndicator(),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Widget dedicado para presentar fallos de hardware o permisos denegados de cámara
+class ScannerErrorCard extends StatelessWidget {
+  final MobileScannerException error;
+  final VoidCallback onRetry;
+
+  const ScannerErrorCard({
+    super.key,
+    required this.error,
+    required this.onRetry,
+  });
+
+  Future<void> _abrirAjustes() async {
+    final uri = Uri.parse('app-settings:');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isPermissionError =
+        error.errorCode == MobileScannerErrorCode.permissionDenied;
+
+    final String mensaje = isPermissionError
+        ? (l10n?.errorPermisoCamara ??
+            'Se necesita permiso de acceso a la cámara para escanear el código QR.')
+        : (l10n?.errorHardwareCamara ??
+            'No se pudo acceder a la cámara en este dispositivo.');
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsetsDirectional.symmetric(horizontal: 32),
+        padding: const EdgeInsetsDirectional.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF072B4F).withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE5A023),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isPermissionError
+                  ? Icons.no_photography_rounded
+                  : Icons.videocam_off_rounded,
+              size: 56,
+              color: const Color(0xFFE5A023),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              mensaje,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isPermissionError) ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE5A023),
+                      foregroundColor: const Color(0xFF072B4F),
+                      padding: const EdgeInsetsDirectional.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.settings, size: 18),
+                    label: Text(
+                      l10n?.abrirAjustesDispositivo ?? 'Abrir Ajustes',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: _abrirAjustes,
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white54),
+                    padding: const EdgeInsetsDirectional.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: Text(l10n?.reintentar ?? 'Reintentar'),
+                  onPressed: onRetry,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

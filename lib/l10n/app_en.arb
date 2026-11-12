@@ -1835,6 +1835,7 @@
   "congregacionOficial": "Official Congregation",
   "noSePudoCargarLogo": "No image available",
   "errorQrInvalido": "The scanned QR code is not valid for ATRIO.",
+  "errorQrDesactualizado": "The scanned QR code is outdated. Please regenerate or reopen the code from the church screen.",
   "aficheQrOficial": "Official QR Poster",
   "descargarAfichePdf": "Download / Print Poster (PDF)",
   "compartirEnlaceIglesia": "Share Link",
@@ -2131,5 +2132,8 @@
   "paisVE": "Venezuela",
   "privacidadYDatosDeUso": "Privacy & usage data",
   "compartirDatosDeUsoAnonimos": "Share usage statistics",
-  "compartirDatosDeUsoAnonimosDesc": "Helps us improve ATRIO by measuring which screens and features you use. The content of your requests and your personal data are never sent."
+  "compartirDatosDeUsoAnonimosDesc": "Helps us improve ATRIO by measuring which screens and features you use. The content of your requests and your personal data are never sent.",
+  "errorPermisoCamara": "Camera access permission is required to scan the QR code.",
+  "errorHardwareCamara": "Could not access the camera on this device.",
+  "abrirAjustesDispositivo": "Open Settings"
 }

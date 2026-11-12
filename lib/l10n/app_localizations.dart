@@ -6780,6 +6780,12 @@ abstract class AppLocalizations {
   /// **'El código QR escaneado no es válido para ATRIO.'**
   String get errorQrInvalido;
 
+  /// No description provided for @errorQrDesactualizado.
+  ///
+  /// In es, this message translates to:
+  /// **'El código QR escaneado está desactualizado. Por favor, regenera o vuelve a abrir el código en la pantalla de la iglesia.'**
+  String get errorQrDesactualizado;
+
   /// No description provided for @aficheQrOficial.
   ///
   /// In es, this message translates to:
@@ -7913,6 +7919,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nos ayuda a mejorar ATRIO midiendo qué pantallas y funciones usas. Nunca se envía el contenido de tus peticiones ni datos personales.'**
   String get compartirDatosDeUsoAnonimosDesc;
+
+  /// Mensaje de error cuando la app no tiene permiso de cámara
+  ///
+  /// In es, this message translates to:
+  /// **'Se necesita permiso de acceso a la cámara para escanear el código QR.'**
+  String get errorPermisoCamara;
+
+  /// Mensaje de error cuando el sensor de cámara no está disponible
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo acceder a la cámara en este dispositivo.'**
+  String get errorHardwareCamara;
+
+  /// Botón para abrir los ajustes del sistema operativo
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir Ajustes'**
+  String get abrirAjustesDispositivo;
 }
 
 class _AppLocalizationsDelegate

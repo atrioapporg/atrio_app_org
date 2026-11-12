@@ -77,6 +77,8 @@ void main() {
   final htmlFile = File('$artifactDir\\qr_real_prueba.html');
   htmlFile.writeAsStringSync(html);
 
+  // ignore: avoid_print
   print('SVG generado en: ${svgFile.path}');
+  // ignore: avoid_print
   print('HTML generado en: ${htmlFile.path}');
 }

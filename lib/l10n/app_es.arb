@@ -1916,6 +1916,7 @@
   "congregacionOficial": "Congregación Oficial",
   "noSePudoCargarLogo": "Sin imagen disponible",
   "errorQrInvalido": "El código QR escaneado no es válido para ATRIO.",
+  "errorQrDesactualizado": "El código QR escaneado está desactualizado. Por favor, regenera o vuelve a abrir el código en la pantalla de la iglesia.",
   "aficheQrOficial": "Afiche y QR Oficial",
   "descargarAfichePdf": "Descargar / Imprimir Afiche (PDF)",
   "compartirEnlaceIglesia": "Compartir Enlace",
@@ -2221,5 +2222,17 @@
   "compartirDatosDeUsoAnonimosDesc": "Nos ayuda a mejorar ATRIO midiendo qué pantallas y funciones usas. Nunca se envía el contenido de tus peticiones ni datos personales.",
   "@compartirDatosDeUsoAnonimosDesc": {
     "description": "Descripción del interruptor de consentimiento de analítica de producto"
+  },
+  "errorPermisoCamara": "Se necesita permiso de acceso a la cámara para escanear el código QR.",
+  "@errorPermisoCamara": {
+    "description": "Mensaje de error cuando la app no tiene permiso de cámara"
+  },
+  "errorHardwareCamara": "No se pudo acceder a la cámara en este dispositivo.",
+  "@errorHardwareCamara": {
+    "description": "Mensaje de error cuando el sensor de cámara no está disponible"
+  },
+  "abrirAjustesDispositivo": "Abrir Ajustes",
+  "@abrirAjustesDispositivo": {
+    "description": "Botón para abrir los ajustes del sistema operativo"
   }
 }

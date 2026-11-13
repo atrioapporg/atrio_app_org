@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
-import '../servicios/join_church_service.dart';
 import 'atrio_connectivity_alert.dart';
 
 /// Validador de URLs canónicas de vinculación para filtrar centinelas de Odoo.
@@ -56,16 +54,9 @@ class ChurchQrManager {
 
     try {
       final res = await api.getChurchQr(download: true);
-      String? joinUrl = res.joinUrl;
-
-      // Respaldo de URL canónica de vinculación si Odoo no envió el encabezado o es inválida
-      if (_isInvalidJoinUrl(joinUrl) && context.mounted) {
-        final validToken = await api.getValidAccessToken();
-        joinUrl = await JoinChurchService().resolveChurchJoinUrl(
-          churchId: churchId,
-          accessToken: validToken,
-        );
-      }
+      final String? joinUrl = _isInvalidJoinUrl(res.joinUrl)
+          ? null
+          : res.joinUrl?.trim();
 
       final data = (bytes: res.bytes, joinUrl: joinUrl);
       _cache[churchId] = data;
@@ -396,35 +387,11 @@ class ChurchQrDialog extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child:
-                      joinUrl != null &&
-                          joinUrl!.isNotEmpty &&
-                          !_isInvalidJoinUrl(joinUrl)
-                      ? QrImageView(
-                          data: joinUrl!,
-                          version: QrVersions.auto,
-                          size: qrBoxSize - 24,
-                          eyeStyle: QrEyeStyle(
-                            eyeShape: QrEyeShape.square,
-                            color: azulFondo,
-                          ),
-                          dataModuleStyle: QrDataModuleStyle(
-                            dataModuleShape: QrDataModuleShape.square,
-                            color: azulFondo,
-                          ),
-                          embeddedImage: const AssetImage(
-                            'assets/images/logo_encabezado_sinfondo.png',
-                          ),
-                          embeddedImageStyle: const QrEmbeddedImageStyle(
-                            size: Size(36, 36),
-                          ),
-                          errorCorrectionLevel: QrErrorCorrectLevel.Q,
-                        )
-                      : Image.memory(
-                          qrBytes,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.high,
-                        ),
+                  child: Image.memory(
+                    qrBytes,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),

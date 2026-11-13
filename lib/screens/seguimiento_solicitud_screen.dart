@@ -463,11 +463,14 @@ class _SeguimientoSolicitudScreenState
                                                   ),
                                                 ),
                                               ),
-                                            ] else if ((!userProvider.isChurchApproved ||
-                                                    userProvider.isMembershipPending ||
+                                            ] else if ((!userProvider
+                                                        .isChurchApproved ||
+                                                    userProvider
+                                                        .isMembershipPending ||
                                                     userProvider.churchStatus ==
                                                         'membership_pending') &&
-                                                !userProvider.hasChurchAssigned) ...[
+                                                !userProvider
+                                                    .hasChurchAssigned) ...[
                                               Container(
                                                 width: screenWidth * 0.18,
                                                 height: screenWidth * 0.18,
@@ -1143,12 +1146,18 @@ class _SeguimientoSolicitudScreenState
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFC62828),
-                      side: const BorderSide(color: Color(0xFFEF9A9A), width: 1.5),
+                      side: const BorderSide(
+                        color: Color(0xFFEF9A9A),
+                        width: 1.5,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(screenWidth * 0.03),
                       ),
                     ),
-                    icon: Icon(Icons.cancel_outlined, size: screenWidth * 0.045),
+                    icon: Icon(
+                      Icons.cancel_outlined,
+                      size: screenWidth * 0.045,
+                    ),
                     label: Text(
                       l10n?.cancelarPeticionPastoral ?? 'Cancelar petición',
                       style: TextStyle(
@@ -1196,46 +1205,40 @@ class _SeguimientoSolicitudScreenState
   }
 
   /// Verifica si una solicitud puede ser cancelada por el creyente.
-  /// Regla de negocio: Solo se pueden cancelar solicitudes pendientes
-  /// que aún NO hayan sido atendidas, respondidas ni completadas por el pastor.
+  /// Regla de negocio Odoo 19 (atrio_web_manager 19.0.8):
+  /// Solo se pueden cancelar peticiones en estado inicial `nueva`.
+  /// Desde `en_progreso` en adelante la iglesia ya está trabajando en ella.
   bool _puedeCancelarSolicitud(Map<String, dynamic> item) {
     final rawState = (item['raw_state'] ?? '').toString().toLowerCase().trim();
-    final tieneRespuesta = item['respuesta'] != null &&
+    final tieneRespuesta =
+        item['respuesta'] != null &&
         item['respuesta'].toString().trim().isNotEmpty;
     if (tieneRespuesta) return false;
 
-    // Solo se pueden cancelar peticiones en estados pendientes iniciales
-    final estadosCancelables = [
-      'pending',
-      'draft',
-      'received',
-      'recibida',
-      'nueva',
-      'new',
-      'proceso',
-      'en_proceso',
-      'en_progreso',
-      'in_progress',
-    ];
+    final int odooId = item['odoo_id'] as int? ?? 0;
+    final int localId = item['id'] as int? ?? 0;
 
-    if (!estadosCancelables.contains(rawState)) return false;
+    // En Odoo 19 solo es cancelable el estado 'nueva'.
+    // Para borradores locales aún no sincronizados, se aceptan 'pending'/'draft'/'new'.
+    const estadosCancelables = {'nueva'};
+    const estadosLocalesCancelables = {'nueva', 'new', 'draft', 'pending'};
 
-    final id = item['id'] as int? ?? 0;
-    final odooId = item['odoo_id'] as int? ?? 0;
-    return id > 0 || odooId > 0;
+    final bool esCancelable = odooId > 0
+        ? estadosCancelables.contains(rawState)
+        : estadosLocalesCancelables.contains(rawState);
+
+    if (!esCancelable) return false;
+
+    return localId > 0 || odooId > 0;
   }
 
   /// Diálogo modal de confirmación antes de cancelar la solicitud
-  Future<void> _confirmarCancelarSolicitud(
-    Map<String, dynamic> item,
-  ) async {
+  Future<void> _confirmarCancelarSolicitud(Map<String, dynamic> item) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dlgCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             const Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828)),
@@ -1243,14 +1246,16 @@ class _SeguimientoSolicitudScreenState
             Expanded(
               child: Text(
                 l10n?.cancelarPeticionPastoral ?? 'Cancelar petición',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ],
         ),
         content: Text(
-          l10n?.confirmarCancelarPeticion ??
-              '¿Deseas cancelar esta petición pastoral? Ya no será procesada por el equipo ministerial.',
+          l10n?.confirmarCancelarPeticion ?? '¿Deseas cancelar esta petición pastoral? Ya no será procesada por el equipo ministerial.',
           style: const TextStyle(fontSize: 14),
         ),
         actions: [
@@ -1278,13 +1283,13 @@ class _SeguimientoSolicitudScreenState
         : (item['id'] as int? ?? 0);
     final localId = item['id'] as int?;
 
-    final ok = await userProvider.cancelarPeticionPastoral(
+    final result = await userProvider.cancelarPeticionPastoral(
       requestId,
       localId: localId,
     );
 
     if (!mounted) return;
-    if (ok) {
+    if (result.ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1295,14 +1300,18 @@ class _SeguimientoSolicitudScreenState
       );
       _cargarSolicitudes();
     } else {
+      final String errorText = result.errorCode == 'invalid_state'
+          ? (l10n?.peticionYaEnProgresoError ??
+                'Esta petición ya fue tomada por tu iglesia y no puede cancelarse.')
+          : (l10n?.noSePudoCancelar ?? 'No se pudo cancelar la solicitud.');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            l10n?.noSePudoCancelar ?? 'No se pudo cancelar la solicitud.',
-          ),
+          content: Text(errorText),
           backgroundColor: const Color(0xFFC62828),
         ),
       );
+      // Refrescar para reflejar el estado real actualizado en Odoo
+      _cargarSolicitudes();
     }
   }
 }

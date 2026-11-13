@@ -4360,6 +4360,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noSePudoCancelar => 'Could not cancel request. Please try again.';
 
   @override
+  String get peticionYaEnProgresoError =>
+      'This petition has already been taken by your church and cannot be cancelled.';
+
+  @override
+  String get estadoCancelada => 'Cancelled';
+
+  @override
+  String get estadoCanceladas => 'Cancelled';
+
+  @override
   String get radioCristiana => 'Christian Radio';
 
   @override

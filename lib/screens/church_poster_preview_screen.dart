@@ -9,7 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
-import 'package:atrio/servicios/join_church_service.dart';
+import 'package:atrio/widgets/church_qr_dialog.dart';
 
 /// Pantalla de Previsualización y Descarga del Afiche Oficial de Vinculación QR.
 /// Permite al Administrador de Iglesia / Pastor visualizar el cartel oficial con
@@ -24,7 +24,7 @@ class ChurchPosterPreviewScreen extends StatefulWidget {
 }
 
 class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
-  final JoinChurchService _joinService = JoinChurchService();
+  Uint8List? _qrBytes;
   String? _joinUrl;
   bool _isLoading = true;
 
@@ -38,27 +38,26 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
 
   Future<void> _resolveChurchUrl() async {
     final userProv = context.read<UserProvider>();
-    final churchId = userProv.currentUser?.iglesiaId ?? 18;
-    String? token;
-    try {
-      token = await userProv.api.getValidAccessToken();
-    } catch (_) {}
-    token ??= await userProv.storageService.getAccessToken();
-
-    final url = await _joinService.resolveChurchJoinUrl(
+    final churchId = userProv.currentUser?.iglesiaId ?? 0;
+    final data = await ChurchQrManager.obtenerQr(
+      context: context,
       churchId: churchId,
-      accessToken: token,
     );
 
     if (mounted) {
       setState(() {
-        _joinUrl = url;
+        _qrBytes = data?.bytes;
+        _joinUrl = data?.joinUrl;
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _generateAndPrintPdf(String churchName, String joinUrl) async {
+  Future<void> _generateAndPrintPdf(
+    String churchName,
+    String joinUrl,
+    Uint8List? qrBytes,
+  ) async {
     final doc = pw.Document();
 
     doc.addPage(
@@ -139,14 +138,21 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
                       width: 4,
                     ),
                   ),
-                  child: pw.BarcodeWidget(
-                    barcode: pw.Barcode.qrCode(
-                      errorCorrectLevel: pw.BarcodeQRCorrectionLevel.high,
-                    ),
-                    data: joinUrl,
-                    width: 200,
-                    height: 200,
-                  ),
+                  child: qrBytes != null
+                      ? pw.Image(
+                          pw.MemoryImage(qrBytes),
+                          width: 200,
+                          height: 200,
+                          fit: pw.BoxFit.contain,
+                        )
+                      : pw.BarcodeWidget(
+                          barcode: pw.Barcode.qrCode(
+                            errorCorrectLevel: pw.BarcodeQRCorrectionLevel.high,
+                          ),
+                          data: joinUrl,
+                          width: 200,
+                          height: 200,
+                        ),
                 ),
 
                 // 3. Botón / Call To Action
@@ -274,6 +280,7 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
                   PosterGraphicCard(
                     churchName: churchName,
                     joinUrl: _joinUrl ?? 'https://atrioapp.odoo19rd.com',
+                    qrBytes: _qrBytes,
                   ),
                   const SizedBox(height: 24),
 
@@ -336,6 +343,7 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
                       onPressed: () => _generateAndPrintPdf(
                         churchName,
                         _joinUrl ?? 'https://atrioapp.odoo19rd.com',
+                        _qrBytes,
                       ),
                     ),
                   ),
@@ -351,11 +359,13 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
 class PosterGraphicCard extends StatelessWidget {
   final String churchName;
   final String joinUrl;
+  final Uint8List? qrBytes;
 
   const PosterGraphicCard({
     super.key,
     required this.churchName,
     required this.joinUrl,
+    this.qrBytes,
   });
 
   @override
@@ -474,20 +484,28 @@ class PosterGraphicCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: QrImageView(
-                      data: joinUrl,
-                      version: QrVersions.auto,
-                      size: 210,
-                      eyeStyle: const QrEyeStyle(
-                        eyeShape: QrEyeShape.square,
-                        color: Color(0xFF072B4F),
-                      ),
-                      dataModuleStyle: const QrDataModuleStyle(
-                        dataModuleShape: QrDataModuleShape.square,
-                        color: Color(0xFF072B4F),
-                      ),
-                      errorCorrectionLevel: QrErrorCorrectLevel.Q,
-                    ),
+                    child: qrBytes != null
+                        ? Image.memory(
+                            qrBytes!,
+                            width: 210,
+                            height: 210,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                          )
+                        : QrImageView(
+                            data: joinUrl,
+                            version: QrVersions.auto,
+                            size: 210,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: Color(0xFF072B4F),
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Color(0xFF072B4F),
+                            ),
+                            errorCorrectionLevel: QrErrorCorrectLevel.Q,
+                          ),
                   ),
                   const SizedBox(height: 20),
 

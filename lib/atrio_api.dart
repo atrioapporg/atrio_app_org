@@ -1114,22 +1114,16 @@ class AtrioApi {
   }
 
   /// Cancela la solicitud pendiente de membresía o cambio de congregación en Odoo 19.
-  /// Implementa fallback progresivo:
-  /// 1. POST /membership/cancel
-  /// 2. DELETE /membership/request
-  /// 3. PUT /me con requested_church_id: false
+  /// Endpoint principal: POST /membership/cancel (sin body).
+  /// Alias compatible (solo en 404/405): DELETE /membership/request.
   Future<Map<String, dynamic>> cancelMembershipRequest() async {
     try {
       return await _send('POST', '/membership/cancel');
-    } catch (_) {
-      try {
+    } on AtrioApiException catch (e) {
+      if (e.status == 404 || e.status == 405) {
         return await _send('DELETE', '/membership/request');
-      } catch (_) {
-        return await updateMe({
-          'requested_church_id': false,
-          'cancel_membership_request': true,
-        });
       }
+      rethrow;
     }
   }
 
@@ -1279,26 +1273,11 @@ class AtrioApi {
   }
 
   /// Cancela una solicitud ministerial / pastoral enviada por el feligrés a Odoo 19.
-  /// Se ejecuta mediante soft-cancel protegiendo la trazabilidad en backend.
-  Future<Map<String, dynamic>> cancelRequest(int requestId) async {
-    try {
-      return await _send('POST', '/requests/$requestId/cancel');
-    } catch (_) {
-      try {
-        return await _send('PUT', '/requests/$requestId/cancel');
-      } catch (_) {
-        try {
-          return await _send('DELETE', '/requests/$requestId');
-        } catch (_) {
-          return await _send(
-            'PUT',
-            '/requests/$requestId',
-            body: {'state': 'cancelled', 'status': 'cancelled'},
-          );
-        }
-      }
-    }
-  }
+  /// Endpoint: POST /requests/{id}/cancel (sin body).
+  /// Solo permitido cuando la solicitud está en estado `nueva`.
+  /// Si ya pasó a `en_progreso` u otro estado, Odoo responde 400 (`invalid_state`).
+  Future<Map<String, dynamic>> cancelRequest(int requestId) =>
+      _send('POST', '/requests/$requestId/cancel');
 
   // ===========================================================================
   // 7. TIENDA ATRIO

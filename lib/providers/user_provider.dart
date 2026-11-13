@@ -821,13 +821,16 @@ class UserProvider extends ChangeNotifier {
     }
 
     // 1. Rollback reactivo inmediato (Optimistic UI)
+    // En Odoo 19 (atrio_web_manager 19.0.8), membership_status vuelve a 'member' o 'church_admin'
+    final String restoredStatus =
+        user.isChurchAdmin ? 'church_admin' : 'member';
     _currentUser = user.copyWith(
-      membershipStatus: 'approved',
+      membershipStatus: restoredStatus,
       clearRequestedChurch: true,
     );
 
     if (_rawMeData != null) {
-      _rawMeData!['membership_status'] = 'approved';
+      _rawMeData!['membership_status'] = restoredStatus;
       _rawMeData!['requested_church_id'] = null;
       _rawMeData!['requested_church'] = null;
     }
@@ -839,7 +842,7 @@ class UserProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('requested_church_id');
       await prefs.remove('requested_church_data');
-      await prefs.setString('membership_status', 'approved');
+      await prefs.setString('membership_status', restoredStatus);
       if (user.iglesiaActual.isNotEmpty &&
           user.iglesiaActual != 'Sin iglesia seleccionada') {
         await prefs.setString('iglesia_guardada', user.iglesiaActual);
@@ -859,12 +862,12 @@ class UserProvider extends ChangeNotifier {
         debugPrint('⚠️ [UserProvider] Error cancelando cambio en Odoo: $e');
       }
 
-      // Sincronizar perfil protegiendo el estado aprobado restaurado
+      // Sincronizar perfil protegiendo el estado restaurado
       try {
         await refreshUserProfile();
         if (_currentUser != null && _currentUser!.isChangePending) {
           _currentUser = _currentUser!.copyWith(
-            membershipStatus: 'approved',
+            membershipStatus: restoredStatus,
             clearRequestedChurch: true,
           );
           notifyListeners();
@@ -922,33 +925,45 @@ class UserProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint('⚠️ [UserProvider] Error cancelando membresía en Odoo: $e');
       }
+
+      try {
+        await refreshUserProfile();
+      } catch (e) {
+        debugPrint('ℹ️ [UserProvider] Error refrescando tras cancelar membresía: $e');
+      }
     }
 
     return true;
   }
 
-  /// Cancela una petición pastoral o de oración en Odoo y en la caché local SQLite.
-  Future<bool> cancelarPeticionPastoral(int requestId, {int? localId}) async {
-    bool exitoOdoo = false;
+  /// Cancela una petición pastoral o de oración en Odoo (`POST /requests/{id}/cancel`)
+  /// y actualiza la caché local SQLite a `cancelada` únicamente si la operación es válida.
+  Future<({bool ok, String? errorCode, String? message})> cancelarPeticionPastoral(
+    int requestId, {
+    int? localId,
+  }) async {
     if (_api.isAuthenticated && requestId > 0) {
       try {
         await _api.cancelRequest(requestId);
-        exitoOdoo = true;
         debugPrint('✅ [UserProvider] Petición $requestId cancelada en Odoo');
+      } on AtrioApiException catch (e) {
+        debugPrint('⚠️ [UserProvider] Error API al cancelar petición $requestId: $e');
+        return (ok: false, errorCode: e.code, message: e.message);
       } catch (e) {
         debugPrint('⚠️ [UserProvider] Error al cancelar petición $requestId en Odoo: $e');
+        return (ok: false, errorCode: null, message: e.toString());
       }
     }
 
-    // Actualizar estado en SQLite local
+    // Actualizar estado en SQLite local con el estado canónico 'cancelada'
     try {
       await AtrioDatabaseHelper.instance
-          .actualizarEstadoSolicitudLocal(localId ?? requestId, 'cancelled');
+          .actualizarEstadoSolicitudLocal(localId ?? requestId, 'cancelada');
     } catch (e) {
       debugPrint('[UserProvider] Error actualizando SQLite local: $e');
     }
 
-    return exitoOdoo;
+    return (ok: true, errorCode: null, message: null);
   }
 
   // ===========================================================================

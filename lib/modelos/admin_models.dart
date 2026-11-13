@@ -288,7 +288,7 @@ class AdminChurchRequestModel {
   final String type; // 'oracion', 'ayuda', 'consejeria', etc.
   final String title;
   final String message;
-  final String state; // 'nueva', 'en_progreso', 'respondida', 'rechazada'
+  final String state; // 'nueva', 'en_progreso', 'respondida', 'rechazada', 'cancelada'
   final String? response;
   final String? rejectionReason;
   final String createdAt;
@@ -339,6 +339,7 @@ class AdminChurchRequestModel {
   bool get isAnswered =>
       state == 'respondida' || state == 'approved' || state == 'done';
   bool get isRejected => state == 'rechazada';
+  bool get isCancelled => state == 'cancelada' || state == 'cancelled';
 
   AdminChurchRequestModel copyWith({
     String? state,

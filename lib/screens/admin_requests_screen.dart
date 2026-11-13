@@ -301,6 +301,13 @@ class _FilterSection extends StatelessWidget {
                   badgeColor: const Color(0xFFB91C1C),
                   onSelected: () => onStatusChanged('rechazada'),
                 ),
+                const SizedBox(width: 8),
+                _StatusFilterChip(
+                  label: l10n?.estadoCanceladas ?? 'Canceladas',
+                  isSelected: selectedStatus == 'cancelada',
+                  badgeColor: const Color(0xFF64748B),
+                  onSelected: () => onStatusChanged('cancelada'),
+                ),
               ],
             ),
           ),
@@ -704,6 +711,13 @@ class _AdminRequestCard extends StatelessWidget {
           label: (l) => l?.estadoRechazada ?? 'Rechazada',
           backgroundColor: const Color(0xFFFEE2E2),
           textColor: const Color(0xFFB91C1C),
+        );
+      case 'cancelada':
+      case 'cancelled':
+        return _StatusStyle(
+          label: (l) => l?.estadoCancelada ?? 'Cancelada',
+          backgroundColor: const Color(0xFFF1F5F9),
+          textColor: const Color(0xFF475569),
         );
       default:
         return _StatusStyle(

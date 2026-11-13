@@ -1680,11 +1680,6 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
     final height = widget.screenWidth * 0.19;
     final borderRadius = BorderRadius.circular(widget.screenWidth * 0.035);
 
-    final bool hasValidJoinUrl =
-        _joinUrl != null &&
-        _joinUrl!.trim().isNotEmpty &&
-        !_joinUrl!.toLowerCase().contains('/false');
-
     Widget contenido;
     if (_isLoading) {
       contenido = Center(
@@ -1694,24 +1689,6 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(widget.azulFondo),
-          ),
-        ),
-      );
-    } else if (hasValidJoinUrl) {
-      contenido = Padding(
-        padding: EdgeInsets.all(widget.screenWidth * 0.012),
-        child: QrImageView(
-          data: _joinUrl!,
-          version: QrVersions.auto,
-          size: width,
-          padding: EdgeInsets.zero,
-          eyeStyle: QrEyeStyle(
-            eyeShape: QrEyeShape.square,
-            color: widget.azulFondo,
-          ),
-          dataModuleStyle: QrDataModuleStyle(
-            dataModuleShape: QrDataModuleShape.square,
-            color: widget.azulFondo,
           ),
         ),
       );
@@ -1726,6 +1703,26 @@ class _ChurchQrAvatarState extends State<_ChurchQrAvatar> {
             Icons.church_rounded,
             color: widget.azulFondo,
             size: widget.screenWidth * 0.08,
+          ),
+        ),
+      );
+    } else if (_joinUrl != null &&
+        _joinUrl!.trim().isNotEmpty &&
+        !_joinUrl!.toLowerCase().contains('/false')) {
+      contenido = Padding(
+        padding: EdgeInsets.all(widget.screenWidth * 0.012),
+        child: QrImageView(
+          data: _joinUrl!,
+          version: QrVersions.auto,
+          size: width,
+          padding: EdgeInsets.zero,
+          eyeStyle: QrEyeStyle(
+            eyeShape: QrEyeShape.square,
+            color: widget.azulFondo,
+          ),
+          dataModuleStyle: QrDataModuleStyle(
+            dataModuleShape: QrDataModuleShape.square,
+            color: widget.azulFondo,
           ),
         ),
       );

@@ -7752,6 +7752,24 @@ abstract class AppLocalizations {
   /// **'No se pudo cancelar la solicitud. Intenta nuevamente.'**
   String get noSePudoCancelar;
 
+  /// No description provided for @peticionYaEnProgresoError.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta petición ya fue tomada por tu iglesia y no puede cancelarse.'**
+  String get peticionYaEnProgresoError;
+
+  /// No description provided for @estadoCancelada.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelada'**
+  String get estadoCancelada;
+
+  /// No description provided for @estadoCanceladas.
+  ///
+  /// In es, this message translates to:
+  /// **'Canceladas'**
+  String get estadoCanceladas;
+
   /// No description provided for @radioCristiana.
   ///
   /// In es, this message translates to:

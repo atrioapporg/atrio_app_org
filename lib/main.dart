@@ -22,6 +22,7 @@ import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/screens/acceso_social_screen.dart';
 import 'package:atrio/screens/admin_ads_screen.dart';
 import 'package:atrio/screens/admin_requests_screen.dart';
+import 'package:atrio/screens/administrador_iglesia_screen.dart';
 import 'package:atrio/screens/aportar_a_proyecto_screen.dart';
 import 'package:atrio/screens/ayuda_soporte_screen.dart';
 import 'package:atrio/screens/biblia_screen.dart';
@@ -642,6 +643,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     ChurchAdminDashboardScreen.routeName: (_) =>
         const ChurchAdminDashboardScreen(),
     AdminRequestsScreen.routeName: (_) => const AdminRequestsScreen(),
+    AdministradorIglesiaScreen.routeName: (_) =>
+        const AdministradorIglesiaScreen(),
 
     // ---------- Pruebas ----------
     TestPagoScreen.routeName: (_) => const TestPagoScreen(),

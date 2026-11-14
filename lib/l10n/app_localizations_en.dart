@@ -4464,4 +4464,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get abrirAjustesDispositivo => 'Open Settings';
+
+  @override
+  String get pastoral => 'Pastoral';
+
+  @override
+  String get miPerfil => 'My profile';
+
+  @override
+  String get pulsoDeAtencion => 'Today\'s Attention Pulse';
+
+  @override
+  String get porAtender => 'Pending';
+
+  @override
+  String get avisosActivos => 'Active notices';
+
+  @override
+  String get gruposActivos => 'Groups';
+
+  @override
+  String get cuidadoPastoral => 'Pastoral Care & Analytics';
+
+  @override
+  String get comunicacionMembresia => 'Communication & Membership';
+
+  @override
+  String get difusionCampanas => 'Outreach & Campaigns';
+
+  @override
+  String get herramientasRapidas => 'Quick Tools';
+
+  @override
+  String get subtituloPanelPastoral =>
+      'Metrics, offerings, KYC and live summary';
+
+  @override
+  String get nuevaPredica => 'New Sermon';
+
+  @override
+  String get sinGruposConfigurados => 'No groups configured';
+
+  @override
+  String get comunidadAtrio => 'Atrio Community';
+
+  @override
+  String miembrosCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+      zero: '0 members',
+    );
+    return '$_temp0';
+  }
 }

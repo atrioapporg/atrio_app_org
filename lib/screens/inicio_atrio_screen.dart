@@ -23,6 +23,7 @@ import '../widgets/hero_banner_card.dart';
 import '../widgets/membership_pending_banner.dart';
 import '../widgets/read_only_banner.dart';
 import '../widgets/sponsored_ad_card.dart';
+import 'administrador_iglesia_screen.dart';
 import 'explorar_screen.dart';
 import 'iglesia_screen.dart';
 import 'notificaciones_screen.dart';
@@ -656,6 +657,7 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
 
     final l10n = AppLocalizations.of(context);
     _upgraderMessages.context = context;
+    final bool isChurchAdmin = context.watch<UserProvider>().isChurchAdmin;
 
     final List<Widget> vistasPrincipales = [
       _buildHomeView(
@@ -670,7 +672,10 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
       const IglesiaScreen(),
       const ExplorarScreen(),
       EmisorasScreen(isActive: _currentNavIndex == 3),
-      const PerfilScreen(),
+      if (isChurchAdmin)
+        const AdministradorIglesiaScreen()
+      else
+        const PerfilScreen(),
     ];
 
     return PopScope(
@@ -726,9 +731,20 @@ class _InicioAtrioScreenState extends State<InicioAtrioScreen> {
               label: l10n?.radio ?? 'Radio',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person, color: azulFondo),
-              label: l10n?.perfil ?? 'Perfil',
+              icon: Icon(
+                isChurchAdmin
+                    ? Icons.admin_panel_settings_outlined
+                    : Icons.person_outline,
+              ),
+              selectedIcon: Icon(
+                isChurchAdmin
+                    ? Icons.admin_panel_settings_rounded
+                    : Icons.person,
+                color: azulFondo,
+              ),
+              label: isChurchAdmin
+                  ? (l10n?.pastoral ?? 'Pastoral')
+                  : (l10n?.perfil ?? 'Perfil'),
             ),
           ],
         ),

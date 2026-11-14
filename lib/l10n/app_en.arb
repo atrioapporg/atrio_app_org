@@ -2138,5 +2138,29 @@
   "compartirDatosDeUsoAnonimosDesc": "Helps us improve ATRIO by measuring which screens and features you use. The content of your requests and your personal data are never sent.",
   "errorPermisoCamara": "Camera access permission is required to scan the QR code.",
   "errorHardwareCamara": "Could not access the camera on this device.",
-  "abrirAjustesDispositivo": "Open Settings"
+  "abrirAjustesDispositivo": "Open Settings",
+  "pastoral": "Pastoral",
+  "miPerfil": "My profile",
+  "pulsoDeAtencion": "Today's Attention Pulse",
+  "porAtender": "Pending",
+  "avisosActivos": "Active notices",
+  "gruposActivos": "Groups",
+  "cuidadoPastoral": "Pastoral Care & Analytics",
+  "comunicacionMembresia": "Communication & Membership",
+  "difusionCampanas": "Outreach & Campaigns",
+  "herramientasRapidas": "Quick Tools",
+  "subtituloPanelPastoral": "Metrics, offerings, KYC and live summary",
+  "nuevaPredica": "New Sermon",
+  "sinGruposConfigurados": "No groups configured",
+  "comunidadAtrio": "Atrio Community",
+  "miembrosCount": "{count, plural, =0{0 members} =1{1 member} other{{count} members}}",
+  "@miembrosCount": {
+    "description": "Member count in a group",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "volver": "Back"
 }

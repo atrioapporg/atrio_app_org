@@ -2006,7 +2006,7 @@ abstract class AppLocalizations {
   /// **'Otra solicitud'**
   String get otraSolicitud;
 
-  /// No description provided for @volver.
+  /// Tooltip o etiqueta para regresar a la pantalla anterior
   ///
   /// In es, this message translates to:
   /// **'Volver'**
@@ -7955,6 +7955,96 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Abrir Ajustes'**
   String get abrirAjustesDispositivo;
+
+  /// Etiqueta de la pestaña de navegación para administradores de iglesia
+  ///
+  /// In es, this message translates to:
+  /// **'Pastoral'**
+  String get pastoral;
+
+  /// Acceso directo al perfil personal del administrador
+  ///
+  /// In es, this message translates to:
+  /// **'Mi perfil'**
+  String get miPerfil;
+
+  /// Título de la cinta operativa de triage pastoral
+  ///
+  /// In es, this message translates to:
+  /// **'Pulso de Atención Hoy'**
+  String get pulsoDeAtencion;
+
+  /// Indicador de solicitudes nuevas pendientes de atención
+  ///
+  /// In es, this message translates to:
+  /// **'Por atender'**
+  String get porAtender;
+
+  /// Indicador de avisos congregacionales publicados
+  ///
+  /// In es, this message translates to:
+  /// **'Avisos activos'**
+  String get avisosActivos;
+
+  /// Indicador de grupos y ministerios configurados
+  ///
+  /// In es, this message translates to:
+  /// **'Grupos'**
+  String get gruposActivos;
+
+  /// Sección de gestión pastoral y métricas en AdministradorIglesiaScreen
+  ///
+  /// In es, this message translates to:
+  /// **'Cuidado Pastoral y Analítica'**
+  String get cuidadoPastoral;
+
+  /// Sección de avisos y audiencias en AdministradorIglesiaScreen
+  ///
+  /// In es, this message translates to:
+  /// **'Comunicación y Membresía'**
+  String get comunicacionMembresia;
+
+  /// Sección de publicidad y anuncios en AdministradorIglesiaScreen
+  ///
+  /// In es, this message translates to:
+  /// **'Difusión y Campañas'**
+  String get difusionCampanas;
+
+  /// Sección de accesos operativos rápidos en AdministradorIglesiaScreen
+  ///
+  /// In es, this message translates to:
+  /// **'Herramientas Rápidas'**
+  String get herramientasRapidas;
+
+  /// Subtítulo descriptivo del acceso a Panel Pastoral
+  ///
+  /// In es, this message translates to:
+  /// **'Métricas, ofrendas, KYC y resumen en tiempo real'**
+  String get subtituloPanelPastoral;
+
+  /// Acceso rápido para publicar una nueva prédica
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva Prédica'**
+  String get nuevaPredica;
+
+  /// Estado vacío cuando no existen grupos o audiencias
+  ///
+  /// In es, this message translates to:
+  /// **'No hay grupos configurados'**
+  String get sinGruposConfigurados;
+
+  /// Nombre de congregación por defecto
+  ///
+  /// In es, this message translates to:
+  /// **'Comunidad Atrio'**
+  String get comunidadAtrio;
+
+  /// Cantidad de miembros en un grupo
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{0 miembros} =1{1 miembro} other{{count} miembros}}'**
+  String miembrosCount(int count);
 }
 
 class _AppLocalizationsDelegate

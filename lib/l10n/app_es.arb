@@ -2237,5 +2237,74 @@
   "abrirAjustesDispositivo": "Abrir Ajustes",
   "@abrirAjustesDispositivo": {
     "description": "Botón para abrir los ajustes del sistema operativo"
+  },
+  "pastoral": "Pastoral",
+  "@pastoral": {
+    "description": "Etiqueta de la pestaña de navegación para administradores de iglesia"
+  },
+  "miPerfil": "Mi perfil",
+  "@miPerfil": {
+    "description": "Acceso directo al perfil personal del administrador"
+  },
+  "pulsoDeAtencion": "Pulso de Atención Hoy",
+  "@pulsoDeAtencion": {
+    "description": "Título de la cinta operativa de triage pastoral"
+  },
+  "porAtender": "Por atender",
+  "@porAtender": {
+    "description": "Indicador de solicitudes nuevas pendientes de atención"
+  },
+  "avisosActivos": "Avisos activos",
+  "@avisosActivos": {
+    "description": "Indicador de avisos congregacionales publicados"
+  },
+  "gruposActivos": "Grupos",
+  "@gruposActivos": {
+    "description": "Indicador de grupos y ministerios configurados"
+  },
+  "cuidadoPastoral": "Cuidado Pastoral y Analítica",
+  "@cuidadoPastoral": {
+    "description": "Sección de gestión pastoral y métricas en AdministradorIglesiaScreen"
+  },
+  "comunicacionMembresia": "Comunicación y Membresía",
+  "@comunicacionMembresia": {
+    "description": "Sección de avisos y audiencias en AdministradorIglesiaScreen"
+  },
+  "difusionCampanas": "Difusión y Campañas",
+  "@difusionCampanas": {
+    "description": "Sección de publicidad y anuncios en AdministradorIglesiaScreen"
+  },
+  "herramientasRapidas": "Herramientas Rápidas",
+  "@herramientasRapidas": {
+    "description": "Sección de accesos operativos rápidos en AdministradorIglesiaScreen"
+  },
+  "subtituloPanelPastoral": "Métricas, ofrendas, KYC y resumen en tiempo real",
+  "@subtituloPanelPastoral": {
+    "description": "Subtítulo descriptivo del acceso a Panel Pastoral"
+  },
+  "nuevaPredica": "Nueva Prédica",
+  "@nuevaPredica": {
+    "description": "Acceso rápido para publicar una nueva prédica"
+  },
+  "sinGruposConfigurados": "No hay grupos configurados",
+  "@sinGruposConfigurados": {
+    "description": "Estado vacío cuando no existen grupos o audiencias"
+  },
+  "comunidadAtrio": "Comunidad Atrio",
+  "@comunidadAtrio": {
+    "description": "Nombre de congregación por defecto"
+  },
+  "miembrosCount": "{count, plural, =0{0 miembros} =1{1 miembro} other{{count} miembros}}",
+  "@miembrosCount": {
+    "description": "Cantidad de miembros en un grupo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "volver": "Volver",
+  "@volver": {
+    "description": "Tooltip o etiqueta para regresar a la pantalla anterior"
   }
 }

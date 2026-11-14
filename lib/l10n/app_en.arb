@@ -2162,5 +2162,17 @@
       }
     }
   },
-  "volver": "Back"
+  "volver": "Back",
+  "reducirTamanoLetra": "Decrease font size",
+  "aumentarTamanoLetra": "Increase font size",
+  "restablecerTamanoLetra": "Reset font size",
+  "tamanoLetraActual": "{size} pt",
+  "@tamanoLetraActual": {
+    "description": "Compact indicator of current base font size in points",
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  }
 }

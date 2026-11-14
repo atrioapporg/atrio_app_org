@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../modelos/auth_permissions.dart';
@@ -38,13 +39,50 @@ class _AdministradorIglesiaScreenState
   static const Color amarilloOro = Color(0xFFE5A023);
   static const Color blancoFondo = Color(0xFFFAF7F0);
 
+  static const String _fontSizePrefsKey = 'admin_iglesia_base_font_size';
+  static const double _defaultBaseFontSize = 14.0;
+  static const double _minBaseFontSize = 14.0;
+  static const double _maxBaseFontSize = 22.0;
+  static const double _fontSizeStep = 1.0;
+
+  double _baseFontSize = _defaultBaseFontSize;
+
+  double get _fontDelta => _baseFontSize - _defaultBaseFontSize;
+
   @override
   void initState() {
     super.initState();
+    _cargarAjustesVisuales();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadInitialData();
     });
+  }
+
+  Future<void> _cargarAjustesVisuales() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSize = prefs.getDouble(_fontSizePrefsKey);
+      if (savedSize != null && mounted) {
+        setState(() {
+          _baseFontSize = savedSize.clamp(_minBaseFontSize, _maxBaseFontSize);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _guardarAjustesVisuales(double size) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_fontSizePrefsKey, size);
+    } catch (_) {}
+  }
+
+  void _actualizarTamanoLetra(double newSize) {
+    final double clamped = newSize.clamp(_minBaseFontSize, _maxBaseFontSize);
+    if (clamped == _baseFontSize) return;
+    setState(() => _baseFontSize = clamped);
+    _guardarAjustesVisuales(clamped);
   }
 
   void _loadInitialData() {
@@ -82,7 +120,7 @@ class _AdministradorIglesiaScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _AdminAnnouncementsSheet(),
+      builder: (_) => _AdminAnnouncementsSheet(fontDelta: _fontDelta),
     );
   }
 
@@ -92,7 +130,7 @@ class _AdministradorIglesiaScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _AdminGroupsSheet(),
+      builder: (_) => _AdminGroupsSheet(fontDelta: _fontDelta),
     );
   }
 
@@ -107,7 +145,7 @@ class _AdministradorIglesiaScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _AdminInboxNotificationsSheet(),
+      builder: (_) => _AdminInboxNotificationsSheet(fontDelta: _fontDelta),
     );
   }
 
@@ -153,8 +191,17 @@ class _AdministradorIglesiaScreenState
                 churchName: churchName,
                 userInitials: initials,
                 unreadNotifications: adminProv.unreadNotificationsCount,
-                kycStatus: iglesiaProv.iglesiaActual?.kycStatus ??
+                kycStatus:
+                    iglesiaProv.iglesiaActual?.kycStatus ??
                     userProv.churchKycStatus,
+                baseFontSize: _baseFontSize,
+                minBaseFontSize: _minBaseFontSize,
+                maxBaseFontSize: _maxBaseFontSize,
+                fontDelta: _fontDelta,
+                onDecreaseFont: () =>
+                    _actualizarTamanoLetra(_baseFontSize - _fontSizeStep),
+                onIncreaseFont: () =>
+                    _actualizarTamanoLetra(_baseFontSize + _fontSizeStep),
                 onOpenProfile: () {
                   Navigator.pushNamed(context, PerfilScreen.routeName);
                 },
@@ -171,12 +218,16 @@ class _AdministradorIglesiaScreenState
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   // 1. Cinta de Triage Operativo ("Pulso de Atención Hoy")
-                  _SectionTitle(title: l10n.pulsoDeAtencion),
+                  _SectionTitle(
+                    title: l10n.pulsoDeAtencion,
+                    fontDelta: _fontDelta,
+                  ),
                   SizedBox(height: usableHeight * 0.012),
                   _AttentionPulseStrip(
                     pendingRequestsCount: pendingRequestsCount,
                     announcementsCount: activeAnnouncementsCount,
                     groupsCount: activeGroupsCount,
+                    fontDelta: _fontDelta,
                     onTapRequests: () => _navigateWithConnectivity(
                       AdminRequestsScreen.routeName,
                     ),
@@ -186,9 +237,13 @@ class _AdministradorIglesiaScreenState
                   SizedBox(height: usableHeight * 0.028),
 
                   // 2. Bloque A: Cuidado Pastoral y Analítica
-                  _SectionTitle(title: l10n.cuidadoPastoral),
+                  _SectionTitle(
+                    title: l10n.cuidadoPastoral,
+                    fontDelta: _fontDelta,
+                  ),
                   SizedBox(height: usableHeight * 0.012),
                   _ModuleCardGroup(
+                    fontDelta: _fontDelta,
                     items: [
                       _ModuleItemData(
                         icon: Icons.dashboard_customize_rounded,
@@ -214,9 +269,13 @@ class _AdministradorIglesiaScreenState
                   SizedBox(height: usableHeight * 0.026),
 
                   // 3. Bloque B: Comunicación y Membresía
-                  _SectionTitle(title: l10n.comunicacionMembresia),
+                  _SectionTitle(
+                    title: l10n.comunicacionMembresia,
+                    fontDelta: _fontDelta,
+                  ),
                   SizedBox(height: usableHeight * 0.012),
                   _ModuleCardGroup(
+                    fontDelta: _fontDelta,
                     items: [
                       _ModuleItemData(
                         icon: Icons.campaign_rounded,
@@ -242,9 +301,13 @@ class _AdministradorIglesiaScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: usableHeight * 0.026),
-                        _SectionTitle(title: l10n.difusionCampanas),
+                        _SectionTitle(
+                          title: l10n.difusionCampanas,
+                          fontDelta: _fontDelta,
+                        ),
                         SizedBox(height: usableHeight * 0.012),
                         _ModuleCardGroup(
+                          fontDelta: _fontDelta,
                           items: [
                             _ModuleItemData(
                               icon: Icons.ad_units_rounded,
@@ -264,9 +327,13 @@ class _AdministradorIglesiaScreenState
                   SizedBox(height: usableHeight * 0.026),
 
                   // 5. Herramientas Operativas Rápidas
-                  _SectionTitle(title: l10n.herramientasRapidas),
+                  _SectionTitle(
+                    title: l10n.herramientasRapidas,
+                    fontDelta: _fontDelta,
+                  ),
                   SizedBox(height: usableHeight * 0.012),
                   _QuickToolsRow(
+                    fontDelta: _fontDelta,
                     onTapNewEvent: () =>
                         _navigateWithConnectivity(CrearEventoScreen.routeName),
                     onTapNewSermon: () =>
@@ -306,6 +373,12 @@ class _PastoralHeader extends StatelessWidget {
   final String userInitials;
   final int unreadNotifications;
   final ChurchKycStatus kycStatus;
+  final double baseFontSize;
+  final double minBaseFontSize;
+  final double maxBaseFontSize;
+  final double fontDelta;
+  final VoidCallback onDecreaseFont;
+  final VoidCallback onIncreaseFont;
   final VoidCallback onOpenProfile;
   final VoidCallback onOpenInbox;
 
@@ -314,6 +387,12 @@ class _PastoralHeader extends StatelessWidget {
     required this.userInitials,
     required this.unreadNotifications,
     required this.kycStatus,
+    required this.baseFontSize,
+    required this.minBaseFontSize,
+    required this.maxBaseFontSize,
+    required this.fontDelta,
+    required this.onDecreaseFont,
+    required this.onIncreaseFont,
     required this.onOpenProfile,
     required this.onOpenInbox,
   });
@@ -325,7 +404,6 @@ class _PastoralHeader extends StatelessWidget {
     final screenWidth = size.width;
     final usableHeight = size.height - MediaQuery.paddingOf(context).top;
     const Color azulFondo = Color(0xFF072B4F);
-    const Color amarilloOro = Color(0xFFE5A023);
 
     return Container(
       width: double.infinity,
@@ -361,38 +439,37 @@ class _PastoralHeader extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Fila superior: Badge LÍDER + Campana + Chip "Mi perfil"
+              // Fila superior: Control A-/A+ + Campana + Chip "Mi perfil"
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsetsDirectional.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: amarilloOro,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      l10n.perfilBadgeLider,
-                      style: TextStyle(
-                        color: azulFondo,
-                        fontSize: (screenWidth * 0.028).clamp(10.0, 12.0),
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
+                  _FontSizeControlBar(
+                    baseFontSize: baseFontSize,
+                    minBaseFontSize: minBaseFontSize,
+                    maxBaseFontSize: maxBaseFontSize,
+                    onDecrease: onDecreaseFont,
+                    onIncrease: onIncreaseFont,
                   ),
-                  const Spacer(),
-                  _InboxBellButton(
-                    unreadCount: unreadNotifications,
-                    onTap: onOpenInbox,
-                  ),
-                  SizedBox(width: screenWidth * 0.02),
-                  _ProfileAccessChip(
-                    initials: userInitials,
-                    label: l10n.miPerfil,
-                    onTap: onOpenProfile,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _InboxBellButton(
+                          unreadCount: unreadNotifications,
+                          fontDelta: fontDelta,
+                          onTap: onOpenInbox,
+                        ),
+                        SizedBox(width: screenWidth * 0.02),
+                        Flexible(
+                          child: _ProfileAccessChip(
+                            initials: userInitials,
+                            label: l10n.miPerfil,
+                            fontDelta: fontDelta,
+                            onTap: onOpenProfile,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -401,25 +478,130 @@ class _PastoralHeader extends StatelessWidget {
                 l10n.administracionPastoral,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.78),
-                  fontSize: (screenWidth * 0.032).clamp(12.0, 14.0),
+                  fontSize: (screenWidth * 0.032).clamp(12.0, 14.0) + fontDelta,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 churchName,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: (screenWidth * 0.052).clamp(18.0, 24.0),
+                  fontSize: (screenWidth * 0.052).clamp(18.0, 24.0) + fontDelta,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.2,
                 ),
               ),
               SizedBox(height: usableHeight * 0.012),
-              _CompactStatusPill(kycStatus: kycStatus),
+              _CompactStatusPill(kycStatus: kycStatus, fontDelta: fontDelta),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FontSizeControlBar extends StatelessWidget {
+  final double baseFontSize;
+  final double minBaseFontSize;
+  final double maxBaseFontSize;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  const _FontSizeControlBar({
+    required this.baseFontSize,
+    required this.minBaseFontSize,
+    required this.maxBaseFontSize,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bool canDecrease = baseFontSize > minBaseFontSize;
+    final bool canIncrease = baseFontSize < maxBaseFontSize;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            button: true,
+            enabled: canDecrease,
+            label: l10n.reducirTamanoLetra,
+            child: Tooltip(
+              message: l10n.reducirTamanoLetra,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  start: Radius.circular(14),
+                ).resolve(Directionality.of(context)),
+                onTap: canDecrease ? onDecrease : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A-',
+                      style: TextStyle(
+                        color: canDecrease
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.38),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 24,
+            color: Colors.white.withValues(alpha: 0.22),
+          ),
+          Semantics(
+            button: true,
+            enabled: canIncrease,
+            label: l10n.aumentarTamanoLetra,
+            child: Tooltip(
+              message: l10n.aumentarTamanoLetra,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  end: Radius.circular(14),
+                ).resolve(Directionality.of(context)),
+                onTap: canIncrease ? onIncrease : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A+',
+                      style: TextStyle(
+                        color: canIncrease
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.38),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -429,9 +611,14 @@ class _PastoralHeader extends StatelessWidget {
 
 class _InboxBellButton extends StatelessWidget {
   final int unreadCount;
+  final double fontDelta;
   final VoidCallback onTap;
 
-  const _InboxBellButton({required this.unreadCount, required this.onTap});
+  const _InboxBellButton({
+    required this.unreadCount,
+    required this.fontDelta,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -447,42 +634,47 @@ class _InboxBellButton extends StatelessWidget {
         onTap: onTap,
         child: Tooltip(
           message: l10n.buzonAlertas,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.all(8),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(
-                  Icons.notifications_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                if (unreadCount > 0)
-                  PositionedDirectional(
-                    top: -4,
-                    end: -4,
-                    child: Container(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_rounded,
+                    color: Colors.white,
+                    size: 20 + (fontDelta * 0.5),
+                  ),
+                  if (unreadCount > 0) ...[
+                    const SizedBox(width: 4),
+                    Container(
                       padding: const EdgeInsetsDirectional.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: amarilloOro,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         NumberFormat.compact(
                           locale: Localizations.localeOf(context).toString(),
                         ).format(unreadCount),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: azulFondo,
-                          fontSize: 9,
+                          fontSize: 10 + fontDelta,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-                  ),
-              ],
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -494,11 +686,13 @@ class _InboxBellButton extends StatelessWidget {
 class _ProfileAccessChip extends StatelessWidget {
   final String initials;
   final String label;
+  final double fontDelta;
   final VoidCallback onTap;
 
   const _ProfileAccessChip({
     required this.initials,
     required this.label,
+    required this.fontDelta,
     required this.onTap,
   });
 
@@ -509,50 +703,68 @@ class _ProfileAccessChip extends StatelessWidget {
 
     return Material(
       color: Colors.white.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsetsDirectional.fromSTEB(5, 4, 12, 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.25),
-              width: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Container(
+            padding: const EdgeInsetsDirectional.fromSTEB(6, 6, 12, 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1,
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 13,
-                backgroundColor: amarilloOro,
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: azulFondo,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  constraints: BoxConstraints(
+                    minWidth: 26 + fontDelta,
+                    minHeight: 26 + fontDelta,
+                  ),
+                  padding: const EdgeInsetsDirectional.all(4),
+                  decoration: const BoxDecoration(
+                    color: amarilloOro,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    widthFactor: 1,
+                    heightFactor: 1,
+                    child: Text(
+                      initials,
+                      style: TextStyle(
+                        color: azulFondo,
+                        fontSize: 11 + fontDelta,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5 + fontDelta,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 2),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white70,
-                size: 16,
-              ),
-            ],
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -562,8 +774,9 @@ class _ProfileAccessChip extends StatelessWidget {
 
 class _CompactStatusPill extends StatelessWidget {
   final ChurchKycStatus kycStatus;
+  final double fontDelta;
 
-  const _CompactStatusPill({required this.kycStatus});
+  const _CompactStatusPill({required this.kycStatus, required this.fontDelta});
 
   @override
   Widget build(BuildContext context) {
@@ -591,7 +804,7 @@ class _CompactStatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsetsDirectional.symmetric(
         horizontal: 10,
-        vertical: 5,
+        vertical: 6,
       ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
@@ -609,11 +822,11 @@ class _CompactStatusPill extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFE2E8F0),
-                fontSize: 11.5,
+              style: TextStyle(
+                color: const Color(0xFFE2E8F0),
+                fontSize: 11.5 + fontDelta,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -632,6 +845,7 @@ class _AttentionPulseStrip extends StatelessWidget {
   final int pendingRequestsCount;
   final int announcementsCount;
   final int groupsCount;
+  final double fontDelta;
   final VoidCallback onTapRequests;
   final VoidCallback onTapAnnouncements;
   final VoidCallback onTapGroups;
@@ -640,6 +854,7 @@ class _AttentionPulseStrip extends StatelessWidget {
     required this.pendingRequestsCount,
     required this.announcementsCount,
     required this.groupsCount,
+    required this.fontDelta,
     required this.onTapRequests,
     required this.onTapAnnouncements,
     required this.onTapGroups,
@@ -654,41 +869,60 @@ class _AttentionPulseStrip extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final spacing = constraints.maxWidth * 0.025;
-        return Row(
-          children: [
-            Expanded(
-              child: _PulseCounterTile(
-                value: formatter.format(pendingRequestsCount),
-                label: l10n.porAtender,
-                icon: Icons.mark_email_unread_rounded,
-                accentColor: pendingRequestsCount > 0
-                    ? const Color(0xFFE5A023)
-                    : const Color(0xFF072B4F),
-                highlight: pendingRequestsCount > 0,
-                onTap: onTapRequests,
-              ),
-            ),
-            SizedBox(width: spacing),
-            Expanded(
-              child: _PulseCounterTile(
-                value: formatter.format(announcementsCount),
-                label: l10n.avisosActivos,
-                icon: Icons.campaign_rounded,
-                accentColor: const Color(0xFF0284C7),
-                onTap: onTapAnnouncements,
-              ),
-            ),
-            SizedBox(width: spacing),
-            Expanded(
-              child: _PulseCounterTile(
-                value: formatter.format(groupsCount),
-                label: l10n.gruposActivos,
-                icon: Icons.groups_rounded,
-                accentColor: const Color(0xFF0D9488),
-                onTap: onTapGroups,
-              ),
-            ),
-          ],
+        final tiles = [
+          _PulseCounterTile(
+            value: formatter.format(pendingRequestsCount),
+            label: l10n.porAtender,
+            icon: Icons.mark_email_unread_rounded,
+            accentColor: pendingRequestsCount > 0
+                ? const Color(0xFFE5A023)
+                : const Color(0xFF072B4F),
+            highlight: pendingRequestsCount > 0,
+            fontDelta: fontDelta,
+            onTap: onTapRequests,
+          ),
+          _PulseCounterTile(
+            value: formatter.format(announcementsCount),
+            label: l10n.avisosActivos,
+            icon: Icons.campaign_rounded,
+            accentColor: const Color(0xFF0284C7),
+            fontDelta: fontDelta,
+            onTap: onTapAnnouncements,
+          ),
+          _PulseCounterTile(
+            value: formatter.format(groupsCount),
+            label: l10n.gruposActivos,
+            icon: Icons.groups_rounded,
+            accentColor: const Color(0xFF0D9488),
+            fontDelta: fontDelta,
+            onTap: onTapGroups,
+          ),
+        ];
+
+        final bool useTwoColumns =
+            fontDelta >= 4.0 && constraints.maxWidth < 460;
+        if (useTwoColumns) {
+          final double tileWidth = (constraints.maxWidth - spacing) / 2;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: tiles
+                .map((tile) => SizedBox(width: tileWidth, child: tile))
+                .toList(),
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: tiles[0]),
+              SizedBox(width: spacing),
+              Expanded(child: tiles[1]),
+              SizedBox(width: spacing),
+              Expanded(child: tiles[2]),
+            ],
+          ),
         );
       },
     );
@@ -701,6 +935,7 @@ class _PulseCounterTile extends StatelessWidget {
   final IconData icon;
   final Color accentColor;
   final bool highlight;
+  final double fontDelta;
   final VoidCallback onTap;
 
   const _PulseCounterTile({
@@ -708,6 +943,7 @@ class _PulseCounterTile extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.accentColor,
+    required this.fontDelta,
     required this.onTap,
     this.highlight = false,
   });
@@ -773,20 +1009,20 @@ class _PulseCounterTile extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: azulFondo,
-                  fontSize: 20,
+                  fontSize: 20 + fontDelta,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 label,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 11.5,
+                style: TextStyle(
+                  color: const Color(0xFF64748B),
+                  fontSize: 11.5 + fontDelta,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -804,8 +1040,9 @@ class _PulseCounterTile extends StatelessWidget {
 
 class _SectionTitle extends StatelessWidget {
   final String title;
+  final double fontDelta;
 
-  const _SectionTitle({required this.title});
+  const _SectionTitle({required this.title, required this.fontDelta});
 
   @override
   Widget build(BuildContext context) {
@@ -816,7 +1053,7 @@ class _SectionTitle extends StatelessWidget {
         title,
         style: TextStyle(
           color: const Color(0xFF072B4F),
-          fontSize: (screenWidth * 0.042).clamp(15.0, 18.0),
+          fontSize: (screenWidth * 0.042).clamp(15.0, 18.0) + fontDelta,
           fontWeight: FontWeight.bold,
           letterSpacing: -0.1,
         ),
@@ -845,8 +1082,9 @@ class _ModuleItemData {
 
 class _ModuleCardGroup extends StatelessWidget {
   final List<_ModuleItemData> items;
+  final double fontDelta;
 
-  const _ModuleCardGroup({required this.items});
+  const _ModuleCardGroup({required this.items, required this.fontDelta});
 
   @override
   Widget build(BuildContext context) {
@@ -904,20 +1142,20 @@ class _ModuleCardGroup extends StatelessWidget {
                             children: [
                               Text(
                                 item.title,
-                                style: const TextStyle(
-                                  color: Color(0xFF072B4F),
-                                  fontSize: 15,
+                                style: TextStyle(
+                                  color: const Color(0xFF072B4F),
+                                  fontSize: 15 + fontDelta,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 item.subtitle,
-                                maxLines: 2,
+                                maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontSize: 12.5,
+                                style: TextStyle(
+                                  color: const Color(0xFF64748B),
+                                  fontSize: 12.5 + fontDelta,
                                   height: 1.3,
                                 ),
                               ),
@@ -939,9 +1177,9 @@ class _ModuleCardGroup extends StatelessWidget {
                               NumberFormat.decimalPattern(
                                 Localizations.localeOf(context).toString(),
                               ).format(item.badgeCount),
-                              style: const TextStyle(
-                                color: Color(0xFF072B4F),
-                                fontSize: 11.5,
+                              style: TextStyle(
+                                color: const Color(0xFF072B4F),
+                                fontSize: 11.5 + fontDelta,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -978,11 +1216,13 @@ class _ModuleCardGroup extends StatelessWidget {
 // =============================================================================
 
 class _QuickToolsRow extends StatelessWidget {
+  final double fontDelta;
   final VoidCallback onTapNewEvent;
   final VoidCallback onTapNewSermon;
   final VoidCallback onTapPosterQr;
 
   const _QuickToolsRow({
+    required this.fontDelta,
     required this.onTapNewEvent,
     required this.onTapNewSermon,
     required this.onTapPosterQr,
@@ -995,35 +1235,54 @@ class _QuickToolsRow extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final spacing = constraints.maxWidth * 0.025;
-        return Row(
-          children: [
-            Expanded(
-              child: _QuickToolTile(
-                icon: Icons.event_available_rounded,
-                label: l10n.nuevoEvento,
-                color: const Color(0xFF9333EA),
-                onTap: onTapNewEvent,
-              ),
-            ),
-            SizedBox(width: spacing),
-            Expanded(
-              child: _QuickToolTile(
-                icon: Icons.record_voice_over_rounded,
-                label: l10n.nuevaPredica,
-                color: const Color(0xFF0284C7),
-                onTap: onTapNewSermon,
-              ),
-            ),
-            SizedBox(width: spacing),
-            Expanded(
-              child: _QuickToolTile(
-                icon: Icons.qr_code_2_rounded,
-                label: l10n.aficheQrOficial,
-                color: const Color(0xFF0D9488),
-                onTap: onTapPosterQr,
-              ),
-            ),
-          ],
+        final tiles = [
+          _QuickToolTile(
+            icon: Icons.event_available_rounded,
+            label: l10n.nuevoEvento,
+            color: const Color(0xFF9333EA),
+            fontDelta: fontDelta,
+            onTap: onTapNewEvent,
+          ),
+          _QuickToolTile(
+            icon: Icons.record_voice_over_rounded,
+            label: l10n.nuevaPredica,
+            color: const Color(0xFF0284C7),
+            fontDelta: fontDelta,
+            onTap: onTapNewSermon,
+          ),
+          _QuickToolTile(
+            icon: Icons.qr_code_2_rounded,
+            label: l10n.aficheQrOficial,
+            color: const Color(0xFF0D9488),
+            fontDelta: fontDelta,
+            onTap: onTapPosterQr,
+          ),
+        ];
+
+        final bool useTwoColumns =
+            fontDelta >= 4.0 && constraints.maxWidth < 460;
+        if (useTwoColumns) {
+          final double tileWidth = (constraints.maxWidth - spacing) / 2;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: tiles
+                .map((tile) => SizedBox(width: tileWidth, child: tile))
+                .toList(),
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: tiles[0]),
+              SizedBox(width: spacing),
+              Expanded(child: tiles[1]),
+              SizedBox(width: spacing),
+              Expanded(child: tiles[2]),
+            ],
+          ),
         );
       },
     );
@@ -1034,12 +1293,14 @@ class _QuickToolTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final double fontDelta;
   final VoidCallback onTap;
 
   const _QuickToolTile({
     required this.icon,
     required this.label,
     required this.color,
+    required this.fontDelta,
     required this.onTap,
   });
 
@@ -1074,12 +1335,12 @@ class _QuickToolTile extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 label,
-                maxLines: 2,
+                maxLines: 3,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF072B4F),
-                  fontSize: 12,
+                style: TextStyle(
+                  color: const Color(0xFF072B4F),
+                  fontSize: 12 + fontDelta,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
@@ -1097,7 +1358,9 @@ class _QuickToolTile extends StatelessWidget {
 // =============================================================================
 
 class _AdminAnnouncementsSheet extends StatelessWidget {
-  const _AdminAnnouncementsSheet();
+  final double fontDelta;
+
+  const _AdminAnnouncementsSheet({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -1137,17 +1400,18 @@ class _AdminAnnouncementsSheet extends StatelessWidget {
             ),
           ),
           SizedBox(height: usableHeight * 0.02),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  l10n.gestionAvisos,
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontSize: (screenWidth * 0.046).clamp(16.0, 20.0),
-                    fontWeight: FontWeight.bold,
-                  ),
+              Text(
+                l10n.gestionAvisos,
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: (screenWidth * 0.046).clamp(16.0, 20.0) + fontDelta,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               if (userProvider.canWrite)
@@ -1155,9 +1419,10 @@ class _AdminAnnouncementsSheet extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: amarilloOro,
                     foregroundColor: azulFondo,
+                    minimumSize: const Size(48, 48),
                     padding: EdgeInsetsDirectional.symmetric(
-                      horizontal: screenWidth * 0.03,
-                      vertical: usableHeight * 0.008,
+                      horizontal: screenWidth * 0.035,
+                      vertical: usableHeight * 0.01,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1168,13 +1433,17 @@ class _AdminAnnouncementsSheet extends StatelessWidget {
                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
-                      builder: (_) => const _AdminCreateAnnouncementSheet(),
+                      builder: (_) =>
+                          _AdminCreateAnnouncementSheet(fontDelta: fontDelta),
                     );
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(
                     l10n.publicarAviso,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 14 + fontDelta,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
             ],
@@ -1192,9 +1461,11 @@ class _AdminAnnouncementsSheet extends StatelessWidget {
                   return Center(
                     child: Text(
                       l10n.sinAvisosActivos,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: (screenWidth * 0.036).clamp(13.0, 15.0),
+                        fontSize:
+                            (screenWidth * 0.036).clamp(13.0, 15.0) + fontDelta,
                       ),
                     ),
                   );
@@ -1230,32 +1501,37 @@ class _AdminAnnouncementsSheet extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   a.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: azulFondo,
-                                    fontSize: 14.5,
+                                    fontSize: 14.5 + fontDelta,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                               if (userProvider.canWrite)
                                 IconButton(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 48,
+                                    minHeight: 48,
+                                  ),
                                   icon: const Icon(
                                     Icons.delete_outline,
                                     size: 20,
                                     color: Colors.red,
                                   ),
-                                  onPressed: () => prov.deleteAnnouncement(a.id),
+                                  onPressed: () =>
+                                      prov.deleteAnnouncement(a.id),
                                 ),
                             ],
                           ),
                           SizedBox(height: usableHeight * 0.006),
                           Text(
                             a.plainContent,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.black87,
-                              fontSize: 13,
+                              fontSize: 13 + fontDelta,
                             ),
-                            maxLines: 3,
+                            maxLines: 4,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -1273,7 +1549,9 @@ class _AdminAnnouncementsSheet extends StatelessWidget {
 }
 
 class _AdminCreateAnnouncementSheet extends StatefulWidget {
-  const _AdminCreateAnnouncementSheet();
+  final double fontDelta;
+
+  const _AdminCreateAnnouncementSheet({this.fontDelta = 0.0});
 
   @override
   State<_AdminCreateAnnouncementSheet> createState() =>
@@ -1409,9 +1687,9 @@ class _AdminCreateAnnouncementSheetState
                         children: [
                           Text(
                             l10n.publicarAviso,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: azulFondo,
-                              fontSize: 17,
+                              fontSize: 17 + widget.fontDelta,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1419,13 +1697,17 @@ class _AdminCreateAnnouncementSheetState
                             l10n.perfilSubtituloAvisos,
                             style: TextStyle(
                               color: Colors.grey.shade600,
-                              fontSize: 12,
+                              fontSize: 12 + widget.fontDelta,
                             ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
                       icon: const Icon(Icons.close_rounded),
                       tooltip: l10n.cancelar,
                       onPressed: _isSubmitting
@@ -1451,9 +1733,9 @@ class _AdminCreateAnnouncementSheetState
                       children: [
                         Text(
                           l10n.tituloAviso,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: azulFondo,
-                            fontSize: 13,
+                            fontSize: 13 + widget.fontDelta,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1461,6 +1743,7 @@ class _AdminCreateAnnouncementSheetState
                         TextFormField(
                           controller: _titleCtrl,
                           enabled: !_isSubmitting,
+                          style: TextStyle(fontSize: 14 + widget.fontDelta),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
@@ -1479,9 +1762,9 @@ class _AdminCreateAnnouncementSheetState
                         SizedBox(height: usableHeight * 0.018),
                         Text(
                           l10n.contenidoAviso,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: azulFondo,
-                            fontSize: 13,
+                            fontSize: 13 + widget.fontDelta,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1490,6 +1773,7 @@ class _AdminCreateAnnouncementSheetState
                           controller: _contentCtrl,
                           enabled: !_isSubmitting,
                           maxLines: 4,
+                          style: TextStyle(fontSize: 14 + widget.fontDelta),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
@@ -1504,15 +1788,19 @@ class _AdminCreateAnnouncementSheetState
                         SizedBox(height: usableHeight * 0.018),
                         Text(
                           l10n.seleccionarAudiencia,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: azulFondo,
-                            fontSize: 13,
+                            fontSize: 13 + widget.fontDelta,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<int?>(
                           initialValue: _selectedGroupId,
+                          style: TextStyle(
+                            color: azulFondo,
+                            fontSize: 14 + widget.fontDelta,
+                          ),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,
@@ -1554,10 +1842,10 @@ class _AdminCreateAnnouncementSheetState
                           child: SwitchListTile(
                             title: Text(
                               l10n.fijarAviso,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: azulFondo,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13.5,
+                                fontSize: 13.5 + widget.fontDelta,
                               ),
                             ),
                             value: _pinned,
@@ -1574,6 +1862,7 @@ class _AdminCreateAnnouncementSheetState
                             style: ElevatedButton.styleFrom(
                               backgroundColor: amarilloOro,
                               foregroundColor: azulFondo,
+                              minimumSize: const Size(48, 48),
                               padding: const EdgeInsetsDirectional.symmetric(
                                 vertical: 14,
                               ),
@@ -1594,9 +1883,9 @@ class _AdminCreateAnnouncementSheetState
                                 : const Icon(Icons.send_rounded, size: 18),
                             label: Text(
                               l10n.publicar,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                                fontSize: 15 + widget.fontDelta,
                               ),
                             ),
                           ),
@@ -1615,7 +1904,9 @@ class _AdminCreateAnnouncementSheetState
 }
 
 class _AdminGroupsSheet extends StatelessWidget {
-  const _AdminGroupsSheet();
+  final double fontDelta;
+
+  const _AdminGroupsSheet({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -1658,7 +1949,7 @@ class _AdminGroupsSheet extends StatelessWidget {
             l10n.gestionGrupos,
             style: TextStyle(
               color: azulFondo,
-              fontSize: (screenWidth * 0.046).clamp(16.0, 20.0),
+              fontSize: (screenWidth * 0.046).clamp(16.0, 20.0) + fontDelta,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1675,7 +1966,11 @@ class _AdminGroupsSheet extends StatelessWidget {
                   return Center(
                     child: Text(
                       l10n.sinGruposConfigurados,
-                      style: TextStyle(color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14 + fontDelta,
+                      ),
                     ),
                   );
                 }
@@ -1692,12 +1987,16 @@ class _AdminGroupsSheet extends StatelessWidget {
                       ),
                       title: Text(
                         g.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 15 + fontDelta,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       subtitle: Text(
                         g.description.isNotEmpty
                             ? g.description
                             : l10n.miembrosCount(g.memberCount),
+                        style: TextStyle(fontSize: 13 + fontDelta),
                       ),
                       trailing: Container(
                         padding: const EdgeInsetsDirectional.symmetric(
@@ -1712,9 +2011,10 @@ class _AdminGroupsSheet extends StatelessWidget {
                           NumberFormat.decimalPattern(
                             Localizations.localeOf(context).toString(),
                           ).format(g.memberCount),
-                          style: const TextStyle(
+                          style: TextStyle(
+                            fontSize: 13 + fontDelta,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF9E6500),
+                            color: const Color(0xFF9E6500),
                           ),
                         ),
                       ),
@@ -1731,7 +2031,9 @@ class _AdminGroupsSheet extends StatelessWidget {
 }
 
 class _AdminInboxNotificationsSheet extends StatelessWidget {
-  const _AdminInboxNotificationsSheet();
+  final double fontDelta;
+
+  const _AdminInboxNotificationsSheet({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -1767,15 +2069,22 @@ class _AdminInboxNotificationsSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.buzonAlertas,
-                  style: const TextStyle(
-                    color: azulFondo,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    l10n.buzonAlertas,
+                    style: TextStyle(
+                      color: azulFondo,
+                      fontSize: 17 + fontDelta,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 IconButton(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  tooltip: l10n.cancelar,
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -1788,7 +2097,11 @@ class _AdminInboxNotificationsSheet extends StatelessWidget {
                 ? Center(
                     child: Text(
                       l10n.sinNotificacionesAdmin,
-                      style: TextStyle(color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14 + fontDelta,
+                      ),
                     ),
                   )
                 : ListView.separated(
@@ -1813,19 +2126,19 @@ class _AdminInboxNotificationsSheet extends StatelessWidget {
                           children: [
                             Text(
                               n.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: azulFondo,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 14 + fontDelta,
                               ),
                             ),
                             if (n.message.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 n.message,
-                                style: const TextStyle(
-                                  color: Color(0xFF475569),
-                                  fontSize: 12.5,
+                                style: TextStyle(
+                                  color: const Color(0xFF475569),
+                                  fontSize: 12.5 + fontDelta,
                                 ),
                               ),
                             ],
@@ -1840,4 +2153,3 @@ class _AdminInboxNotificationsSheet extends StatelessWidget {
     );
   }
 }
-

@@ -2306,5 +2306,26 @@
   "volver": "Volver",
   "@volver": {
     "description": "Tooltip o etiqueta para regresar a la pantalla anterior"
+  },
+  "reducirTamanoLetra": "Reducir tamaño de letra",
+  "@reducirTamanoLetra": {
+    "description": "Tooltip y semántica para disminuir el tamaño de fuente"
+  },
+  "aumentarTamanoLetra": "Aumentar tamaño de letra",
+  "@aumentarTamanoLetra": {
+    "description": "Tooltip y semántica para aumentar el tamaño de fuente"
+  },
+  "restablecerTamanoLetra": "Restablecer tamaño de letra",
+  "@restablecerTamanoLetra": {
+    "description": "Tooltip y semántica para volver al tamaño de fuente predeterminado"
+  },
+  "tamanoLetraActual": "{size} pt",
+  "@tamanoLetraActual": {
+    "description": "Indicador compacto del tamaño base de fuente actual en puntos",
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
@@ -27,17 +28,53 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
   static const Color amarilloOro = Color(0xFFE5A023);
   static const Color blancoFondo = Color(0xFFFAF7F0);
   static const Color grisBorde = Color(0xFFEFEFEF);
+  static const String _fontSizePrefsKey = 'iglesia_base_font_size';
+  static const double _defaultBaseFontSize = 14.0;
+  static const double _minBaseFontSize = 14.0;
+  static const double _maxBaseFontSize = 22.0;
+  static const double _fontSizeStep = 1.0;
+
   bool _avisoBloqueadoPorUgc = false;
+  double _baseFontSize = _defaultBaseFontSize;
+
+  double get _fontDelta => _baseFontSize - _defaultBaseFontSize;
 
   @override
   void initState() {
     super.initState();
+    _cargarAjustesVisuales();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<IglesiaProvider>(context, listen: false);
       if (provider.iglesiaActual == null && !provider.isLoading) {
         provider.cargarIglesiaSeleccionada();
       }
     });
+  }
+
+  Future<void> _cargarAjustesVisuales() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSize = prefs.getDouble(_fontSizePrefsKey);
+      if (savedSize != null && mounted) {
+        setState(() {
+          _baseFontSize = savedSize.clamp(_minBaseFontSize, _maxBaseFontSize);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _guardarAjustesVisuales(double size) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_fontSizePrefsKey, size);
+    } catch (_) {}
+  }
+
+  void _actualizarTamanoLetra(double newSize) {
+    final double clamped = newSize.clamp(_minBaseFontSize, _maxBaseFontSize);
+    if (clamped == _baseFontSize) return;
+    setState(() => _baseFontSize = clamped);
+    _guardarAjustesVisuales(clamped);
   }
 
   Future<void> _hacerLlamada(BuildContext context, String telefono) async {
@@ -181,7 +218,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                 l10n?.compartirUbicacion ?? 'Compartir ubicación',
                 style: TextStyle(
                   color: azulFondo,
-                  fontSize: screenWidth * 0.046,
+                  fontSize: screenWidth * 0.046 + _fontDelta,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -197,7 +234,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
               l10n?.plusCodeCopiadoPregunta ?? 'El Plus Code ha sido copiado al portapapeles. ¿Deseas compartirlo directamente?',
               style: TextStyle(
                 color: Colors.black87,
-                fontSize: screenWidth * 0.035,
+                fontSize: screenWidth * 0.035 + _fontDelta,
                 height: 1.35,
               ),
             ),
@@ -226,7 +263,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       plusCode,
                       style: TextStyle(
                         color: azulFondo,
-                        fontSize: screenWidth * 0.034,
+                        fontSize: screenWidth * 0.034 + _fontDelta,
                         fontWeight: FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -249,6 +286,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       backgroundColor: const Color(0xFF25D366),
                       foregroundColor: Colors.white,
                       elevation: 0,
+                      minimumSize: const Size(48, 48),
                       padding: EdgeInsets.symmetric(
                         vertical: usableHeight * 0.012,
                       ),
@@ -265,7 +303,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     label: Text(
                       'WhatsApp',
                       style: TextStyle(
-                        fontSize: screenWidth * 0.035,
+                        fontSize: screenWidth * 0.035 + _fontDelta,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -290,6 +328,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       backgroundColor: azulFondo,
                       foregroundColor: Colors.white,
                       elevation: 0,
+                      minimumSize: const Size(48, 48),
                       padding: EdgeInsets.symmetric(
                         vertical: usableHeight * 0.012,
                       ),
@@ -303,7 +342,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     label: Text(
                       l10n?.correo ?? 'Correo',
                       style: TextStyle(
-                        fontSize: screenWidth * 0.035,
+                        fontSize: screenWidth * 0.035 + _fontDelta,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -333,12 +372,13 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
         actions: [
           Center(
             child: TextButton(
+              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
               onPressed: () => Navigator.pop(dialogCtx),
               child: Text(
                 l10n?.cerrar ?? 'Cerrar',
                 style: TextStyle(
                   color: Colors.grey.shade600,
-                  fontSize: screenWidth * 0.038,
+                  fontSize: screenWidth * 0.038 + _fontDelta,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -389,17 +429,21 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: screenWidth * 0.035,
+                  fontSize: screenWidth * 0.035 + _fontDelta,
                 ),
               ),
               SizedBox(height: usableHeight * 0.02),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: amarilloOro),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: amarilloOro,
+                  minimumSize: const Size(48, 48),
+                ),
                 onPressed: () => iglesiaProvider.cargarIglesiaSeleccionada(),
                 child: Text(
                   l10n?.reintentar ?? 'Reintentar',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: azulFondo,
+                    fontSize: 14 + _fontDelta,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -414,6 +458,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
       return _SinIglesiaSeleccionadaView(
         screenWidth: screenWidth,
         usableHeight: usableHeight,
+        fontDelta: _fontDelta,
       );
     }
 
@@ -422,93 +467,100 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
         // Encabezado
         Container(
           width: screenWidth,
-          padding: EdgeInsets.fromLTRB(
+          padding: EdgeInsetsDirectional.fromSTEB(
             screenWidth * 0.05,
             usableHeight * 0.01,
             screenWidth * 0.05,
             usableHeight * 0.02,
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _ChurchQrAvatar(
-                iglesia: iglesia,
-                screenWidth: screenWidth,
-                usableHeight: usableHeight,
-                azulFondo: azulFondo,
-                amarilloOro: amarilloOro,
+              _IglesiaFontSizeControlBar(
+                baseFontSize: _baseFontSize,
+                minBaseFontSize: _minBaseFontSize,
+                maxBaseFontSize: _maxBaseFontSize,
+                onDecrease: () =>
+                    _actualizarTamanoLetra(_baseFontSize - _fontSizeStep),
+                onIncrease: () =>
+                    _actualizarTamanoLetra(_baseFontSize + _fontSizeStep),
               ),
-              SizedBox(width: screenWidth * 0.035),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              SizedBox(height: usableHeight * 0.012),
+              Row(
+                children: [
+                  _ChurchQrAvatar(
+                    iglesia: iglesia,
+                    screenWidth: screenWidth,
+                    usableHeight: usableHeight,
+                    azulFondo: azulFondo,
+                    amarilloOro: amarilloOro,
+                  ),
+                  SizedBox(width: screenWidth * 0.035),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            maxLines: 2,
-                            iglesia.nombre,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: screenWidth * 0.048,
-                              fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                maxLines: 3,
+                                iglesia.nombre,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: screenWidth * 0.048 + _fontDelta,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            if (iglesia.esVerificada) ...[
+                              SizedBox(width: screenWidth * 0.015),
+                              Tooltip(
+                                message:
+                                    l10n?.iglesiaVerificadaTooltip ??
+                                    'Congregación verificada',
+                                child: Icon(
+                                  Icons.verified_rounded,
+                                  color: amarilloOro,
+                                  size: screenWidth * 0.045,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        SizedBox(height: usableHeight * 0.004),
+                        Semantics(
+                          label:
+                              l10n?.resenasCalificacionSemantics(
+                                iglesia.calificacion.toString(),
+                                iglesia.totalResenas,
+                              ) ??
+                              'Calificación ${iglesia.calificacion} de 5',
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: screenWidth * 0.01,
+                            runSpacing: 2,
+                            children: [
+                              Icon(
+                                Icons.star_rounded,
+                                color: amarilloOro,
+                                size: screenWidth * 0.038,
+                              ),
+                              Text(
+                                '${iglesia.calificacion} (${iglesia.totalResenas}) · ${iglesia.denominacion} · ${iglesia.distancia}',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: screenWidth * 0.03 + _fontDelta,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        if (iglesia.esVerificada) ...[
-                          SizedBox(width: screenWidth * 0.015),
-                          Tooltip(
-                            message:
-                                l10n?.iglesiaVerificadaTooltip ??
-                                'Congregación verificada',
-                            child: Icon(
-                              Icons.verified_rounded,
-                              color: amarilloOro,
-                              size: screenWidth * 0.045,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                    SizedBox(height: usableHeight * 0.004),
-                    Semantics(
-                      label:
-                          l10n?.resenasCalificacionSemantics(
-                            iglesia.calificacion.toString(),
-                            iglesia.totalResenas,
-                          ) ??
-                          'Calificación ${iglesia.calificacion} de 5',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.star_rounded,
-                            color: amarilloOro,
-                            size: screenWidth * 0.038,
-                          ),
-                          SizedBox(width: screenWidth * 0.01),
-                          Text(
-                            '${iglesia.calificacion} (${iglesia.totalResenas}) · ',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: screenWidth * 0.03,
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '${iglesia.denominacion} · ${iglesia.distancia}',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: screenWidth * 0.03,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -599,7 +651,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                       style: TextStyle(
                                         color: azulFondo,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: screenWidth * 0.038,
+                                        fontSize:
+                                            screenWidth * 0.038 + _fontDelta,
                                       ),
                                     ),
                                     SizedBox(height: usableHeight * 0.002),
@@ -608,7 +661,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                           'Explora y selecciona otra comunidad',
                                       style: TextStyle(
                                         color: Colors.black54,
-                                        fontSize: screenWidth * 0.029,
+                                        fontSize:
+                                            screenWidth * 0.029 + _fontDelta,
                                       ),
                                     ),
                                   ],
@@ -685,7 +739,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                       style: TextStyle(
                                         color: azulFondo,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: screenWidth * 0.038,
+                                        fontSize:
+                                            screenWidth * 0.038 + _fontDelta,
                                       ),
                                     ),
                                     SizedBox(height: usableHeight * 0.002),
@@ -694,7 +749,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                           'Unirme a esta congregación',
                                       style: TextStyle(
                                         color: Colors.black54,
-                                        fontSize: screenWidth * 0.029,
+                                        fontSize:
+                                            screenWidth * 0.029 + _fontDelta,
                                       ),
                                     ),
                                   ],
@@ -712,29 +768,60 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     ),
                     SizedBox(height: usableHeight * 0.02),
                     // Acciones rápidas (Cómo llegar conectado a _abrirNavegacion)
-                    Row(
-                      children: [
-                        _buildQuickAction(
-                          screenWidth,
-                          Icons.call_outlined,
-                          l10n?.llamar ?? 'Llamar',
-                          () => _hacerLlamada(context, iglesia.telefono),
-                        ),
-                        SizedBox(width: screenWidth * 0.03),
-                        _buildQuickAction(
-                          screenWidth,
-                          Icons.directions_outlined,
-                          l10n?.comoLlegar ?? 'Cómo llegar',
-                          () => _abrirNavegacion(iglesia),
-                        ),
-                        SizedBox(width: screenWidth * 0.03),
-                        _buildQuickAction(
-                          screenWidth,
-                          Icons.language_outlined,
-                          l10n?.sitioWeb ?? 'Sitio web',
-                          () => _abrirSitioWeb(context, iglesia.sitioWeb),
-                        ),
-                      ],
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double spacing = screenWidth * 0.03;
+                        final tiles = [
+                          _buildQuickAction(
+                            screenWidth,
+                            Icons.call_outlined,
+                            l10n?.llamar ?? 'Llamar',
+                            () => _hacerLlamada(context, iglesia.telefono),
+                          ),
+                          _buildQuickAction(
+                            screenWidth,
+                            Icons.directions_outlined,
+                            l10n?.comoLlegar ?? 'Cómo llegar',
+                            () => _abrirNavegacion(iglesia),
+                          ),
+                          _buildQuickAction(
+                            screenWidth,
+                            Icons.language_outlined,
+                            l10n?.sitioWeb ?? 'Sitio web',
+                            () => _abrirSitioWeb(context, iglesia.sitioWeb),
+                          ),
+                        ];
+
+                        final bool useTwoColumns =
+                            _fontDelta >= 4.0 && constraints.maxWidth < 460;
+                        if (useTwoColumns) {
+                          final double tileWidth =
+                              (constraints.maxWidth - spacing) / 2;
+                          return Wrap(
+                            spacing: spacing,
+                            runSpacing: spacing,
+                            children: tiles
+                                .map(
+                                  (tile) =>
+                                      SizedBox(width: tileWidth, child: tile),
+                                )
+                                .toList(),
+                          );
+                        }
+
+                        return IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: tiles[0]),
+                              SizedBox(width: spacing),
+                              Expanded(child: tiles[1]),
+                              SizedBox(width: spacing),
+                              Expanded(child: tiles[2]),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     if (iglesia.puedeRecibirOfrendas &&
                         context.watch<UserProvider>().isChurchKycApproved) ...[
@@ -742,6 +829,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                       _OfferingVerifiedActionCard(
                         screenWidth: screenWidth,
                         usableHeight: usableHeight,
+                        fontDelta: _fontDelta,
                         onTap: () => Navigator.pushNamed(
                           context,
                           DonacionesScreen.routeName,
@@ -764,59 +852,71 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                           end: Alignment.bottomRight,
                         ),
                       ),
-                      child: Row(
+                      child: Wrap(
+                        spacing: screenWidth * 0.035,
+                        runSpacing: usableHeight * 0.014,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        alignment: WrapAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: EdgeInsets.all(screenWidth * 0.025),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(
-                                screenWidth * 0.028,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(screenWidth * 0.025),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.028,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.live_tv_rounded,
+                                  color: amarilloOro,
+                                  size: screenWidth * 0.065,
+                                ),
                               ),
-                            ),
-                            child: Icon(
-                              Icons.live_tv_rounded,
-                              color: amarilloOro,
-                              size: screenWidth * 0.065,
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.035),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  iglesia.proximoCulto.titulo,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: screenWidth * 0.04,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              SizedBox(width: screenWidth * 0.035),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      iglesia.proximoCulto.titulo,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize:
+                                            screenWidth * 0.04 + _fontDelta,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: usableHeight * 0.004),
+                                    Text(
+                                      iglesia.proximoCulto.diaHora,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                        fontSize:
+                                            screenWidth * 0.031 + _fontDelta,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                SizedBox(height: usableHeight * 0.004),
-                                Text(
-                                  iglesia.proximoCulto.diaHora,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: screenWidth * 0.031,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: screenWidth * 0.02),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: amarilloOro,
                               foregroundColor: azulFondo,
                               elevation: 0,
-                              minimumSize: const Size(0, 44),
+                              minimumSize: const Size(48, 48),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   screenWidth * 0.025,
                                 ),
                               ),
-                              padding: const EdgeInsets.symmetric(
+                              padding: const EdgeInsetsDirectional.symmetric(
                                 horizontal: 14,
                                 vertical: 10,
                               ),
@@ -832,7 +932,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                             label: Text(
                               l10n?.verAhora ?? 'Ver ahora',
                               style: TextStyle(
-                                fontSize: screenWidth * 0.032,
+                                fontSize: screenWidth * 0.032 + _fontDelta,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -956,7 +1056,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                     iglesia.avisoActual.titulo,
                                     style: TextStyle(
                                       color: azulFondo,
-                                      fontSize: screenWidth * 0.036,
+                                      fontSize:
+                                          screenWidth * 0.036 + _fontDelta,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -965,7 +1066,8 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                                     iglesia.avisoActual.descripcion,
                                     style: TextStyle(
                                       color: Colors.black87,
-                                      fontSize: screenWidth * 0.032,
+                                      fontSize:
+                                          screenWidth * 0.032 + _fontDelta,
                                       height: 1.35,
                                     ),
                                   ),
@@ -975,6 +1077,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                             _UgcSafetyMenuButton(
                               contentId: iglesia.id,
                               contentType: 'church_notice',
+                              fontDelta: _fontDelta,
                               onAuthorBlocked: () {
                                 setState(() {
                                   _avisoBloqueadoPorUgc = true;
@@ -1002,52 +1105,53 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     String label,
     VoidCallback onTap,
   ) {
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(screenWidth * 0.035),
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.035),
-              border: Border.all(color: grisBorde),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(screenWidth * 0.035),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.02,
+            vertical: screenWidth * 0.035,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(screenWidth * 0.035),
+            border: Border.all(color: grisBorde),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.022),
+                decoration: BoxDecoration(
+                  color: azulFondo.withValues(alpha: 0.06),
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(screenWidth * 0.022),
-                  decoration: BoxDecoration(
-                    color: azulFondo.withValues(alpha: 0.06),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: azulFondo,
-                    size: screenWidth * 0.058,
-                  ),
+                child: Icon(icon, color: azulFondo, size: screenWidth * 0.058),
+              ),
+              SizedBox(height: screenWidth * 0.015),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: azulFondo,
+                  fontSize: screenWidth * 0.03 + _fontDelta,
+                  fontWeight: FontWeight.w600,
                 ),
-                SizedBox(height: screenWidth * 0.015),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: azulFondo,
-                    fontSize: screenWidth * 0.03,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1056,15 +1160,15 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
 
   Widget _sectionLabel(String text, double screenWidth, double usableHeight) {
     return Padding(
-      padding: EdgeInsets.only(
+      padding: EdgeInsetsDirectional.only(
         bottom: usableHeight * 0.01,
-        left: screenWidth * 0.01,
+        start: screenWidth * 0.01,
       ),
       child: Text(
         text,
         style: TextStyle(
           color: azulFondo,
-          fontSize: screenWidth * 0.035,
+          fontSize: screenWidth * 0.035 + _fontDelta,
           fontWeight: FontWeight.bold,
           letterSpacing: screenWidth * 0.001,
         ),
@@ -1077,6 +1181,7 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
     double screenWidth,
     double usableHeight,
   ) {
+    final bool stackFields = _fontDelta >= 4.0;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1095,9 +1200,39 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
         children: List.generate(rows.length, (index) {
           final row = rows[index];
           final isLast = index == rows.length - 1;
+          final valueWidget = Row(
+            mainAxisAlignment: stackFields
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  row.value,
+                  textAlign: stackFields ? TextAlign.start : TextAlign.end,
+                  style: TextStyle(
+                    color: row.onTap != null ? azulFondo : Colors.grey.shade700,
+                    fontWeight: row.onTap != null
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: screenWidth * 0.034 + _fontDelta,
+                  ),
+                ),
+              ),
+              if (row.trailingIcon != null) ...[
+                SizedBox(width: screenWidth * 0.015),
+                Icon(
+                  row.trailingIcon,
+                  color: amarilloOro,
+                  size: screenWidth * 0.045,
+                ),
+              ],
+            ],
+          );
+
           return InkWell(
             onTap: row.onTap,
             child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
               padding: EdgeInsets.symmetric(
                 horizontal: screenWidth * 0.04,
                 vertical: usableHeight * 0.015,
@@ -1107,56 +1242,170 @@ class _IglesiaScreenState extends State<IglesiaScreen> {
                     ? null
                     : const Border(bottom: BorderSide(color: grisBorde)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(row.icon, color: azulFondo, size: screenWidth * 0.055),
-                  SizedBox(width: screenWidth * 0.03),
-                  Text(
-                    row.label,
-                    style: TextStyle(
-                      color: azulFondo,
-                      fontSize: screenWidth * 0.036,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+              child: stackFields
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          children: [
+                            Icon(
+                              row.icon,
+                              color: azulFondo,
+                              size: screenWidth * 0.055,
+                            ),
+                            SizedBox(width: screenWidth * 0.03),
+                            Expanded(
+                              child: Text(
+                                row.label,
+                                style: TextStyle(
+                                  color: azulFondo,
+                                  fontSize: screenWidth * 0.036 + _fontDelta,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: usableHeight * 0.006),
+                        Padding(
+                          padding: EdgeInsetsDirectional.only(
+                            start: screenWidth * 0.085,
+                          ),
+                          child: valueWidget,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          row.icon,
+                          color: azulFondo,
+                          size: screenWidth * 0.055,
+                        ),
+                        SizedBox(width: screenWidth * 0.03),
                         Flexible(
                           child: Text(
-                            row.value,
-                            textAlign: TextAlign.end,
+                            row.label,
                             style: TextStyle(
-                              color: row.onTap != null
-                                  ? azulFondo
-                                  : Colors.grey.shade700,
-                              fontWeight: row.onTap != null
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize: screenWidth * 0.034,
+                              color: azulFondo,
+                              fontSize: screenWidth * 0.036 + _fontDelta,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                        if (row.trailingIcon != null) ...[
-                          SizedBox(width: screenWidth * 0.015),
-                          Icon(
-                            row.trailingIcon,
-                            color: amarilloOro,
-                            size: screenWidth * 0.045,
-                          ),
-                        ],
+                        SizedBox(width: screenWidth * 0.02),
+                        Expanded(flex: 2, child: valueWidget),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _IglesiaFontSizeControlBar extends StatelessWidget {
+  final double baseFontSize;
+  final double minBaseFontSize;
+  final double maxBaseFontSize;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  const _IglesiaFontSizeControlBar({
+    required this.baseFontSize,
+    required this.minBaseFontSize,
+    required this.maxBaseFontSize,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bool canDecrease = baseFontSize > minBaseFontSize;
+    final bool canIncrease = baseFontSize < maxBaseFontSize;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            button: true,
+            enabled: canDecrease,
+            label: l10n.reducirTamanoLetra,
+            child: Tooltip(
+              message: l10n.reducirTamanoLetra,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  start: Radius.circular(14),
+                ).resolve(Directionality.of(context)),
+                onTap: canDecrease ? onDecrease : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A-',
+                      style: TextStyle(
+                        color: canDecrease
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.38),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 24,
+            color: Colors.white.withValues(alpha: 0.22),
+          ),
+          Semantics(
+            button: true,
+            enabled: canIncrease,
+            label: l10n.aumentarTamanoLetra,
+            child: Tooltip(
+              message: l10n.aumentarTamanoLetra,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  end: Radius.circular(14),
+                ).resolve(Directionality.of(context)),
+                onTap: canIncrease ? onIncrease : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A+',
+                      style: TextStyle(
+                        color: canIncrease
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.38),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1181,10 +1430,12 @@ class _InfoRow {
 class _SinIglesiaSeleccionadaView extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
+  final double fontDelta;
 
   const _SinIglesiaSeleccionadaView({
     required this.screenWidth,
     required this.usableHeight,
+    this.fontDelta = 0.0,
   });
 
   @override
@@ -1225,7 +1476,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: screenWidth * 0.052,
+                  fontSize: screenWidth * 0.052 + fontDelta,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1235,7 +1486,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white70,
-                  fontSize: screenWidth * 0.035,
+                  fontSize: screenWidth * 0.035 + fontDelta,
                   height: 1.4,
                 ),
               ),
@@ -1247,6 +1498,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: amarilloOro,
                     foregroundColor: azulFondo,
+                    minimumSize: const Size(48, 48),
                     padding: EdgeInsets.symmetric(
                       vertical: usableHeight * 0.016,
                     ),
@@ -1259,7 +1511,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                   label: Text(
                     l10n?.escanearQrIglesia ?? 'Escanear QR de Iglesia',
                     style: TextStyle(
-                      fontSize: screenWidth * 0.038,
+                      fontSize: screenWidth * 0.038 + fontDelta,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1276,6 +1528,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white38),
+                    minimumSize: const Size(48, 48),
                     padding: EdgeInsets.symmetric(
                       vertical: usableHeight * 0.016,
                     ),
@@ -1287,7 +1540,7 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
                   label: Text(
                     l10n?.explorarEnElMapa ?? 'Explorar en el mapa',
                     style: TextStyle(
-                      fontSize: screenWidth * 0.038,
+                      fontSize: screenWidth * 0.038 + fontDelta,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1312,12 +1565,14 @@ class _SinIglesiaSeleccionadaView extends StatelessWidget {
 class _OfferingVerifiedActionCard extends StatelessWidget {
   final double screenWidth;
   final double usableHeight;
+  final double fontDelta;
   final VoidCallback onTap;
 
   const _OfferingVerifiedActionCard({
     required this.screenWidth,
     required this.usableHeight,
     required this.onTap,
+    this.fontDelta = 0.0,
   });
 
   @override
@@ -1379,7 +1634,7 @@ class _OfferingVerifiedActionCard extends StatelessWidget {
                             style: TextStyle(
                               color: azulFondo,
                               fontWeight: FontWeight.bold,
-                              fontSize: screenWidth * 0.038,
+                              fontSize: screenWidth * 0.038 + fontDelta,
                             ),
                           ),
                         ),
@@ -1397,7 +1652,7 @@ class _OfferingVerifiedActionCard extends StatelessWidget {
                           'Aporte voluntario y diezmos (Entidad verificada)',
                       style: TextStyle(
                         color: Colors.black54,
-                        fontSize: screenWidth * 0.029,
+                        fontSize: screenWidth * 0.029 + fontDelta,
                       ),
                     ),
                   ],
@@ -1421,12 +1676,14 @@ class _OfferingVerifiedActionCard extends StatelessWidget {
 class _UgcSafetyMenuButton extends StatelessWidget {
   final int contentId;
   final String contentType;
+  final double fontDelta;
   final VoidCallback onAuthorBlocked;
 
   const _UgcSafetyMenuButton({
     required this.contentId,
     required this.contentType,
     required this.onAuthorBlocked,
+    this.fontDelta = 0.0,
   });
 
   @override
@@ -1485,7 +1742,7 @@ class _UgcSafetyMenuButton extends StatelessWidget {
                   child: Text(
                     l10n?.ugcReportarContenido ??
                         'Reportar contenido inapropiado',
-                    style: const TextStyle(fontSize: 13.5),
+                    style: TextStyle(fontSize: 13.5 + fontDelta),
                   ),
                 ),
               ],
@@ -1504,9 +1761,9 @@ class _UgcSafetyMenuButton extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n?.ugcBloquearUsuario ?? 'Bloquear autor / contenido',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: Color(0xFFDC2626),
+                    style: TextStyle(
+                      fontSize: 13.5 + fontDelta,
+                      color: const Color(0xFFDC2626),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1539,7 +1796,7 @@ class _UgcSafetyMenuButton extends StatelessWidget {
           style: TextStyle(
             color: azulFondo,
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 18 + fontDelta,
           ),
         ),
         content: Column(
@@ -1548,7 +1805,10 @@ class _UgcSafetyMenuButton extends StatelessWidget {
           children: [
             Text(
               l10n?.ugcMotivoReporteSubtitulo ?? 'Selecciona el motivo por el cual deseas reportar esta publicación:',
-              style: const TextStyle(fontSize: 13.5, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 13.5 + fontDelta,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 12),
             ...reasons.map(
@@ -1558,7 +1818,7 @@ class _UgcSafetyMenuButton extends StatelessWidget {
                   Icons.report_problem_outlined,
                   color: Color(0xFFD97706),
                 ),
-                title: Text(r, style: const TextStyle(fontSize: 14)),
+                title: Text(r, style: TextStyle(fontSize: 14 + fontDelta)),
                 onTap: () => Navigator.of(dialogCtx).pop(r),
               ),
             ),

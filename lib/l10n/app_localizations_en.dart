@@ -4519,4 +4519,18 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get reducirTamanoLetra => 'Decrease font size';
+
+  @override
+  String get aumentarTamanoLetra => 'Increase font size';
+
+  @override
+  String get restablecerTamanoLetra => 'Reset font size';
+
+  @override
+  String tamanoLetraActual(int size) {
+    return '$size pt';
+  }
 }

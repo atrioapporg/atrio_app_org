@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/modelos/admin_models.dart';
 import 'package:atrio/providers/admin_provider.dart';
@@ -29,12 +30,49 @@ class ChurchAdminDashboardScreen extends StatefulWidget {
 
 class _ChurchAdminDashboardScreenState
     extends State<ChurchAdminDashboardScreen> {
+  static const String _fontSizePrefsKey = 'admin_iglesia_base_font_size';
+  static const double _defaultBaseFontSize = 14.0;
+  static const double _minBaseFontSize = 14.0;
+  static const double _maxBaseFontSize = 22.0;
+  static const double _fontSizeStep = 1.0;
+
+  double _baseFontSize = _defaultBaseFontSize;
+
+  double get _fontDelta => _baseFontSize - _defaultBaseFontSize;
+
   @override
   void initState() {
     super.initState();
+    _cargarAjustesVisuales();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDashboardData();
     });
+  }
+
+  Future<void> _cargarAjustesVisuales() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSize = prefs.getDouble(_fontSizePrefsKey);
+      if (savedSize != null && mounted) {
+        setState(() {
+          _baseFontSize = savedSize.clamp(_minBaseFontSize, _maxBaseFontSize);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _guardarAjustesVisuales(double size) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_fontSizePrefsKey, size);
+    } catch (_) {}
+  }
+
+  void _actualizarTamanoLetra(double newSize) {
+    final double clamped = newSize.clamp(_minBaseFontSize, _maxBaseFontSize);
+    if (clamped == _baseFontSize) return;
+    setState(() => _baseFontSize = clamped);
+    _guardarAjustesVisuales(clamped);
   }
 
   void _loadDashboardData() {
@@ -66,17 +104,28 @@ class _ChurchAdminDashboardScreenState
     return Scaffold(
       backgroundColor: blancoFondo,
       appBar: AppBar(
+        toolbarHeight: kToolbarHeight + (_fontDelta * 2.5),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               l10n?.panelPastoral ?? 'Panel Pastoral',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18 + _fontDelta,
+              ),
             ),
             if (iglesia?.nombre != null && iglesia!.nombre.isNotEmpty)
               Text(
                 iglesia.nombre,
-                style: const TextStyle(fontSize: 12, color: Colors.white70),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12 + _fontDelta,
+                  color: Colors.white70,
+                ),
               ),
           ],
         ),
@@ -87,44 +136,47 @@ class _ChurchAdminDashboardScreenState
           Consumer<AdminProvider>(
             builder: (context, prov, _) {
               final unread = prov.unreadNotificationsCount;
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_rounded),
-                    tooltip: l10n?.buzonAlertas ?? 'Buzón de Alertas',
-                    onPressed: _mostrarBuzonNotificaciones,
-                  ),
-                  if (unread > 0)
-                    PositionedDirectional(
-                      top: 8,
-                      end: 8,
-                      child: Container(
-                        padding: const EdgeInsetsDirectional.all(4),
-                        decoration: const BoxDecoration(
-                          color: amarilloOro,
-                          shape: BoxShape.circle,
+              return IconButton(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                tooltip: l10n?.buzonAlertas ?? 'Buzón de Alertas',
+                onPressed: _mostrarBuzonNotificaciones,
+                icon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.notifications_rounded,
+                      size: 22 + (_fontDelta * 0.5),
+                    ),
+                    if (unread > 0) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
                         ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                        decoration: BoxDecoration(
+                          color: amarilloOro,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '$unread',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          NumberFormat.compact(
+                            locale: Localizations.localeOf(context).toString(),
+                          ).format(unread),
+                          style: TextStyle(
                             color: azulFondo,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 10 + _fontDelta,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
-                    ),
-                ],
+                    ],
+                  ],
+                ),
               );
             },
           ),
           IconButton(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             icon: const Icon(Icons.refresh_rounded),
             tooltip: l10n?.refrescar ?? 'Refrescar',
             onPressed: _handleRefresh,
@@ -144,28 +196,37 @@ class _ChurchAdminDashboardScreenState
             children: [
               // 1. Tarjeta de Bienvenida y Datos de la Iglesia
               _AdminHeaderCard(
-                iglesiaNombre: iglesia?.nombre ?? 'Comunidad Atrio',
+                iglesiaNombre:
+                    iglesia?.nombre ?? l10n?.comunidadAtrio ?? 'Comunidad Atrio',
+                baseFontSize: _baseFontSize,
+                minBaseFontSize: _minBaseFontSize,
+                maxBaseFontSize: _maxBaseFontSize,
+                fontDelta: _fontDelta,
+                onDecreaseFont: () =>
+                    _actualizarTamanoLetra(_baseFontSize - _fontSizeStep),
+                onIncreaseFont: () =>
+                    _actualizarTamanoLetra(_baseFontSize + _fontSizeStep),
               ),
               const SizedBox(height: 16),
 
               // 1.5 Banner de Ciclo de Vida y Verificación Institucional (KYC)
-              const _ChurchKycStatusBanner(),
+              _ChurchKycStatusBanner(fontDelta: _fontDelta),
               const SizedBox(height: 16),
 
               // 2. Grilla de Indicadores Clave (KPIs)
-              const _AdminKpiGrid(),
+              _AdminKpiGrid(fontDelta: _fontDelta),
               const SizedBox(height: 24),
 
               // 3. Barra de Acciones Rápidas
-              const _QuickActionsSection(),
+              _QuickActionsSection(fontDelta: _fontDelta),
               const SizedBox(height: 24),
 
               // 4. Sección de Solicitudes Pastorales Pendientes
-              const _RecentRequestsSection(),
+              _RecentRequestsSection(fontDelta: _fontDelta),
               const SizedBox(height: 24),
 
               // 5. Últimas Notificaciones del Buzón Institucional
-              const _AdminNotificationsFeedSection(),
+              _AdminNotificationsFeedSection(fontDelta: _fontDelta),
             ],
           ),
         ),
@@ -183,7 +244,7 @@ class _ChurchAdminDashboardScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const _AdminNotificationsModal(),
+      builder: (ctx) => _AdminNotificationsModal(fontDelta: _fontDelta),
     );
   }
 }
@@ -191,8 +252,22 @@ class _ChurchAdminDashboardScreenState
 /// Encabezado con bienvenida y estatus pastoral
 class _AdminHeaderCard extends StatelessWidget {
   final String iglesiaNombre;
+  final double baseFontSize;
+  final double minBaseFontSize;
+  final double maxBaseFontSize;
+  final double fontDelta;
+  final VoidCallback onDecreaseFont;
+  final VoidCallback onIncreaseFont;
 
-  const _AdminHeaderCard({required this.iglesiaNombre});
+  const _AdminHeaderCard({
+    required this.iglesiaNombre,
+    required this.baseFontSize,
+    required this.minBaseFontSize,
+    required this.maxBaseFontSize,
+    required this.fontDelta,
+    required this.onDecreaseFont,
+    required this.onIncreaseFont,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -221,8 +296,11 @@ class _AdminHeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
             children: [
               // Badge de Rol
               Container(
@@ -236,51 +314,147 @@ class _AdminHeaderCard extends StatelessWidget {
                 ),
                 child: Text(
                   l10n?.administradorPastoral ?? 'ADMINISTRADOR PASTORAL',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: azulFondo,
-                    fontSize: 11,
+                    fontSize: 11 + fontDelta,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.5,
                   ),
                 ),
               ),
-              // Conexión activa Odoo 19
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4ADE80),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Odoo 19 Live',
-                    style: TextStyle(
-                      color: Color(0xFFCBD5E1),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              _DashboardFontSizeControlBar(
+                baseFontSize: baseFontSize,
+                minBaseFontSize: minBaseFontSize,
+                maxBaseFontSize: maxBaseFontSize,
+                onDecrease: onDecreaseFont,
+                onIncrease: onIncreaseFont,
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             iglesiaNombre,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 20 + fontDelta,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            l10n?.bienvenidoAdmin ?? 'Gestión, cuidado pastoral y métricas en vivo de tu congregación',
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+            l10n?.bienvenidoAdmin ??
+                'Gestión, cuidado pastoral y métricas en vivo de tu congregación',
+            style: TextStyle(
+              color: const Color(0xFF94A3B8),
+              fontSize: 13 + fontDelta,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardFontSizeControlBar extends StatelessWidget {
+  final double baseFontSize;
+  final double minBaseFontSize;
+  final double maxBaseFontSize;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  const _DashboardFontSizeControlBar({
+    required this.baseFontSize,
+    required this.minBaseFontSize,
+    required this.maxBaseFontSize,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bool canDecrease = baseFontSize > minBaseFontSize;
+    final bool canIncrease = baseFontSize < maxBaseFontSize;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            button: true,
+            enabled: canDecrease,
+            label: l10n.reducirTamanoLetra,
+            child: Tooltip(
+              message: l10n.reducirTamanoLetra,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  start: Radius.circular(14),
+                ).resolve(Directionality.of(context)),
+                onTap: canDecrease ? onDecrease : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A-',
+                      style: TextStyle(
+                        color: canDecrease
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.38),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 24,
+            color: Colors.white.withValues(alpha: 0.22),
+          ),
+          Semantics(
+            button: true,
+            enabled: canIncrease,
+            label: l10n.aumentarTamanoLetra,
+            child: Tooltip(
+              message: l10n.aumentarTamanoLetra,
+              child: InkWell(
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  end: Radius.circular(14),
+                ).resolve(Directionality.of(context)),
+                onTap: canIncrease ? onIncrease : null,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'A+',
+                      style: TextStyle(
+                        color: canIncrease
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.38),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -290,7 +464,9 @@ class _AdminHeaderCard extends StatelessWidget {
 
 /// Grilla de Indicadores Clave (KPIs en tiempo real)
 class _AdminKpiGrid extends StatelessWidget {
-  const _AdminKpiGrid();
+  final double fontDelta;
+
+  const _AdminKpiGrid({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -316,76 +492,92 @@ class _AdminKpiGrid extends StatelessWidget {
             Expanded(
               child: Text(
                 l10n?.resumenMensual ?? 'Resumen del Mes',
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16 + fontDelta,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF072B4F),
+                  color: const Color(0xFF072B4F),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               l10n?.enTiempoReal ?? 'En tiempo real',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 12 + fontDelta,
+                color: const Color(0xFF64748B),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _KpiCard(
-                title: l10n?.solicitudesNuevas ?? 'Nuevas Solicitudes',
-                value: '$newRequestsCount',
-                icon: Icons.mark_email_unread_rounded,
-                accentColor: const Color(0xFFE5A023),
-                onTap: () async {
-                  final hasInternet =
-                      await AtrioConnectivityAlert.checkAndNotify(
-                        context,
-                        onRetry: () => Navigator.pushNamed(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _KpiCard(
+                  title: l10n?.solicitudesNuevas ?? 'Nuevas Solicitudes',
+                  value: '$newRequestsCount',
+                  icon: Icons.mark_email_unread_rounded,
+                  accentColor: const Color(0xFFE5A023),
+                  fontDelta: fontDelta,
+                  onTap: () async {
+                    final hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
                           context,
-                          AdminRequestsScreen.routeName,
-                        ),
+                          onRetry: () => Navigator.pushNamed(
+                            context,
+                            AdminRequestsScreen.routeName,
+                          ),
+                        );
+                    if (hasInternet && context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        AdminRequestsScreen.routeName,
                       );
-                  if (hasInternet && context.mounted) {
-                    Navigator.pushNamed(context, AdminRequestsScreen.routeName);
-                  }
-                },
+                    }
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _KpiCard(
-                title: l10n?.feligresesActivos ?? 'Feligreses Activos',
-                value: '${stats?.activeMembers ?? 0}',
-                icon: Icons.people_alt_rounded,
-                accentColor: const Color(0xFF0284C7),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _KpiCard(
+                  title: l10n?.feligresesActivos ?? 'Feligreses Activos',
+                  value: '${stats?.activeMembers ?? 0}',
+                  icon: Icons.people_alt_rounded,
+                  accentColor: const Color(0xFF0284C7),
+                  fontDelta: fontDelta,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _KpiCard(
-                title: l10n?.ofrendasRecaudadas ?? 'Ofrendas Recaudadas',
-                value: offeringsFormatted,
-                icon: Icons.volunteer_activism_rounded,
-                accentColor: const Color(0xFF16A34A),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _KpiCard(
+                  title: l10n?.ofrendasRecaudadas ?? 'Ofrendas Recaudadas',
+                  value: offeringsFormatted,
+                  icon: Icons.volunteer_activism_rounded,
+                  accentColor: const Color(0xFF16A34A),
+                  fontDelta: fontDelta,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _KpiCard(
-                title: l10n?.eventosCelebrados ?? 'Eventos del Mes',
-                value: '${stats?.heldEvents ?? 0}',
-                icon: Icons.event_available_rounded,
-                accentColor: const Color(0xFF9333EA),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _KpiCard(
+                  title: l10n?.eventosCelebrados ?? 'Eventos del Mes',
+                  value: '${stats?.heldEvents ?? 0}',
+                  icon: Icons.event_available_rounded,
+                  accentColor: const Color(0xFF9333EA),
+                  fontDelta: fontDelta,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -397,6 +589,7 @@ class _KpiCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color accentColor;
+  final double fontDelta;
   final VoidCallback? onTap;
 
   const _KpiCard({
@@ -404,6 +597,7 @@ class _KpiCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.accentColor,
+    this.fontDelta = 0.0,
     this.onTap,
   });
 
@@ -449,24 +643,27 @@ class _KpiCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF072B4F),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 18 + fontDelta,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF072B4F),
+                ),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               title,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                fontSize: 11 + fontDelta,
+                color: const Color(0xFF64748B),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -479,7 +676,9 @@ class _KpiCard extends StatelessWidget {
 
 /// Sección de Acciones Rápidas Pastorales
 class _QuickActionsSection extends StatelessWidget {
-  const _QuickActionsSection();
+  final double fontDelta;
+
+  const _QuickActionsSection({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -490,106 +689,120 @@ class _QuickActionsSection extends StatelessWidget {
       children: [
         Text(
           l10n?.accionesRapidas ?? 'Acciones Rápidas',
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16 + fontDelta,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF072B4F),
+            color: const Color(0xFF072B4F),
           ),
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: [
-              _QuickActionCard(
-                icon: Icons.inbox_rounded,
-                label: l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
-                color: const Color(0xFF072B4F),
-                onTap: () async {
-                  final hasInternet =
-                      await AtrioConnectivityAlert.checkAndNotify(
-                        context,
-                        onRetry: () => Navigator.pushNamed(
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _QuickActionCard(
+                  icon: Icons.inbox_rounded,
+                  label: l10n?.bandejaSolicitudes ?? 'Bandeja de Solicitudes',
+                  color: const Color(0xFF072B4F),
+                  fontDelta: fontDelta,
+                  onTap: () async {
+                    final hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
                           context,
-                          AdminRequestsScreen.routeName,
-                        ),
-                      );
-                  if (hasInternet && context.mounted) {
-                    Navigator.pushNamed(context, AdminRequestsScreen.routeName);
-                  }
-                },
-              ),
-              const SizedBox(width: 12),
-              _QuickActionCard(
-                icon: Icons.campaign_rounded,
-                label: l10n?.crearAviso ?? 'Nuevo Aviso',
-                color: const Color(0xFF0284C7),
-                onTap: () async {
-                  final hasInternet =
-                      await AtrioConnectivityAlert.checkAndNotify(
+                          onRetry: () => Navigator.pushNamed(
+                            context,
+                            AdminRequestsScreen.routeName,
+                          ),
+                        );
+                    if (hasInternet && context.mounted) {
+                      Navigator.pushNamed(
                         context,
-                        onRetry: () => Navigator.pushNamed(
-                          context,
-                          CrearPredicaScreen.routeName,
-                        ),
+                        AdminRequestsScreen.routeName,
                       );
-                  if (hasInternet && context.mounted) {
-                    Navigator.pushNamed(context, CrearPredicaScreen.routeName);
-                  }
-                },
-              ),
-              const SizedBox(width: 12),
-              _QuickActionCard(
-                icon: Icons.event_available_rounded,
-                label: l10n?.nuevoEvento ?? 'Nuevo Evento',
-                color: const Color(0xFF9333EA),
-                onTap: () async {
-                  final hasInternet =
-                      await AtrioConnectivityAlert.checkAndNotify(
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                _QuickActionCard(
+                  icon: Icons.campaign_rounded,
+                  label: l10n?.crearAviso ?? 'Nuevo Aviso',
+                  color: const Color(0xFF0284C7),
+                  fontDelta: fontDelta,
+                  onTap: () async {
+                    final hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
+                          context,
+                          onRetry: () => Navigator.pushNamed(
+                            context,
+                            CrearPredicaScreen.routeName,
+                          ),
+                        );
+                    if (hasInternet && context.mounted) {
+                      Navigator.pushNamed(
                         context,
-                        onRetry: () => Navigator.pushNamed(
-                          context,
-                          CrearEventoScreen.routeName,
-                        ),
+                        CrearPredicaScreen.routeName,
                       );
-                  if (hasInternet && context.mounted) {
-                    Navigator.pushNamed(context, CrearEventoScreen.routeName);
-                  }
-                },
-              ),
-              const SizedBox(width: 12),
-              _QuickActionCard(
-                icon: Icons.ad_units_rounded,
-                label: l10n?.anunciosCampanas ?? 'Publicidad y Anuncios',
-                color: const Color(0xFFE5A023),
-                onTap: () async {
-                  final hasInternet =
-                      await AtrioConnectivityAlert.checkAndNotify(
-                        context,
-                        onRetry: () => Navigator.pushNamed(
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                _QuickActionCard(
+                  icon: Icons.event_available_rounded,
+                  label: l10n?.nuevoEvento ?? 'Nuevo Evento',
+                  color: const Color(0xFF9333EA),
+                  fontDelta: fontDelta,
+                  onTap: () async {
+                    final hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
                           context,
-                          AdminAdsScreen.routeName,
-                        ),
-                      );
-                  if (hasInternet && context.mounted) {
-                    Navigator.pushNamed(context, AdminAdsScreen.routeName);
-                  }
-                },
-              ),
-              const SizedBox(width: 12),
-              _QuickActionCard(
-                icon: Icons.qr_code_2_rounded,
-                label: l10n?.aficheQrOficial ?? 'Afiche y QR Oficial',
-                color: const Color(0xFF0D9488),
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    ChurchPosterPreviewScreen.routeName,
-                  );
-                },
-              ),
-            ],
+                          onRetry: () => Navigator.pushNamed(
+                            context,
+                            CrearEventoScreen.routeName,
+                          ),
+                        );
+                    if (hasInternet && context.mounted) {
+                      Navigator.pushNamed(context, CrearEventoScreen.routeName);
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                _QuickActionCard(
+                  icon: Icons.ad_units_rounded,
+                  label: l10n?.anunciosCampanas ?? 'Publicidad y Anuncios',
+                  color: const Color(0xFFE5A023),
+                  fontDelta: fontDelta,
+                  onTap: () async {
+                    final hasInternet =
+                        await AtrioConnectivityAlert.checkAndNotify(
+                          context,
+                          onRetry: () => Navigator.pushNamed(
+                            context,
+                            AdminAdsScreen.routeName,
+                          ),
+                        );
+                    if (hasInternet && context.mounted) {
+                      Navigator.pushNamed(context, AdminAdsScreen.routeName);
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                _QuickActionCard(
+                  icon: Icons.qr_code_2_rounded,
+                  label: l10n?.aficheQrOficial ?? 'Afiche y QR Oficial',
+                  color: const Color(0xFF0D9488),
+                  fontDelta: fontDelta,
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      ChurchPosterPreviewScreen.routeName,
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -601,6 +814,7 @@ class _QuickActionCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final double fontDelta;
   final VoidCallback onTap;
 
   const _QuickActionCard({
@@ -608,6 +822,7 @@ class _QuickActionCard extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    this.fontDelta = 0.0,
   });
 
   @override
@@ -616,7 +831,7 @@ class _QuickActionCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 130,
+        width: 130 + (fontDelta * 8),
         padding: const EdgeInsetsDirectional.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -637,12 +852,12 @@ class _QuickActionCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               label,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12 + fontDelta,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: const Color(0xFF1E293B),
                 height: 1.2,
               ),
             ),
@@ -655,7 +870,9 @@ class _QuickActionCard extends StatelessWidget {
 
 /// Sección de Solicitudes Recientes
 class _RecentRequestsSection extends StatelessWidget {
-  const _RecentRequestsSection();
+  final double fontDelta;
+
+  const _RecentRequestsSection({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -674,10 +891,10 @@ class _RecentRequestsSection extends StatelessWidget {
               child: Text(
                 l10n?.solicitudesRecientes ??
                     'Solicitudes Pastorales Recientes',
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16 + fontDelta,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF072B4F),
+                  color: const Color(0xFF072B4F),
                 ),
               ),
             ),
@@ -700,15 +917,14 @@ class _RecentRequestsSection extends StatelessWidget {
                   horizontal: 8,
                   vertical: 4,
                 ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                minimumSize: const Size(48, 48),
               ),
               child: Text(
                 l10n?.verTodasSolicitudes ?? 'Ver todas',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: Color(0xFF072B4F),
+                  fontSize: 12 + fontDelta,
+                  color: const Color(0xFF072B4F),
                 ),
               ),
             ),
@@ -736,9 +952,9 @@ class _RecentRequestsSection extends StatelessWidget {
                   l10n?.sinSolicitudesRecientes ??
                       'No hay solicitudes pendientes en este momento',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    fontSize: 13 + fontDelta,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -749,7 +965,10 @@ class _RecentRequestsSection extends StatelessWidget {
             children: recent.map((item) {
               return Padding(
                 padding: const EdgeInsetsDirectional.only(bottom: 10),
-                child: _RecentRequestCard(request: item),
+                child: _RecentRequestCard(
+                  request: item,
+                  fontDelta: fontDelta,
+                ),
               );
             }).toList(),
           ),
@@ -760,8 +979,9 @@ class _RecentRequestsSection extends StatelessWidget {
 
 class _RecentRequestCard extends StatelessWidget {
   final AdminChurchRequestModel request;
+  final double fontDelta;
 
-  const _RecentRequestCard({required this.request});
+  const _RecentRequestCard({required this.request, this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -806,19 +1026,20 @@ class _RecentRequestCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         request.title,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: 14 + fontDelta,
                           fontWeight: FontWeight.bold,
                           color: azulFondo,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Text(
                       request.state.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 10 + fontDelta,
                         fontWeight: FontWeight.bold,
                         color: request.isAnswered
                             ? const Color(0xFF15803D)
@@ -830,11 +1051,11 @@ class _RecentRequestCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${request.requesterName}: "${request.message}"',
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF475569),
+                  style: TextStyle(
+                    fontSize: 12 + fontDelta,
+                    color: const Color(0xFF475569),
                     height: 1.3,
                   ),
                 ),
@@ -843,6 +1064,7 @@ class _RecentRequestCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             icon: const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 14,
@@ -867,7 +1089,9 @@ class _RecentRequestCard extends StatelessWidget {
 
 /// Sección de Notificaciones Institucionales
 class _AdminNotificationsFeedSection extends StatelessWidget {
-  const _AdminNotificationsFeedSection();
+  final double fontDelta;
+
+  const _AdminNotificationsFeedSection({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -881,10 +1105,10 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
         Text(
           l10n?.notificacionesInstitucionales ??
               'Notificaciones Institucionales',
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: 16 + fontDelta,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF072B4F),
+            color: const Color(0xFF072B4F),
           ),
         ),
         const SizedBox(height: 10),
@@ -901,7 +1125,10 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
               l10n?.sinNotificacionesAdmin ??
                   'No tienes notificaciones en tu buzón',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 12 + fontDelta,
+                color: const Color(0xFF64748B),
+              ),
             ),
           )
         else
@@ -930,18 +1157,18 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
                         children: [
                           Text(
                             n.title,
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: 13 + fontDelta,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
+                              color: const Color(0xFF1E293B),
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             n.message,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF475569),
+                            style: TextStyle(
+                              fontSize: 11 + fontDelta,
+                              color: const Color(0xFF475569),
                             ),
                           ),
                         ],
@@ -959,7 +1186,9 @@ class _AdminNotificationsFeedSection extends StatelessWidget {
 
 /// Modal inferior para ver todo el buzón de notificaciones institucionales
 class _AdminNotificationsModal extends StatelessWidget {
-  const _AdminNotificationsModal();
+  final double fontDelta;
+
+  const _AdminNotificationsModal({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -968,7 +1197,9 @@ class _AdminNotificationsModal extends StatelessWidget {
     final notifs = adminProv.adminNotificationsList;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+      ),
       decoration: const BoxDecoration(
         color: Color(0xFFFAF7F0),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -990,10 +1221,10 @@ class _AdminNotificationsModal extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             l10n?.buzonAlertas ?? 'Buzón de Notificaciones',
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18 + fontDelta,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF072B4F),
+              color: const Color(0xFF072B4F),
             ),
           ),
           const SizedBox(height: 12),
@@ -1003,7 +1234,11 @@ class _AdminNotificationsModal extends StatelessWidget {
                     child: Text(
                       l10n?.sinNotificacionesAdmin ??
                           'No tienes notificaciones en tu buzón',
-                      style: const TextStyle(color: Color(0xFF64748B)),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14 + fontDelta,
+                        color: const Color(0xFF64748B),
+                      ),
                     ),
                   )
                 : ListView.separated(
@@ -1023,18 +1258,18 @@ class _AdminNotificationsModal extends StatelessWidget {
                           children: [
                             Text(
                               item.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: Color(0xFF072B4F),
+                                fontSize: 13 + fontDelta,
+                                color: const Color(0xFF072B4F),
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               item.message,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF334155),
+                              style: TextStyle(
+                                fontSize: 12 + fontDelta,
+                                color: const Color(0xFF334155),
                               ),
                             ),
                           ],
@@ -1054,7 +1289,9 @@ class _AdminNotificationsModal extends StatelessWidget {
 /// Muestra en tiempo real el ciclo de vida legal de la congregación (`draft`, `pending_kyc`, `approved`, `suspended`)
 /// conforme a los requisitos de organizaciones sin fines de lucro (RD Ley 122-05 / HN Personería Jurídica y RTN).
 class _ChurchKycStatusBanner extends StatelessWidget {
-  const _ChurchKycStatusBanner();
+  final double fontDelta;
+
+  const _ChurchKycStatusBanner({this.fontDelta = 0.0});
 
   @override
   Widget build(BuildContext context) {
@@ -1149,15 +1386,15 @@ class _ChurchKycStatusBanner extends StatelessWidget {
                   style: TextStyle(
                     color: iconColor,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13.5,
+                    fontSize: 13.5 + fontDelta,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: Color(0xFF334155),
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: const Color(0xFF334155),
+                    fontSize: 12 + fontDelta,
                     height: 1.35,
                   ),
                 ),

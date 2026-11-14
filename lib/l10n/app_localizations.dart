@@ -8045,6 +8045,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{count, plural, =0{0 miembros} =1{1 miembro} other{{count} miembros}}'**
   String miembrosCount(int count);
+
+  /// Tooltip y semántica para disminuir el tamaño de fuente
+  ///
+  /// In es, this message translates to:
+  /// **'Reducir tamaño de letra'**
+  String get reducirTamanoLetra;
+
+  /// Tooltip y semántica para aumentar el tamaño de fuente
+  ///
+  /// In es, this message translates to:
+  /// **'Aumentar tamaño de letra'**
+  String get aumentarTamanoLetra;
+
+  /// Tooltip y semántica para volver al tamaño de fuente predeterminado
+  ///
+  /// In es, this message translates to:
+  /// **'Restablecer tamaño de letra'**
+  String get restablecerTamanoLetra;
+
+  /// Indicador compacto del tamaño base de fuente actual en puntos
+  ///
+  /// In es, this message translates to:
+  /// **'{size} pt'**
+  String tamanoLetraActual(int size);
 }
 
 class _AppLocalizationsDelegate

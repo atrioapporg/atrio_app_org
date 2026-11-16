@@ -519,6 +519,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get datosActualizadosCorrectamente => 'Data updated successfully';
 
   @override
+  String get ingresaUnTelefonoValidoRd =>
+      'Enter a valid DR mobile number (10 digits: 809, 829 or 849)';
+
+  @override
+  String get helperTelefonoRd =>
+      'DR format: 809, 829 or 849 + 7 digits (e.g. 809-555-1234)';
+
+  @override
+  String get sugerenciasDominioCorreo => 'Quick domain:';
+
+  @override
+  String get errorActualizarPerfil =>
+      'Could not update your data on the server.';
+
+  @override
   String get seguroDeseasCerrarSesion => 'Are you sure you want to log out?';
 
   @override
@@ -538,6 +553,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cuentaEliminadaExito =>
       'Your account and personal data have been successfully deleted.';
+
+  @override
+  String get errorEliminarCuenta =>
+      'Could not delete the account. Please try again.';
 
   @override
   String get versionDeLaBiblia => 'Bible version';
@@ -3808,6 +3827,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cargandoAfiche => 'Generating official poster...';
+
+  @override
+  String get compartirQrPor => 'Share church QR';
+
+  @override
+  String get compartirPorWhatsApp => 'Send QR';
+
+  @override
+  String get compartirPorCorreo => 'Send QR';
+
+  @override
+  String mensajeCompartirQrIglesia(String churchName, String url) {
+    return 'Join our church $churchName on ATRIO! Scan our official QR code or open this link: $url';
+  }
+
+  @override
+  String asuntoCorreoQrIglesia(String churchName) {
+    return 'Official QR code for $churchName on ATRIO';
+  }
 
   @override
   String get articuloFisicoBadge => 'Printed / tangible physical item';

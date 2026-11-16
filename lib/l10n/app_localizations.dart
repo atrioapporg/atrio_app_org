@@ -1040,6 +1040,30 @@ abstract class AppLocalizations {
   /// **'Datos actualizados correctamente'**
   String get datosActualizadosCorrectamente;
 
+  /// No description provided for @ingresaUnTelefonoValidoRd.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un celular válido de RD (10 dígitos: 809, 829 u 849)'**
+  String get ingresaUnTelefonoValidoRd;
+
+  /// No description provided for @helperTelefonoRd.
+  ///
+  /// In es, this message translates to:
+  /// **'Formato RD: 809, 829 u 849 + 7 dígitos (ej. 809-555-1234)'**
+  String get helperTelefonoRd;
+
+  /// No description provided for @sugerenciasDominioCorreo.
+  ///
+  /// In es, this message translates to:
+  /// **'Completar dominio:'**
+  String get sugerenciasDominioCorreo;
+
+  /// No description provided for @errorActualizarPerfil.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron actualizar tus datos en el servidor.'**
+  String get errorActualizarPerfil;
+
   /// No description provided for @seguroDeseasCerrarSesion.
   ///
   /// In es, this message translates to:
@@ -1075,6 +1099,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu cuenta y datos personales han sido eliminados satisfactoriamente.'**
   String get cuentaEliminadaExito;
+
+  /// No description provided for @errorEliminarCuenta.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo eliminar la cuenta. Por favor, inténtalo de nuevo.'**
+  String get errorEliminarCuenta;
 
   /// No description provided for @versionDeLaBiblia.
   ///
@@ -6821,6 +6851,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Generando afiche oficial...'**
   String get cargandoAfiche;
+
+  /// No description provided for @compartirQrPor.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir QR de la iglesia'**
+  String get compartirQrPor;
+
+  /// No description provided for @compartirPorWhatsApp.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar QR'**
+  String get compartirPorWhatsApp;
+
+  /// No description provided for @compartirPorCorreo.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar QR'**
+  String get compartirPorCorreo;
+
+  /// Mensaje para compartir el QR oficial de la iglesia
+  ///
+  /// In es, this message translates to:
+  /// **'¡Únete a nuestra iglesia {churchName} en ATRIO! Escanea nuestro código QR oficial o ingresa aquí: {url}'**
+  String mensajeCompartirQrIglesia(String churchName, String url);
+
+  /// Asunto del correo para compartir el QR oficial de la iglesia
+  ///
+  /// In es, this message translates to:
+  /// **'Código QR oficial de {churchName} en ATRIO'**
+  String asuntoCorreoQrIglesia(String churchName);
 
   /// No description provided for @articuloFisicoBadge.
   ///

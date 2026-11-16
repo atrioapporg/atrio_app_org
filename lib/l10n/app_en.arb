@@ -256,12 +256,17 @@
   "helperCambiarIglesia": "To change it, use the \"Change church\" option",
   "guardarCambios": "Save changes",
   "datosActualizadosCorrectamente": "Data updated successfully",
+  "ingresaUnTelefonoValidoRd": "Enter a valid DR mobile number (10 digits: 809, 829 or 849)",
+  "helperTelefonoRd": "DR format: 809, 829 or 849 + 7 digits (e.g. 809-555-1234)",
+  "sugerenciasDominioCorreo": "Quick domain:",
+  "errorActualizarPerfil": "Could not update your data on the server.",
   "seguroDeseasCerrarSesion": "Are you sure you want to log out?",
   "eliminarCuenta": "Delete account",
   "seguroEliminarCuenta": "Are you sure you want to delete your account and all your personal data from ATRIO?",
   "detalleEliminarCuenta": "This action is final and irreversible. The following will be permanently deleted:\n• Your user profile and community connection.\n• All your personal Bible notes and saved favorites.\n• Your history of requests and local contributions.\n• Deactivation of your record in the Odoo ERP backend will be requested.",
   "eliminarDefinitivamente": "Delete permanently",
   "cuentaEliminadaExito": "Your account and personal data have been successfully deleted.",
+  "errorEliminarCuenta": "Could not delete the account. Please try again.",
   "versionDeLaBiblia": "Bible version",
   "noSePudoAbrirWhatsApp": "Could not open WhatsApp.",
   "buscarBibliaPlaceholder": "Search verse, word, or phrase...",
@@ -1842,6 +1847,30 @@
   "aficheParaTuIglesia": "Official Poster for your Congregation",
   "imprimeColocaAfiche": "Print this poster and place it at your church entrance or bulletin so parishioners can join by scanning the QR code.",
   "cargandoAfiche": "Generating official poster...",
+  "compartirQrPor": "Share church QR",
+  "compartirPorWhatsApp": "Send QR",
+  "compartirPorCorreo": "Send QR",
+  "mensajeCompartirQrIglesia": "Join our church {churchName} on ATRIO! Scan our official QR code or open this link: {url}",
+  "@mensajeCompartirQrIglesia": {
+    "description": "Message for sharing the official church QR code",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "asuntoCorreoQrIglesia": "Official QR code for {churchName} on ATRIO",
+  "@asuntoCorreoQrIglesia": {
+    "description": "Email subject for sharing the official church QR code",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      }
+    }
+  },
   "articuloFisicoBadge": "Printed / tangible physical item",
   "articuloFisicoCorto": "Physical Item",
   "avisoTiendaSoloBienesFisicos": "All items in the church store are tangible physical goods subject to postal shipping or in-person pickup at the temple.",

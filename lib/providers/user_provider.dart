@@ -1,8 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/data/app_config.dart';
@@ -11,6 +8,9 @@ import 'package:atrio/modelos/user_model.dart';
 import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/servicios/device_notification_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Evento reactivo que se dispara inmediatamente cuando el estatus de la iglesia
 /// o membresía del usuario es aprobado o cambia de estado en Odoo 19.
@@ -39,9 +39,11 @@ class UserProvider extends ChangeNotifier {
   UserModel? _currentUser;
   Map<String, dynamic>? _rawMeData;
   bool _isLoading = false;
+  bool _isDeletingAccount = false;
   String? _errorMessage;
 
-  final StreamController<ChurchStatusChangeEvent> _churchStatusChangeController =
+  final StreamController<ChurchStatusChangeEvent>
+  _churchStatusChangeController =
       StreamController<ChurchStatusChangeEvent>.broadcast();
 
   final StreamController<void> _sessionExpiredController =
@@ -63,13 +65,16 @@ class UserProvider extends ChangeNotifier {
     AtrioApi? api,
     TokenStorageService? storageService,
     this.navigatorKey,
-  })  : _storageService = storageService ?? TokenStorageService(),
-        _api = api ??
-            AtrioApi(
-              baseUrl: AppConfig.odooBaseUrl,
-              database: AppConfig.odooDatabase.isNotEmpty ? AppConfig.odooDatabase : null,
-              storageService: storageService ?? TokenStorageService(),
-            ) {
+  }) : _storageService = storageService ?? TokenStorageService(),
+       _api =
+           api ??
+           AtrioApi(
+             baseUrl: AppConfig.odooBaseUrl,
+             database: AppConfig.odooDatabase.isNotEmpty
+                 ? AppConfig.odooDatabase
+                 : null,
+             storageService: storageService ?? TokenStorageService(),
+           ) {
     // Configurar callback cuando la sesión expire definitivamente (error fatal en /auth/refresh)
     _api.onSessionExpired = _handleFatalSessionExpiration;
 
@@ -98,7 +103,9 @@ class UserProvider extends ChangeNotifier {
         await prefs.setBool('isLoggedIn', false);
         await prefs.remove('cached_user_profile');
       } catch (e) {
-        debugPrint('[UserProvider] Error limpiando preferencias tras expirar sesión: $e');
+        debugPrint(
+          '[UserProvider] Error limpiando preferencias tras expirar sesión: $e',
+        );
       }
     });
 
@@ -165,7 +172,10 @@ class UserProvider extends ChangeNotifier {
       await prefs.setString('user_name', _currentUser!.nombre);
       await prefs.setString('userEmail', _currentUser!.email);
       await prefs.setString('userName', _currentUser!.nombre);
-      await prefs.setString('membership_status', _currentUser!.membershipStatus);
+      await prefs.setString(
+        'membership_status',
+        _currentUser!.membershipStatus,
+      );
       if (_currentUser!.iglesiaId != null) {
         await prefs.setInt('user_church_id', _currentUser!.iglesiaId!);
       }
@@ -173,7 +183,9 @@ class UserProvider extends ChangeNotifier {
         await prefs.setString('user_church_name', _currentUser!.iglesiaActual);
       }
     } catch (e) {
-      debugPrint('[UserProvider] Advertencia guardando perfil en SharedPreferences: $e');
+      debugPrint(
+        '[UserProvider] Advertencia guardando perfil en SharedPreferences: $e',
+      );
     }
 
     try {
@@ -208,7 +220,9 @@ class UserProvider extends ChangeNotifier {
           );
           return user;
         } catch (e) {
-          debugPrint('⚠️ [UserProvider] Error parseando cached_user_profile: $e');
+          debugPrint(
+            '⚠️ [UserProvider] Error parseando cached_user_profile: $e',
+          );
         }
       }
 
@@ -220,16 +234,18 @@ class UserProvider extends ChangeNotifier {
         final String name = (localData['nombre'] as String?) ?? 'Usuario';
         final String iglesiaNombre =
             (localData['iglesia_nombre'] as String?)?.trim() ?? '';
-        final bool tieneIglesiaValida = iglesiaNombre.isNotEmpty &&
+        final bool tieneIglesiaValida =
+            iglesiaNombre.isNotEmpty &&
             !UserModel.isDefaultOrDemoChurchName(iglesiaNombre);
 
         // Consultar estatus de membresía persistido en SharedPreferences si existe
-        final String savedStatus = prefs.getString('membership_status') ??
+        final String savedStatus =
+            prefs.getString('membership_status') ??
             (tieneIglesiaValida ? 'approved' : 'none');
-        final int? savedChurchId = prefs.getInt('user_church_id') ??
-            (tieneIglesiaValida ? 1 : null);
-        final bool esPendiente = savedStatus == 'membership_pending' ||
-            savedStatus == 'pending';
+        final int? savedChurchId =
+            prefs.getInt('user_church_id') ?? (tieneIglesiaValida ? 1 : null);
+        final bool esPendiente =
+            savedStatus == 'membership_pending' || savedStatus == 'pending';
         final bool esAprobado = tieneIglesiaValida && !esPendiente;
 
         return UserModel(
@@ -237,8 +253,9 @@ class UserProvider extends ChangeNotifier {
           nombre: name,
           email: (localData['email'] as String?) ?? '',
           telefono: localData['celular'] as String?,
-          iglesiaActual:
-              tieneIglesiaValida ? iglesiaNombre : 'Sin iglesia seleccionada',
+          iglesiaActual: tieneIglesiaValida
+              ? iglesiaNombre
+              : 'Sin iglesia seleccionada',
           iglesiaId: savedChurchId,
           fechaRegistro: (localData['creado_en'] as String?) ?? '',
           avatarIniciales: name.trim().isNotEmpty
@@ -248,11 +265,7 @@ class UserProvider extends ChangeNotifier {
           role: esAprobado ? UserRole.member : UserRole.user,
           membershipStatus: savedStatus,
           requestedChurchId: esPendiente ? savedChurchId : null,
-          permissions: const {
-            'view_content',
-            'manage_profile',
-            'donate',
-          },
+          permissions: const {'view_content', 'manage_profile', 'donate'},
           isReadOnly: false,
         );
       }
@@ -395,7 +408,8 @@ class UserProvider extends ChangeNotifier {
     }
     if (hasChurchAssigned) return true;
     if (requestedChurchId != null && requestedChurchId! > 0) return true;
-    if (requestedChurchData != null && requestedChurchData!.isNotEmpty) return true;
+    if (requestedChurchData != null && requestedChurchData!.isNotEmpty)
+      return true;
     if (isMembershipPending || isChangePending) return true;
     if (membershipStatus.isNotEmpty &&
         membershipStatus != 'none' &&
@@ -439,9 +453,7 @@ class UserProvider extends ChangeNotifier {
   /// Valida si el usuario está plenamente habilitado para acceder y enviar solicitudes o peticiones pastorales.
   /// Requiere sesión activa, no operar en modo de solo lectura y contar con congregación aprobada.
   bool get canSubmitSolicitud =>
-      isAuthenticated &&
-      !isReadOnly &&
-      isChurchApproved;
+      isAuthenticated && !isReadOnly && isChurchApproved;
 
   /// Estatus de verificación institucional (KYC) de la iglesia del usuario.
   ChurchKycStatus get churchKycStatus =>
@@ -538,12 +550,14 @@ class UserProvider extends ChangeNotifier {
       // Preservar la iglesia solicitada / previa si Odoo todavía no la vinculó o devolvió null en /me
       if (_currentUser != null && !_currentUser!.hasChurchAssigned) {
         if (prevRequestedChurch != null && prevRequestedChurch.isNotEmpty) {
-          final String preservedName = prevRequestedChurch['name'] as String? ??
+          final String preservedName =
+              prevRequestedChurch['name'] as String? ??
               prevIglesia ??
               _currentUser!.iglesiaActual;
           _currentUser = _currentUser!.copyWith(
             requestedChurchData: prevRequestedChurch,
-            requestedChurchId: prevRequestedId ?? _currentUser!.requestedChurchId,
+            requestedChurchId:
+                prevRequestedId ?? _currentUser!.requestedChurchId,
             iglesiaActual: preservedName,
             membershipStatus: _currentUser!.isMembershipPending
                 ? _currentUser!.membershipStatus
@@ -558,8 +572,8 @@ class UserProvider extends ChangeNotifier {
             membershipStatus: _currentUser!.isMembershipPending
                 ? _currentUser!.membershipStatus
                 : (prevStatus.isNotEmpty && prevStatus != 'none'
-                    ? prevStatus
-                    : 'approved'),
+                      ? prevStatus
+                      : 'approved'),
           );
         }
       } else if (_currentUser != null && _currentUser!.hasChurchAssigned) {
@@ -572,7 +586,8 @@ class UserProvider extends ChangeNotifier {
           _currentUser = _currentUser!.copyWith(
             requestedChurchId: prevRequestedId,
             requestedChurchData: prevRequestedChurch,
-            membershipStatus: _currentUser!.membershipStatus == 'none' ||
+            membershipStatus:
+                _currentUser!.membershipStatus == 'none' ||
                     _currentUser!.membershipStatus == 'approved'
                 ? 'change_pending'
                 : _currentUser!.membershipStatus,
@@ -601,8 +616,10 @@ class UserProvider extends ChangeNotifier {
       // Detección automática y emisión inmediata si cambió de estado o fue aprobada
       final newStatus = _currentUser?.membershipStatus ?? 'none';
       final newApproved = _currentUser?.isChurchApproved ?? false;
-      if ((prevStatus != newStatus || prevApproved != newApproved) && _currentUser != null) {
-        final isApprovedNow = (!prevApproved && newApproved) ||
+      if ((prevStatus != newStatus || prevApproved != newApproved) &&
+          _currentUser != null) {
+        final isApprovedNow =
+            (!prevApproved && newApproved) ||
             (prevStatus == 'membership_pending' &&
                 (newStatus == 'approved' || newApproved));
         final event = ChurchStatusChangeEvent(
@@ -643,13 +660,15 @@ class UserProvider extends ChangeNotifier {
     int? effectiveChurchId = churchId;
 
     // Detectar si el usuario ya es miembro activo de una congregación (proceso de cambio / traslado)
-    final bool isAlreadyMember = hasChurchAssigned &&
+    final bool isAlreadyMember =
+        hasChurchAssigned &&
         (isMember ||
             isChurchApproved ||
             _currentUser?.membershipStatus == 'approved');
 
-    final String nextStatus =
-        isAlreadyMember ? 'change_pending' : 'membership_pending';
+    final String nextStatus = isAlreadyMember
+        ? 'change_pending'
+        : 'membership_pending';
 
     // 1. Persistir localmente en SQLite y SharedPreferences para disponibilidad inmediata
     // Solo sobreescribir la iglesia activa local si el usuario NO es ya un miembro activo
@@ -660,10 +679,14 @@ class UserProvider extends ChangeNotifier {
         await prefs.setString('iglesia_guardada', churchName);
       }
       if (denominacion != null && denominacion.trim().isNotEmpty) {
-        await AtrioDatabaseHelper.instance.guardarFeReligiosa(denominacion.trim());
+        await AtrioDatabaseHelper.instance.guardarFeReligiosa(
+          denominacion.trim(),
+        );
       }
     } catch (e) {
-      debugPrint('[UserProvider] Error guardando iglesia/denominación local: $e');
+      debugPrint(
+        '[UserProvider] Error guardando iglesia/denominación local: $e',
+      );
     }
 
     final churchData = <String, dynamic>{
@@ -795,14 +818,17 @@ class UserProvider extends ChangeNotifier {
             requestedChurchData: churchData,
             iglesiaActual: churchName,
             membershipStatus: 'membership_pending',
-            requestedChurchId: (effectiveChurchId != null && effectiveChurchId > 0)
+            requestedChurchId:
+                (effectiveChurchId != null && effectiveChurchId > 0)
                 ? effectiveChurchId
                 : 0,
           );
           notifyListeners();
         }
       } catch (e) {
-        debugPrint('[UserProvider] Error refrescando tras solicitar membresía: $e');
+        debugPrint(
+          '[UserProvider] Error refrescando tras solicitar membresía: $e',
+        );
       }
     }
   }
@@ -822,8 +848,9 @@ class UserProvider extends ChangeNotifier {
 
     // 1. Rollback reactivo inmediato (Optimistic UI)
     // En Odoo 19 (atrio_web_manager 19.0.8), membership_status vuelve a 'member' o 'church_admin'
-    final String restoredStatus =
-        user.isChurchAdmin ? 'church_admin' : 'member';
+    final String restoredStatus = user.isChurchAdmin
+        ? 'church_admin'
+        : 'member';
     _currentUser = user.copyWith(
       membershipStatus: restoredStatus,
       clearRequestedChurch: true,
@@ -846,8 +873,9 @@ class UserProvider extends ChangeNotifier {
       if (user.iglesiaActual.isNotEmpty &&
           user.iglesiaActual != 'Sin iglesia seleccionada') {
         await prefs.setString('iglesia_guardada', user.iglesiaActual);
-        await AtrioDatabaseHelper.instance
-            .guardarIglesiaNombre(user.iglesiaActual);
+        await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+          user.iglesiaActual,
+        );
       }
     } catch (e) {
       debugPrint('[UserProvider] Error al persistir cancelación de cambio: $e');
@@ -857,7 +885,9 @@ class UserProvider extends ChangeNotifier {
     if (_api.isAuthenticated) {
       try {
         await _api.cancelMembershipRequest();
-        debugPrint('✅ [UserProvider] Solicitud de cambio cancelada en Odoo con éxito');
+        debugPrint(
+          '✅ [UserProvider] Solicitud de cambio cancelada en Odoo con éxito',
+        );
       } catch (e) {
         debugPrint('⚠️ [UserProvider] Error cancelando cambio en Odoo: $e');
       }
@@ -873,7 +903,9 @@ class UserProvider extends ChangeNotifier {
           notifyListeners();
         }
       } catch (e) {
-        debugPrint('ℹ️ [UserProvider] Error refrescando tras cancelar cambio: $e');
+        debugPrint(
+          'ℹ️ [UserProvider] Error refrescando tras cancelar cambio: $e',
+        );
       }
     }
 
@@ -912,16 +944,21 @@ class UserProvider extends ChangeNotifier {
       await prefs.remove('requested_church_data');
       await prefs.setString('membership_status', 'none');
       await prefs.remove('iglesia_guardada');
-      await AtrioDatabaseHelper.instance
-          .guardarIglesiaNombre('Sin iglesia seleccionada');
+      await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+        'Sin iglesia seleccionada',
+      );
     } catch (e) {
-      debugPrint('[UserProvider] Error persistiendo cancelación de membresía: $e');
+      debugPrint(
+        '[UserProvider] Error persistiendo cancelación de membresía: $e',
+      );
     }
 
     if (_api.isAuthenticated) {
       try {
         await _api.cancelMembershipRequest();
-        debugPrint('✅ [UserProvider] Solicitud de membresía inicial cancelada en Odoo');
+        debugPrint(
+          '✅ [UserProvider] Solicitud de membresía inicial cancelada en Odoo',
+        );
       } catch (e) {
         debugPrint('⚠️ [UserProvider] Error cancelando membresía en Odoo: $e');
       }
@@ -929,7 +966,9 @@ class UserProvider extends ChangeNotifier {
       try {
         await refreshUserProfile();
       } catch (e) {
-        debugPrint('ℹ️ [UserProvider] Error refrescando tras cancelar membresía: $e');
+        debugPrint(
+          'ℹ️ [UserProvider] Error refrescando tras cancelar membresía: $e',
+        );
       }
     }
 
@@ -938,27 +977,31 @@ class UserProvider extends ChangeNotifier {
 
   /// Cancela una petición pastoral o de oración en Odoo (`POST /requests/{id}/cancel`)
   /// y actualiza la caché local SQLite a `cancelada` únicamente si la operación es válida.
-  Future<({bool ok, String? errorCode, String? message})> cancelarPeticionPastoral(
-    int requestId, {
-    int? localId,
-  }) async {
+  Future<({bool ok, String? errorCode, String? message})>
+  cancelarPeticionPastoral(int requestId, {int? localId}) async {
     if (_api.isAuthenticated && requestId > 0) {
       try {
         await _api.cancelRequest(requestId);
         debugPrint('✅ [UserProvider] Petición $requestId cancelada en Odoo');
       } on AtrioApiException catch (e) {
-        debugPrint('⚠️ [UserProvider] Error API al cancelar petición $requestId: $e');
+        debugPrint(
+          '⚠️ [UserProvider] Error API al cancelar petición $requestId: $e',
+        );
         return (ok: false, errorCode: e.code, message: e.message);
       } catch (e) {
-        debugPrint('⚠️ [UserProvider] Error al cancelar petición $requestId en Odoo: $e');
+        debugPrint(
+          '⚠️ [UserProvider] Error al cancelar petición $requestId en Odoo: $e',
+        );
         return (ok: false, errorCode: null, message: e.toString());
       }
     }
 
     // Actualizar estado en SQLite local con el estado canónico 'cancelada'
     try {
-      await AtrioDatabaseHelper.instance
-          .actualizarEstadoSolicitudLocal(localId ?? requestId, 'cancelada');
+      await AtrioDatabaseHelper.instance.actualizarEstadoSolicitudLocal(
+        localId ?? requestId,
+        'cancelada',
+      );
     } catch (e) {
       debugPrint('[UserProvider] Error actualizando SQLite local: $e');
     }
@@ -992,8 +1035,7 @@ class UserProvider extends ChangeNotifier {
         'password': password,
         if (telefono != null && telefono.trim().isNotEmpty)
           'phone': telefono.trim(),
-        if (churchId != null && churchId > 0)
-          'church_id': churchId,
+        if (churchId != null && churchId > 0) 'church_id': churchId,
       };
 
       final res = await _api.registerMember(payload);
@@ -1041,9 +1083,13 @@ class UserProvider extends ChangeNotifier {
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.remove('iglesia_guardada');
-          await AtrioDatabaseHelper.instance.guardarIglesiaNombre('Sin iglesia seleccionada');
+          await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+            'Sin iglesia seleccionada',
+          );
         } catch (e) {
-          debugPrint('[UserProvider] Advertencia limpiando iglesia previa residual: $e');
+          debugPrint(
+            '[UserProvider] Advertencia limpiando iglesia previa residual: $e',
+          );
         }
       }
 
@@ -1054,14 +1100,20 @@ class UserProvider extends ChangeNotifier {
         await prefs.setString('user_email', _currentUser!.email);
         await prefs.setString('user_name', _currentUser!.nombre);
       } catch (e) {
-        debugPrint('[UserProvider] Advertencia guardando en SharedPreferences: $e');
+        debugPrint(
+          '[UserProvider] Advertencia guardando en SharedPreferences: $e',
+        );
       }
 
       // Registrar dispositivo en Odoo para recibir notificaciones push (no bloqueante)
       try {
-        await DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+        await DeviceNotificationService.instance.registerDeviceWithBackend(
+          _api,
+        );
       } catch (e) {
-        debugPrint('[UserProvider] Error no bloqueante al registrar dispositivo: $e');
+        debugPrint(
+          '[UserProvider] Error no bloqueante al registrar dispositivo: $e',
+        );
       }
 
       return true;
@@ -1069,7 +1121,8 @@ class UserProvider extends ChangeNotifier {
       _errorMessage = _traducirErrorOdoo(e);
       return false;
     } catch (e) {
-      _errorMessage = 'Error de conexión: Por favor verifica tu conexión a internet.';
+      _errorMessage =
+          'Error de conexión: Por favor verifica tu conexión a internet.';
       return false;
     } finally {
       _isLoading = false;
@@ -1181,7 +1234,9 @@ class UserProvider extends ChangeNotifier {
 
       // Sincronizar token del dispositivo con Odoo (no bloqueante)
       try {
-        await DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+        await DeviceNotificationService.instance.registerDeviceWithBackend(
+          _api,
+        );
       } catch (e) {
         debugPrint(
           'ℹ️ [UserProvider] Error no bloqueante al registrar dispositivo: $e',
@@ -1203,7 +1258,8 @@ class UserProvider extends ChangeNotifier {
           e.toString().contains('TimeoutException')) {
         _errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet.';
       } else {
-        _errorMessage = 'Error al iniciar sesión con $provider. Intenta nuevamente.';
+        _errorMessage =
+            'Error al iniciar sesión con $provider. Intenta nuevamente.';
       }
       _isLoading = false;
       notifyListeners();
@@ -1239,9 +1295,13 @@ class UserProvider extends ChangeNotifier {
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.remove('iglesia_guardada');
-          await AtrioDatabaseHelper.instance.guardarIglesiaNombre('Sin iglesia seleccionada');
+          await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
+            'Sin iglesia seleccionada',
+          );
         } catch (e) {
-          debugPrint('[UserProvider] Advertencia limpiando iglesia previa residual: $e');
+          debugPrint(
+            '[UserProvider] Advertencia limpiando iglesia previa residual: $e',
+          );
         }
       }
 
@@ -1255,7 +1315,9 @@ class UserProvider extends ChangeNotifier {
         await prefs.setString('userName', _currentUser!.nombre);
         await prefs.setString('auth_provider', 'google');
       } catch (e) {
-        debugPrint('[UserProvider] Advertencia guardando en SharedPreferences: $e');
+        debugPrint(
+          '[UserProvider] Advertencia guardando en SharedPreferences: $e',
+        );
       }
 
       // Sincronizar SQLite (atrio.db)
@@ -1273,9 +1335,13 @@ class UserProvider extends ChangeNotifier {
 
       // Sincronizar token del dispositivo con Odoo (no bloqueante)
       try {
-        await DeviceNotificationService.instance.registerDeviceWithBackend(_api);
+        await DeviceNotificationService.instance.registerDeviceWithBackend(
+          _api,
+        );
       } catch (e) {
-        debugPrint('[UserProvider] Error no bloqueante al registrar dispositivo: $e');
+        debugPrint(
+          '[UserProvider] Error no bloqueante al registrar dispositivo: $e',
+        );
       }
 
       _isLoading = false;
@@ -1293,7 +1359,8 @@ class UserProvider extends ChangeNotifier {
           e.toString().contains('TimeoutException')) {
         _errorMessage = 'Error de conexión con el servidor. Verifica tu conexión a internet.';
       } else {
-        _errorMessage = 'Error al iniciar sesión con Google. Intenta nuevamente.';
+        _errorMessage =
+            'Error al iniciar sesión con Google. Intenta nuevamente.';
       }
       _isLoading = false;
       notifyListeners();
@@ -1303,7 +1370,9 @@ class UserProvider extends ChangeNotifier {
 
   /// Registra una nueva iglesia en Odoo para el usuario actual (POST /me/church).
   /// Transiciona el rol del usuario a 'church_admin' con church.has_active_subscription == false.
-  Future<Map<String, dynamic>> createMyChurch(Map<String, dynamic> churchData) async {
+  Future<Map<String, dynamic>> createMyChurch(
+    Map<String, dynamic> churchData,
+  ) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -1364,7 +1433,9 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('[UserProvider] No se pudo restaurar la sesión automáticamente: $e');
+      debugPrint(
+        '[UserProvider] No se pudo restaurar la sesión automáticamente: $e',
+      );
       await logout();
       return false;
     }
@@ -1377,7 +1448,9 @@ class UserProvider extends ChangeNotifier {
 
     try {
       // Desregistrar dispositivo de Odoo para no recibir alertas de otra cuenta
-      await DeviceNotificationService.instance.unregisterDeviceFromBackend(_api);
+      await DeviceNotificationService.instance.unregisterDeviceFromBackend(
+        _api,
+      );
       await _api.logout();
     } catch (e) {
       debugPrint('[UserProvider] Error al revocar token en servidor: $e');
@@ -1405,10 +1478,91 @@ class UserProvider extends ChangeNotifier {
         await prefs.remove('iglesia_guardada');
         await AtrioDatabaseHelper.instance.eliminarUsuarioYDatos();
       } catch (e) {
-        debugPrint('[UserProvider] Error limpiando datos locales en logout: $e');
+        debugPrint(
+          '[UserProvider] Error limpiando datos locales en logout: $e',
+        );
       }
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Actualiza los datos básicos del perfil del usuario en el backend de Odoo 19 (`PUT /me`)
+  /// y sincroniza el estado en memoria, `SharedPreferences` y SQLite.
+  Future<bool> actualizarPerfilUsuario({
+    required String nombre,
+    required String email,
+    required String telefono,
+  }) async {
+    if (isReadOnly) {
+      _errorMessage = 'Acción restringida: Modo de solo lectura activado.';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final String cleanName = nombre.trim();
+    final String cleanEmail = email.trim();
+    final String cleanPhone = telefono.trim();
+
+    try {
+      await _api.updateMe({
+        'name': cleanName,
+        'email': cleanEmail,
+        'phone': cleanPhone,
+      });
+
+      // Refrescar desde Odoo para obtener la respuesta canónica del servidor
+      try {
+        final meData = await _api.me();
+        _rawMeData = meData;
+        _currentUser = UserModel.fromOdooJson(meData);
+      } catch (_) {
+        if (_currentUser != null) {
+          _currentUser = _currentUser!.copyWith(
+            nombre: cleanName,
+            email: cleanEmail,
+            telefono: cleanPhone,
+          );
+        }
+      }
+
+      await _persistCurrentUserLocally();
+
+      // Sincronizar también en SQLite local para compatibilidad con vistas offline
+      try {
+        await AtrioDatabaseHelper.instance.guardarUsuario({
+          if (_currentUser?.id != null) 'id': _currentUser!.id,
+          'nombre': _currentUser?.nombre ?? cleanName,
+          'email': _currentUser?.email ?? cleanEmail,
+          'celular': _currentUser?.telefono ?? cleanPhone,
+          if (_currentUser?.iglesiaActual != null &&
+              _currentUser!.iglesiaActual.isNotEmpty)
+            'iglesia_nombre': _currentUser!.iglesiaActual,
+        });
+      } catch (e) {
+        debugPrint(
+          '⚠️ [UserProvider] Error actualizando SQLite tras updateMe: $e',
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AtrioApiException catch (e) {
+      _errorMessage = e.message.isNotEmpty ? e.message : _traducirErrorOdoo(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage =
+          'No se pudo conectar con el servidor para actualizar tus datos. Verifica tu conexión e inténtalo de nuevo.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
@@ -1418,6 +1572,8 @@ class UserProvider extends ChangeNotifier {
   /// - ETAPA 1: Limpieza exhaustiva de FlutterSecureStorage (clearAll), SharedPreferences (clear) y SQLite (purgarBaseDeDatosCompleta).
   /// - Reseteo en memoria a estado virgen absoluto.
   Future<bool> eliminarCuentaDefinitiva({String? razon}) async {
+    if (_isDeletingAccount) return false;
+    _isDeletingAccount = true;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -1430,17 +1586,48 @@ class UserProvider extends ChangeNotifier {
       // ETAPA 3: Integración y notificación al Backend de Odoo 19
       if (userId != null && email != null) {
         try {
-          // Desregistrar notificaciones push antes de suprimir la cuenta
-          await DeviceNotificationService.instance.unregisterDeviceFromBackend(_api);
-          await _api.deleteAccount(
-            userId: userId,
-            email: email,
-            reason: razon,
+          // Desregistrar notificaciones push antes de suprimir la cuenta (best-effort)
+          await DeviceNotificationService.instance.unregisterDeviceFromBackend(
+            _api,
           );
-          debugPrint('✅ [UserProvider] Solicitud de eliminación formal aceptada por backend Odoo.');
         } catch (e) {
-          debugPrint('⚠️ [UserProvider] Advertencia al contactar Odoo para eliminación: $e');
-          // Continuamos para garantizar que la app móvil cumpla con la purga local estricta
+          debugPrint(
+            '⚠️ [UserProvider] Advertencia desregistrando dispositivo: $e',
+          );
+        }
+
+        try {
+          await _api.deleteAccount(userId: userId, email: email, reason: razon);
+          debugPrint(
+            '✅ [UserProvider] Solicitud de eliminación formal aceptada por backend Odoo.',
+          );
+        } on AtrioApiException catch (e) {
+          if (e.status == 401) {
+            // Doble toque o token invalidado tras la baja: el backend ya eliminó la cuenta.
+            debugPrint(
+              'ℹ️ [UserProvider] 401 en deleteAccount: cuenta ya eliminada. Continuando con purga local.',
+            );
+          } else {
+            debugPrint(
+              '❌ [UserProvider] Backend rechazó eliminación (${e.status} ${e.code}): ${e.message}',
+            );
+            _errorMessage = e.message.isNotEmpty
+                ? e.message
+                : _traducirErrorOdoo(e);
+            _isLoading = false;
+            _isDeletingAccount = false;
+            notifyListeners();
+            return false;
+          }
+        } catch (e) {
+          debugPrint(
+            '❌ [UserProvider] Error de red/conexión eliminando cuenta en Odoo: $e',
+          );
+          _errorMessage = 'No se pudo conectar con el servidor para eliminar tu cuenta. Verifica tu conexión e inténtalo de nuevo.';
+          _isLoading = false;
+          _isDeletingAccount = false;
+          notifyListeners();
+          return false;
         }
       }
 
@@ -1474,12 +1661,14 @@ class UserProvider extends ChangeNotifier {
       _errorMessage = null;
 
       _isLoading = false;
+      _isDeletingAccount = false;
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('💥 [UserProvider] Excepción crítica eliminando cuenta: $e');
       _errorMessage = 'Error eliminando la cuenta: $e';
       _isLoading = false;
+      _isDeletingAccount = false;
       notifyListeners();
       return false;
     }
@@ -1496,7 +1685,9 @@ class UserProvider extends ChangeNotifier {
     try {
       final res = await _api.testRefreshTokenFlow();
       if (res['datos'] != null) {
-        _currentUser = UserModel.fromOdooJson(res['datos'] as Map<String, dynamic>);
+        _currentUser = UserModel.fromOdooJson(
+          res['datos'] as Map<String, dynamic>,
+        );
       }
       _isLoading = false;
       notifyListeners();
@@ -1643,6 +1834,10 @@ class UserProvider extends ChangeNotifier {
         return 'Este contenido ya no está disponible.';
       case 'read_only':
         return 'Acción no permitida: Modo de solo lectura activo.';
+      case 'account_not_deletable':
+        return e.message.isNotEmpty
+            ? e.message
+            : 'No es posible eliminar esta cuenta en este momento.';
       case 'church_required':
         return 'Se requiere especificar una iglesia para esta operación.';
       case 'server_error':
@@ -1653,7 +1848,9 @@ class UserProvider extends ChangeNotifier {
               ? e.message
               : 'Solicitud incorrecta o datos inválidos (400).';
         }
-        return e.message.isNotEmpty ? e.message : 'Error en el servidor (${e.status}).';
+        return e.message.isNotEmpty
+            ? e.message
+            : 'Error en el servidor (${e.status}).';
     }
   }
 

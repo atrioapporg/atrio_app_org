@@ -1,5 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import 'package:atrio/atrio_api.dart';
 import 'package:atrio/modelos/user_model.dart';
@@ -8,6 +7,10 @@ import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
 import 'package:atrio/servicios/auth_service.dart';
 import 'package:atrio/servicios/token_storage_service.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockTokenStorageService extends TokenStorageService {
   String? _accessToken = 'test_access_token_123';
@@ -42,7 +45,8 @@ class MockTokenStorageService extends TokenStorageService {
   }
 
   @override
-  Future<bool> hasToken() async => _accessToken != null && _accessToken!.isNotEmpty;
+  Future<bool> hasToken() async =>
+      _accessToken != null && _accessToken!.isNotEmpty;
 }
 
 void main() {
@@ -58,85 +62,206 @@ void main() {
     });
   });
 
-  group('Flujo de Eliminación de Cuenta y Datos Personales (Clean Architecture)', () {
-    test('TokenStorageService.clearAll limpia todos los tokens cifrados', () async {
-      final mockStorage = MockTokenStorageService();
-      expect(await mockStorage.hasToken(), isTrue);
+  group(
+    'Flujo de Eliminación de Cuenta y Datos Personales (Clean Architecture)',
+    () {
+      test(
+        'TokenStorageService.clearAll limpia todos los tokens cifrados',
+        () async {
+          final mockStorage = MockTokenStorageService();
+          expect(await mockStorage.hasToken(), isTrue);
 
-      await mockStorage.clearAll();
-      expect(await mockStorage.hasToken(), isFalse);
-      expect(await mockStorage.getAccessToken(), isNull);
-      expect(await mockStorage.getRefreshToken(), isNull);
-    });
-
-    test('IglesiaProvider.limpiarIglesia restablece el estado virgen en memoria', () {
-      final provider = IglesiaProvider();
-      provider.limpiarIglesia();
-
-      expect(provider.tieneIglesiaGuardada, isFalse);
-      expect(provider.tieneIglesiaAsignada, isFalse);
-      expect(provider.iglesiaActual, isNull);
-      expect(provider.errorMessage, isNull);
-    });
-
-    test('AdminProvider.reset purga todos los modelos de administración en memoria', () {
-      final api = AtrioApi(baseUrl: 'https://test.atrioapp.org');
-      final adminProvider = AdminProvider(api: api);
-      adminProvider.reset();
-
-      expect(adminProvider.announcements, isEmpty);
-      expect(adminProvider.groups, isEmpty);
-      expect(adminProvider.prayerRequests, isEmpty);
-      expect(adminProvider.adminEvents, isEmpty);
-      expect(adminProvider.analytics, isNull);
-      expect(adminProvider.errorMessage, isNull);
-    });
-
-    test('AuthService.revokeGoogleSession se ejecuta de forma segura sin excepciones', () async {
-      // Verifica que aún si no hay sesión previa activa de Google, no lance excepciones no controladas
-      expect(() async => await AuthService.revokeGoogleSession(), returnsNormally);
-    });
-
-    test('UserProvider.eliminarCuentaDefinitiva ejecuta purga de almacenamiento local, tokens y estado', () async {
-      final mockStorage = MockTokenStorageService();
-      final api = AtrioApi(
-        baseUrl: 'https://test.atrioapp.org',
-        token: 'active_token',
-        refreshToken: 'active_refresh',
-        storageService: mockStorage,
-      );
-      final userProvider = UserProvider(api: api, storageService: mockStorage);
-
-      userProvider.setCurrentUserForTesting(
-        UserModel(
-          id: 42,
-          nombre: 'Usuario Prueba Borrado',
-          email: 'usuario.prueba@atrioapp.org',
-          iglesiaActual: 'Comunidad de Gracia',
-          fechaRegistro: '2026-10-28',
-          avatarIniciales: 'UP',
-          esMiembroVerificado: true,
-        ),
+          await mockStorage.clearAll();
+          expect(await mockStorage.hasToken(), isFalse);
+          expect(await mockStorage.getAccessToken(), isNull);
+          expect(await mockStorage.getRefreshToken(), isNull);
+        },
       );
 
-      expect(userProvider.isAuthenticated, isTrue);
-      expect(userProvider.currentUser, isNotNull);
+      test(
+        'IglesiaProvider.limpiarIglesia restablece el estado virgen en memoria',
+        () {
+          final provider = IglesiaProvider();
+          provider.limpiarIglesia();
 
-      // Ejecutar la eliminación definitiva
-      final resultado = await userProvider.eliminarCuentaDefinitiva(razon: 'Solicitud del usuario');
+          expect(provider.tieneIglesiaGuardada, isFalse);
+          expect(provider.tieneIglesiaAsignada, isFalse);
+          expect(provider.iglesiaActual, isNull);
+          expect(provider.errorMessage, isNull);
+        },
+      );
 
-      expect(resultado, isTrue);
-      expect(userProvider.currentUser, isNull);
-      expect(userProvider.isAuthenticated, isFalse);
-      expect(api.token, isNull);
-      expect(api.refreshToken, isNull);
+      test('AdminProvider.reset purga todos los modelos de administración en memoria', () {
+        final api = AtrioApi(baseUrl: 'https://test.atrioapp.org');
+        final adminProvider = AdminProvider(api: api);
+        adminProvider.reset();
 
-      // Verificar que SharedPreferences haya sido completamente limpiado
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('isLoggedIn'), isNull);
-      expect(prefs.getString('user_email'), isNull);
-      expect(prefs.getString('iglesia_guardada'), isNull);
-      expect(prefs.getBool('intro_vista'), isNull);
-    });
-  });
+        expect(adminProvider.announcements, isEmpty);
+        expect(adminProvider.groups, isEmpty);
+        expect(adminProvider.prayerRequests, isEmpty);
+        expect(adminProvider.adminEvents, isEmpty);
+        expect(adminProvider.analytics, isNull);
+        expect(adminProvider.errorMessage, isNull);
+      });
+
+      test('AuthService.revokeGoogleSession se ejecuta de forma segura sin excepciones', () async {
+        // Verifica que aún si no hay sesión previa activa de Google, no lance excepciones no controladas
+        expect(
+          () async => await AuthService.revokeGoogleSession(),
+          returnsNormally,
+        );
+      });
+
+      test('UserProvider.eliminarCuentaDefinitiva ejecuta purga de almacenamiento local, tokens y estado con 200 OK', () async {
+        final mockStorage = MockTokenStorageService();
+        final mockClient = MockClient((request) async {
+          if (request.url.path.endsWith('/auth/delete_account')) {
+            expect(request.method, equals('POST'));
+            expect(request.body, isEmpty);
+            return http.Response(jsonEncode({'success': true}), 200);
+          }
+          return http.Response('{}', 200);
+        });
+        final api = AtrioApi(
+          baseUrl: 'https://test.atrioapp.org',
+          token: 'active_token',
+          refreshToken: 'active_refresh',
+          storageService: mockStorage,
+          client: mockClient,
+        );
+        final userProvider = UserProvider(
+          api: api,
+          storageService: mockStorage,
+        );
+
+        userProvider.setCurrentUserForTesting(
+          UserModel(
+            id: 42,
+            nombre: 'Usuario Prueba Borrado',
+            email: 'usuario.prueba@atrioapp.org',
+            iglesiaActual: 'Comunidad de Gracia',
+            fechaRegistro: '2026-10-28',
+            avatarIniciales: 'UP',
+            esMiembroVerificado: true,
+          ),
+        );
+
+        expect(userProvider.isAuthenticated, isTrue);
+        expect(userProvider.currentUser, isNotNull);
+
+        // Ejecutar la eliminación definitiva
+        final resultado = await userProvider.eliminarCuentaDefinitiva(
+          razon: 'Solicitud del usuario',
+        );
+
+        expect(resultado, isTrue);
+        expect(userProvider.currentUser, isNull);
+        expect(userProvider.isAuthenticated, isFalse);
+        expect(api.token, isNull);
+        expect(api.refreshToken, isNull);
+
+        // Verificar que SharedPreferences haya sido completamente limpiado
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('isLoggedIn'), isNull);
+        expect(prefs.getString('user_email'), isNull);
+        expect(prefs.getString('iglesia_guardada'), isNull);
+        expect(prefs.getBool('intro_vista'), isNull);
+      });
+
+      test('UserProvider.eliminarCuentaDefinitiva trata HTTP 401 (doble toque) como cuenta ya eliminada', () async {
+        final mockStorage = MockTokenStorageService();
+        final mockClient = MockClient((request) async {
+          if (request.url.path.endsWith('/auth/delete_account') ||
+              request.url.path.endsWith('/auth/refresh')) {
+            return http.Response(
+              jsonEncode({'error': 'Token inválido', 'code': 'invalid_token'}),
+              401,
+            );
+          }
+          return http.Response('{}', 200);
+        });
+        final api = AtrioApi(
+          baseUrl: 'https://test.atrioapp.org',
+          token: 'active_token',
+          refreshToken: 'active_refresh',
+          storageService: mockStorage,
+          client: mockClient,
+        );
+        final userProvider = UserProvider(
+          api: api,
+          storageService: mockStorage,
+        );
+
+        userProvider.setCurrentUserForTesting(
+          UserModel(
+            id: 43,
+            nombre: 'Usuario Doble Toque',
+            email: 'doble.toque@atrioapp.org',
+            iglesiaActual: 'Comunidad de Gracia',
+            fechaRegistro: '2026-10-28',
+            avatarIniciales: 'UD',
+            esMiembroVerificado: true,
+          ),
+        );
+
+        final resultado = await userProvider.eliminarCuentaDefinitiva();
+
+        expect(resultado, isTrue);
+        expect(userProvider.currentUser, isNull);
+        expect(api.token, isNull);
+      });
+
+      test('UserProvider.eliminarCuentaDefinitiva aborta purga local y expone mensaje ante HTTP 409 account_not_deletable', () async {
+        final mockStorage = MockTokenStorageService();
+        final mockClient = MockClient((request) async {
+          if (request.url.path.endsWith('/auth/delete_account')) {
+            return http.Response(
+              jsonEncode({
+                'error': 'Debes asignar otro administrador antes de eliminar tu cuenta.',
+                'code': 'account_not_deletable',
+              }),
+              409,
+            );
+          }
+          return http.Response('{}', 200);
+        });
+        final api = AtrioApi(
+          baseUrl: 'https://test.atrioapp.org',
+          token: 'active_token',
+          refreshToken: 'active_refresh',
+          storageService: mockStorage,
+          client: mockClient,
+        );
+        final userProvider = UserProvider(
+          api: api,
+          storageService: mockStorage,
+        );
+
+        userProvider.setCurrentUserForTesting(
+          UserModel(
+            id: 44,
+            nombre: 'Pastor Único Admin',
+            email: 'admin@atrioapp.org',
+            iglesiaActual: 'Comunidad de Gracia',
+            fechaRegistro: '2026-10-28',
+            avatarIniciales: 'PA',
+            esMiembroVerificado: true,
+          ),
+        );
+
+        final resultado = await userProvider.eliminarCuentaDefinitiva();
+
+        expect(resultado, isFalse);
+        expect(
+          userProvider.errorMessage,
+          contains('Debes asignar otro administrador'),
+        );
+        expect(userProvider.currentUser, isNotNull);
+        expect(api.token, equals('test_access_token_123'));
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('isLoggedIn'), isTrue);
+      });
+    },
+  );
 }

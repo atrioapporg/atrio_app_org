@@ -18,6 +18,7 @@ import '../providers/user_provider.dart';
 import '../widgets/atrio_connectivity_alert.dart';
 import '../widgets/change_pending_banner.dart';
 import '../widgets/daily_verse_notification_settings_card.dart';
+import '../widgets/editar_perfil_dialog.dart';
 import '../widgets/permission_guard.dart';
 import '../widgets/read_only_banner.dart';
 import 'ayuda_soporte_screen.dart';
@@ -802,273 +803,16 @@ class _PerfilScreenState extends State<PerfilScreen>
     }
 
     final currentUser = userProvider.currentUser;
-    final formKey = GlobalKey<FormState>();
-    final nombreCtrl = TextEditingController(
-      text: currentUser?.nombre ?? (_usuarioData?['nombre'] ?? ''),
-    );
-    final emailCtrl = TextEditingController(
-      text: currentUser?.email ?? (_usuarioData?['email'] ?? ''),
-    );
-    final telefonoCtrl = TextEditingController(
-      text: currentUser?.telefono ?? (_usuarioData?['celular'] ?? ''),
-    );
-    final String defaultIglesia =
-        (iglesiaActual != null &&
-            iglesiaActual.isNotEmpty &&
-            iglesiaActual != 'Sin iglesia seleccionada' &&
-            iglesiaActual !=
-                (l10n?.sinIglesiaSeleccionada ?? 'Sin iglesia seleccionada'))
-        ? iglesiaActual
-        : (currentUser?.iglesiaActual ??
-              (_usuarioData?['iglesia_nombre'] ?? ''));
-
-    final iglesiaCtrl = TextEditingController(text: defaultIglesia);
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogCtx) {
-        return AlertDialog(
-          insetPadding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: usableHeight * 0.03,
-          ),
-          backgroundColor: blancoFondo,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.04),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.edit_note_rounded,
-                color: azulFondo,
-                size: screenWidth * 0.065,
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Text(
-                l10n?.misDatosDePerfil ?? 'Mis datos de perfil',
-                style: TextStyle(
-                  color: azulFondo,
-                  fontSize: screenWidth * 0.045,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: screenWidth * 0.90,
-            height: usableHeight * 0.55,
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildFormField(
-                      controller: nombreCtrl,
-                      label: l10n?.nombreCompleto ?? 'Nombre completo',
-                      icon: Icons.person_outline,
-                      screenWidth: screenWidth,
-                      usableHeight: usableHeight,
-                      validator: (val) => (val == null || val.trim().isEmpty)
-                          ? (l10n?.ingresaUnNombre ?? 'Ingresa un nombre')
-                          : null,
-                    ),
-                    SizedBox(height: usableHeight * 0.025),
-                    _buildFormField(
-                      controller: emailCtrl,
-                      label: l10n?.correoElectronico ?? 'Correo electrónico',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      screenWidth: screenWidth,
-                      usableHeight: usableHeight,
-                      validator: (val) => (val == null || !val.contains('@'))
-                          ? (l10n?.ingresaUnCorreoValido ??
-                                'Ingresa un correo válido')
-                          : null,
-                    ),
-                    SizedBox(height: usableHeight * 0.025),
-                    _buildFormField(
-                      controller: telefonoCtrl,
-                      label: l10n?.telefonoCelular ?? 'Teléfono celular',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      screenWidth: screenWidth,
-                      usableHeight: usableHeight,
-                    ),
-                    SizedBox(height: usableHeight * 0.025),
-                    _buildFormField(
-                      controller: iglesiaCtrl,
-                      label: l10n?.iglesiaActual ?? 'Iglesia actual',
-                      icon: Icons.church_outlined,
-                      screenWidth: screenWidth,
-                      usableHeight: usableHeight,
-                      readOnly: true,
-                      helperText:
-                          l10n?.helperCambiarIglesia ??
-                          'Para cambiarla usa la opción "Cambiar de iglesia"',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          actionsPadding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: usableHeight * 0.015,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: Text(
-                l10n?.cancelar ?? 'Cancelar',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: screenWidth * 0.035,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: amarilloOro,
-                foregroundColor: azulFondo,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.025),
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.045,
-                  vertical: usableHeight * 0.01,
-                ),
-              ),
-              onPressed: () async {
-                if (context.read<UserProvider>().isReadOnly) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        l10n?.accionRestringidaSoloLectura ?? 'Acción restringida: Modo de solo lectura activado.',
-                      ),
-                      backgroundColor: Colors.red.shade700,
-                    ),
-                  );
-                  return;
-                }
-                if (formKey.currentState!.validate()) {
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                  final navigator = Navigator.of(dialogCtx);
-                  final String nuevaIglesia = iglesiaCtrl.text.trim();
-
-                  // Guardamos en SQLite
-                  await AtrioDatabaseHelper.instance.guardarUsuario({
-                    if (_usuarioData != null && _usuarioData!['id'] != null)
-                      'id': _usuarioData!['id'],
-                    'nombre': nombreCtrl.text.trim(),
-                    'email': emailCtrl.text.trim(),
-                    'celular': telefonoCtrl.text.trim(),
-                    'iglesia_nombre': nuevaIglesia,
-                    if (_usuarioData != null &&
-                        _usuarioData!['fe_religiosa'] != null)
-                      'fe_religiosa': _usuarioData!['fe_religiosa'],
-                  });
-
-                  if (nuevaIglesia.isNotEmpty) {
-                    await AtrioDatabaseHelper.instance.guardarIglesiaNombre(
-                      nuevaIglesia,
-                    );
-                  }
-
-                  navigator.pop();
-
-                  // Refrescamos la UI
-                  await _cargarDatosUsuario();
-
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(
-                      backgroundColor: azulFondo,
-                      content: Text(
-                        l10n?.datosActualizadosCorrectamente ??
-                            'Datos actualizados correctamente',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: screenWidth * 0.035,
-                        ),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-              child: Text(
-                l10n?.guardarCambios ?? 'Guardar cambios',
-                style: TextStyle(
-                  fontSize: screenWidth * 0.045,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildFormField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required double screenWidth,
-    required double usableHeight,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-    bool readOnly = false,
-    String? helperText,
-  }) {
-    return TextFormField(
-      controller: controller,
-      readOnly: readOnly,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: TextStyle(
-        color: readOnly ? Colors.grey.shade700 : azulFondo,
-        fontSize: screenWidth * 0.04,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: Colors.grey.shade600,
-          fontSize: screenWidth * 0.035,
-        ),
-        helperText: helperText,
-        helperStyle: TextStyle(
-          color: Colors.grey.shade600,
-          fontSize: screenWidth * 0.028,
-        ),
-        prefixIcon: Icon(icon, color: azulFondo, size: screenWidth * 0.05),
-        suffixIcon: readOnly
-            ? Icon(
-                Icons.lock_outline_rounded,
-                color: Colors.grey.shade500,
-                size: screenWidth * 0.045,
-              )
-            : null,
-        filled: true,
-        fillColor: readOnly ? const Color(0xFFF3F5F7) : Colors.white,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.03,
-          vertical: usableHeight * 0.018,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(screenWidth * 0.025),
-          borderSide: const BorderSide(color: grisBorde),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(screenWidth * 0.025),
-          borderSide: BorderSide(
-            color: readOnly ? grisBorde : azulFondo,
-            width: readOnly ? 1.0 : 1.5,
-          ),
-        ),
+      builder: (_) => EditarPerfilDialog(
+        initialNombre: currentUser?.nombre ?? (_usuarioData?['nombre'] ?? ''),
+        initialEmail: currentUser?.email ?? (_usuarioData?['email'] ?? ''),
+        initialTelefono:
+            currentUser?.telefono ?? (_usuarioData?['celular'] ?? ''),
+        onSaved: _cargarDatosUsuario,
       ),
     );
   }
@@ -2619,44 +2363,39 @@ class _PerfilScreenState extends State<PerfilScreen>
               // ===============================================================
               // EJECUCIÓN INTEGRAL POR ETAPAS (1, 2 y 3)
               // ===============================================================
-              await userProvider.eliminarCuentaDefinitiva();
+              final bool eliminado = await userProvider
+                  .eliminarCuentaDefinitiva();
 
-              // Reseteo complementario de Providers en memoria
-              if (context.mounted) {
-                try {
-                  context.read<IglesiaProvider>().limpiarIglesia();
-                } catch (_) {}
-                try {
-                  context.read<AdminProvider>().reset();
-                } catch (_) {}
-                try {
-                  context.read<RecomendacionIglesiaProvider>().clearSelection();
-                } catch (_) {}
+              if (!context.mounted) return;
 
-                // Cerrar modal de progreso
-                Navigator.of(context, rootNavigator: true).pop();
+              // Cerrar modal de progreso
+              Navigator.of(context, rootNavigator: true).pop();
 
-                // SnackBar de confirmación
+              if (!eliminado) {
+                final String errorMsg =
+                    userProvider.errorMessage ??
+                    (l10n?.errorEliminarCuenta ??
+                        'No se pudo eliminar la cuenta. Por favor, inténtalo de nuevo.');
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
                       children: [
                         const Icon(
-                          Icons.check_circle_outline,
+                          Icons.error_outline,
                           color: Colors.white,
                           size: 22,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            l10n?.cuentaEliminadaExito ?? 'Tu cuenta y datos personales han sido eliminados satisfactoriamente. Se ha enviado una confirmación a tu correo.',
+                            errorMsg,
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
                     ),
-                    backgroundColor: const Color(0xFF072B4F),
-                    duration: const Duration(seconds: 4),
+                    backgroundColor: Colors.red.shade700,
+                    duration: const Duration(seconds: 5),
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -2664,16 +2403,57 @@ class _PerfilScreenState extends State<PerfilScreen>
                     margin: const EdgeInsets.all(16),
                   ),
                 );
-
-                // ===============================================================
-                // ETAPA 4: REINICIO DE RUTA RAÍZ (Navigator.pushAndRemoveUntil)
-                // ===============================================================
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  InicioSesionScreen.routeName,
-                  (route) => false,
-                );
+                return;
               }
+
+              // Reseteo complementario de Providers en memoria
+              try {
+                context.read<IglesiaProvider>().limpiarIglesia();
+              } catch (_) {}
+              try {
+                context.read<AdminProvider>().reset();
+              } catch (_) {}
+              try {
+                context.read<RecomendacionIglesiaProvider>().clearSelection();
+              } catch (_) {}
+
+              // SnackBar de confirmación
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          l10n?.cuentaEliminadaExito ?? 'Tu cuenta y datos personales han sido eliminados satisfactoriamente. Se ha enviado una confirmación a tu correo.',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF072B4F),
+                  duration: const Duration(seconds: 4),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                ),
+              );
+
+              // ===============================================================
+              // ETAPA 4: REINICIO DE RUTA RAÍZ (Navigator.pushAndRemoveUntil)
+              // ===============================================================
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                InicioSesionScreen.routeName,
+                (route) => false,
+              );
             },
             child: Text(
               l10n?.eliminarDefinitivamente ?? 'Eliminar definitivamente',

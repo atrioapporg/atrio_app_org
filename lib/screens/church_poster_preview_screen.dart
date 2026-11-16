@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:atrio/l10n/app_localizations.dart';
 import 'package:atrio/providers/iglesia_provider.dart';
 import 'package:atrio/providers/user_provider.dart';
+import 'package:atrio/widgets/atrio_connectivity_alert.dart';
 import 'package:atrio/widgets/church_qr_dialog.dart';
 
 /// Pantalla de Previsualización y Descarga del Afiche Oficial de Vinculación QR.
@@ -51,6 +54,88 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _compartirPorWhatsApp(String churchName, String joinUrl) async {
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    final String mensaje =
+        l10n?.mensajeCompartirQrIglesia(churchName, joinUrl) ??
+        '¡Únete a nuestra iglesia $churchName en ATRIO! Escanea nuestro código QR oficial o ingresa aquí: $joinUrl';
+    final Uri url = Uri.parse(
+      'whatsapp://send?text=${Uri.encodeComponent(mensaje)}',
+    );
+    final Uri urlWeb = Uri.parse(
+      'https://wa.me/?text=${Uri.encodeComponent(mensaje)}',
+    );
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(urlWeb)) {
+        await launchUrl(urlWeb, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        _mostrarAlertaCompartir(
+          l10n?.errorAbrirWhatsAppDispositivo ??
+              'No se pudo abrir WhatsApp en este dispositivo.',
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarAlertaCompartir(
+        l10n?.errorAbrirWhatsApp ??
+            'Ocurrió un error al intentar abrir WhatsApp.',
+      );
+    }
+  }
+
+  Future<void> _compartirPorCorreo(String churchName, String joinUrl) async {
+    final hasInternet = await AtrioConnectivityAlert.checkAndNotify(context);
+    if (!hasInternet || !mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    final String subject =
+        l10n?.asuntoCorreoQrIglesia(churchName) ??
+        'Código QR oficial de $churchName en ATRIO';
+    final String body =
+        l10n?.mensajeCompartirQrIglesia(churchName, joinUrl) ??
+        '¡Únete a nuestra iglesia $churchName en ATRIO! Escanea nuestro código QR oficial o ingresa aquí: $joinUrl';
+
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      queryParameters: {'subject': subject, 'body': body},
+    );
+
+    try {
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri);
+      } else {
+        if (!mounted) return;
+        _mostrarAlertaCompartir(
+          l10n?.errorNoClienteCorreo ??
+              'No se encontró un cliente de correo configurado.',
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _mostrarAlertaCompartir(
+        l10n?.errorAbrirCorreo ??
+            'Ocurrió un error al intentar abrir el correo.',
+      );
+    }
+  }
+
+  void _mostrarAlertaCompartir(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: const Color(0xFF072B4F),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _generateAndPrintPdf(
@@ -240,6 +325,10 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
             ? userProv.currentUser!.iglesiaActual
             : 'Parroquia San Pedro Nolasco';
 
+    final String effectiveJoinUrl =
+        _joinUrl ?? 'https://atrioapp.odoo19rd.com';
+    final bool isChurchAdmin = userProv.currentUser?.isChurchAdmin ?? false;
+
     return Scaffold(
       backgroundColor: const Color(0xFF04182C),
       appBar: AppBar(
@@ -271,84 +360,118 @@ class _ChurchPosterPreviewScreenState extends State<ChurchPosterPreviewScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFE5A023)),
             )
-          : SingleChildScrollView(
-              padding: const EdgeInsetsDirectional.all(20),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // Tarjeta gráfica del afiche que recrea la plantilla visual
-                  PosterGraphicCard(
-                    churchName: churchName,
-                    joinUrl: _joinUrl ?? 'https://atrioapp.odoo19rd.com',
-                    qrBytes: _qrBytes,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Texto instructivo pastoral
-                  Container(
-                    padding: const EdgeInsetsDirectional.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF072B4F).withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.info_outline_rounded,
-                          color: Color(0xFFE5A023),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            l10n?.imprimeColocaAfiche ??
-                                'Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                              height: 1.4,
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 12),
+                child: Column(
+                  children: [
+                    // Tarjeta gráfica del afiche escalada para caber sin scroll
+                    Expanded(
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: 340,
+                            child: PosterGraphicCard(
+                              churchName: churchName,
+                              joinUrl: effectiveJoinUrl,
+                              qrBytes: _qrBytes,
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 10),
 
-                  // Botón principal de impresión / guardado PDF
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE5A023), // Oro ATRIO
-                        foregroundColor: const Color(0xFF072B4F),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                    // Texto instructivo pastoral compacto
+                    Container(
+                      padding: const EdgeInsetsDirectional.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF072B4F).withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.12),
                         ),
                       ),
-                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 22),
-                      label: Text(
-                        l10n?.descargarAfichePdf ?? 'Descargar / Imprimir Afiche (PDF)',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: () => _generateAndPrintPdf(
-                        churchName,
-                        _joinUrl ?? 'https://atrioapp.odoo19rd.com',
-                        _qrBytes,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            color: Color(0xFFE5A023),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              l10n?.imprimeColocaAfiche ??
+                                  'Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.',
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11.5,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    if (isChurchAdmin) ...[
+                      const SizedBox(height: 10),
+                      _PosterShareChannelsRow(
+                        whatsappTitle: 'WhatsApp',
+                        whatsappSubtitle:
+                            l10n?.compartirPorWhatsApp ?? 'Enviar QR',
+                        emailTitle: l10n?.correo ?? 'Correo',
+                        emailSubtitle: l10n?.compartirPorCorreo ?? 'Enviar QR',
+                        onWhatsAppTap: () => _compartirPorWhatsApp(
+                          churchName,
+                          effectiveJoinUrl,
+                        ),
+                        onEmailTap: () =>
+                            _compartirPorCorreo(churchName, effectiveJoinUrl),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+
+                    // Botón principal de impresión / guardado PDF
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE5A023),
+                          foregroundColor: const Color(0xFF072B4F),
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          size: 20,
+                        ),
+                        label: Text(
+                          l10n?.descargarAfichePdf ??
+                              'Descargar / Imprimir Afiche (PDF)',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onPressed: () => _generateAndPrintPdf(
+                          churchName,
+                          effectiveJoinUrl,
+                          _qrBytes,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
     );
@@ -613,6 +736,133 @@ class PosterPillarItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Fila con los dos botones de canales (WhatsApp y Correo) para compartir el QR oficial
+class _PosterShareChannelsRow extends StatelessWidget {
+  final String whatsappTitle;
+  final String whatsappSubtitle;
+  final String emailTitle;
+  final String emailSubtitle;
+  final VoidCallback onWhatsAppTap;
+  final VoidCallback onEmailTap;
+
+  const _PosterShareChannelsRow({
+    required this.whatsappTitle,
+    required this.whatsappSubtitle,
+    required this.emailTitle,
+    required this.emailSubtitle,
+    required this.onWhatsAppTap,
+    required this.onEmailTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _PosterShareChannelCard(
+            title: whatsappTitle,
+            subtitle: whatsappSubtitle,
+            faIcon: FontAwesomeIcons.whatsapp,
+            colorIcon: const Color(0xFF25D366),
+            onTap: onWhatsAppTap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _PosterShareChannelCard(
+            title: emailTitle,
+            subtitle: emailSubtitle,
+            icon: Icons.mail_outline_rounded,
+            colorIcon: const Color(0xFFE5A023),
+            onTap: onEmailTap,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Tarjeta individual inspirada en `_ContactCard` de Ayuda y Soporte
+class _PosterShareChannelCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData? icon;
+  final FaIconData? faIcon;
+  final Color colorIcon;
+  final VoidCallback onTap;
+
+  const _PosterShareChannelCard({
+    required this.title,
+    required this.subtitle,
+    this.icon,
+    this.faIcon,
+    required this.colorIcon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF072B4F),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: colorIcon.withValues(alpha: 0.15),
+                child: faIcon != null
+                    ? FaIcon(faIcon, color: colorIcon, size: 18)
+                    : (icon != null
+                          ? Icon(icon, color: colorIcon, size: 18)
+                          : const SizedBox.shrink()),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

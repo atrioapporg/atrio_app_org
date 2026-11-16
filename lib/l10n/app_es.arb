@@ -259,12 +259,17 @@
   "helperCambiarIglesia": "Para cambiarla usa la opción \"Cambiar de iglesia\"",
   "guardarCambios": "Guardar cambios",
   "datosActualizadosCorrectamente": "Datos actualizados correctamente",
+  "ingresaUnTelefonoValidoRd": "Ingresa un celular válido de RD (10 dígitos: 809, 829 u 849)",
+  "helperTelefonoRd": "Formato RD: 809, 829 u 849 + 7 dígitos (ej. 809-555-1234)",
+  "sugerenciasDominioCorreo": "Completar dominio:",
+  "errorActualizarPerfil": "No se pudieron actualizar tus datos en el servidor.",
   "seguroDeseasCerrarSesion": "¿Seguro que deseas cerrar sesión?",
   "eliminarCuenta": "Eliminar cuenta",
   "seguroEliminarCuenta": "¿Estás seguro de que deseas eliminar tu cuenta y todos tus datos personales de ATRIO?",
   "detalleEliminarCuenta": "Esta acción es definitiva e irreversible. Se eliminarán permanentemente:\n• Tu perfil de usuario y vinculación comunitaria.\n• Todas tus notas personales de la Biblia y favoritos guardados.\n• Tu historial de solicitudes y aportes locales.\n• Se solicitará la desactivación de tu registro en el backend Odoo ERP.",
   "eliminarDefinitivamente": "Eliminar definitivamente",
   "cuentaEliminadaExito": "Tu cuenta y datos personales han sido eliminados satisfactoriamente.",
+  "errorEliminarCuenta": "No se pudo eliminar la cuenta. Por favor, inténtalo de nuevo.",
   "versionDeLaBiblia": "Versión de la Biblia",
   "noSePudoAbrirWhatsApp": "No se pudo abrir WhatsApp.",
   "buscarBibliaPlaceholder": "Buscar versículo, palabra o frase...",
@@ -1923,6 +1928,30 @@
   "aficheParaTuIglesia": "Afiche Oficial para tu Congregación",
   "imprimeColocaAfiche": "Imprime este cartel y colócalo en la entrada o boletín de tu iglesia para que los feligreses se unan escaneando el código QR.",
   "cargandoAfiche": "Generando afiche oficial...",
+  "compartirQrPor": "Compartir QR de la iglesia",
+  "compartirPorWhatsApp": "Enviar QR",
+  "compartirPorCorreo": "Enviar QR",
+  "mensajeCompartirQrIglesia": "¡Únete a nuestra iglesia {churchName} en ATRIO! Escanea nuestro código QR oficial o ingresa aquí: {url}",
+  "@mensajeCompartirQrIglesia": {
+    "description": "Mensaje para compartir el QR oficial de la iglesia",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "asuntoCorreoQrIglesia": "Código QR oficial de {churchName} en ATRIO",
+  "@asuntoCorreoQrIglesia": {
+    "description": "Asunto del correo para compartir el QR oficial de la iglesia",
+    "placeholders": {
+      "churchName": {
+        "type": "String"
+      }
+    }
+  },
   "articuloFisicoBadge": "Artículo físico impreso / tangible",
   "articuloFisicoCorto": "Artículo Físico",
   "avisoTiendaSoloBienesFisicos": "Todos los artículos de la tienda eclesial son bienes físicos tangibles sujetos a envío postal o retiro presencial en el templo.",

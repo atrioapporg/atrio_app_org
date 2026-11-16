@@ -905,55 +905,36 @@ class AtrioApi {
   /// Solicita la eliminación definitiva de la cuenta y supresión de datos del usuario en el backend Odoo 19,
   /// desencadenando la cancelación de registros y el envío del correo de confirmación de baja.
   ///
-  /// Soporta el endpoint formal configurado en [AppConfig.odooDeleteAccountEndpoint]
-  /// con fallback automático hacia 'DELETE /auth/account' o 'POST /auth/delete_account'.
+  /// Llama a `POST /auth/delete_account` (sin cuerpo; solo requiere el Bearer token)
+  /// con fallback automático hacia su alias `DELETE /auth/account`.
   Future<Map<String, dynamic>> deleteAccount({
     required int userId,
     required String email,
     String? reason,
   }) async {
-    final payload = <String, dynamic>{
-      'user_id': userId,
-      'email': email,
-      if (reason != null && reason.isNotEmpty) 'reason': reason,
-      if (database != null && database!.isNotEmpty) 'db': database,
-    };
-
     final configuredEndpoint = AppConfig.odooDeleteAccountEndpoint;
+    final String primaryMethod = configuredEndpoint == '/auth/account'
+        ? 'DELETE'
+        : 'POST';
     debugPrint(
-      '🚀 [AtrioApi] Disparando solicitud de eliminación definitiva a Odoo: userId=$userId, email=$email, endpoint=$configuredEndpoint',
+      '🚀 [AtrioApi] Disparando solicitud de eliminación definitiva a Odoo: $primaryMethod $configuredEndpoint (userId=$userId)',
     );
 
     try {
-      return await _send(
-        'DELETE',
-        configuredEndpoint,
-        body: payload,
-        retryAuth: true,
-      );
+      return await _send(primaryMethod, configuredEndpoint, retryAuth: true);
     } on AtrioApiException catch (e) {
-      debugPrint(
-        '⚠️ [AtrioApi] Falló DELETE a $configuredEndpoint (${e.status} ${e.code}). Probando alternativa POST /auth/delete_account...',
-      );
       if (e.statusCode == 404 || e.statusCode == 405) {
-        try {
-          return await _send(
-            'POST',
-            '/auth/delete_account',
-            body: payload,
-            retryAuth: true,
-          );
-        } on AtrioApiException catch (e2) {
-          if (e2.statusCode == 404 || e2.statusCode == 405) {
-            return await _send(
-              'POST',
-              configuredEndpoint,
-              body: payload,
-              retryAuth: true,
-            );
-          }
-          rethrow;
-        }
+        final String fallbackMethod = primaryMethod == 'POST'
+            ? 'DELETE'
+            : 'POST';
+        final String fallbackEndpoint =
+            configuredEndpoint == '/auth/delete_account'
+            ? '/auth/account'
+            : '/auth/delete_account';
+        debugPrint(
+          '⚠️ [AtrioApi] Falló $primaryMethod $configuredEndpoint (${e.status} ${e.code}). Probando alias $fallbackMethod $fallbackEndpoint...',
+        );
+        return await _send(fallbackMethod, fallbackEndpoint, retryAuth: true);
       }
       rethrow;
     }
